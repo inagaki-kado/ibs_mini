@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.20.0</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.20.1</title>
     
     <style>
-        /* ▼▼▼ フォント設定（GitHubのフォルダ構成に合わせてパスを指定済み） ▼▼▼ */
+        /* ▼▼▼ フォント設定 ▼▼▼ */
+        /* GitHubのフォルダ名「font」に合わせています */
         @font-face {
             font-family: 'DSEG7 Classic';
             src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype');
@@ -31,7 +32,6 @@
             --bx-red-orange: #ff4500; --bx-red: #ff0055;
             --bx-yellow: #fff000;
             
-            /* iPhoneのセーフエリア変数 */
             --safe-left: env(safe-area-inset-left);
             --safe-right: env(safe-area-inset-right);
         }
@@ -60,11 +60,11 @@
             pointer-events: none; 
         }
 
-        /* システムボタン（共通設定） */
+        /* システムボタン */
         .system-btn { 
             position: fixed; z-index: 80;
             background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
-            width: 45px; height: 45px; 
+            width: 40px; height: 40px; /* 少し小さく */
             display: flex; justify-content: center; align-items: center;
             font-size: 14px; font-weight: bold; cursor: pointer; 
             font-family: 'Orbitron', sans-serif; transition: 0.3s; border-radius: 8px;
@@ -76,12 +76,12 @@
         /* 左下ボタン群 */
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 10px)); } 
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 10px)); }
-        .btn-fullscreen { bottom: 20px; left: max(80px, calc(var(--safe-left) + 70px)); }
-        .btn-rotate { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        .btn-fullscreen { bottom: 20px; left: max(70px, calc(var(--safe-left) + 60px)); }
+        .btn-rotate { bottom: 20px; left: max(120px, calc(var(--safe-left) + 110px)); color: var(--bx-blue); border-color: var(--bx-blue); }
 
         /* 右下ボタン群 */
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 10px)); } 
-        .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 70px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        .btn-timer-toggle { top: 20px; right: max(70px, calc(var(--safe-right) + 60px)); color: var(--bx-blue); border-color: var(--bx-blue); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 10px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
 
         /* バトル数表示エリア */
@@ -115,13 +115,12 @@
             color: white; background: rgba(0,0,0,0.5);
         }
 
-        /* ▼▼▼ HUDレイアウト刷新 (Ver.20.0) ▼▼▼ */
+        /* ▼▼▼ HUDレイアウト調整 (Ver.20.1) ▼▼▼ */
         
-        /* プレイヤーエリア全体（スコア＋ボタン） */
         .hud-container {
             position: fixed; top: 50%; transform: translateY(-50%); z-index: 50;
             display: flex; flex-direction: column; 
-            gap: 5px; /* 名前とメインエリアの隙間 */
+            gap: 5px; 
         }
         /* 左側（P1） */
         #p1-hud { 
@@ -134,72 +133,75 @@
             align-items: flex-end; 
         }
 
-        /* 名前入力欄 */
         .name-input { 
             font-family: 'Chakra Petch', sans-serif;
             font-size: 24px; font-style: italic; font-weight: bold;
             color: var(--bx-green); text-shadow: 2px 2px 0px black; 
             background: transparent; border: none;
             border-bottom: 2px solid var(--bx-green);
-            width: 250px; outline: none; margin-bottom: 5px;
+            width: 200px; /* 名前欄も少し短く */
+            outline: none; margin-bottom: 5px;
         }
         #p1-hud .name-input { text-align: left; }
         #p2-hud .name-input { text-align: right; }
 
-        /* スコアとボタンを横並びにするコンテナ */
+        /* コンテナ */
         .stats-row {
-            display: flex; align-items: center; gap: 15px;
+            display: flex; align-items: center; gap: 10px;
         }
-        /* P2は逆順（ボタン-スコア）にする */
-        #p2-hud .stats-row { flex-direction: row-reverse; }
+        
+        /* ★重要: P1は [ボタン] [スコア] の順 (row-reverse) */
+        #p1-hud .stats-row { flex-direction: row-reverse; }
+        
+        /* ★重要: P2は [スコア] [ボタン] の順 (row) */
+        #p2-hud .stats-row { flex-direction: row; }
 
-        /* スコア表示 */
-        .score-box {
-            position: relative;
-        }
+        .score-box { position: relative; }
+        
+        /* ★サイズ修正: スコアを小さく (140px -> 85px) */
         .score { 
             font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic;
-            font-size: 140px; line-height: 1; color: white; 
+            font-size: 85px; 
+            line-height: 1; color: white; 
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
             cursor: default; margin: 0;
+            min-width: 60px; text-align: center;
         }
-        /* 訂正(-1)ボタンをスコアの脇に配置 */
+
         .undo-btn {
-            position: absolute; bottom: -10px; right: -10px;
-            font-size: 14px; color: #777; background: rgba(0,0,0,0.8); 
+            position: absolute; bottom: -8px; 
+            /* スコア縮小に合わせてボタン位置調整 */
+            right: 50%; transform: translateX(50%);
+            font-size: 12px; color: #777; background: rgba(0,0,0,0.8); 
             border: 1px solid #555; border-radius: 4px; 
-            width: 25px; height: 25px; cursor: pointer; 
+            width: 40px; height: 20px; cursor: pointer; 
             font-family: 'Orbitron', sans-serif;
             display: flex; justify-content: center; align-items: center;
         }
-        #p2-hud .undo-btn { right: auto; left: -10px; } /* P2は左側に */
 
-        /* ボタン列（縦並び） */
+        /* ボタン列 */
         .buttons-col {
-            display: flex; flex-direction: column; gap: 8px;
+            display: flex; flex-direction: column; gap: 5px; /* 隙間を詰める */
         }
 
-        /* 1文字ボタンのデザイン */
+        /* ★サイズ修正: ボタンを小さく (40px -> 32px) */
         .hud-btn {
             font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-            font-size: 24px; /* 文字大きく */
-            width: 50px; height: 40px; /* 四角くコンパクトに */
+            font-size: 20px; 
+            width: 45px; height: 32px; 
             border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);
             color: white; cursor: pointer; transition: 0.1s; transform: skewX(-10deg);
             text-shadow: 1px 1px 2px black; user-select: none;
             display: flex; justify-content: center; align-items: center;
+            padding: 0; /* 余白を削除 */
         }
         .hud-btn:active { transform: skewX(-10deg) scale(0.95); background: rgba(255,255,255,0.3); }
         .hud-btn span { display: block; transform: skewX(10deg); }
 
-        /* ボタンごとの色設定 */
         .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); background: linear-gradient(90deg, transparent, rgba(255,0,85,0.2)); }
         .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
-
-        /* ▲▲▲ ここまでレイアウト変更 ▲▲▲ */
-
 
         /* WIN表示 */
         #win-display {
