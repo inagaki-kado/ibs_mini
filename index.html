@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.19.0</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.19.1</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@0.46.0/css/dseg.min.css">
@@ -69,7 +69,7 @@
         .system-btn { 
             position: fixed; z-index: 80;
             background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
-            width: 45px; height: 45px; /* 少し小さく */
+            width: 45px; height: 45px; 
             display: flex; justify-content: center; align-items: center;
             font-size: 14px; font-weight: bold; cursor: pointer; 
             font-family: 'Orbitron', sans-serif; transition: 0.3s; border-radius: 8px;
@@ -91,20 +91,20 @@
         
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 10px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
 
-        /* バトル数表示エリア（少し小さく） */
+        /* バトル数表示エリア */
         #battle-counter-area {
             position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 80;
             text-align: center; font-family: 'Orbitron', sans-serif;
             pointer-events: none; 
         }
         .battle-ordinal {
-            font-size: 4vmin; /* 5vminから縮小 */
+            font-size: 4vmin; 
             font-weight: 900; color: var(--bx-yellow); font-style: italic;
             text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black;
             margin-right: 5px;
         }
         .battle-label {
-            font-size: 2.5vmin; /* 3vminから縮小 */
+            font-size: 2.5vmin; 
             font-weight: 700; color: white;
             text-shadow: 1px 1px 0 black;
         }
@@ -133,9 +133,9 @@
         }
         .tournament-input::placeholder { color: rgba(255, 255, 255, 0.2); }
 
-        /* プレイヤー情報（位置を上に調整） */
+        /* プレイヤー情報（★修正: 少し上に移動） */
         .player-info {
-            position: fixed; top: 60px; /* 110pxから大幅に上げてスペース確保 */
+            position: fixed; top: 50px; /* 60px -> 50px */
             z-index: 50;
             display: flex; flex-direction: column;
         }
@@ -144,7 +144,7 @@
 
         .name-input { 
             font-family: 'Chakra Petch', sans-serif;
-            font-size: 24px; /* 40pxから縮小 */
+            font-size: 24px; 
             font-style: italic; font-weight: bold;
             color: var(--bx-green); text-shadow: 2px 2px 0px black; 
             background: transparent; border: none;
@@ -158,13 +158,15 @@
 
         .score-row { display: flex; align-items: center; gap: 10px; }
 
+        /* ★修正: スコアの下に強制的に隙間を作る */
         .score { 
             font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic;
-            /* ★最重要変更: スコアサイズを大幅縮小 */
-            font-size: 130px; /* 220pxから縮小 */
+            font-size: 130px; 
             line-height: 1; color: white; 
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
-            letter-spacing: 5px; cursor: default; margin: 0;
+            letter-spacing: 5px; cursor: default; 
+            margin: 0; 
+            margin-bottom: 20px; /* これでボタンとの重なりを防ぐ */
         }
 
         .undo-btn {
@@ -175,20 +177,21 @@
         }
         .undo-btn:hover { color: var(--bx-red-orange); border-color: var(--bx-red-orange); background: black; }
 
-        /* 決まり手ボタン（位置調整） */
+        /* 決まり手ボタン（★修正: 位置と間隔を調整） */
         .command-area {
-            position: fixed; bottom: 80px; /* 少し下に移動 */
+            position: fixed; bottom: 75px; /* 80px -> 75px に少し下げる */
             z-index: 50;
-            display: flex; flex-direction: column; gap: 10px; /* 隙間を詰める */
+            display: flex; flex-direction: column; 
+            gap: 8px; /* 10px -> 8px に間隔を詰める */
         }
         #p1-commands { left: max(20px, calc(var(--safe-left) + 10px)); align-items: flex-start; }
         #p2-commands { right: max(20px, calc(var(--safe-right) + 10px)); align-items: flex-end; }
         
         .hud-btn {
             font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-style: italic;
-            font-size: 13px; /* 16pxから縮小 */
-            padding: 10px 0; /* 縦幅を縮小 */
-            width: 120px; /* 横幅を縮小 */
+            font-size: 13px; 
+            padding: 8px 0; /* 10px -> 8px に高さを詰める */
+            width: 120px; 
             border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);
             color: white; cursor: pointer; transition: 0.1s; transform: skewX(-10deg);
             text-shadow: 1px 1px 2px black; user-select: none; text-align: center;
@@ -296,7 +299,6 @@
         .intro-red { color: var(--bx-red) !important; text-shadow: 0 0 30px var(--bx-red), 3px 3px 0 black !important; }
 
         @media screen and (max-width: 800px) {
-            /* スマホ縦持ち時のレスポンシブも念のため調整 */
             .score { font-size: 100px; }
             .name-input { font-size: 20px; width: 150px; }
             .player-info { top: 60px; }
@@ -379,7 +381,6 @@
 
         async function setupCamera() {
             try {
-                // iPhoneの背面カメラを高解像度で取得できるよう指定
                 const constraints = {
                     video: {
                         facingMode: "environment",
@@ -391,7 +392,6 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 document.getElementById('camera-bg').srcObject = stream;
             } catch (err) { 
-                // 失敗時はデフォルト設定で再トライ
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                     document.getElementById('camera-bg').srcObject = stream;
