@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.20.1</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.21.0</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
-        /* GitHubのフォルダ名「font」に合わせています */
         @font-face {
             font-family: 'DSEG7 Classic';
             src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype');
@@ -25,7 +24,6 @@
             src: url('./font/Orbitron-Black.ttf') format('truetype');
             font-weight: 900;
         }
-        /* ▲▲▲ ここまで ▲▲▲ */
 
         :root {
             --bx-green: #b6ff00; --bx-blue: #00eaff; --bx-orange: #ffaa00;
@@ -60,11 +58,11 @@
             pointer-events: none; 
         }
 
-        /* システムボタン */
+        /* システムボタン（共通設定） */
         .system-btn { 
             position: fixed; z-index: 80;
             background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
-            width: 40px; height: 40px; /* 少し小さく */
+            width: 45px; height: 45px; 
             display: flex; justify-content: center; align-items: center;
             font-size: 14px; font-weight: bold; cursor: pointer; 
             font-family: 'Orbitron', sans-serif; transition: 0.3s; border-radius: 8px;
@@ -73,29 +71,32 @@
         .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); background: rgba(0,0,0,0.7); }
         .system-btn:active { background: #333; transform: scale(0.95); }
 
-        /* 左下ボタン群 */
-        .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 10px)); } 
-        .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 10px)); }
-        .btn-fullscreen { bottom: 20px; left: max(70px, calc(var(--safe-left) + 60px)); }
-        .btn-rotate { bottom: 20px; left: max(120px, calc(var(--safe-left) + 110px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        /* 左側のシステムボタン */
+        .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
+        .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
+        .btn-fullscreen { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); }
+        .btn-rotate { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: var(--bx-blue); border-color: var(--bx-blue); }
 
-        /* 右下ボタン群 */
-        .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 10px)); } 
-        .btn-timer-toggle { top: 20px; right: max(70px, calc(var(--safe-right) + 60px)); color: var(--bx-blue); border-color: var(--bx-blue); }
-        .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 10px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
+        /* 右側のシステムボタン */
+        .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
+        .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
 
-        /* バトル数表示エリア */
+        /* ▼▼▼ バトル数表示（修正：大きく・斜体解除） ▼▼▼ */
         #battle-counter-area {
-            position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 80;
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80;
             text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; 
         }
         .battle-ordinal {
-            font-size: 4vmin; font-weight: 900; color: var(--bx-yellow); font-style: italic;
+            /* サイズを大きく、斜体を解除 */
+            font-size: 32px; 
+            font-weight: 900; color: var(--bx-yellow); 
+            font-style: normal; /* 斜体解除 */
             text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black;
             margin-right: 5px;
         }
         .battle-label {
-            font-size: 2.5vmin; font-weight: 700; color: white; text-shadow: 1px 1px 0 black;
+            font-size: 20px; font-weight: 700; color: white; text-shadow: 1px 1px 0 black;
         }
 
         /* 大会名入力エリア */
@@ -106,7 +107,7 @@
         }
         .tournament-input {
             font-family: 'Chakra Petch', sans-serif;
-            font-size: 2vmin; font-weight: 500; font-style: normal; 
+            font-size: 14px; font-weight: 500; font-style: normal; 
             color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; 
             background: transparent; border: none; text-align: center; width: 100%; outline: none;
             padding: 0; margin: 0; line-height: 1.2; transition: 0.3s;
@@ -115,50 +116,52 @@
             color: white; background: rgba(0,0,0,0.5);
         }
 
-        /* ▼▼▼ HUDレイアウト調整 (Ver.20.1) ▼▼▼ */
-        
-        .hud-container {
-            position: fixed; top: 50%; transform: translateY(-50%); z-index: 50;
+        /* ▼▼▼ プレイヤー情報エリア（一括管理） ▼▼▼ */
+        .player-wrapper {
+            position: fixed; top: 85px; /* ボタンの下に配置 */
+            z-index: 50;
             display: flex; flex-direction: column; 
-            gap: 5px; 
+            gap: 5px;
         }
+
         /* 左側（P1） */
-        #p1-hud { 
+        #p1-wrapper { 
             left: max(20px, calc(var(--safe-left) + 20px)); 
             align-items: flex-start; 
         }
+        
         /* 右側（P2） */
-        #p2-hud { 
+        #p2-wrapper { 
             right: max(20px, calc(var(--safe-right) + 20px)); 
             align-items: flex-end; 
         }
 
+        /* 名前入力欄 */
         .name-input { 
             font-family: 'Chakra Petch', sans-serif;
             font-size: 24px; font-style: italic; font-weight: bold;
             color: var(--bx-green); text-shadow: 2px 2px 0px black; 
             background: transparent; border: none;
             border-bottom: 2px solid var(--bx-green);
-            width: 200px; /* 名前欄も少し短く */
-            outline: none; margin-bottom: 5px;
+            width: 220px; outline: none; margin-bottom: 5px;
         }
-        #p1-hud .name-input { text-align: left; }
-        #p2-hud .name-input { text-align: right; }
+        #p1-wrapper .name-input { text-align: left; }
+        #p2-wrapper .name-input { text-align: right; }
 
-        /* コンテナ */
+        /* スコアとボタンのコンテナ */
         .stats-row {
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: flex-start; gap: 10px;
         }
-        
-        /* ★重要: P1は [ボタン] [スコア] の順 (row-reverse) */
-        #p1-hud .stats-row { flex-direction: row-reverse; }
-        
-        /* ★重要: P2は [スコア] [ボタン] の順 (row) */
-        #p2-hud .stats-row { flex-direction: row; }
+        /* P1: [ボタン] [スコア] の順 (row-reverse) -> 修正: ボタンは右、スコア左？いえ、「内側」なので */
+        /* ブレーダー1(左側)は [スコア][ボタン] の順だとボタンが内側に来る */
+        /* リクエスト：「ブレーダー1の得点は決まり手ボタンの右」＝ [ボタン] [スコア] */
+        #p1-wrapper .stats-row { flex-direction: row-reverse; }
 
+        /* リクエスト：「ブレーダー2の得点は決まり手ボタンの左」＝ [スコア] [ボタン] */
+        #p2-wrapper .stats-row { flex-direction: row; }
+
+        /* スコアボックス */
         .score-box { position: relative; }
-        
-        /* ★サイズ修正: スコアを小さく (140px -> 85px) */
         .score { 
             font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic;
             font-size: 85px; 
@@ -167,10 +170,8 @@
             cursor: default; margin: 0;
             min-width: 60px; text-align: center;
         }
-
         .undo-btn {
-            position: absolute; bottom: -8px; 
-            /* スコア縮小に合わせてボタン位置調整 */
+            position: absolute; bottom: -12px; 
             right: 50%; transform: translateX(50%);
             font-size: 12px; color: #777; background: rgba(0,0,0,0.8); 
             border: 1px solid #555; border-radius: 4px; 
@@ -179,29 +180,34 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* ボタン列 */
+        /* ▼▼▼ ボタン列（丸形に変更） ▼▼▼ */
         .buttons-col {
-            display: flex; flex-direction: column; gap: 5px; /* 隙間を詰める */
+            display: flex; flex-direction: column; gap: 6px; 
+            margin-top: 5px; /* 位置調整 */
         }
 
-        /* ★サイズ修正: ボタンを小さく (40px -> 32px) */
         .hud-btn {
             font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-            font-size: 20px; 
-            width: 45px; height: 32px; 
+            font-size: 18px; 
+            /* 正円にする設定 */
+            width: 40px; height: 40px; 
+            border-radius: 50%; 
             border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);
-            color: white; cursor: pointer; transition: 0.1s; transform: skewX(-10deg);
+            color: white; cursor: pointer; transition: 0.1s; 
+            /* skew（斜め変形）を解除 */
+            transform: none; 
             text-shadow: 1px 1px 2px black; user-select: none;
             display: flex; justify-content: center; align-items: center;
-            padding: 0; /* 余白を削除 */
+            padding: 0;
         }
-        .hud-btn:active { transform: skewX(-10deg) scale(0.95); background: rgba(255,255,255,0.3); }
-        .hud-btn span { display: block; transform: skewX(10deg); }
+        .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+        .hud-btn span { display: block; transform: none; } /* 中の文字の変形も解除 */
 
-        .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); background: linear-gradient(90deg, transparent, rgba(255,0,85,0.2)); }
+        .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); background: radial-gradient(circle, rgba(255,0,85,0.2), transparent); }
         .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
+
 
         /* WIN表示 */
         #win-display {
@@ -314,7 +320,7 @@
         <input type="text" id="tournament-name-2" class="tournament-input" value="BEY BATTLE" placeholder="LINE 2">
     </div>
 
-    <div id="p1-hud" class="hud-container">
+    <div id="p1-wrapper" class="player-wrapper">
         <input type="text" id="name1" class="name-input" value="BLADER 1" placeholder="NAME">
         <div class="stats-row">
             <div class="score-box">
@@ -330,7 +336,7 @@
         </div>
     </div>
 
-    <div id="p2-hud" class="hud-container">
+    <div id="p2-wrapper" class="player-wrapper">
         <input type="text" id="name2" class="name-input" value="BLADER 2" placeholder="NAME">
         <div class="stats-row">
             <div class="score-box">
