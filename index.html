@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.22.0</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.23.0</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -113,19 +113,28 @@
 
         /* プレイヤー情報エリア */
         .player-wrapper {
-            position: fixed; top: 85px; z-index: 50;
+            /* ★修正: 位置を極限まで上に (85px -> 70px) */
+            position: fixed; top: 70px; 
+            z-index: 50;
             display: flex; flex-direction: column; gap: 5px;
         }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
 
+        /* ★修正: 名前欄をボックス化 */
         .name-input { 
             font-family: 'Chakra Petch', sans-serif;
             font-size: 24px; font-style: italic; font-weight: bold;
-            color: var(--bx-green); text-shadow: 2px 2px 0px black; 
-            background: transparent; border: none;
-            border-bottom: 2px solid var(--bx-green);
-            width: 220px; outline: none; margin-bottom: 5px;
+            color: var(--bx-green); 
+            text-shadow: 2px 2px 0px black; 
+            /* ボックスデザイン */
+            background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            padding: 2px 10px;
+            /* widthは固定気味に設定して中身が見やすいように */
+            width: 220px; 
+            outline: none; margin-bottom: 5px;
         }
         #p1-wrapper .name-input { text-align: left; }
         #p2-wrapper .name-input { text-align: right; }
@@ -141,13 +150,10 @@
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
             cursor: default; margin: 0; min-width: 60px; text-align: center;
         }
+
+        /* ★修正: 訂正ボタンを非表示 (CSSで隠す) */
         .undo-btn {
-            position: absolute; bottom: -12px; right: 50%; transform: translateX(50%);
-            font-size: 12px; color: #777; background: rgba(0,0,0,0.8); 
-            border: 1px solid #555; border-radius: 4px; 
-            width: 40px; height: 20px; cursor: pointer; 
-            font-family: 'Orbitron', sans-serif;
-            display: flex; justify-content: center; align-items: center;
+            display: none; 
         }
 
         /* ボタン列 */
@@ -169,7 +175,7 @@
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
 
-        /* ★追加: 履歴点灯用のスタイル (Active History) ★ */
+        /* 履歴点灯用スタイル */
         .btn-xtreme.active-history { background: var(--bx-red); color: black; box-shadow: 0 0 15px var(--bx-red); border-color: white; text-shadow: none; }
         .btn-burst.active-history { background: var(--bx-red-orange); color: black; box-shadow: 0 0 15px var(--bx-red-orange); border-color: white; text-shadow: none; }
         .btn-over.active-history { background: var(--bx-orange); color: black; box-shadow: 0 0 15px var(--bx-orange); border-color: white; text-shadow: none; }
@@ -560,7 +566,6 @@
             }
             showCenterEffect(finishType + "<br>FINISH", styleClass, true);
 
-            // ★追加: ボタン点灯処理 (History Light)
             const btnId = `p${player}-btn-${finishType.toLowerCase()}`;
             const btnElem = document.getElementById(btnId);
             if (btnElem) {
@@ -632,7 +637,6 @@
             document.getElementById('score2').style.textShadow = defaultShadow;
             document.getElementById('win-display').classList.remove('show-win');
 
-            // ★追加: 点灯した履歴ボタンを全て消灯
             const activeBtns = document.querySelectorAll('.active-history');
             activeBtns.forEach(btn => btn.classList.remove('active-history'));
 
