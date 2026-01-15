@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.22.1</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.22.2</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -113,8 +113,10 @@
 
         /* プレイヤー情報エリア */
         .player-wrapper {
-            position: fixed; top: 85px; z-index: 50;
-            display: flex; flex-direction: column; gap: 5px;
+            /* ★修正: 85px → 75px に変更し、上のボタンとの隙間を詰める */
+            position: fixed; top: 75px; 
+            z-index: 50;
+            display: flex; flex-direction: column; gap: 2px; /* 縦の隙間も少し詰める */
         }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
@@ -126,13 +128,13 @@
             background: transparent; border: none;
             border-bottom: 2px solid var(--bx-green);
             
-            /* ★修正: 固定幅を廃止し、コンテンツ幅に合わせる */
+            /* 文字数に合わせて幅自動調整 */
             width: auto; 
-            min-width: 100px; /* 最低限の幅だけ確保 */
+            min-width: 100px;
             max-width: 250px;
-            field-sizing: content; /* 対応ブラウザなら文字数ピッタリに */
+            field-sizing: content;
             
-            outline: none; margin-bottom: 5px;
+            outline: none; margin-bottom: 2px; /* マージンを詰める */
         }
         #p1-wrapper .name-input { text-align: left; }
         #p2-wrapper .name-input { text-align: right; }
