@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.21.1</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.22.0</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -71,13 +71,11 @@
         .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); background: rgba(0,0,0,0.7); }
         .system-btn:active { background: #333; transform: scale(0.95); }
 
-        /* 左上・左下 */
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-fullscreen { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); }
         .btn-rotate { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: var(--bx-blue); border-color: var(--bx-blue); }
 
-        /* 右上・右下 */
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
@@ -88,8 +86,7 @@
             text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; 
         }
         .battle-ordinal {
-            font-size: 32px; font-weight: 900; color: var(--bx-yellow); 
-            font-style: normal;
+            font-size: 32px; font-weight: 900; color: var(--bx-yellow); font-style: normal;
             text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black;
             margin-right: 5px;
         }
@@ -114,89 +111,69 @@
             color: white; background: rgba(0,0,0,0.5);
         }
 
-        /* ▼▼▼ プレイヤー情報エリア ▼▼▼ */
+        /* プレイヤー情報エリア */
         .player-wrapper {
-            position: fixed; top: 70px; /* ★修正: R/Tボタンの真下へ移動 (85px -> 70px) */
-            z-index: 50;
-            display: flex; flex-direction: column; 
-            gap: 5px;
+            position: fixed; top: 85px; z-index: 50;
+            display: flex; flex-direction: column; gap: 5px;
         }
+        #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
+        #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
 
-        #p1-wrapper { 
-            left: max(20px, calc(var(--safe-left) + 20px)); 
-            align-items: flex-start; 
-        }
-        
-        #p2-wrapper { 
-            right: max(20px, calc(var(--safe-right) + 20px)); 
-            align-items: flex-end; 
-        }
-
-        /* ★修正: 名前欄をボックス化＆可変長対応 */
         .name-input { 
             font-family: 'Chakra Petch', sans-serif;
             font-size: 24px; font-style: italic; font-weight: bold;
-            color: var(--bx-green); text-shadow: 1px 1px 0px black; 
-            
-            /* ボックスデザイン */
-            background: rgba(0, 0, 0, 0.6); /* 背景追加 */
-            border: 2px solid var(--bx-green); /* 全周ボーダー */
-            border-radius: 6px; /* 角丸 */
-            
-            padding: 2px 10px; margin-bottom: 5px;
-            outline: none; text-align: center;
-            
-            /* 可変長用の初期設定 */
-            width: auto; min-width: 120px; max-width: 300px;
+            color: var(--bx-green); text-shadow: 2px 2px 0px black; 
+            background: transparent; border: none;
+            border-bottom: 2px solid var(--bx-green);
+            width: 220px; outline: none; margin-bottom: 5px;
         }
+        #p1-wrapper .name-input { text-align: left; }
+        #p2-wrapper .name-input { text-align: right; }
 
-        /* コンテナ */
-        .stats-row {
-            display: flex; align-items: flex-start; gap: 10px;
-        }
+        .stats-row { display: flex; align-items: flex-start; gap: 10px; }
         #p1-wrapper .stats-row { flex-direction: row-reverse; }
         #p2-wrapper .stats-row { flex-direction: row; }
 
-        /* スコア */
         .score-box { position: relative; }
         .score { 
             font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic;
-            font-size: 85px; 
-            line-height: 1; color: white; 
+            font-size: 85px; line-height: 1; color: white; 
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
-            cursor: default; margin: 0;
-            min-width: 60px; text-align: center;
+            cursor: default; margin: 0; min-width: 60px; text-align: center;
         }
-        
-        /* ★修正: undoボタンを非表示 (機能はJSに残す) */
-        .undo-btn { display: none; }
+        .undo-btn {
+            position: absolute; bottom: -12px; right: 50%; transform: translateX(50%);
+            font-size: 12px; color: #777; background: rgba(0,0,0,0.8); 
+            border: 1px solid #555; border-radius: 4px; 
+            width: 40px; height: 20px; cursor: pointer; 
+            font-family: 'Orbitron', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+        }
 
         /* ボタン列 */
-        .buttons-col {
-            display: flex; flex-direction: column; gap: 6px; 
-            margin-top: 5px; 
-        }
+        .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
 
         .hud-btn {
             font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-            font-size: 18px; 
-            width: 40px; height: 40px; 
-            border-radius: 50%; 
+            font-size: 18px; width: 40px; height: 40px; border-radius: 50%; 
             border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);
-            color: white; cursor: pointer; transition: 0.1s; 
-            transform: none; 
+            color: white; cursor: pointer; transition: 0.2s; transform: none; 
             text-shadow: 1px 1px 2px black; user-select: none;
-            display: flex; justify-content: center; align-items: center;
-            padding: 0;
+            display: flex; justify-content: center; align-items: center; padding: 0;
         }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
-        .hud-btn span { display: block; transform: none; } 
+        .hud-btn span { display: block; transform: none; }
 
         .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); background: radial-gradient(circle, rgba(255,0,85,0.2), transparent); }
         .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
 
+        /* ★追加: 履歴点灯用のスタイル (Active History) ★ */
+        .btn-xtreme.active-history { background: var(--bx-red); color: black; box-shadow: 0 0 15px var(--bx-red); border-color: white; text-shadow: none; }
+        .btn-burst.active-history { background: var(--bx-red-orange); color: black; box-shadow: 0 0 15px var(--bx-red-orange); border-color: white; text-shadow: none; }
+        .btn-over.active-history { background: var(--bx-orange); color: black; box-shadow: 0 0 15px var(--bx-orange); border-color: white; text-shadow: none; }
+        .btn-spin.active-history { background: var(--bx-blue); color: black; box-shadow: 0 0 15px var(--bx-blue); border-color: white; text-shadow: none; }
 
         /* WIN表示 */
         #win-display {
@@ -310,33 +287,33 @@
     </div>
 
     <div id="p1-wrapper" class="player-wrapper">
-        <input type="text" id="name1" class="name-input" value="BLADER 1" placeholder="NAME" oninput="adjustWidth(this)">
+        <input type="text" id="name1" class="name-input" value="BLADER 1" placeholder="NAME">
         <div class="stats-row">
             <div class="score-box">
                 <div id="score1" class="score">0</div>
                 <div class="undo-btn" onclick="undoScore(1)">-1</div>
             </div>
             <div class="buttons-col">
-                <div class="hud-btn btn-xtreme" onclick="addScore(1, 3, 'XTREME')"><span>X</span></div>
-                <div class="hud-btn btn-burst" onclick="addScore(1, 2, 'BURST')"><span>B</span></div>
-                <div class="hud-btn btn-over" onclick="addScore(1, 2, 'OVER')"><span>O</span></div>
-                <div class="hud-btn btn-spin" onclick="addScore(1, 1, 'SPIN')"><span>S</span></div>
+                <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(1, 3, 'XTREME')"><span>X</span></div>
+                <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="addScore(1, 2, 'BURST')"><span>B</span></div>
+                <div id="p1-btn-over" class="hud-btn btn-over" onclick="addScore(1, 2, 'OVER')"><span>O</span></div>
+                <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="addScore(1, 1, 'SPIN')"><span>S</span></div>
             </div>
         </div>
     </div>
 
     <div id="p2-wrapper" class="player-wrapper">
-        <input type="text" id="name2" class="name-input" value="BLADER 2" placeholder="NAME" oninput="adjustWidth(this)">
+        <input type="text" id="name2" class="name-input" value="BLADER 2" placeholder="NAME">
         <div class="stats-row">
             <div class="score-box">
                 <div id="score2" class="score">0</div>
                 <div class="undo-btn" onclick="undoScore(2)">-1</div>
             </div>
             <div class="buttons-col">
-                <div class="hud-btn btn-xtreme" onclick="addScore(2, 3, 'XTREME')"><span>X</span></div>
-                <div class="hud-btn btn-burst" onclick="addScore(2, 2, 'BURST')"><span>B</span></div>
-                <div class="hud-btn btn-over" onclick="addScore(2, 2, 'OVER')"><span>O</span></div>
-                <div class="hud-btn btn-spin" onclick="addScore(2, 1, 'SPIN')"><span>S</span></div>
+                <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(2, 3, 'XTREME')"><span>X</span></div>
+                <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="addScore(2, 2, 'BURST')"><span>B</span></div>
+                <div id="p2-btn-over" class="hud-btn btn-over" onclick="addScore(2, 2, 'OVER')"><span>O</span></div>
+                <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="addScore(2, 1, 'SPIN')"><span>S</span></div>
             </div>
         </div>
     </div>
@@ -355,28 +332,15 @@
         let s1 = 0; let s2 = 0; let isFinished = false;
         let timerInterval = null;
         let isCountingDown = false; 
+        
         let timerDuration = 10; 
+        
         let effectTimeout = null; 
         let cleanupTimeout = null;
+        
         let cursorTimeout = null; 
         let winScoreLimit = 4;
         let battleCount = 1; 
-
-        // ★追加: 名前入力欄の幅を文字数に合わせて調整する関数
-        function adjustWidth(el) {
-            // 文字数 + 余白分の幅を設定 (単位は ch = 文字サイズ)
-            // 日本語なども考慮して少し余裕を持たせる係数をかける
-            let length = el.value.length;
-            if (length === 0) length = el.placeholder.length; 
-            // 最小幅は確保しつつ、文字数に応じて広げる
-            el.style.width = (length + 2) + "ch";
-        }
-
-        // 初期ロード時に幅を調整
-        window.addEventListener('load', () => {
-            adjustWidth(document.getElementById('name1'));
-            adjustWidth(document.getElementById('name2'));
-        });
 
         async function setupCamera() {
             try {
@@ -596,6 +560,13 @@
             }
             showCenterEffect(finishType + "<br>FINISH", styleClass, true);
 
+            // ★追加: ボタン点灯処理 (History Light)
+            const btnId = `p${player}-btn-${finishType.toLowerCase()}`;
+            const btnElem = document.getElementById(btnId);
+            if (btnElem) {
+                btnElem.classList.add('active-history');
+            }
+
             if (player === 1) {
                 s1 = Math.min(s1 + pts, winScoreLimit);
                 document.getElementById('score1').innerText = s1;
@@ -661,9 +632,9 @@
             document.getElementById('score2').style.textShadow = defaultShadow;
             document.getElementById('win-display').classList.remove('show-win');
 
-            // リセット時に名前欄の幅も再計算
-            adjustWidth(document.getElementById('name1'));
-            adjustWidth(document.getElementById('name2'));
+            // ★追加: 点灯した履歴ボタンを全て消灯
+            const activeBtns = document.querySelectorAll('.active-history');
+            activeBtns.forEach(btn => btn.classList.remove('active-history'));
 
             showIntro();
         }
