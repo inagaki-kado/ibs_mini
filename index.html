@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.22.2</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.23.1</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -71,11 +71,15 @@
         .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); background: rgba(0,0,0,0.7); }
         .system-btn:active { background: #333; transform: scale(0.95); }
 
+        /* 左側のシステムボタン */
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
+        
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
-        .btn-fullscreen { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); }
-        .btn-rotate { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        
+        /* ★修正: Fボタン削除に伴い、180ボタンを左に詰める */
+        .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
 
+        /* 右側のシステムボタン */
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
@@ -83,7 +87,8 @@
         /* バトル数表示 */
         #battle-counter-area {
             position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80;
-            text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; 
+            text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none;
+            transition: opacity 0.3s; /* フェード用 */
         }
         .battle-ordinal {
             font-size: 32px; font-weight: 900; color: var(--bx-yellow); font-style: normal;
@@ -99,6 +104,7 @@
             position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80;
             display: flex; flex-direction: column; align-items: center; gap: 0px;
             width: 40%;
+            transition: opacity 0.3s; /* フェード用 */
         }
         .tournament-input {
             font-family: 'Chakra Petch', sans-serif;
@@ -113,10 +119,9 @@
 
         /* プレイヤー情報エリア */
         .player-wrapper {
-            /* ★修正: 85px → 75px に変更し、上のボタンとの隙間を詰める */
             position: fixed; top: 75px; 
             z-index: 50;
-            display: flex; flex-direction: column; gap: 2px; /* 縦の隙間も少し詰める */
+            display: flex; flex-direction: column; gap: 2px;
         }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
@@ -128,13 +133,12 @@
             background: transparent; border: none;
             border-bottom: 2px solid var(--bx-green);
             
-            /* 文字数に合わせて幅自動調整 */
             width: auto; 
             min-width: 100px;
             max-width: 250px;
             field-sizing: content;
             
-            outline: none; margin-bottom: 2px; /* マージンを詰める */
+            outline: none; margin-bottom: 2px;
         }
         #p1-wrapper .name-input { text-align: left; }
         #p2-wrapper .name-input { text-align: right; }
@@ -150,15 +154,7 @@
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
             cursor: default; margin: 0; min-width: 60px; text-align: center;
         }
-        .undo-btn {
-            position: absolute; bottom: -12px; right: 50%; transform: translateX(50%);
-            font-size: 12px; color: #777; background: rgba(0,0,0,0.8); 
-            border: 1px solid #555; border-radius: 4px; 
-            width: 40px; height: 20px; cursor: pointer; 
-            font-family: 'Orbitron', sans-serif;
-            display: flex; justify-content: center; align-items: center;
-        }
-
+        
         /* ボタン列 */
         .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
 
@@ -300,7 +296,6 @@
         <div class="stats-row">
             <div class="score-box">
                 <div id="score1" class="score">0</div>
-                <div class="undo-btn" onclick="undoScore(1)">-1</div>
             </div>
             <div class="buttons-col">
                 <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(1, 3, 'XTREME')"><span>X</span></div>
@@ -316,7 +311,6 @@
         <div class="stats-row">
             <div class="score-box">
                 <div id="score2" class="score">0</div>
-                <div class="undo-btn" onclick="undoScore(2)">-1</div>
             </div>
             <div class="buttons-col">
                 <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(2, 3, 'XTREME')"><span>X</span></div>
@@ -333,7 +327,6 @@
     <button class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</button>
     <button class="system-btn btn-timer" onclick="toggleTimer()">T</button>
     <button class="system-btn btn-bg" onclick="toggleBackground()">B</button>
-    <button class="system-btn btn-fullscreen" onclick="toggleFullScreen()">F</button>
     <button class="system-btn btn-rotate" onclick="rotateCamera()">180</button>
     <button class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</button>
 
@@ -424,6 +417,7 @@
             }
         }
 
+        // Fボタン削除につき toggleFullScreen も不要ですが、念のためコードは残しておきます（誤操作防止）
         function toggleFullScreen() {
             blurFocus();
             if (!document.fullscreenElement) {
@@ -468,8 +462,18 @@
             const t1 = document.getElementById('tournament-name-1').value;
             const t2 = document.getElementById('tournament-name-2').value;
             
+            // ★追加: 演出中は上下の情報を隠す
+            document.getElementById('battle-counter-area').style.opacity = '0';
+            document.getElementById('tournament-title-area').style.opacity = '0';
+
             const html = `<span class="intro-yellow">${t1}</span><br><span class="intro-yellow">${t2}</span><br><br><span class="intro-red">Ready......</span>`;
             showOverlayText(html, 'interstitial-style', 4000); 
+            
+            // ★追加: 演出終了後に再表示 (4000ms表示 + 500msフェード = 4500ms後)
+            setTimeout(() => {
+                document.getElementById('battle-counter-area').style.opacity = '1';
+                document.getElementById('tournament-title-area').style.opacity = '1';
+            }, 4500);
         }
 
         function updateBattleCounterDisplay() {
