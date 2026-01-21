@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.27.0 Zoomable VAR</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.27.1 Font Fixed</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+
     <style>
-        /* ▼▼▼ フォント設定 ▼▼▼ */
-        @font-face { font-family: 'DSEG7 Classic'; src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
-        @font-face { font-family: 'Chakra Petch'; src: url('./font/ChakraPetch-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
-        @font-face { font-family: 'Orbitron'; src: url('./font/Orbitron-Black.ttf') format('truetype'); font-weight: 900; }
+        /* デジタル数字フォント（これのみローカルファイルが必要です） */
+        @font-face { 
+            font-family: 'DSEG7 Classic'; 
+            src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype'); 
+            font-weight: bold; 
+            font-style: italic; 
+        }
 
         :root {
             --bx-green: #b6ff00; --bx-blue: #00eaff; --bx-orange: #ffaa00;
@@ -22,13 +27,16 @@
             margin: 0; padding: 0; background: black; 
             font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; 
             -webkit-tap-highlight-color: transparent; transition: background-color 0.3s;
-            /* ピンチズーム自作のため、ブラウザの標準ズームを抑制 */
-            touch-action: none;
+            touch-action: none; /* ズーム自作のため */
+        }
+
+        /* 全ての入力欄とボタンにフォントを強制適用 */
+        input, button, .score, .hud-btn, .system-btn {
+            font-family: inherit;
         }
 
         body.green-mode { background-color: #00ff00 !important; }
         
-        /* 映像レイヤーコンテナ */
         #video-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; }
         #camera-bg, #replay-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
         #replay-video { z-index: 10; display: none; background: black; }
@@ -39,7 +47,8 @@
         .system-btn { 
             position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
             width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
-            font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Orbitron', sans-serif; border-radius: 8px; outline: none; transition: 0.3s;
+            font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; outline: none; transition: 0.3s;
+            font-family: 'Orbitron', sans-serif !important;
         }
         .system-btn:hover { color: var(--bx-green); }
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
@@ -56,27 +65,66 @@
 
         /* リプレイUI */
         #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
-        #replay-status { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
+        #replay-status { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* HUD基本 */
-        #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; transition: 0.3s; }
+        #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
         .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
-        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 40%; transition: 0.3s; pointer-events: none; }
-        .tournament-input { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
+        .battle-label { font-size: 20px; font-weight: 900; color: white; text-shadow: 1px 1px 0 black; }
+        
+        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 60%; transition: 0.3s; pointer-events: none; }
+        .tournament-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 16px; font-weight: 700; font-style: italic; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 2px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
 
         .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
         body.pro-mode .player-wrapper { top: 15px; }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
-        .name-input { font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
-        .score { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
-        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        
+        .name-input { 
+            font-family: 'Chakra Petch', sans-serif !important; 
+            font-size: 24px; font-style: italic; font-weight: bold; 
+            color: var(--bx-green); text-shadow: 2px 2px 0px black; 
+            background: transparent; border: none; border-bottom: 2px solid var(--bx-green); 
+            width: auto; min-width: 100px; max-width: 250px; 
+            field-sizing: content; outline: none; margin-bottom: 2px; 
+        }
+        
+        .score { 
+            font-family: 'DSEG7 Classic', sans-serif !important; 
+            font-weight: bold; font-style: italic; font-size: 85px; 
+            line-height: 1; color: white; 
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; 
+            cursor: default; margin: 0; min-width: 60px; text-align: center; 
+        }
+        
+        .hud-btn { 
+            font-family: 'Orbitron', sans-serif !important; 
+            font-weight: 900; font-size: 18px; width: 40px; height: 40px; 
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); 
+            background: rgba(0,0,0,0.5); color: white; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; 
+        }
 
-        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron'; font-weight: 900; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; }
+        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 900; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; }
         .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; }
+        
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
+        #effect-text { 
+            font-family: 'Orbitron', sans-serif; 
+            font-weight: 900; font-style: italic; 
+            color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; 
+            width: 90%; text-align: center; opacity: 1; 
+            transition: opacity 0.5s ease-out; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center; 
+        }
+        
+        /* 決まり手演出用 */
+        .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; }
+        .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
+        .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 10vmin !important; line-height: 1.1; }
+        .interstitial-huge { font-size: 20vmin; display: block; font-weight: 900; color: var(--bx-yellow); }
     </style>
 </head>
 <body>
@@ -140,15 +188,9 @@
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
 
-        // ★ズーム・移動状態変数
-        let currentScale = 1;
-        let currentTranslateX = 0;
-        let currentTranslateY = 0;
-        let currentRotation = 0;
-        let startDist = 0;
-        let initialScale = 1;
-        let startX = 0, startY = 0;
-        let initialTX = 0, initialTY = 0;
+        // ズーム・移動状態変数
+        let currentScale = 1, currentTranslateX = 0, currentTranslateY = 0, currentRotation = 0;
+        let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
 
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
@@ -156,52 +198,37 @@
         const replayStatus = document.getElementById('replay-status');
         const hud = document.getElementById('main-hud');
 
-        // ★ズーム反映関数
         function applyTransforms() {
             const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
             camVideo.style.transform = transformStr;
             replayVideo.style.transform = transformStr;
         }
 
-        // ★ピンチ・ドラッグ操作イベント
         document.body.addEventListener('touchstart', e => {
             if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
-
             if (e.touches.length === 2) {
-                // ピンチ開始
                 startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                 initialScale = currentScale;
             } else if (e.touches.length === 1) {
-                // ドラッグ開始
-                startX = e.touches[0].pageX;
-                startY = e.touches[0].pageY;
-                initialTX = currentTranslateX;
-                initialTY = currentTranslateY;
+                startX = e.touches[0].pageX; startY = e.touches[0].pageY;
+                initialTX = currentTranslateX; initialTY = currentTranslateY;
             }
         }, { passive: false });
 
         document.body.addEventListener('touchmove', e => {
             if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
             e.preventDefault();
-
             if (e.touches.length === 2) {
-                // ピンチ中
                 const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                 currentScale = Math.min(Math.max(initialScale * (dist / startDist), 1), 5);
                 applyTransforms();
-            } else if (e.touches.length === 1) {
-                // ドラッグ中 (ズームされている時のみ)
-                if (currentScale > 1) {
-                    const deltaX = (e.touches[0].pageX - startX) / currentScale;
-                    const deltaY = (e.touches[0].pageY - startY) / currentScale;
-                    currentTranslateX = initialTX + deltaX;
-                    currentTranslateY = initialTY + deltaY;
-                    applyTransforms();
-                }
+            } else if (e.touches.length === 1 && currentScale > 1) {
+                currentTranslateX = initialTX + (e.touches[0].pageX - startX) / currentScale;
+                currentTranslateY = initialTY + (e.touches[0].pageY - startY) / currentScale;
+                applyTransforms();
             }
         }, { passive: false });
 
-        // カメラ・録画初期化
         async function initMedia(withMic = false) {
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
             try {
@@ -238,8 +265,8 @@
             }
         }
 
-        // キーボード・ボタン操作
-        function rotateCamera() { blurFocus(); currentRotation = (currentRotation === 0) ? 180 : 0; applyTransforms(); }
+        function rotateCamera() { currentRotation = (currentRotation === 0) ? 180 : 0; applyTransforms(); }
+
         function addScore(p, pts, t) {
             if (isFinished || isReplayMode) return;
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
@@ -269,15 +296,38 @@
             }
         });
 
-        // 基本機能
         function resetGame() { s1 = 0; s2 = 0; battleCount = 1; isFinished = false; document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; updateBattleCounterDisplay(); showIntro(); }
-        function showOverlayText(h, s, d) { const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); t.className = s; t.innerHTML = h; o.style.display = 'flex'; if (d > 0) setTimeout(() => o.style.display = 'none', d); }
-        function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
-        function finishGame(p) { const w = document.getElementById('win-display'); w.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name'+p).value} WIN</span>`; w.classList.add('show-win'); }
+        
+        function showOverlayText(h, s, d) { 
+            const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); 
+            t.className = s; t.innerHTML = h; o.style.display = 'flex'; 
+            if (d > 0) setTimeout(() => o.style.display = 'none', d); 
+        }
+
+        function showIntro() {
+            document.getElementById('battle-counter-area').style.opacity = '0';
+            document.getElementById('tournament-title-area').style.opacity = '0';
+            showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); 
+            setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500);
+        }
+
+        function updateBattleCounterDisplay() {
+            let suffix = ["st","nd","rd"][battleCount-1] || "th";
+            let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`;
+            document.getElementById('battle-ordinal').innerText = text;
+        }
+
+        function finishGame(p) { const w = document.getElementById('win-display'); w.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name'+p).value}</span><span style="font-size:15vmin;display:block;color:white;">WIN</span>`; w.classList.add('show-win'); }
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
         function toggleWinPoint() { winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
         function toggleTimerDuration() { timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
-        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
+        function toggleBackground() { document.body.classList.toggle('green-mode'); }
+        function toggleTimer() { if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } else startTimer(); }
+        function startTimer() {
+            isCountingDown = true; showOverlayText("", 'timer-style', 0);
+            let count = timerDuration; document.getElementById('effect-text').innerText = count;
+            timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000);
+        }
 
         initMedia();
     </script>
