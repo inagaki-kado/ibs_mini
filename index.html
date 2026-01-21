@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.24.0</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.24.1</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -29,207 +29,100 @@
             --bx-green: #b6ff00; --bx-blue: #00eaff; --bx-orange: #ffaa00;
             --bx-red-orange: #ff4500; --bx-red: #ff0055;
             --bx-yellow: #fff000;
-            
             --safe-left: env(safe-area-inset-left);
             --safe-right: env(safe-area-inset-right);
         }
 
         body { 
-            margin: 0; padding: 0; 
-            background: black; 
+            margin: 0; padding: 0; background: black; 
             font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; 
-            -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent; transition: background-color 0.3s;
         }
 
         body.green-mode { background-color: #00ff00 !important; }
         body.green-mode #camera-bg { display: none; }
-        
-        #camera-bg { 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            object-fit: cover; z-index: 1; 
-            transition: transform 0.5s; 
-        }
+        #camera-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; transition: transform 0.5s; }
         .camera-rotate-180 { transform: rotate(180deg); }
+        .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
 
-        .scan-line { 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; 
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); 
-            pointer-events: none; 
-        }
-
-        /* システムボタン */
         .system-btn { 
-            position: fixed; z-index: 80;
-            background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
-            width: 45px; height: 45px; 
-            display: flex; justify-content: center; align-items: center;
-            font-size: 14px; font-weight: bold; cursor: pointer; 
-            font-family: 'Orbitron', sans-serif; transition: 0.3s; border-radius: 8px;
-            outline: none;
+            position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
+            width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
+            font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Orbitron', sans-serif; transition: 0.3s; border-radius: 8px; outline: none;
         }
-        .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); background: rgba(0,0,0,0.7); }
+        .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); }
         .system-btn:active { background: #333; transform: scale(0.95); }
 
-        /* 左側のシステムボタン */
+        /* 左側ボタン配置 */
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        /* ★マイクボタン配置 */
+        .btn-mic { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); }
+        .btn-mic.active { color: white; background: var(--bx-red); border-color: white; box-shadow: 0 0 10px var(--bx-red); }
 
-        /* 右側のシステムボタン */
+        /* 右側ボタン配置 */
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); border-color: var(--bx-orange); font-size: 18px; }
 
-        /* ★プロモード時のボタン非表示設定 */
-        body.pro-mode .system-btn { 
-            display: none !important; 
-        }
+        body.pro-mode .system-btn { display: none !important; }
 
-        /* バトル数表示 */
-        #battle-counter-area {
-            position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80;
-            text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none;
-            transition: opacity 0.3s, top 0.4s;
-        }
-        /* ★プロモード時にバトル数表示を少し上げる */
+        /* バトル数・大会名 */
+        #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
+        .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); font-style: normal; text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
+        .battle-label { font-size: 20px; font-weight: 700; color: white; text-shadow: 1px 1px 0 black; }
+        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 40%; transition: opacity 0.3s; }
+        .tournament-input { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; }
 
-        .battle-ordinal {
-            font-size: 32px; font-weight: 900; color: var(--bx-yellow); font-style: normal;
-            text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black;
-            margin-right: 5px;
-        }
-        .battle-label {
-            font-size: 20px; font-weight: 700; color: white; text-shadow: 1px 1px 0 black;
-        }
-
-        /* 大会名入力エリア */
-        #tournament-title-area {
-            position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80;
-            display: flex; flex-direction: column; align-items: center; gap: 0px;
-            width: 40%;
-            transition: opacity 0.3s;
-        }
-        .tournament-input {
-            font-family: 'Chakra Petch', sans-serif;
-            font-size: 14px; font-weight: 500; font-style: normal; 
-            color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; 
-            background: transparent; border: none; text-align: center; width: 100%; outline: none;
-            padding: 0; margin: 0; line-height: 1.2; transition: 0.3s;
-        }
-
-        /* プレイヤー情報エリア */
-        .player-wrapper {
-            position: fixed; 
-            top: 75px; /* 通常時の位置 */
-            z-index: 50;
-            display: flex; flex-direction: column; gap: 2px;
-            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* アニメーション追加 */
-        }
-        /* ★プロモード時の位置上げ */
-        body.pro-mode .player-wrapper { 
-            top: 15px; 
-        }
-
+        /* プレイヤーエリア */
+        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        body.pro-mode .player-wrapper { top: 15px; }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
-
-        .name-input { 
-            font-family: 'Chakra Petch', sans-serif;
-            font-size: 24px; font-style: italic; font-weight: bold;
-            color: var(--bx-green); text-shadow: 2px 2px 0px black; 
-            background: transparent; border: none;
-            border-bottom: 2px solid var(--bx-green);
-            width: auto; min-width: 100px; max-width: 250px;
-            field-sizing: content; outline: none; margin-bottom: 2px;
-        }
-        #p1-wrapper .name-input { text-align: left; }
-        #p2-wrapper .name-input { text-align: right; }
-
+        .name-input { font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
         .stats-row { display: flex; align-items: flex-start; gap: 10px; }
         #p1-wrapper .stats-row { flex-direction: row-reverse; }
         #p2-wrapper .stats-row { flex-direction: row; }
-
-        .score-box { position: relative; }
-        .score { 
-            font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic;
-            font-size: 85px; line-height: 1; color: white; 
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black;
-            cursor: default; margin: 0; min-width: 60px; text-align: center;
-        }
-        
-        /* ボタン列 */
+        .score { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
-
-        .hud-btn {
-            font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-            font-size: 18px; width: 40px; height: 40px; border-radius: 50%; 
-            border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5);
-            color: white; cursor: pointer; transition: 0.2s; 
-            display: flex; justify-content: center; align-items: center; padding: 0;
-        }
+        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; padding: 0; }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
-
-        .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); background: radial-gradient(circle, rgba(255,0,85,0.2), transparent); }
+        .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); }
         .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
-
-        /* 履歴点灯用スタイル */
         .active-history { color: black !important; border-color: white !important; text-shadow: none !important; }
         .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
         .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
         .btn-over.active-history { background: var(--bx-orange) !important; box-shadow: 0 0 15px var(--bx-orange); }
         .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
 
-        /* WIN表示 */
-        #win-display {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); 
-            width: 100%; text-align: center; font-family: 'Orbitron', sans-serif; 
-            font-weight: 900; font-style: italic; color: #fff000; 
-            text-shadow: 5px 5px 0px #000, 0 0 50px #fff000;
-            opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; 
-        }
+        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: #fff000; text-shadow: 5px 5px 0px #000, 0 0 50px #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
-        .win-name { font-size: 15vmin; display: block; line-height: 1; }
-        .win-label { font-size: 15vmin; display: block; margin-top: -0.15em; color: white; text-shadow: 0 0 30px white; line-height: 1; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 4px 4px 0 #000; } }
-
-        /* エフェクト */
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
         #effect-text { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; transition: opacity 0.5s ease-out; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .fade-out { opacity: 0 !important; }
-        .timer-style { font-size: 40vmin !important; color: white; text-shadow: 0 0 30px rgba(255,255,255,0.8), 5px 5px 0 black; }
-        .ef-time-up { color: var(--bx-red) !important; text-shadow: 0 0 40px var(--bx-red), 4px 4px 0px black !important; font-size: 40vmin !important; }
         .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0 !important; transform: scale(1.1); white-space: pre-wrap; }
-        .ef-spin { color: var(--bx-blue) !important; text-shadow: 0 0 30px var(--bx-blue), 3px 3px 0 black !important; }
-        .ef-over { color: var(--bx-orange) !important; text-shadow: 0 0 30px var(--bx-orange), 3px 3px 0 black !important; }
-        .ef-burst { color: var(--bx-red-orange) !important; text-shadow: 0 0 30px var(--bx-red-orange), 3px 3px 0 black !important; }
-        .ef-xtreme { color: var(--bx-red) !important; text-shadow: 0 0 40px var(--bx-red), 4px 4px 0 black !important; }
+        .timer-style { font-size: 40vmin !important; color: white; text-shadow: 0 0 30px rgba(255,255,255,0.8), 5px 5px 0 black; }
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 12vmin !important; line-height: 1.1 !important; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; white-space: normal !important; }
-        .interstitial-huge { font-size: 25vmin; display: block; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 20px var(--bx-yellow), 4px 4px 0 black; line-height: 0.9; margin: 0; }
-        .intro-yellow { color: var(--bx-yellow) !important; text-shadow: 0 0 30px var(--bx-yellow), 3px 3px 0 black !important; }
-        .intro-red { color: var(--bx-red) !important; text-shadow: 0 0 30px var(--bx-red), 3px 3px 0 black !important; }
     </style>
 </head>
 <body>
-    <video id="camera-bg" autoplay playsinline></video>
+    <video id="camera-bg" autoplay playsinline muted></video>
     <div class="scan-line"></div>
     <div id="effect-overlay"><div id="effect-text"></div></div>
     
-    <div id="battle-counter-area">
-        <span id="battle-ordinal" class="battle-ordinal">1st</span>
-        <span class="battle-label">BATTLE</span>
-    </div>
-
+    <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
     <div id="tournament-title-area">
         <input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI" placeholder="LINE 1">
         <input type="text" id="tournament-name-2" class="tournament-input" value="BEY BATTLE" placeholder="LINE 2">
     </div>
 
     <div id="p1-wrapper" class="player-wrapper">
-        <input type="text" id="name1" class="name-input" value="BLADER 1" placeholder="NAME">
+        <input type="text" id="name1" class="name-input" value="BLADER 1">
         <div class="stats-row">
             <div class="score-box"><div id="score1" class="score">0</div></div>
             <div class="buttons-col">
@@ -242,7 +135,7 @@
     </div>
 
     <div id="p2-wrapper" class="player-wrapper">
-        <input type="text" id="name2" class="name-input" value="BLADER 2" placeholder="NAME">
+        <input type="text" id="name2" class="name-input" value="BLADER 2">
         <div class="stats-row">
             <div class="score-box"><div id="score2" class="score">0</div></div>
             <div class="buttons-col">
@@ -261,21 +154,36 @@
     <button class="system-btn btn-timer" onclick="toggleTimer()">T</button>
     <button class="system-btn btn-bg" onclick="toggleBackground()">B</button>
     <button class="system-btn btn-rotate" onclick="rotateCamera()">180</button>
+    <button class="system-btn btn-mic" onclick="toggleMic()" id="btn-mic">M</button>
     <button class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</button>
 
     <script>
-        let s1 = 0; let s2 = 0; let isFinished = false;
-        let timerInterval = null, isCountingDown = false, timerDuration = 10; 
-        let effectTimeout = null, cleanupTimeout = null, cursorTimeout = null; 
-        let winScoreLimit = 4, battleCount = 1; 
+        let s1 = 0, s2 = 0, isFinished = false, timerInterval = null, isCountingDown = false, timerDuration = 10; 
+        let winScoreLimit = 4, battleCount = 1, isMicEnabled = false, currentStream = null;
 
-        async function setupCamera() {
+        async function setupCamera(withMic = false) {
+            if (currentStream) currentStream.getTracks().forEach(track => track.stop());
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
-                document.getElementById('camera-bg').srcObject = stream;
-            } catch (err) { console.log("Camera Error", err); }
+                const constraints = { video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: withMic };
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('camera-bg');
+                video.srcObject = currentStream;
+                video.muted = !withMic; // マイクONの時だけ音を出す
+            } catch (err) { console.log("Media Error", err); }
         }
-        setupCamera();
+        setupCamera(false);
+
+        function toggleMic() {
+            isMicEnabled = !isMicEnabled;
+            const btn = document.getElementById('btn-mic');
+            if (isMicEnabled) {
+                btn.classList.add('active');
+                setupCamera(true);
+            } else {
+                btn.classList.remove('active');
+                setupCamera(false);
+            }
+        }
 
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
         function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
@@ -285,19 +193,16 @@
 
         function showOverlayText(htmlContent, styleClass, displayTime = 0) {
             const overlay = document.getElementById('effect-overlay'), textEl = document.getElementById('effect-text');
-            clearTimeout(effectTimeout); clearTimeout(cleanupTimeout);
-            textEl.className = styleClass; textEl.innerHTML = htmlContent;
-            overlay.style.display = 'flex'; textEl.classList.remove('fade-out');
+            textEl.className = styleClass; textEl.innerHTML = htmlContent; overlay.style.display = 'flex'; textEl.classList.remove('fade-out');
             if (displayTime > 0) {
-                effectTimeout = setTimeout(() => { textEl.classList.add('fade-out'); cleanupTimeout = setTimeout(() => { overlay.style.display = 'none'; }, 500); }, displayTime);
+                setTimeout(() => { textEl.classList.add('fade-out'); setTimeout(() => { overlay.style.display = 'none'; }, 500); }, displayTime);
             }
         }
 
         function showIntro() {
-            const t1 = document.getElementById('tournament-name-1').value, t2 = document.getElementById('tournament-name-2').value;
             document.getElementById('battle-counter-area').style.opacity = '0';
             document.getElementById('tournament-title-area').style.opacity = '0';
-            showOverlayText(`<span class="intro-yellow">${t1}</span><br><span class="intro-yellow">${t2}</span><br><br><span class="intro-red">Ready......</span>`, 'interstitial-style', 4000); 
+            showOverlayText(`<span class="intro-yellow">${document.getElementById('tournament-name-1').value}</span><br><span class="intro-yellow">${document.getElementById('tournament-name-2').value}</span><br><br><span class="intro-red">Ready......</span>`, 'interstitial-style', 4000); 
             setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500);
         }
 
@@ -307,53 +212,41 @@
             document.getElementById('battle-ordinal').innerText = text;
         }
 
-        function showNextBattle() {
-            battleCount++; updateBattleCounterDisplay();
-            let suffix = ["st","nd","rd"][battleCount-1] || "th";
-            let centerText = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`;
-            showOverlayText(`NEXT to<br><span class="interstitial-huge">${centerText}</span>BATTLE`, 'interstitial-style', 2500); 
-        }
-
-        function toggleTimer() { blurFocus(); if (isCountingDown) stopTimer(); else startTimer(); }
+        function toggleTimer() { blurFocus(); if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } else startTimer(); }
         function startTimer() {
             isCountingDown = true; const overlay = document.getElementById('effect-overlay'), textEl = document.getElementById('effect-text');
-            clearTimeout(effectTimeout); clearTimeout(cleanupTimeout);
             textEl.className = 'timer-style'; overlay.style.display = 'flex';
             let count = timerDuration; textEl.innerText = count;
             timerInterval = setInterval(() => {
                 count--; if (count > 0) textEl.innerText = count;
-                else { clearInterval(timerInterval); isCountingDown = false; textEl.innerText = "0"; textEl.className = 'ef-time-up'; cleanupTimeout = setTimeout(() => { overlay.style.display = 'none'; }, 2000); }
+                else { clearInterval(timerInterval); isCountingDown = false; textEl.innerText = "0"; setTimeout(() => { overlay.style.display = 'none'; }, 2000); }
             }, 1000);
         }
-        function stopTimer() { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; }
 
         function addScore(player, pts, finishType) {
-            blurFocus(); if (isFinished) return; if (isCountingDown) stopTimer(); 
+            blurFocus(); if (isFinished) return;
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(finishType + "<br>FINISH", 'effect-finish-style ' + styles[finishType], 2000);
             document.getElementById(`p${player}-btn-${finishType.toLowerCase()}`).classList.add('active-history');
             if (player === 1) { s1 = Math.min(s1 + pts, winScoreLimit); document.getElementById('score1').innerText = s1; }
             else { s2 = Math.min(s2 + pts, winScoreLimit); document.getElementById('score2').innerText = s2; }
-            if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(player), 2500); }
-            else { setTimeout(showNextBattle, 2500); }
+            if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => {
+                const winLabel = document.getElementById('win-display');
+                winLabel.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name' + player).value}</span><span style="font-size:15vmin;display:block;color:white;">WIN</span>`;
+                winLabel.classList.add('show-win');
+                document.getElementById('score' + player).style.color = "#fff000";
+            }, 2500); }
+            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); showOverlayText(`NEXT to BATTLE`, 'interstitial-style', 2000); }, 2500); }
         }
 
         function undoScore(player) {
-            blurFocus();
-            if (player === 1) { if (s1 > 0) { s1--; document.getElementById('score1').innerText = s1; } }
-            else { if (s2 > 0) { s2--; document.getElementById('score2').innerText = s2; } }
+            if (player === 1) { if (s1 > 0) s1--; document.getElementById('score1').innerText = s1; }
+            else { if (s2 > 0) s2--; document.getElementById('score2').innerText = s2; }
             updateBattleCounterDisplay();
         }
 
-        function finishGame(winnerNum) {
-            isFinished = true; const winLabel = document.getElementById('win-display');
-            winLabel.innerHTML = `<span class="win-name">${document.getElementById('name' + winnerNum).value}</span><span class="win-label">WIN</span>`;
-            winLabel.classList.add('show-win');
-            document.getElementById('score' + winnerNum).style.color = "#fff000";
-        }
-
         function resetGame() {
-            blurFocus(); s1 = 0; s2 = 0; isFinished = false; battleCount = 1; updateBattleCounterDisplay(); stopTimer();
+            s1 = 0; s2 = 0; isFinished = false; battleCount = 1; updateBattleCounterDisplay();
             document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0;
             document.getElementById('score1').style.color = "white"; document.getElementById('score2').style.color = "white";
             document.getElementById('win-display').classList.remove('show-win');
@@ -364,7 +257,6 @@
         window.addEventListener('keydown', (e) => {
             if (document.activeElement.tagName === 'INPUT') return;
             const code = e.keyCode;
-            // ★追加: Backspace(8)でプロモード切り替え
             if (code === 8) { e.preventDefault(); document.body.classList.toggle('pro-mode'); return; }
             if (code === 13) { e.preventDefault(); toggleTimer(); return; }
             if (code === 103 || code === 55) addScore(1, 3, 'XTREME'); 
