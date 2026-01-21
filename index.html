@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.26.3 Ultra Slow VAR</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.27.0 Zoomable VAR</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -22,78 +22,71 @@
             margin: 0; padding: 0; background: black; 
             font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; 
             -webkit-tap-highlight-color: transparent; transition: background-color 0.3s;
+            /* ピンチズーム自作のため、ブラウザの標準ズームを抑制 */
+            touch-action: none;
         }
 
         body.green-mode { background-color: #00ff00 !important; }
-        body.green-mode #camera-bg { display: none; }
         
-        #camera-bg, #replay-video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; transition: transform 0.5s; }
+        /* 映像レイヤーコンテナ */
+        #video-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; }
+        #camera-bg, #replay-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
         #replay-video { z-index: 10; display: none; background: black; }
-        .camera-rotate-180 { transform: rotate(180deg); }
+        
         .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
 
+        /* システムボタン */
         .system-btn { 
             position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
             width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
             font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Orbitron', sans-serif; border-radius: 8px; outline: none; transition: 0.3s;
         }
-        .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); }
+        .system-btn:hover { color: var(--bx-green); }
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
         .btn-mic { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); }
         .btn-mic.active { color: white; background: var(--bx-red); border-color: white; box-shadow: 0 0 10px var(--bx-red); }
+
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); font-size: 18px; }
 
         body.pro-mode .system-btn { display: none !important; }
 
-        #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; }
-        #replay-status { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; }
+        /* リプレイUI */
+        #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
+        #replay-status { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
+        /* HUD基本 */
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
         .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
-        .battle-label { font-size: 20px; font-weight: 700; color: white; text-shadow: 1px 1px 0 black; }
-        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 40%; transition: 0.3s; }
-        .tournament-input { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; }
+        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 40%; transition: 0.3s; pointer-events: none; }
+        .tournament-input { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
 
-        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
         body.pro-mode .player-wrapper { top: 15px; }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
         .name-input { font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
-        .stats-row { display: flex; align-items: flex-start; gap: 10px; }
-        #p1-wrapper .stats-row { flex-direction: row-reverse; }
         .score { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
-        .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
-        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; padding: 0; }
-        .active-history { color: black !important; border-color: white !important; text-shadow: none !important; }
-        .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
-        .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
-        .btn-over.active-history { background: var(--bx-orange) !important; box-shadow: 0 0 15px var(--bx-orange); }
-        .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
+        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
-        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: #fff000; text-shadow: 5px 5px 0px #000, 0 0 50px #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
-        .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
+        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron'; font-weight: 900; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; }
+        .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; }
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
-        #effect-text { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; transition: opacity 0.5s ease-out; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .fade-out { opacity: 0 !important; }
-        .timer-style { font-size: 40vmin !important; color: white; text-shadow: 0 0 30px rgba(255,255,255,0.8), 5px 5px 0 black; }
-        .ef-time-up { color: var(--bx-red) !important; text-shadow: 0 0 40px var(--bx-red), 4px 4px 0px black !important; font-size: 40vmin !important; }
-        .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0 !important; transform: scale(1.1); white-space: pre-wrap; }
-        .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 12vmin !important; line-height: 1.1 !important; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
-        .interstitial-huge { font-size: 25vmin; display: block; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 20px var(--bx-yellow), 4px 4px 0 black; line-height: 0.9; }
     </style>
 </head>
 <body>
-    <video id="camera-bg" autoplay playsinline muted></video>
-    <video id="replay-video" playsinline muted preload="auto"></video>
+    <div id="video-container">
+        <video id="camera-bg" autoplay playsinline muted></video>
+        <video id="replay-video" playsinline muted preload="auto"></video>
+    </div>
+    
     <div class="scan-line"></div>
     <div id="effect-overlay"><div id="effect-text"></div></div>
-    
     <div id="replay-indicator">● REPLAY</div>
     <div id="replay-status">▶ 1.0</div>
     
@@ -106,26 +99,26 @@
 
         <div id="p1-wrapper" class="player-wrapper">
             <input type="text" id="name1" class="name-input" value="BLADER 1">
-            <div class="stats-row">
+            <div style="display:flex; align-items:flex-start; gap:10px; flex-direction:row-reverse;">
                 <div id="score1" class="score">0</div>
-                <div class="buttons-col">
-                    <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(1, 3, 'XTREME')">X</div>
-                    <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="addScore(1, 2, 'BURST')">B</div>
-                    <div id="p1-btn-over" class="hud-btn btn-over" onclick="addScore(1, 2, 'OVER')">O</div>
-                    <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="addScore(1, 1, 'SPIN')">S</div>
+                <div style="display:flex; flex-direction:column; gap:6px; margin-top:5px;">
+                    <div class="hud-btn" onclick="addScore(1, 3, 'XTREME')" style="border-color:var(--bx-red); color:var(--bx-red);">X</div>
+                    <div class="hud-btn" onclick="addScore(1, 2, 'BURST')" style="border-color:var(--bx-red-orange); color:var(--bx-red-orange);">B</div>
+                    <div class="hud-btn" onclick="addScore(1, 2, 'OVER')" style="border-color:var(--bx-orange); color:var(--bx-orange);">O</div>
+                    <div class="hud-btn" onclick="addScore(1, 1, 'SPIN')" style="border-color:var(--bx-blue); color:var(--bx-blue);">S</div>
                 </div>
             </div>
         </div>
 
         <div id="p2-wrapper" class="player-wrapper">
             <input type="text" id="name2" class="name-input" value="BLADER 2">
-            <div class="stats-row">
+            <div style="display:flex; align-items:flex-start; gap:10px;">
                 <div id="score2" class="score">0</div>
-                <div class="buttons-col">
-                    <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(2, 3, 'XTREME')">X</div>
-                    <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="addScore(2, 2, 'BURST')">B</div>
-                    <div id="p2-btn-over" class="hud-btn btn-over" onclick="addScore(2, 2, 'OVER')">O</div>
-                    <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="addScore(2, 1, 'SPIN')">S</div>
+                <div style="display:flex; flex-direction:column; gap:6px; margin-top:5px;">
+                    <div class="hud-btn" onclick="addScore(2, 3, 'XTREME')" style="border-color:var(--bx-red); color:var(--bx-red);">X</div>
+                    <div class="hud-btn" onclick="addScore(2, 2, 'BURST')" style="border-color:var(--bx-red-orange); color:var(--bx-red-orange);">B</div>
+                    <div class="hud-btn" onclick="addScore(2, 2, 'OVER')" style="border-color:var(--bx-orange); color:var(--bx-orange);">O</div>
+                    <div class="hud-btn" onclick="addScore(2, 1, 'SPIN')" style="border-color:var(--bx-blue); color:var(--bx-blue);">S</div>
                 </div>
             </div>
         </div>
@@ -146,7 +139,16 @@
         let isFinished = false, isCountingDown = false, timerInterval = null;
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
-        let replayBlobUrl = null;
+
+        // ★ズーム・移動状態変数
+        let currentScale = 1;
+        let currentTranslateX = 0;
+        let currentTranslateY = 0;
+        let currentRotation = 0;
+        let startDist = 0;
+        let initialScale = 1;
+        let startX = 0, startY = 0;
+        let initialTX = 0, initialTY = 0;
 
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
@@ -154,12 +156,52 @@
         const replayStatus = document.getElementById('replay-status');
         const hud = document.getElementById('main-hud');
 
-        function getMimeType() {
-            const types = ['video/mp4; codecs=avc1', 'video/mp4'];
-            for (let t of types) if (MediaRecorder.isTypeSupported(t)) return t;
-            return '';
+        // ★ズーム反映関数
+        function applyTransforms() {
+            const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+            camVideo.style.transform = transformStr;
+            replayVideo.style.transform = transformStr;
         }
 
+        // ★ピンチ・ドラッグ操作イベント
+        document.body.addEventListener('touchstart', e => {
+            if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
+
+            if (e.touches.length === 2) {
+                // ピンチ開始
+                startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                initialScale = currentScale;
+            } else if (e.touches.length === 1) {
+                // ドラッグ開始
+                startX = e.touches[0].pageX;
+                startY = e.touches[0].pageY;
+                initialTX = currentTranslateX;
+                initialTY = currentTranslateY;
+            }
+        }, { passive: false });
+
+        document.body.addEventListener('touchmove', e => {
+            if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
+            e.preventDefault();
+
+            if (e.touches.length === 2) {
+                // ピンチ中
+                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                currentScale = Math.min(Math.max(initialScale * (dist / startDist), 1), 5);
+                applyTransforms();
+            } else if (e.touches.length === 1) {
+                // ドラッグ中 (ズームされている時のみ)
+                if (currentScale > 1) {
+                    const deltaX = (e.touches[0].pageX - startX) / currentScale;
+                    const deltaY = (e.touches[0].pageY - startY) / currentScale;
+                    currentTranslateX = initialTX + deltaX;
+                    currentTranslateY = initialTY + deltaY;
+                    applyTransforms();
+                }
+            }
+        }, { passive: false });
+
+        // カメラ・録画初期化
         async function initMedia(withMic = false) {
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
             try {
@@ -175,133 +217,67 @@
 
         function startBuffering(stream) {
             if (mediaRecorder) try { mediaRecorder.stop(); } catch(e){}
-            const mime = getMimeType();
+            const mime = MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' : 'video/mp4';
             mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
             mediaRecorder.start(1000); 
-            setInterval(() => {
-                if (!isReplayMode && chunks.length > 20) {
-                    mediaRecorder.stop();
-                    setTimeout(() => { chunks = []; mediaRecorder.start(1000); }, 10);
-                }
-            }, 20000);
-        }
-
-        function updateStatusMsg(msg, duration = 0) {
-            clearTimeout(statusMsgTimeout);
-            replayStatus.innerText = msg;
-            replayStatus.style.display = 'block';
-            if (duration > 0) {
-                statusMsgTimeout = setTimeout(() => {
-                    replayStatus.innerText = replayVideo.paused ? "‖ STOP" : `▶ ${replayVideo.playbackRate.toFixed(2)}`;
-                }, duration);
-            }
+            setInterval(() => { if (!isReplayMode && chunks.length > 20) { mediaRecorder.stop(); setTimeout(() => { chunks = []; mediaRecorder.start(1000); }, 10); } }, 20000);
         }
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
                 isReplayMode = true;
-                if (replayBlobUrl) URL.revokeObjectURL(replayBlobUrl);
-                const blob = new Blob(chunks, { type: getMimeType() });
-                replayBlobUrl = URL.createObjectURL(blob);
-                replayVideo.src = replayBlobUrl;
-                replayVideo.style.display = 'block';
-                replayLabel.style.display = 'block';
-                replayStatus.style.display = 'block';
-                hud.style.display = 'none';
-                updateStatusMsg("▶ 1.0");
+                const blob = new Blob(chunks, { type: 'video/mp4' });
+                replayVideo.src = URL.createObjectURL(blob);
+                replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block'; hud.style.display = 'none';
+                replayStatus.innerText = "▶ 1.0";
                 replayVideo.load();
-                replayVideo.oncanplay = () => {
-                    replayVideo.currentTime = Math.max(0, replayVideo.duration - 15);
-                    replayVideo.playbackRate = 1.0;
-                    replayVideo.play().catch(e => console.log("Play blocked:", e));
-                };
+                replayVideo.oncanplay = () => { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.play(); };
             } else {
-                isReplayMode = false;
-                replayVideo.pause();
-                replayVideo.src = "";
-                replayVideo.style.display = 'none';
-                replayLabel.style.display = 'none';
-                replayStatus.style.display = 'none';
-                hud.style.display = 'block';
+                isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none'; hud.style.display = 'block';
             }
+        }
+
+        // キーボード・ボタン操作
+        function rotateCamera() { blurFocus(); currentRotation = (currentRotation === 0) ? 180 : 0; applyTransforms(); }
+        function addScore(p, pts, t) {
+            if (isFinished || isReplayMode) return;
+            let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
+            showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
+            if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); else s2 = Math.min(s2 + pts, winScoreLimit);
+            document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
+            if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(p), 2500); }
+            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span class="interstitial-huge">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
         }
 
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
-
             if (isReplayMode) {
-                if (key === '5') {
-                    if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
-                    else { replayVideo.pause(); updateStatusMsg("‖ STOP"); }
-                }
-                // ★修正：0.25倍から0.1倍に変更
-                if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
-                if (key === '4') {
-                    replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5);
-                    replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000));
-                }
-                if (key === 'Enter') { 
-                    replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); 
-                    replayVideo.playbackRate = 1.0; 
-                    replayVideo.play().then(() => updateStatusMsg("▶ 1.0"));
-                }
+                if (key === '5') { if (replayVideo.paused) replayVideo.play(); else replayVideo.pause(); replayStatus.innerText = replayVideo.paused ? "‖ STOP" : "▶ 1.0"; }
+                if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); replayStatus.innerText = "▶ 0.1"; }
+                if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play(); }
+                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.play(); }
             } else {
-                if (key === 'Backspace') { e.preventDefault(); document.body.classList.toggle('pro-mode'); }
-                if (key === 'Enter') { e.preventDefault(); toggleTimer(); }
+                if (key === 'Backspace') document.body.classList.toggle('pro-mode');
                 if (key === '/') resetGame();
-                if (key === '7') addScore(1, 3, 'XTREME'); if (key === '4') addScore(1, 2, 'BURST');
-                if (key === '1') addScore(1, 2, 'OVER'); if (key === '0') addScore(1, 1, 'SPIN');
-                if (key === '9') addScore(2, 3, 'XTREME'); if (key === '6') addScore(2, 2, 'BURST');
-                if (key === '3') addScore(2, 2, 'OVER'); if (key === '.') addScore(2, 1, 'SPIN');
+                if (key === '7') addScore(1, 3, 'XTREME'); if (key === '4') addScore(1, 2, 'BURST'); if (key === '1') addScore(1, 2, 'OVER'); if (key === '0') addScore(1, 1, 'SPIN');
+                if (key === '9') addScore(2, 3, 'XTREME'); if (key === '6') addScore(2, 2, 'BURST'); if (key === '3') addScore(2, 2, 'OVER'); if (key === '.') addScore(2, 1, 'SPIN');
                 if (key === '8') { s1 = Math.max(0, s1-1); document.getElementById('score1').innerText = s1; }
                 if (key === '2') { s2 = Math.max(0, s2-1); document.getElementById('score2').innerText = s2; }
             }
         });
 
-        // 演出系
-        function showOverlayText(htmlContent, styleClass, displayTime = 0) {
-            const overlay = document.getElementById('effect-overlay'), textEl = document.getElementById('effect-text');
-            clearTimeout(effectTimeout); clearTimeout(cleanupTimeout);
-            textEl.className = styleClass; textEl.innerHTML = htmlContent;
-            overlay.style.display = 'flex'; textEl.classList.remove('fade-out');
-            if (displayTime > 0) {
-                effectTimeout = setTimeout(() => { textEl.classList.add('fade-out'); cleanupTimeout = setTimeout(() => { overlay.style.display = 'none'; }, 500); }, displayTime);
-            }
-        }
-        function updateBattleCounterDisplay() {
-            let suffix = ["st","nd","rd"][battleCount-1] || "th";
-            let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`;
-            document.getElementById('battle-ordinal').innerText = text;
-        }
-        function addScore(player, pts, type) {
-            if (isFinished || isReplayMode) return;
-            if (isCountingDown) stopTimer();
-            let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
-            showOverlayText(type + "<br>FINISH", 'effect-finish-style ' + styles[type], 2000);
-            document.getElementById(`p${player}-btn-${type.toLowerCase()}`).classList.add('active-history');
-            if (player === 1) { s1 = Math.min(s1 + pts, winScoreLimit); document.getElementById('score1').innerText = s1; }
-            else { s2 = Math.min(s2 + pts, winScoreLimit); document.getElementById('score2').innerText = s2; }
-            if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(player), 2500); }
-            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span class="interstitial-huge">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
-        }
-        function finishGame(p) { const winLabel = document.getElementById('win-display'); winLabel.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name'+p).value}</span><span style="font-size:15vmin;display:block;color:white;">WIN</span>`; winLabel.classList.add('show-win'); document.getElementById('score'+p).style.color = "#fff000"; }
-        function resetGame() { s1 = 0; s2 = 0; battleCount = 1; isFinished = false; stopTimer(); document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; document.getElementById('score1').style.color = "white"; document.getElementById('score2').style.color = "white"; document.getElementById('win-display').classList.remove('show-win'); document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); updateBattleCounterDisplay(); document.getElementById('battle-counter-area').style.opacity = '0'; document.getElementById('tournament-title-area').style.opacity = '0'; showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500); }
-        function toggleTimer() { if (isCountingDown) stopTimer(); else startTimer(); }
-        function startTimer() {
-            isCountingDown = true; showOverlayText("", 'timer-style', 0);
-            let count = timerDuration; document.getElementById('effect-text').innerText = count;
-            timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; document.getElementById('effect-text').className = 'timer-style ef-time-up'; setTimeout(() => { document.getElementById('effect-overlay').style.display = 'none'; }, 2000); } }, 1000);
-        }
-        function stopTimer() { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; }
-        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
-        function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
-        function rotateCamera() { blurFocus(); camVideo.classList.toggle('camera-rotate-180'); replayVideo.classList.toggle('camera-rotate-180'); }
-        function toggleWinPoint() { blurFocus(); winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
-        function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
+        // 基本機能
+        function resetGame() { s1 = 0; s2 = 0; battleCount = 1; isFinished = false; document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; updateBattleCounterDisplay(); showIntro(); }
+        function showOverlayText(h, s, d) { const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); t.className = s; t.innerHTML = h; o.style.display = 'flex'; if (d > 0) setTimeout(() => o.style.display = 'none', d); }
+        function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
+        function finishGame(p) { const w = document.getElementById('win-display'); w.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name'+p).value} WIN</span>`; w.classList.add('show-win'); }
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
+        function toggleWinPoint() { winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
+        function toggleTimerDuration() { timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
+        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
         initMedia();
     </script>
