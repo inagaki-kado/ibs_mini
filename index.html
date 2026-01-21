@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.26.2 Stable VAR</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.26.3 Ultra Slow VAR</title>
     
     <style>
         /* ▼▼▼ フォント設定 ▼▼▼ */
@@ -32,12 +32,12 @@
         .camera-rotate-180 { transform: rotate(180deg); }
         .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
 
-        /* システムボタン */
         .system-btn { 
             position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
             width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
             font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Orbitron', sans-serif; border-radius: 8px; outline: none; transition: 0.3s;
         }
+        .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); }
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); } 
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
@@ -49,11 +49,10 @@
 
         body.pro-mode .system-btn { display: none !important; }
 
-        /* リプレイUI */
         #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; }
-        #replay-status { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); }
+        #replay-status { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* HUD基本配置 */
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
         .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
@@ -61,16 +60,16 @@
         #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 40%; transition: 0.3s; }
         .tournament-input { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 1px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; }
 
-        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
+        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         body.pro-mode .player-wrapper { top: 15px; }
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
         .name-input { font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
         .stats-row { display: flex; align-items: flex-start; gap: 10px; }
         #p1-wrapper .stats-row { flex-direction: row-reverse; }
-        .score { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; min-width: 60px; text-align: center; }
+        .score { font-family: 'DSEG7 Classic', sans-serif; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
-        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; padding: 0; }
+        .hud-btn { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; padding: 0; }
         .active-history { color: black !important; border-color: white !important; text-shadow: none !important; }
         .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
         .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
@@ -169,6 +168,7 @@
                     audio: withMic
                 });
                 camVideo.srcObject = currentStream;
+                camVideo.muted = !withMic;
                 startBuffering(currentStream);
             } catch (err) { console.error(err); }
         }
@@ -178,13 +178,9 @@
             const mime = getMimeType();
             mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-            
-            // ★安定化の鍵：15秒ごとに録画を「区切り」ヘッダーを維持しつつメモリを管理
             mediaRecorder.start(1000); 
             setInterval(() => {
                 if (!isReplayMode && chunks.length > 20) {
-                    // ヘッダー（最初のchunk）を壊さないように、後ろの方だけ残す処理はリスクがあるため
-                    // chunksが溜まりすぎたら一度リセットして再開する方式
                     mediaRecorder.stop();
                     setTimeout(() => { chunks = []; mediaRecorder.start(1000); }, 10);
                 }
@@ -204,31 +200,23 @@
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
-                // リプレイ開始
                 isReplayMode = true;
                 if (replayBlobUrl) URL.revokeObjectURL(replayBlobUrl);
                 const blob = new Blob(chunks, { type: getMimeType() });
                 replayBlobUrl = URL.createObjectURL(blob);
-                
                 replayVideo.src = replayBlobUrl;
                 replayVideo.style.display = 'block';
                 replayLabel.style.display = 'block';
                 replayStatus.style.display = 'block';
                 hud.style.display = 'none';
-                
                 updateStatusMsg("▶ 1.0");
-                
-                replayVideo.load(); // iOS Safariで読み込みを確実にする
+                replayVideo.load();
                 replayVideo.oncanplay = () => {
                     replayVideo.currentTime = Math.max(0, replayVideo.duration - 15);
                     replayVideo.playbackRate = 1.0;
-                    const playPromise = replayVideo.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => console.log("Play blocked:", error));
-                    }
+                    replayVideo.play().catch(e => console.log("Play blocked:", e));
                 };
             } else {
-                // 通常モード復帰
                 isReplayMode = false;
                 replayVideo.pause();
                 replayVideo.src = "";
@@ -239,39 +227,28 @@
             }
         }
 
-        // キーボード操作
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;
-
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
 
             if (isReplayMode) {
-                // 5: 再生/停止トグル (ロジック修正)
                 if (key === '5') {
-                    if (replayVideo.paused) {
-                        replayVideo.playbackRate = 1.0;
-                        replayVideo.play().then(() => updateStatusMsg("▶ 1.0"));
-                    } else {
-                        replayVideo.pause();
-                        updateStatusMsg("‖ STOP");
-                    }
+                    if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
+                    else { replayVideo.pause(); updateStatusMsg("‖ STOP"); }
                 }
-                // 6: 0.25倍速
-                if (key === '6') { replayVideo.playbackRate = 0.25; replayVideo.play(); updateStatusMsg("▶ 0.25"); }
-                // 4: 5秒戻し
+                // ★修正：0.25倍から0.1倍に変更
+                if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
                 if (key === '4') {
                     replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5);
                     replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000));
                 }
-                // Enter: 冒頭(15秒前)
                 if (key === 'Enter') { 
                     replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); 
                     replayVideo.playbackRate = 1.0; 
                     replayVideo.play().then(() => updateStatusMsg("▶ 1.0"));
                 }
             } else {
-                // 通常モードの操作
                 if (key === 'Backspace') { e.preventDefault(); document.body.classList.toggle('pro-mode'); }
                 if (key === 'Enter') { e.preventDefault(); toggleTimer(); }
                 if (key === '/') resetGame();
@@ -284,7 +261,7 @@
             }
         });
 
-        // --- HUD演出系 (Ver.24.1準拠) ---
+        // 演出系
         function showOverlayText(htmlContent, styleClass, displayTime = 0) {
             const overlay = document.getElementById('effect-overlay'), textEl = document.getElementById('effect-text');
             clearTimeout(effectTimeout); clearTimeout(cleanupTimeout);
@@ -313,7 +290,11 @@
         function finishGame(p) { const winLabel = document.getElementById('win-display'); winLabel.innerHTML = `<span style="font-size:15vmin;display:block;">${document.getElementById('name'+p).value}</span><span style="font-size:15vmin;display:block;color:white;">WIN</span>`; winLabel.classList.add('show-win'); document.getElementById('score'+p).style.color = "#fff000"; }
         function resetGame() { s1 = 0; s2 = 0; battleCount = 1; isFinished = false; stopTimer(); document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; document.getElementById('score1').style.color = "white"; document.getElementById('score2').style.color = "white"; document.getElementById('win-display').classList.remove('show-win'); document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); updateBattleCounterDisplay(); document.getElementById('battle-counter-area').style.opacity = '0'; document.getElementById('tournament-title-area').style.opacity = '0'; showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500); }
         function toggleTimer() { if (isCountingDown) stopTimer(); else startTimer(); }
-        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; document.getElementById('effect-text').className = 'timer-style ef-time-up'; setTimeout(() => { document.getElementById('effect-overlay').style.display = 'none'; }, 2000); } }, 1000); }
+        function startTimer() {
+            isCountingDown = true; showOverlayText("", 'timer-style', 0);
+            let count = timerDuration; document.getElementById('effect-text').innerText = count;
+            timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; document.getElementById('effect-text').className = 'timer-style ef-time-up'; setTimeout(() => { document.getElementById('effect-overlay').style.display = 'none'; }, 2000); } }, 1000);
+        }
         function stopTimer() { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; }
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
         function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
