@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.27.4 Layout Fixed</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.27.5 Spacing Fixed</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
@@ -68,10 +68,10 @@
         .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 5px; }
         .score { font-family: 'DSEG7 Classic', sans-serif !important; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         
-        /* 決まり手ボタン（レイアウト修正） */
-        .stats-row { display: flex; align-items: flex-start; gap: 20px; } /* 間隔を広げました */
+        /* 決まり手ボタン（レイアウト修正：間隔を詰める） */
+        .stats-row { display: flex; align-items: flex-start; gap: 20px; }
         #p1-wrapper .stats-row { flex-direction: row-reverse; }
-        .buttons-col { display: flex; flex-direction: column; gap: 15px; margin-top: 5px; } /* 縦の間隔を広げました */
+        .buttons-col { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; } /* ★gapを15pxから5pxに変更 */
         
         .hud-btn { font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
@@ -112,10 +112,9 @@
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
         #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; transition: opacity 0.5s ease-out; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        /* フォントサイズ調整 (Ver.24.1準拠) */
+        /* フォントサイズ調整 */
         .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0; transform: scale(1.1); white-space: pre-wrap; }
         .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
-        /* ★Ready...等のサイズを大きく戻しました */
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
         .interstitial-huge { font-size: 25vmin; display: block; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 20px var(--bx-yellow), 4px 4px 0 black; line-height: 0.9; }
         
@@ -262,13 +261,9 @@
             if (isFinished || isReplayMode) return;
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
-            
-            // 履歴点灯
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
-
             if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); else s2 = Math.min(s2 + pts, winScoreLimit);
             document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
-            
             if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(p), 2500); }
             else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
         }
@@ -278,10 +273,7 @@
             const key = e.key;
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
             if (isReplayMode) {
-                if (key === '5') { 
-                    if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } 
-                    else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } 
-                }
+                if (key === '5') { if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } }
                 if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
                 if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play(); updateStatusMsg("◀ REVERSE", 1000); }
                 if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); updateStatusMsg("▶ 1.0"); }
@@ -299,25 +291,14 @@
         function showOverlayText(h, s, d) { const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); t.className = s; t.innerHTML = h; o.style.display = 'flex'; if (d > 0) setTimeout(() => o.style.display = 'none', d); }
         function showIntro() { document.getElementById('battle-counter-area').style.opacity = '0'; document.getElementById('tournament-title-area').style.opacity = '0'; showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500); }
         function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
-        
-        function finishGame(p) { 
-            const winLabel = document.getElementById('win-display'); 
-            const name = document.getElementById('name' + p).value;
-            winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; 
-            winLabel.classList.add('show-win'); 
-        }
-
+        function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
         function toggleWinPoint() { winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
         function toggleTimerDuration() { timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
+        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
         function toggleBackground() { document.body.classList.toggle('green-mode'); }
         function toggleTimer() { if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } else startTimer(); }
-        function startTimer() {
-            isCountingDown = true; showOverlayText("", 'timer-style', 0);
-            let count = timerDuration; document.getElementById('effect-text').innerText = count;
-            timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000);
-        }
-        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
+        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
 
         initMedia();
     </script>
