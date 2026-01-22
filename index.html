@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.28.0 60fps</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.28.1 Fixed</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
@@ -76,13 +76,11 @@
         .hud-btn { font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
         
-        /* ボタン固有色 */
         .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); }
         .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
 
-        /* 履歴点灯 */
         .active-history { color: black !important; border-color: white !important; text-shadow: none !important; box-shadow: 0 0 15px currentColor; }
         .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
         .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
@@ -225,7 +223,7 @@
                         facingMode: "environment", 
                         width: { ideal: 1920 }, 
                         height: { ideal: 1080 },
-                        frameRate: { ideal: 60 } // ★60fps要求
+                        frameRate: { ideal: 60 }
                     },
                     audio: withMic
                 });
@@ -281,7 +279,6 @@
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;
-            // ★「-」キーでリロード
             if (key === '-') { e.preventDefault(); location.reload(); return; }
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
             if (isReplayMode) {
@@ -291,7 +288,8 @@
                 }
                 if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
                 if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
-                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0"); }
+                // ★修正箇所: 閉じ括弧 ) を追加
+                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
             } else {
                 if (key === 'Backspace') document.body.classList.toggle('pro-mode');
                 if (key === '/') resetGame();
