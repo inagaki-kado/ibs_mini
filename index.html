@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.27.3 Fixed</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.27.4 Layout Fixed</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
@@ -65,11 +65,14 @@
         #p1-wrapper { left: max(20px, calc(var(--safe-left) + 20px)); align-items: flex-start; }
         #p2-wrapper { right: max(20px, calc(var(--safe-right) + 20px)); align-items: flex-end; }
         
-        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
+        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 5px; }
         .score { font-family: 'DSEG7 Classic', sans-serif !important; font-weight: bold; font-style: italic; font-size: 85px; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         
-        /* 決まり手ボタン */
-        .buttons-col { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
+        /* 決まり手ボタン（レイアウト修正） */
+        .stats-row { display: flex; align-items: flex-start; gap: 20px; } /* 間隔を広げました */
+        #p1-wrapper .stats-row { flex-direction: row-reverse; }
+        .buttons-col { display: flex; flex-direction: column; gap: 15px; margin-top: 5px; } /* 縦の間隔を広げました */
+        
         .hud-btn { font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
         
@@ -79,14 +82,14 @@
         .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
         .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
 
-        /* 履歴点灯（重要） */
+        /* 履歴点灯 */
         .active-history { color: black !important; border-color: white !important; text-shadow: none !important; box-shadow: 0 0 15px currentColor; }
         .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
         .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
         .btn-over.active-history { background: var(--bx-orange) !important; box-shadow: 0 0 15px var(--bx-orange); }
         .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
 
-        /* WIN表示 (Ver.24.1仕様復活) */
+        /* WIN表示 */
         #win-display {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
             width: 100%; text-align: center;
@@ -108,8 +111,13 @@
         /* エフェクト・リプレイ */
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
         #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; transition: opacity 0.5s ease-out; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* フォントサイズ調整 (Ver.24.1準拠) */
         .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0; transform: scale(1.1); white-space: pre-wrap; }
         .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
+        /* ★Ready...等のサイズを大きく戻しました */
+        .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
+        .interstitial-huge { font-size: 25vmin; display: block; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 20px var(--bx-yellow), 4px 4px 0 black; line-height: 0.9; }
         
         #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
         #replay-status { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
@@ -177,7 +185,6 @@
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
         
-        // ズーム関連
         let currentScale = 1, currentTranslateX = 0, currentTranslateY = 0, currentRotation = 0;
         let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
 
@@ -256,7 +263,7 @@
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
             
-            // ★履歴点灯機能の復元
+            // 履歴点灯
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
 
             if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); else s2 = Math.min(s2 + pts, winScoreLimit);
@@ -271,22 +278,13 @@
             const key = e.key;
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
             if (isReplayMode) {
-                // ★修正: 再生再開時は強制的に1.0倍速に
                 if (key === '5') { 
-                    if (replayVideo.paused) { 
-                        replayVideo.playbackRate = 1.0; 
-                        replayVideo.play().then(() => {
-                            replayVideo.playbackRate = 1.0; // 念のため再設定
-                            updateStatusMsg("▶ 1.0");
-                        });
-                    } else { 
-                        replayVideo.pause(); 
-                        updateStatusMsg("‖ STOP"); 
-                    } 
+                    if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } 
+                    else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } 
                 }
                 if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
-                if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
-                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
+                if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play(); updateStatusMsg("◀ REVERSE", 1000); }
+                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); updateStatusMsg("▶ 1.0"); }
             } else {
                 if (key === 'Backspace') document.body.classList.toggle('pro-mode');
                 if (key === '/') resetGame();
@@ -302,7 +300,6 @@
         function showIntro() { document.getElementById('battle-counter-area').style.opacity = '0'; document.getElementById('tournament-title-area').style.opacity = '0'; showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500); }
         function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
         
-        // ★修正: WIN演出のHTML構造をVer.24.1準拠に復元
         function finishGame(p) { 
             const winLabel = document.getElementById('win-display'); 
             const name = document.getElementById('name' + p).value;
@@ -313,10 +310,14 @@
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
         function toggleWinPoint() { winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
         function toggleTimerDuration() { timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
-        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
         function toggleBackground() { document.body.classList.toggle('green-mode'); }
         function toggleTimer() { if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } else startTimer(); }
-        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
+        function startTimer() {
+            isCountingDown = true; showOverlayText("", 'timer-style', 0);
+            let count = timerDuration; document.getElementById('effect-text').innerText = count;
+            timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000);
+        }
+        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
         initMedia();
     </script>
