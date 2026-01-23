@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.28.1 Fixed</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.28.2 UI Fixed</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
 
@@ -115,8 +115,23 @@
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
         .interstitial-huge { font-size: 25vmin; display: block; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 20px var(--bx-yellow), 4px 4px 0 black; line-height: 0.9; }
         
-        #replay-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
-        #replay-status { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
+        /* ★配置修正：リプレイインジケーターを左上に */
+        #replay-indicator { 
+            position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); 
+            z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; 
+            color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); 
+            font-weight: 900; font-style: italic; display: none; 
+            letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; 
+        }
+        /* ★配置修正：再生ステータスを右上に */
+        #replay-status { 
+            position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); 
+            z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; 
+            font-weight: 900; background: rgba(0, 0, 0, 0.7); 
+            padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); 
+            color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); 
+            letter-spacing: 2px; pointer-events: none; 
+        }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
@@ -288,7 +303,6 @@
                 }
                 if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
                 if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
-                // ★修正箇所: 閉じ括弧 ) を追加
                 if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
             } else {
                 if (key === 'Backspace') document.body.classList.toggle('pro-mode');
