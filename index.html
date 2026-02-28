@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.28.6 Memory Flush</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.28.6 Memory Flush (LINK EDITION)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <style>
         @font-face { font-family: 'DSEG7 Classic'; src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
@@ -117,6 +118,18 @@
         #replay-indicator { position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
         #replay-status { position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* ★追加：リンクコード表示UI */
+        #link-code-display {
+            position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 90;
+            font-family: 'Orbitron', sans-serif; font-size: 14px; color: var(--bx-blue);
+            text-shadow: 0 0 10px var(--bx-blue); font-weight: 900; background: rgba(0,0,0,0.6);
+            padding: 5px 15px; border-radius: 20px; border: 1px solid var(--bx-blue);
+            display: flex; align-items: center; gap: 5px; transition: 0.3s;
+        }
+        body.pro-mode #link-code-display { opacity: 0; pointer-events: none; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
+        .status-dot.connected { background-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
     </style>
 </head>
 <body>
@@ -130,6 +143,11 @@
     <div id="replay-indicator">● REPLAY</div>
     <div id="replay-status">▶ 1.0</div>
     
+    <div id="link-code-display">
+        <div class="status-dot" id="link-dot"></div>
+        <span id="link-text">CONNECTING...</span>
+    </div>
+
     <div id="main-hud">
         <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
         <div id="tournament-title-area">
@@ -305,15 +323,10 @@
             updateBattleCounterDisplay(); document.getElementById('win-display').classList.remove('show-win'); 
             document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); 
             
-            // ★追加：リプレイメモリ（動画データ）を強制リセット
             if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") {
                 try { mediaRecorder.stop(); } catch(e){}
-                setTimeout(() => { 
-                    chunks = []; 
-                    try { mediaRecorder.start(1000); } catch(e){} 
-                }, 50);
+                setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50);
             }
-            
             showIntro(); 
         }
 
@@ -330,6 +343,44 @@
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
         initMedia();
+
+        // ==========================================
+        // ★追加：BEY-ROULETTE LINK SYSTEM (PeerJS)
+        // ==========================================
+        const linkCode = Math.floor(1000 + Math.random() * 9000); // 4桁のランダムコードを生成
+        const peerId = 'itabashi-link-' + linkCode;
+        const peer = new Peer(peerId);
+        
+        peer.on('open', (id) => {
+            document.getElementById('link-text').innerText = "LINK CODE: " + linkCode;
+            document.getElementById('link-dot').classList.remove('connected');
+        });
+
+        peer.on('connection', (conn) => {
+            // 接続されたら緑のランプを点灯
+            document.getElementById('link-dot').classList.add('connected');
+            
+            conn.on('data', (data) => {
+                if (data.type === 'SET_MATCH') {
+                    // 名前と大会名を受信してセット
+                    document.getElementById('name1').value = data.p1;
+                    document.getElementById('name2').value = data.p2;
+                    
+                    if (data.tName) {
+                        document.getElementById('tournament-name-1').value = data.tName;
+                        localStorage.setItem('tbh_t1', data.tName);
+                    }
+
+                    // 画面全体に「BLADERS SET!」の演出を出して、スコアをリセット
+                    showOverlayText("<span style='color:var(--bx-blue)'>BLADERS SET!</span>", 'interstitial-style', 2500);
+                    resetGame(); // ※名前が変わったので、0-0に戻して「Ready...」演出も流す
+                }
+            });
+            
+            conn.on('close', () => {
+                document.getElementById('link-dot').classList.remove('connected');
+            });
+        });
     </script>
 </body>
 </html>
