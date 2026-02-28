@@ -62,7 +62,8 @@
         .battle-label { font-size: 20px; font-weight: 900; color: white; text-shadow: 1px 1px 0 black; }
         
         #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 60%; transition: 0.3s; pointer-events: none; }
-        .tournament-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 16px; font-weight: 700; font-style: italic; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 2px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
+        /* 大会名1行のみに変更 */
+        .tournament-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 18px; font-weight: 700; font-style: italic; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 2px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
 
         .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
         body.pro-mode .player-wrapper { top: 15px; }
@@ -150,8 +151,7 @@
     <div id="main-hud">
         <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
         <div id="tournament-title-area">
-            <input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI">
-            <input type="text" id="tournament-name-2" class="tournament-input" value="BEY BATTLE">
+            <input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE">
         </div>
 
         <div id="p1-wrapper" class="player-wrapper">
@@ -205,12 +205,10 @@
         const replayStatus = document.getElementById('replay-status');
         const hud = document.getElementById('main-hud');
 
+        // ★ 大会名2行目を削除し、1行目のみ処理
         const tName1 = document.getElementById('tournament-name-1');
-        const tName2 = document.getElementById('tournament-name-2');
         if (localStorage.getItem('tbh_t1')) tName1.value = localStorage.getItem('tbh_t1');
-        if (localStorage.getItem('tbh_t2')) tName2.value = localStorage.getItem('tbh_t2');
         tName1.addEventListener('input', () => localStorage.setItem('tbh_t1', tName1.value));
-        tName2.addEventListener('input', () => localStorage.setItem('tbh_t2', tName2.value));
 
         function applyTransforms() {
             const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
@@ -309,16 +307,13 @@
                 if (key === 't' || key === 'T') toggleTimer();
                 if (key === 'r' || key === 'R' || key === '/') resetGame();
 
-                // ★追加：テンキー「5」で左右のプレイヤー情報を入れ替え
                 if (key === '5') {
-                    // 名前の入れ替え
                     const n1 = document.getElementById('name1');
                     const n2 = document.getElementById('name2');
                     const tempName = n1.value;
                     n1.value = n2.value;
                     n2.value = tempName;
                     
-                    // スコアの入れ替え
                     const tempScore = s1;
                     s1 = s2;
                     s2 = tempScore;
@@ -333,8 +328,8 @@
             }
         });
 
-        // ★変更：quietパラメータを追加し、iPadから受信した時は派手な演出をスキップする
-        function resetGame(quiet = false) { 
+        // ★ 完全なサイレントリセットに変更
+        function resetGame() { 
             blurFocus(); s1 = 0; s2 = 0; battleCount = 1; isFinished = false; 
             document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; 
             updateBattleCounterDisplay(); document.getElementById('win-display').classList.remove('show-win'); 
@@ -344,11 +339,10 @@
                 try { mediaRecorder.stop(); } catch(e){}
                 setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50);
             }
-            if (!quiet) showIntro(); 
+            // 派手な演出（Ready...）を削除しました
         }
 
         function showOverlayText(h, s, d) { const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); t.className = s; t.innerHTML = h; o.style.display = 'flex'; if (d > 0) setTimeout(() => o.style.display = 'none', d); }
-        function showIntro() { document.getElementById('battle-counter-area').style.opacity = '0'; document.getElementById('tournament-title-area').style.opacity = '0'; showOverlayText(`<span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-1').value}</span><br><span style="color:var(--bx-yellow)">${document.getElementById('tournament-name-2').value}</span><br><br><span style="color:var(--bx-red)">Ready......</span>`, 'interstitial-style', 4000); setTimeout(() => { document.getElementById('battle-counter-area').style.opacity = '1'; document.getElementById('tournament-title-area').style.opacity = '1'; }, 4500); }
         function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
         function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
@@ -383,9 +377,8 @@
                         document.getElementById('tournament-name-1').value = data.tName;
                         localStorage.setItem('tbh_t1', data.tName);
                     }
-
-                    // ★変更：演出なしのサイレントリセットを実行
-                    resetGame(true); 
+                    
+                    resetGame(); 
                 }
             });
             
