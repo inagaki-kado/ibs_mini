@@ -351,49 +351,65 @@
 
         initMedia();
 
+        // ★自動再接続・リセット機能の強化
         const linkCode = Math.floor(1000 + Math.random() * 9000);
         const peerId = 'itabashi-link-' + linkCode;
-        const peer = new Peer(peerId);
+        let peer = new Peer(peerId);
+        let activeConn = null;
         
-        peer.on('open', (id) => {
-            document.getElementById('link-text').innerText = "LINK CODE: " + linkCode;
-            document.getElementById('link-dot').classList.remove('connected');
-        });
-
-        peer.on('connection', (conn) => {
-            document.getElementById('link-dot').classList.add('connected');
-            
-            conn.on('data', (data) => {
-                if (data.type === 'SET_MATCH') {
-                    document.getElementById('name1').value = data.p1;
-                    document.getElementById('name2').value = data.p2;
-                    
-                    if (data.tName) {
-                        document.getElementById('tournament-name-1').value = data.tName;
-                        localStorage.setItem('tbh_t1', data.tName);
-                    }
-
-                    // ★変更：RANK表示に対応
-                    if (data.p1Stats) {
-                        document.getElementById('p1-stats').innerHTML = `RANK:${data.p1Stats.rank} | BP:${data.p1Stats.power} | WR:${data.p1Stats.rate}`;
-                    } else {
-                        document.getElementById('p1-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
-                    }
-
-                    if (data.p2Stats) {
-                        document.getElementById('p2-stats').innerHTML = `RANK:${data.p2Stats.rank} | BP:${data.p2Stats.power} | WR:${data.p2Stats.rate}`;
-                    } else {
-                        document.getElementById('p2-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
-                    }
-                    
-                    resetGame(); 
-                }
-            });
-            
-            conn.on('close', () => {
+        function initPeer() {
+            peer.on('open', (id) => {
+                document.getElementById('link-text').innerText = "LINK CODE: " + linkCode;
                 document.getElementById('link-dot').classList.remove('connected');
             });
-        });
+
+            peer.on('connection', (conn) => {
+                if (activeConn && activeConn.open) {
+                    activeConn.close();
+                }
+                activeConn = conn;
+                document.getElementById('link-dot').classList.add('connected');
+                
+                conn.on('data', (data) => {
+                    if (data.type === 'SET_MATCH') {
+                        document.getElementById('name1').value = data.p1;
+                        document.getElementById('name2').value = data.p2;
+                        
+                        if (data.tName) {
+                            document.getElementById('tournament-name-1').value = data.tName;
+                            localStorage.setItem('tbh_t1', data.tName);
+                        }
+
+                        if (data.p1Stats) {
+                            document.getElementById('p1-stats').innerHTML = `RANK:${data.p1Stats.rank} | BP:${data.p1Stats.power} | WR:${data.p1Stats.rate}`;
+                        } else {
+                            document.getElementById('p1-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
+                        }
+
+                        if (data.p2Stats) {
+                            document.getElementById('p2-stats').innerHTML = `RANK:${data.p2Stats.rank} | BP:${data.p2Stats.power} | WR:${data.p2Stats.rate}`;
+                        } else {
+                            document.getElementById('p2-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
+                        }
+                        
+                        resetGame(); 
+                    }
+                });
+                
+                conn.on('close', () => {
+                    if (activeConn === conn) {
+                        document.getElementById('link-dot').classList.remove('connected');
+                        activeConn = null;
+                    }
+                });
+            });
+
+            peer.on('disconnected', () => {
+                document.getElementById('link-dot').classList.remove('connected');
+                peer.reconnect();
+            });
+        }
+        initPeer();
     </script>
 </body>
 </html>
