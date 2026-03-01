@@ -69,7 +69,6 @@
         
         .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: transparent; border: none; border-bottom: 2px solid var(--bx-green); width: auto; min-width: 100px; max-width: 250px; field-sizing: content; outline: none; margin-bottom: 2px; }
         
-        /* ★追加：ステータス表示用のスタイル */
         .player-stats {
             font-family: 'Orbitron', sans-serif !important;
             font-size: 12px;
@@ -155,7 +154,7 @@
 
         <div id="p1-wrapper" class="player-wrapper">
             <input type="text" id="name1" class="name-input" value="BLADER 1">
-            <div id="p1-stats" class="player-stats">LV:-- | BP:---- | WR:--%</div>
+            <div id="p1-stats" class="player-stats">RANK:-- | BP:---- | WR:--%</div>
             <div class="stats-row">
                 <div id="score1" class="score">0</div>
                 <div class="buttons-col">
@@ -169,7 +168,7 @@
 
         <div id="p2-wrapper" class="player-wrapper">
             <input type="text" id="name2" class="name-input" value="BLADER 2">
-            <div id="p2-stats" class="player-stats">LV:-- | BP:---- | WR:--%</div>
+            <div id="p2-stats" class="player-stats">RANK:-- | BP:---- | WR:--%</div>
             <div class="stats-row">
                 <div id="score2" class="score">0</div>
                 <div class="buttons-col">
@@ -308,7 +307,6 @@
                 if (key === 'r' || key === 'R' || key === '/') resetGame();
 
                 if (key === '5') {
-                    // 名前とスコアの入れ替え
                     const n1 = document.getElementById('name1');
                     const n2 = document.getElementById('name2');
                     const tempName = n1.value; n1.value = n2.value; n2.value = tempName;
@@ -316,12 +314,9 @@
                     const tempScore = s1; s1 = s2; s2 = tempScore;
                     document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
 
-                    // ★追加：ステータスの入れ替え
                     const st1 = document.getElementById('p1-stats');
                     const st2 = document.getElementById('p2-stats');
-                    const tempStats = st1.innerHTML;
-                    st1.innerHTML = st2.innerHTML;
-                    st2.innerHTML = tempStats;
+                    const tempStats = st1.innerHTML; st1.innerHTML = st2.innerHTML; st2.innerHTML = tempStats;
                 }
 
                 if (key === '7') addScore(1, 3, 'XTREME'); if (key === '4') addScore(1, 2, 'BURST'); if (key === '1') addScore(1, 2, 'OVER'); if (key === '0') addScore(1, 1, 'SPIN');
@@ -378,17 +373,17 @@
                         localStorage.setItem('tbh_t1', data.tName);
                     }
 
-                    // ★追加：受信したステータスデータを反映
+                    // ★変更：RANK表示に対応
                     if (data.p1Stats) {
-                        document.getElementById('p1-stats').innerHTML = `LV:${data.p1Stats.level} | BP:${data.p1Stats.power} | WR:${data.p1Stats.rate}`;
+                        document.getElementById('p1-stats').innerHTML = `RANK:${data.p1Stats.rank} | BP:${data.p1Stats.power} | WR:${data.p1Stats.rate}`;
                     } else {
-                        document.getElementById('p1-stats').innerHTML = `LV:-- | BP:---- | WR:--%`;
+                        document.getElementById('p1-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
                     }
 
                     if (data.p2Stats) {
-                        document.getElementById('p2-stats').innerHTML = `LV:${data.p2Stats.level} | BP:${data.p2Stats.power} | WR:${data.p2Stats.rate}`;
+                        document.getElementById('p2-stats').innerHTML = `RANK:${data.p2Stats.rank} | BP:${data.p2Stats.power} | WR:${data.p2Stats.rate}`;
                     } else {
-                        document.getElementById('p2-stats').innerHTML = `LV:-- | BP:---- | WR:--%`;
+                        document.getElementById('p2-stats').innerHTML = `RANK:-- | BP:---- | WR:--%`;
                     }
                     
                     resetGame(); 
