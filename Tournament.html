@@ -110,7 +110,7 @@
               <thead class="sticky top-0 bg-[#111827] z-10">
                 <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
                   <th class="p-3 text-sm font-sf">NAME / MEMO</th>
-                  <th class="p-3 text-sm text-center font-sf w-24">LOTTERY</th>
+                  <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
                   <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                   <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                 </tr>
@@ -493,17 +493,19 @@
             if (isSetupSwapMode) {
                 let isActive = setupSwapPending === p.id;
                 let activeClass = isActive ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-cyber-dark text-yellow-400 border-yellow-400 hover:bg-yellow-400/20';
-                lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors ${activeClass}">${blockMap[p.color]}-${p.position + 1}</button>`;
+                // ★追加：改行防止 (whitespace-nowrap)
+                lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${blockMap[p.color]}-${p.position + 1}</button>`;
             } else {
-                lotteryHTML = `<button onclick="reLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors">${blockMap[p.color]}-${p.position + 1} 🔄</button>`;
+                // ★追加：改行防止 (whitespace-nowrap)
+                lotteryHTML = `<button onclick="reLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${blockMap[p.color]}-${p.position + 1} 🔄</button>`;
             }
         } else {
-            // ★変更：抽選ボタンもサイコロアイコンのみに変更
             lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
         }
 
         const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        tr.innerHTML = `<td class="p-3 font-bold text-cyber-text">${p.name} ${memoBadge}</td><td class="p-3 text-center">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        // ★追加：LOTTERYのセルに改行防止 (whitespace-nowrap) を付与
+        tr.innerHTML = `<td class="p-3 font-bold text-cyber-text">${p.name} ${memoBadge}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
     }

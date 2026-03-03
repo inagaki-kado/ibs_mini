@@ -65,12 +65,12 @@
       <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-pink rounded-lg min-h-0">
         <div class="p-4 border-b border-cyber-table-border shrink-0 flex justify-between items-center bg-[#1a0b14]">
           <h3 class="font-sf font-bold text-cyber-pink text-lg">2. FORM TEAMS</h3>
-          <button onclick="formTeam()" id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed">FORM TAG 🤝</button>
+          <button ontouchend="handleFormTeam(event)" onclick="handleFormTeam(event)" id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed">FORM TAG 🤝</button>
         </div>
         <div class="overflow-y-auto p-4 flex-1 space-y-2" id="teamList"></div>
         <div class="p-4 border-t border-cyber-table-border shrink-0 text-center">
           <input type="text" id="tournamentNameInput" placeholder="大会名 (例: タッグ杯)" class="w-full mb-3 p-2 bg-cyber-bg border border-cyber-pink rounded text-center font-bold text-cyber-text outline-none font-sf">
-          <button onclick="startTournament()" id="btn-start-qual" class="w-full bg-cyber-pink text-white px-6 py-4 rounded font-bold shadow-[0_0_15px_#ec4899] font-sf active:scale-95 text-xl hidden">▶ START QUALIFIERS</button>
+          <button ontouchend="handleStartQual(event)" onclick="handleStartQual(event)" id="btn-start-qual" class="w-full bg-cyber-pink text-white px-6 py-4 rounded font-bold shadow-[0_0_15px_#ec4899] font-sf active:scale-95 text-xl hidden">▶ START QUALIFIERS</button>
           <p id="start-msg" class="text-xs text-cyber-pink font-bold mt-2">※決勝(8枠)を行うため、最低4チーム(推奨8以上)が必要です</p>
         </div>
       </div>
@@ -121,9 +121,9 @@
     </div>
 
     <div id="view-finals" class="hidden h-full flex flex-col max-w-6xl mx-auto w-full">
-      <div class="text-center mb-4 shrink-0">
-        <h2 class="text-3xl font-sf text-yellow-400 mb-2 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
-        <button onclick="showResults()" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <h2 class="text-2xl md:text-3xl font-sf text-yellow-400 drop-shadow-[0_0_10px_#facc15] border-l-4 border-yellow-400 pl-4">FINAL STAGE</h2>
+        <button onclick="showResults()" class="bg-cyber-pink text-white px-6 md:px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95">SHOW RESULTS 🏆</button>
       </div>
       <div class="flex-1 overflow-y-auto pb-8 space-y-6 pr-2">
         <div id="qf-container" class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg">
@@ -176,18 +176,41 @@
     </div>
   </div>
 
-  <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark text-center p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl">
-      <h2 class="text-2xl text-cyber-pink font-sf mb-8" id="resultLeagueName"></h2>
-      <h1 class="text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
-      <p class="text-4xl font-bold mb-10 text-white" id="res1"></p>
-      <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-      <p class="text-2xl font-bold mb-8 text-white" id="res2"></p>
-      <div class="flex justify-around mt-4 border-t border-cyber-table-border pt-6">
-        <div><h3 class="text-xl text-orange-400 font-sf mb-2">🥉 3RD PLACE</h3><p class="text-xl font-bold text-white" id="res3"></p></div>
-        <div><h3 class="text-xl text-cyber-text font-sf mb-2 opacity-70">4TH PLACE</h3><p class="text-xl font-bold text-gray-400" id="res4"></p></div>
+  <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-blue neon-blue flex flex-col h-[70vh]">
+      <h2 class="text-2xl font-sf text-cyber-blue mb-2">📋 MATCH DATA EXPORT</h2>
+      <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
+        下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
+        （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
+      </p>
+      <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
+      <div class="flex gap-4">
+        <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+        <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
       </div>
-      <button onclick="closeResults()" class="mt-10 bg-cyber-bg border border-cyber-pink text-cyber-pink px-8 py-2 rounded-full font-bold font-sf">CLOSE</button>
+    </div>
+  </div>
+
+  <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
+      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
+      <h2 class="text-xl md:text-2xl text-cyber-pink font-sf mb-4 md:mb-8" id="resultLeagueName"></h2>
+      
+      <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
+      <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
+      
+      <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+      <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
+      
+      <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
+        <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
+        <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
+      </div>
+      
+      <div class="flex justify-center gap-4 mt-6 md:mt-10">
+        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button onclick="closeResults()" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
+      </div>
     </div>
   </div>
 
@@ -293,6 +316,28 @@
       if(participants.length >= 24) return alert("最大24名です。");
       let name = prompt("参加者名を入力"); if(name) participants.push({ id: pidCounter++, name, memo: '', rank: '--', power: '----', rate: '--%', teamId: null }); renderParticipants();
     }
+
+    // ★ iPadタップ抜け対策 (ontouchend)
+    let formTeamDebounce = false;
+    function handleFormTeam(e) {
+        if (e && e.type === 'touchend') e.preventDefault();
+        if (formTeamDebounce) return;
+        formTeamDebounce = true;
+        setTimeout(() => { formTeamDebounce = false; }, 500);
+        if (document.activeElement) document.activeElement.blur();
+        formTeam();
+    }
+
+    let startQualDebounce = false;
+    function handleStartQual(e) {
+        if (e && e.type === 'touchend') e.preventDefault();
+        if (startQualDebounce) return;
+        startQualDebounce = true;
+        setTimeout(() => { startQualDebounce = false; }, 500);
+        if (document.activeElement) document.activeElement.blur();
+        startTournament();
+    }
+
     function renderParticipants() {
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
       participants.forEach(p => {
@@ -305,15 +350,15 @@
           else { if (selectedForTeam.length >= 2) selectedForTeam.shift(); selectedForTeam.push(p.id); }
           renderParticipants();
         };
-        // ★変更：メモバッジの表示
         const memoBadge = p.memo ? `<span class="memo-badge">${p.memo}</span>` : '';
-        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text">${p.name} ${memoBadge} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
+        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap">${p.name} ${memoBadge} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
         tbody.appendChild(tr);
       });
       const btn = document.getElementById('btn-form-team');
       if (selectedForTeam.length === 2) { btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink'); btn.classList.replace('text-cyber-text', 'text-white'); btn.classList.replace('opacity-50', 'opacity-100'); btn.classList.replace('cursor-not-allowed', 'cursor-pointer'); } 
       else { btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark'); btn.classList.replace('text-white', 'text-cyber-text'); btn.classList.replace('opacity-100', 'opacity-50'); btn.classList.replace('cursor-pointer', 'cursor-not-allowed'); }
     }
+    
     function formTeam() {
       if(selectedForTeam.length !== 2) return;
       const p1 = participants.find(p => p.id === selectedForTeam[0]); const p2 = participants.find(p => p.id === selectedForTeam[1]);
@@ -324,17 +369,20 @@
       
       selectedForTeam = []; renderParticipants(); renderTeams();
     }
+    
     function unformTeam(tId) {
       const team = teams.find(t => t.id === tId); team.p1.teamId = null; team.p2.teamId = null;
       teams = teams.filter(t => t.id !== tId); renderParticipants(); renderTeams();
     }
+    
     function renderTeams() {
       const list = document.getElementById('teamList'); list.innerHTML = '';
       teams.forEach(t => { 
-        const checkBtnColor = t.bayChecked ? 'bg-cyber-green text-cyber-bg' : 'bg-transparent text-cyber-pink border border-cyber-pink';
+        // ★変更：カメラボタンをアイコン化
+        const checkBtnColor = t.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-pink border border-cyber-pink';
         list.innerHTML += `<div class="bg-[#0d131f] border border-cyber-pink p-3 rounded flex justify-between items-center"><span class="font-bold text-cyber-text text-sm">${t.name}</span>
         <div class="flex gap-2">
-          <button onclick="openTeamCamera(${t.id})" class="${checkBtnColor} px-2 py-1 rounded text-[10px] font-sf transition-colors">📷 ${t.bayChecked ? '済' : '撮影'}</button>
+          <button onclick="openTeamCamera(${t.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all shadow-sm" title="ベイチェック">📷</button>
           <button onclick="unformTeam(${t.id})" class="text-cyber-pink text-[10px] border border-cyber-pink px-2 py-1 rounded">解散</button>
         </div></div>`; 
       });
@@ -356,7 +404,6 @@
       }; img.src = event.target.result; }; reader.readAsDataURL(file);
     });
     function closeCameraModal() { document.getElementById('cameraModal').classList.add('hidden'); document.getElementById('cameraModal').classList.remove('flex'); document.getElementById('cameraInput').value = ''; }
-
 
     // --- 2. 予選進行 ---
     function createMatchObj(id, t1, t2) {
@@ -544,7 +591,7 @@
     }
     function changeTie(tid, v) { const t = teams.find(x=>x.id===tid); if(t) { t.tieBreaker=(t.tieBreaker||0)+v; renderRanking(); } }
 
-    // --- 4. スコア入力 ---
+    // --- 4. スコア入力 (勝ち抜き戦対応 ＆ 自動セット) ---
     function openScoreModal(rId, mId) {
       currentScoreRound = rId;
       const dataArr = rId === 'r1' ? r1Matches : (rId === 'r2' ? r2Matches : Object.values(finalsMatches));
@@ -693,7 +740,7 @@
       render(finalsMatches.sf1, 'card-sf1'); render(finalsMatches.sf2, 'card-sf2'); render(finalsMatches.f, 'card-f'); render(finalsMatches.third, 'card-third');
     }
 
-    // --- 6. 結果発表 ---
+    // --- 6. 結果発表 & CSVエクスポート ---
     function showResults() {
       document.getElementById('resultLeagueName').innerText = tournamentName;
       if(finalsMatches.f && finalsMatches.f.winnerTeam){ document.getElementById('res1').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team1.name:finalsMatches.f.team2.name; document.getElementById('res2').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team2.name:finalsMatches.f.team1.name; }
@@ -701,6 +748,48 @@
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
     }
     function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+
+    function openExportModal() {
+      let exportText = "";
+      const addMatch = (m) => {
+        if (m && m.team1 && m.team2 && m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && m.team1.name !== 'TBD' && m.team2.name !== 'TBD' && m.winnerTeam !== null) {
+          const t1Name = m.team1.name; const t2Name = m.team2.name;
+          const winnerName = m.winnerTeam === 1 ? t1Name : (m.winnerTeam === 2 ? t2Name : "");
+          // タブ2回連続 (\t\t) で間に1列分の空欄（B列とD列）をあける
+          exportText += `${t1Name}\t\t${t2Name}\t\t${winnerName}\n`;
+        }
+      };
+
+      r1Matches.forEach(addMatch);
+      r2Matches.forEach(addMatch);
+      if (finalsMatches.qf1) { addMatch(finalsMatches.qf1); addMatch(finalsMatches.qf2); addMatch(finalsMatches.qf3); addMatch(finalsMatches.qf4); }
+      if (finalsMatches.sf1) { addMatch(finalsMatches.sf1); addMatch(finalsMatches.sf2); }
+      if (finalsMatches.third) addMatch(finalsMatches.third);
+      if (finalsMatches.f) addMatch(finalsMatches.f);
+
+      document.getElementById('exportArea').value = exportText;
+      document.getElementById('exportModal').classList.remove('hidden');
+      document.getElementById('exportModal').classList.add('flex');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+      document.getElementById('exportModal').classList.remove('flex');
+    }
+
+    function copyExportData() {
+      const area = document.getElementById('exportArea');
+      area.select();
+      document.execCommand('copy');
+      const btn = event.currentTarget;
+      const originalText = btn.innerText;
+      btn.innerText = "✅ COPIED!";
+      btn.classList.replace('bg-cyber-pink', 'bg-cyber-green');
+      setTimeout(() => {
+        btn.innerText = originalText;
+        btn.classList.replace('bg-cyber-green', 'bg-cyber-pink');
+      }, 2000);
+    }
   </script>
 </body>
 </html>
