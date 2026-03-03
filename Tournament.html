@@ -47,7 +47,7 @@
     .memo-badge {
       display: inline-block; padding: 2px 6px; font-size: 0.75rem; font-weight: bold;
       color: #ec4899; background-color: transparent; border: 1px solid #ec4899;
-      border-radius: 9999px; vertical-align: middle; box-shadow: 0 0 5px #ec4899;
+      border-radius: 9999px; vertical-align: middle; box-shadow: 0 0 5px #ec4899; margin-left: 4px;
     }
     
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -88,7 +88,7 @@
           <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
           <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
         </div>
-        <button ontouchend="handleConfirmSetup(event)" onclick="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
+        <button id="btn-confirm-setup" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
       </div>
 
       <div id="mainManagementSection" class="hidden flex-col h-full">
@@ -109,7 +109,7 @@
             <table class="w-full text-left border-collapse">
               <thead class="sticky top-0 bg-[#111827] z-10">
                 <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
-                  <th class="p-3 text-sm font-sf">NAME / MEMO</th>
+                  <th class="p-3 text-sm font-sf">NAME / STATS</th>
                   <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
                   <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                   <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
@@ -121,7 +121,7 @@
         </div>
         
         <div class="text-center pt-4 shrink-0">
-          <button onclick="startTournament()" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
+          <button id="btn-start-tournament" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
         </div>
       </div>
     </div>
@@ -150,8 +150,9 @@
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
       <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
       <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
-        スプレッドシートやメモ帳等からコピーしたテキストを貼り付けてください。<br>
-        <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 勝率</span> の順で並べてください。
+        スプレッドシート等からコピーしたテキストを貼り付けてください。<br>
+        <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br>
+        <span class="text-cyber-pink">※勝率は自動計算されるため、入力は不要です。</span>
       </p>
       <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
       <div class="flex gap-4">
@@ -229,6 +230,84 @@
     let swapPending = null;
 
     // ==========================================
+    // レーティング・勝率計算処理
+    // ==========================================
+    function calculateRate(wins, matches) {
+        if (matches === 0) return '0.00%';
+        return ((wins / matches) * 100).toFixed(2) + '%';
+    }
+
+    function processMatchForStats(match) {
+        if (!match || match.winner === null || !match.p1 || !match.p2) return;
+        if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+        
+        let s1 = match.p1.currentStats;
+        let s2 = match.p2.currentStats;
+        
+        if (!s1 || !s2) return;
+
+        let winnerStats = (match.winner === 1) ? s1 : s2;
+        let loserStats = (match.winner === 1) ? s2 : s1;
+        
+        let rWin = winnerStats.power;
+        let rLose = loserStats.power;
+        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
+        let change = Math.round(32 * (1 - eWin));
+        
+        winnerStats.power += change;
+        loserStats.power -= change;
+        
+        s1.matches += 1;
+        s2.matches += 1;
+        
+        if (match.winner === 1) {
+            s1.wins += 1;
+            s2.loses += 1;
+        } else {
+            s2.wins += 1;
+            s1.loses += 1;
+        }
+        
+        s1.rate = calculateRate(s1.wins, s1.matches);
+        s2.rate = calculateRate(s2.wins, s2.matches);
+    }
+
+    function recalculateAllStats() {
+        participants.forEach(p => {
+            if (p.initialStats) {
+                p.currentStats = {
+                    power: p.initialStats.power,
+                    matches: p.initialStats.matches,
+                    wins: p.initialStats.wins,
+                    loses: p.initialStats.loses,
+                    rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
+                };
+            }
+        });
+
+        if (!isTournamentStarted) return;
+
+        let maxRounds = 0;
+        ['A', 'B', 'C', 'D'].forEach(bName => {
+            if (blockMatches[bName] && blockMatches[bName].length > maxRounds) {
+                maxRounds = blockMatches[bName].length;
+            }
+        });
+
+        for (let r = 0; r < maxRounds; r++) {
+            ['A', 'B', 'C', 'D'].forEach(bName => {
+                if (blockMatches[bName] && blockMatches[bName][r]) {
+                    blockMatches[bName][r].forEach(processMatchForStats);
+                }
+            });
+        }
+
+        if (finals.sf) finals.sf.forEach(processMatchForStats);
+        if (finals.third) processMatchForStats(finals.third);
+        if (finals.f) processMatchForStats(finals.f);
+    }
+
+    // ==========================================
     // BEY-ROULETTE LINK SYSTEM
     // ==========================================
     let peer = null; 
@@ -239,13 +318,11 @@
         peer.destroy();
       }
       peer = new Peer();
-      
       peer.on('error', (err) => {
         console.error(err);
         resetLinkUI();
         alert("通信エラーが発生しました: " + err.type + "\n右上の「✖」を押してリセットしてください。");
       });
-
       peer.on('disconnected', () => {
         if (!peer.destroyed) {
           peer.reconnect();
@@ -276,23 +353,17 @@
         resetLinkUI();
         return;
       }
-
       const code = document.getElementById('linkCodeInput').value;
       if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力してください");
-      
       const btn = document.getElementById('btn-connect'); 
       btn.innerText = "WAIT...";
-
       if (!peer || peer.destroyed) {
         initPeer();
       }
-
       if (conn) {
         conn.close();
       }
-
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
-      
       conn.on('open', () => {
         btn.innerText = "DISCONN"; 
         btn.classList.replace('text-cyber-blue', 'text-cyber-green'); 
@@ -301,7 +372,6 @@
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); 
         dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
       });
-
       conn.on('close', () => {
         resetLinkUI();
       });
@@ -317,8 +387,8 @@
         p1: p1.name, 
         p2: p2.name, 
         tName: tournamentName,
-        p1Stats: { rank: p1.rank, power: p1.power, rate: p1.rate },
-        p2Stats: { rank: p2.rank, power: p2.power, rate: p2.rate }
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate }
       });
       
       const originalText = buttonElement.innerText; buttonElement.innerText = "SENT!"; buttonElement.classList.replace('bg-cyber-blue', 'bg-cyber-green'); buttonElement.classList.replace('text-cyber-blue', 'text-cyber-bg');
@@ -329,26 +399,59 @@
     function initApp() {
       const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
       colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
+      
+      // ★ PC/iPad両対応の安全なイベントリスナー登録
+      const btnSetup = document.getElementById('btn-confirm-setup');
+      if (btnSetup) {
+          btnSetup.addEventListener('click', (e) => { e.preventDefault(); handleConfirmSetup(); });
+          btnSetup.addEventListener('touchend', (e) => { e.preventDefault(); handleConfirmSetup(); }, { passive: false });
+      }
+
+      const btnStart = document.getElementById('btn-start-tournament');
+      if (btnStart) {
+          btnStart.addEventListener('click', (e) => { e.preventDefault(); handleStartTournament(); });
+          btnStart.addEventListener('touchend', (e) => { e.preventDefault(); handleStartTournament(); }, { passive: false });
+      }
     }
 
     let setupDebounce = false;
-    function handleConfirmSetup(e) {
-      if (e && e.type === 'touchend') e.preventDefault(); 
+    function handleConfirmSetup() {
       if (setupDebounce) return;
       setupDebounce = true;
       setTimeout(() => { setupDebounce = false; }, 500);
-      if (document.activeElement) document.activeElement.blur();
+      
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+      }
       confirmSetup();
     }
 
+    let startDebounce = false;
+    function handleStartTournament() {
+      if (startDebounce) return;
+      startDebounce = true;
+      setTimeout(() => { startDebounce = false; }, 500);
+      
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+      }
+      startTournament();
+    }
+
     function confirmSetup() {
-      const nameInput = document.getElementById('tournamentNameInput').value;
-      tournamentName = nameInput.trim() !== '' ? nameInput : 'CYBER BEY-ROULETTE';
-      let sizeStr = document.getElementById('tournamentSizeInput').value;
+      const nameInput = document.getElementById('tournamentNameInput');
+      tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'CYBER BEY-ROULETTE';
+      
+      let sizeInput = document.getElementById('tournamentSizeInput');
+      let sizeStr = sizeInput ? sizeInput.value : "32";
       if (!sizeStr) sizeStr = "32";
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       let totalSize = parseInt(sizeStr);
-      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; document.getElementById('tournamentSizeInput').value = "32"; }
+      
+      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { 
+          totalSize = 32; 
+          if(sizeInput) sizeInput.value = "32"; 
+      }
 
       if (totalSize <= 8) globalBlockSize = 2;
       else if (totalSize <= 16) globalBlockSize = 4;
@@ -413,9 +516,16 @@
       lines.forEach(line => {
         if(!line.trim()) return; const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
         if(cols[0] && cols[0].trim() !== '') { 
+          let initialPower = parseInt(cols[3]) || 1500;
+          let initialMatches = parseInt(cols[4]) || 0;
+          let initialWins = parseInt(cols[5]) || 0;
+          let initialLoses = parseInt(cols[6]) || 0;
+
           participants.push({ 
             id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
-            rank: cols[2] ? cols[2].trim() : '--', power: cols[3] ? cols[3].trim() : '----', rate: cols[4] ? cols[4].trim() : '--%',
+            rank: cols[2] ? cols[2].trim() : '--',
+            initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+            currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
             bayChecked: false, color: null, position: null 
           }); 
           count++; 
@@ -426,7 +536,13 @@
 
     function addParticipant(name = '', memo1 = '', memo2 = '') {
       if(isTournamentStarted) return alert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
-      participants.push({ id: pidCounter++, name, memo1, rank: '--', power: '----', rate: '--%', bayChecked: false, color: null, position: null }); renderParticipants();
+      participants.push({ 
+          id: pidCounter++, name, memo1, rank: '--', 
+          initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
+          currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          bayChecked: false, color: null, position: null 
+      }); 
+      renderParticipants();
     }
     
     function removeParticipant(id) {
@@ -441,9 +557,16 @@
         let count = 0; event.target.result.split(/\r\n|\n/).forEach(line => {
           if(!line.trim()) return; const cols = line.split(',');
           if(cols[0]) { 
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
+
             participants.push({ 
               id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', 
-              rank: cols[2] ? cols[2].trim() : '--', power: cols[3] ? cols[3].trim() : '----', rate: cols[4] ? cols[4].trim() : '--%',
+              rank: cols[2] ? cols[2].trim() : '--', 
+              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
               bayChecked: false, color: null, position: null 
             }); 
             count++; 
@@ -488,15 +611,18 @@
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         
+        let statsDisplay = '';
+        if (p.currentStats) {
+            statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
+        }
+
         let lotteryHTML = '';
         if (p.color) {
             if (isSetupSwapMode) {
                 let isActive = setupSwapPending === p.id;
                 let activeClass = isActive ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-cyber-dark text-yellow-400 border-yellow-400 hover:bg-yellow-400/20';
-                // ★追加：改行防止 (whitespace-nowrap)
                 lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${blockMap[p.color]}-${p.position + 1}</button>`;
             } else {
-                // ★追加：改行防止 (whitespace-nowrap)
                 lotteryHTML = `<button onclick="reLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${blockMap[p.color]}-${p.position + 1} 🔄</button>`;
             }
         } else {
@@ -504,8 +630,7 @@
         }
 
         const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        // ★追加：LOTTERYのセルに改行防止 (whitespace-nowrap) を付与
-        tr.innerHTML = `<td class="p-3 font-bold text-cyber-text">${p.name} ${memoBadge}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
     }
@@ -638,6 +763,8 @@
       
       if (finals.f.winner !== null && finals.third.winner !== null) document.getElementById('showResultsBtn').classList.remove('hidden'); 
       else document.getElementById('showResultsBtn').classList.add('hidden'); 
+      
+      recalculateAllStats();
       renderTournament();
     }
 

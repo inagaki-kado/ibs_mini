@@ -243,23 +243,39 @@
         let isFinished = false, isCountingDown = false, timerInterval = null;
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
-        let currentScale = 1, currentTranslateX = 0, currentTranslateY = 0, currentRotation = 0;
-        let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
-
+        
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
         const replayLabel = document.getElementById('replay-indicator');
         const replayStatus = document.getElementById('replay-status');
         const hud = document.getElementById('main-hud');
 
+        // ★追加：LocalStorageからカメラのズーム・位置・回転を読み込む（なければ初期値）
+        let currentScale = parseFloat(localStorage.getItem('tbh_cam_scale')) || 1;
+        let currentTranslateX = parseFloat(localStorage.getItem('tbh_cam_tx')) || 0;
+        let currentTranslateY = parseFloat(localStorage.getItem('tbh_cam_ty')) || 0;
+        let currentRotation = parseInt(localStorage.getItem('tbh_cam_rot')) || 0;
+        
+        let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
+
         const tName1 = document.getElementById('tournament-name-1');
         if (localStorage.getItem('tbh_t1')) tName1.value = localStorage.getItem('tbh_t1');
         tName1.addEventListener('input', () => localStorage.setItem('tbh_t1', tName1.value));
 
+        // ★変更：カメラ状態を適用しつつ、同時にLocalStorageにも保存する
         function applyTransforms() {
             const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
-            camVideo.style.transform = transformStr; replayVideo.style.transform = transformStr;
+            camVideo.style.transform = transformStr; 
+            replayVideo.style.transform = transformStr;
+            
+            localStorage.setItem('tbh_cam_scale', currentScale);
+            localStorage.setItem('tbh_cam_tx', currentTranslateX);
+            localStorage.setItem('tbh_cam_ty', currentTranslateY);
+            localStorage.setItem('tbh_cam_rot', currentRotation);
         }
+        
+        // 初回ロード時に保存されているカメラ状態を即座に適用
+        applyTransforms();
 
         document.body.addEventListener('touchstart', e => {
             if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
@@ -338,7 +354,7 @@
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;
-            if (key === '-') { e.preventDefault(); location.reload(); return; }
+            if (key === '-') { e.preventDefault(); location.reload(); return; } // ★ここでリロードしてもLocalStorageのカメラ設定により状態が保持されます
             if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
             if (isReplayMode) {
                 if (key === '5') { if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } }
@@ -363,7 +379,7 @@
                     const tempScore = s1; s1 = s2; s2 = tempScore;
                     document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
 
-                    // 戦績ステータスの入れ替え（innerHTMLごと入れ替える）
+                    // 戦績ステータスの入れ替え
                     const r1 = document.getElementById('p1-val-rank').innerText;
                     const bp1 = document.getElementById('p1-val-bp').innerText;
                     const wr1 = document.getElementById('p1-val-wr').innerHTML;
@@ -384,12 +400,14 @@
             }
         });
 
+        // ★このresetGame()が呼ばれたときにリプレイデータ（chunks）が完全に破棄・初期化されます
         function resetGame() { 
             blurFocus(); s1 = 0; s2 = 0; battleCount = 1; isFinished = false; 
             document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; 
             updateBattleCounterDisplay(); document.getElementById('win-display').classList.remove('show-win'); 
             document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); 
             
+            // ★リプレイの初期化処理
             if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") {
                 try { mediaRecorder.stop(); } catch(e){}
                 setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50);
@@ -407,10 +425,8 @@
         function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
-        // ★追加：勝率の小数点と％を小さくするフォーマット関数
         function formatRate(rateStr) {
             if (!rateStr) return '--<span style="font-size: 11px;">%</span>';
-            // 正規表現で、末尾にある「.数字」と「%」を検知して小さくする
             return rateStr.replace(/(\.\d+%?|%)$/, '<span style="font-size: 11px;">$1</span>');
         }
 
@@ -444,7 +460,6 @@
                             localStorage.setItem('tbh_t1', data.tName);
                         }
 
-                        // ★変更：フォーマット関数を通して出力
                         if (data.p1Stats) {
                             document.getElementById('p1-val-rank').innerText = data.p1Stats.rank;
                             document.getElementById('p1-val-bp').innerText = data.p1Stats.power;
@@ -465,6 +480,7 @@
                             document.getElementById('p2-val-wr').innerHTML = formatRate('--%');
                         }
                         
+                        // ★データを受信した瞬間にresetGameが発動し、リプレイデータもリセットされます
                         resetGame(); 
                     }
                 });
