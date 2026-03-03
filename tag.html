@@ -121,9 +121,9 @@
     </div>
 
     <div id="view-finals" class="hidden h-full flex flex-col max-w-6xl mx-auto w-full">
-      <div class="flex justify-between items-center mb-4 shrink-0">
-        <h2 class="text-2xl md:text-3xl font-sf text-yellow-400 drop-shadow-[0_0_10px_#facc15] border-l-4 border-yellow-400 pl-4">FINAL STAGE</h2>
-        <button onclick="showResults()" class="bg-cyber-pink text-white px-6 md:px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95">SHOW RESULTS 🏆</button>
+      <div class="text-center mb-4 shrink-0">
+        <h2 class="text-3xl font-sf text-yellow-400 mb-2 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
+        <button onclick="showResults()" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
       </div>
       <div class="flex-1 overflow-y-auto pb-8 space-y-6 pr-2">
         <div id="qf-container" class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg">
@@ -177,15 +177,15 @@
   </div>
 
   <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-blue neon-blue flex flex-col h-[70vh]">
-      <h2 class="text-2xl font-sf text-cyber-blue mb-2">📋 MATCH DATA EXPORT</h2>
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-pink neon-pink flex flex-col h-[70vh]">
+      <h2 class="text-2xl font-sf text-cyber-pink mb-2">📋 MATCH DATA EXPORT (INDIVIDUAL)</h2>
       <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
         下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
         （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
       </p>
       <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
       <div class="flex gap-4">
-        <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+        <button onclick="copyExportData()" class="flex-[2] bg-cyber-pink text-white px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
         <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
       </div>
     </div>
@@ -194,17 +194,14 @@
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <h2 class="text-xl md:text-2xl text-cyber-pink font-sf mb-4 md:mb-8" id="resultLeagueName"></h2>
-      
-      <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
-      <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
-      
-      <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-      <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
-      
-      <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
-        <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
-        <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
+      <h2 class="text-2xl text-cyber-pink font-sf mb-8" id="resultLeagueName"></h2>
+      <h1 class="text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
+      <p class="text-4xl font-bold mb-10 text-white" id="res1"></p>
+      <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+      <p class="text-2xl font-bold mb-8 text-white" id="res2"></p>
+      <div class="flex justify-around mt-4 border-t border-cyber-table-border pt-6">
+        <div><h3 class="text-xl text-orange-400 font-sf mb-2">🥉 3RD PLACE</h3><p class="text-xl font-bold text-white" id="res3"></p></div>
+        <div><h3 class="text-xl text-cyber-text font-sf mb-2 opacity-70">4TH PLACE</h3><p class="text-xl font-bold text-gray-400" id="res4"></p></div>
       </div>
       
       <div class="flex justify-center gap-4 mt-6 md:mt-10">
@@ -378,7 +375,6 @@
     function renderTeams() {
       const list = document.getElementById('teamList'); list.innerHTML = '';
       teams.forEach(t => { 
-        // ★変更：カメラボタンをアイコン化
         const checkBtnColor = t.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-pink border border-cyber-pink';
         list.innerHTML += `<div class="bg-[#0d131f] border border-cyber-pink p-3 rounded flex justify-between items-center"><span class="font-bold text-cyber-text text-sm">${t.name}</span>
         <div class="flex gap-2">
@@ -740,7 +736,7 @@
       render(finalsMatches.sf1, 'card-sf1'); render(finalsMatches.sf2, 'card-sf2'); render(finalsMatches.f, 'card-f'); render(finalsMatches.third, 'card-third');
     }
 
-    // --- 6. 結果発表 & CSVエクスポート ---
+    // --- 6. 結果発表 & ★ CSVエクスポート（個人戦用フォーマット） ---
     function showResults() {
       document.getElementById('resultLeagueName').innerText = tournamentName;
       if(finalsMatches.f && finalsMatches.f.winnerTeam){ document.getElementById('res1').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team1.name:finalsMatches.f.team2.name; document.getElementById('res2').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team2.name:finalsMatches.f.team1.name; }
@@ -753,10 +749,20 @@
       let exportText = "";
       const addMatch = (m) => {
         if (m && m.team1 && m.team2 && m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && m.team1.name !== 'TBD' && m.team2.name !== 'TBD' && m.winnerTeam !== null) {
-          const t1Name = m.team1.name; const t2Name = m.team2.name;
-          const winnerName = m.winnerTeam === 1 ? t1Name : (m.winnerTeam === 2 ? t2Name : "");
-          // タブ2回連続 (\t\t) で間に1列分の空欄（B列とD列）をあける
-          exportText += `${t1Name}\t\t${t2Name}\t\t${winnerName}\n`;
+          // タッグ名ではなく、バトルごとに個人の勝敗を出力する
+          m.battles.forEach(b => {
+             if(b.p1Id !== null && b.p2Id !== null && b.winner !== null) {
+                 const p1 = participants.find(p => p.id === b.p1Id);
+                 const p2 = participants.find(p => p.id === b.p2Id);
+                 if (p1 && p2) {
+                     const p1Name = p1.name;
+                     const p2Name = p2.name;
+                     const winnerName = b.winner === 1 ? p1Name : (b.winner === 2 ? p2Name : "");
+                     // タブ2回連続 (\t\t) で間に1列分の空欄（B列とD列）をあける
+                     exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+                 }
+             }
+          });
         }
       };
 
