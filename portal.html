@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>板橋会 アプリポータル - ITABASHI BEY-PORTAL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Noto Sans JP', 'sans-serif'],
+            'orbitron': ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            'cyber-bg': '#0a0e17',
+            'cyber-dark': '#111827',
+            'cyber-blue': '#0ea5e9',
+            'cyber-green': '#22c55e',
+            'cyber-pink': '#ec4899',
+            'cyber-orange': '#f97316',
+            'cyber-text': '#e2e8f0',
+            'cyber-table-border': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0e17; color: #e2e8f0; }
+    .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+    
+    /* ホバー時のネオン発光エフェクト */
+    .card-blue:hover { box-shadow: 0 0 25px rgba(14, 165, 233, 0.5); transform: translateY(-5px) scale(1.02); border-color: #0ea5e9; }
+    .card-pink:hover { box-shadow: 0 0 25px rgba(236, 72, 153, 0.5); transform: translateY(-5px) scale(1.02); border-color: #ec4899; }
+    .card-green:hover { box-shadow: 0 0 25px rgba(34, 197, 94, 0.5); transform: translateY(-5px) scale(1.02); border-color: #22c55e; }
+    .card-orange:hover { box-shadow: 0 0 25px rgba(249, 115, 22, 0.5); transform: translateY(-5px) scale(1.02); border-color: #f97316; }
+    
+    .card-transition { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+  </style>
+</head>
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')]">
+
+  <header class="bg-cyber-dark/90 backdrop-blur-sm text-cyber-text p-6 text-center shadow-lg relative border-b border-cyber-table-border flex flex-col justify-center shrink-0 z-10">
+    <h1 class="text-3xl md:text-4xl font-sf text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] tracking-widest">ITABASHI BEY-PORTAL</h1>
+    <p class="text-sm text-cyber-text opacity-70 font-sf tracking-[0.3em] mt-2 text-yellow-400">SELECT MATCH FORMAT</p>
+  </header>
+
+  <main class="flex-1 overflow-y-auto flex items-center justify-center p-4 md:p-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+      
+      <a href="Tournament.html" class="card-transition card-blue bg-cyber-dark/80 backdrop-blur-md border-2 border-cyber-table-border rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group group-hover:z-10">
+        <div class="w-20 h-20 rounded-full bg-cyber-blue/20 flex items-center justify-center mb-4 group-hover:bg-cyber-blue/40 transition-colors">
+          <span class="text-4xl">🏆</span>
+        </div>
+        <h2 class="text-2xl font-sf text-cyber-blue mb-2">TOURNAMENT</h2>
+        <p class="text-sm text-cyber-text opacity-80 leading-relaxed">個人戦・最大32名<br>予選ブロック＆上位決勝トーナメント</p>
+      </a>
+
+      <a href="tag.html" class="card-transition card-pink bg-cyber-dark/80 backdrop-blur-md border-2 border-cyber-table-border rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group group-hover:z-10">
+        <div class="w-20 h-20 rounded-full bg-cyber-pink/20 flex items-center justify-center mb-4 group-hover:bg-cyber-pink/40 transition-colors">
+          <span class="text-4xl">🤝</span>
+        </div>
+        <h2 class="text-2xl font-sf text-cyber-pink mb-2">TAG LEAGUE</h2>
+        <p class="text-sm text-cyber-text opacity-80 leading-relaxed">2on2 タッグ戦・最大12チーム<br>スイスドロー予選＆上位決勝トーナメント</p>
+      </a>
+
+      <a href="souatari.html" class="card-transition card-green bg-cyber-dark/80 backdrop-blur-md border-2 border-cyber-table-border rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group group-hover:z-10">
+        <div class="w-20 h-20 rounded-full bg-cyber-green/20 flex items-center justify-center mb-4 group-hover:bg-cyber-green/40 transition-colors">
+          <span class="text-4xl">⚔️</span>
+        </div>
+        <h2 class="text-2xl font-sf text-cyber-green mb-2">ROUND ROBIN</h2>
+        <p class="text-sm text-cyber-text opacity-80 leading-relaxed">個人総当たりリーグ・最大12名<br>全参加者との対戦で最強を決定</p>
+      </a>
+
+      <a href="freebattle.html" class="card-transition card-orange bg-cyber-dark/80 backdrop-blur-md border-2 border-cyber-table-border rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer group group-hover:z-10">
+        <div class="w-20 h-20 rounded-full bg-cyber-orange/20 flex items-center justify-center mb-4 group-hover:bg-cyber-orange/40 transition-colors">
+          <span class="text-4xl">🔥</span>
+        </div>
+        <h2 class="text-2xl font-sf text-cyber-orange mb-2">FREE MATCH</h2>
+        <p class="text-sm text-cyber-text opacity-80 leading-relaxed">野試合・フリー対戦用・最大32名<br>自由に対戦カードを組んでレートを変動</p>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="p-4 text-center text-cyber-text opacity-50 text-xs font-sf shrink-0">
+    &copy; ITABASHI BEYBLADE CLUB SYSTEM
+  </footer>
+
+</body>
+</html>
