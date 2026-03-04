@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.28.6 Memory Flush (LINK EDITION)</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.29 Remote Ready</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -18,13 +18,7 @@
             --safe-left: env(safe-area-inset-left); --safe-right: env(safe-area-inset-right);
         }
 
-        body { 
-            margin: 0; padding: 0; background: black; 
-            font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; 
-            -webkit-tap-highlight-color: transparent; transition: background-color 0.3s;
-            touch-action: none; 
-        }
-
+        body { margin: 0; padding: 0; background: black; font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s; touch-action: none; }
         input, div, .score { font-family: inherit; }
         
         body.green-mode { background-color: #00ff00 !important; }
@@ -35,13 +29,7 @@
         #replay-video { z-index: 10; display: none; background: black; }
         .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
 
-        /* システムボタン */
-        .system-btn { 
-            position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; 
-            width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
-            font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; transition: 0.3s;
-            font-family: 'Orbitron', sans-serif !important; user-select: none;
-        }
+        .system-btn { position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; transition: 0.3s; font-family: 'Orbitron', sans-serif !important; user-select: none; }
         .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); }
         .system-btn:active { background: #333; transform: scale(0.95); }
 
@@ -55,7 +43,6 @@
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); font-size: 18px; }
         body.pro-mode .system-btn { display: none !important; }
 
-        /* HUD要素 */
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
         .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
@@ -90,76 +77,38 @@
         .btn-over.active-history { background: var(--bx-orange) !important; box-shadow: 0 0 15px var(--bx-orange); }
         .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
 
-        /* =========================================
-           ★ 戦績データ（スコア直下に配置）
-           ========================================= */
-        .score-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .player-stats-block {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 8px;
-            width: 100%;
-            min-width: 120px;
-            max-width: 150px;
-        }
+        .score-container { display: flex; flex-direction: column; align-items: center; }
+        .player-stats-block { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; width: 100%; min-width: 120px; max-width: 150px; }
+        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-bottom: 2px solid var(--bx-blue); border-radius: 4px; }
+        .s-label { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--bx-blue); font-weight: 900; letter-spacing: 0.5px; }
+        .s-val { font-family: 'Orbitron', sans-serif; font-size: 18px; color: white; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.6), 1px 1px 0px black; }
 
-        .stat-item {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 6px;
-            border-bottom: 2px solid var(--bx-blue);
-            border-radius: 4px;
-        }
-
-        .s-label {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
-            color: var(--bx-blue);
-            font-weight: 900;
-            letter-spacing: 0.5px;
-        }
-
-        .s-val {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
-            color: white;
-            font-weight: 900;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.6), 1px 1px 0px black;
-        }
-
-        /* WIN表示 */
         #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
         .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
         .win-name { font-size: 15vmin; display: block; line-height: 1; }
         .win-label { font-size: 15vmin; display: block; margin-top: 0.25em; color: white; text-shadow: 0 0 30px white; line-height: 1; }
 
-        /* エフェクト */
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
-        #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; transition: opacity 0.5s ease-out; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
         .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0; transform: scale(1.1); white-space: pre-wrap; }
         .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
+        
+        @keyframes zoomInBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1); opacity: 1; filter: brightness(1); } }
+        @keyframes slideCutIn { 0% { transform: translateX(-30vw) scale(0.8) skewX(-15deg); opacity: 0; } 70% { transform: translateX(5vw) scale(1.1) skewX(5deg); opacity: 1; } 100% { transform: translateX(0) scale(1) skewX(0); opacity: 1; } }
+        @keyframes explodeShoot { 0% { transform: scale(3) rotate(-5deg); opacity: 0; filter: brightness(2); } 50% { transform: scale(0.9) rotate(2deg); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); } }
+
+        .call-number-style { font-family: 'Orbitron', sans-serif !important; font-size: 55vmin !important; font-style: italic; font-weight: 900; color: white; text-shadow: 0 0 30px var(--bx-blue), 0 0 60px var(--bx-blue), 8px 8px 0 black; line-height: 1; animation: zoomInBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .call-text-go-style { font-family: 'Orbitron', sans-serif !important; font-size: 40vmin !important; font-style: italic; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 40px var(--bx-orange), 0 0 80px var(--bx-orange), 8px 8px 0 black; line-height: 1; animation: slideCutIn 0.2s ease-out forwards; }
+        .call-text-shoot-style { font-family: 'Orbitron', sans-serif !important; font-size: 28vmin !important; font-style: italic; font-weight: 900; color: white; text-shadow: 0 0 40px var(--bx-red), 0 0 80px var(--bx-red), 8px 8px 0 black; line-height: 1; white-space: nowrap; animation: explodeShoot 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
         #replay-indicator { position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
         #replay-status { position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        #link-code-display {
-            position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 90;
-            font-family: 'Orbitron', sans-serif; font-size: 14px; color: var(--bx-blue);
-            text-shadow: 0 0 10px var(--bx-blue); font-weight: 900; background: rgba(0,0,0,0.6);
-            padding: 5px 15px; border-radius: 20px; border: 1px solid var(--bx-blue);
-            display: flex; align-items: center; gap: 5px; transition: 0.3s;
-        }
+        #link-code-display { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 90; font-family: 'Orbitron', sans-serif; font-size: 14px; color: var(--bx-blue); text-shadow: 0 0 10px var(--bx-blue); font-weight: 900; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--bx-blue); display: flex; align-items: center; gap: 5px; transition: 0.3s; }
         body.pro-mode #link-code-display { opacity: 0; pointer-events: none; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
         .status-dot.connected { background-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
@@ -183,9 +132,7 @@
 
     <div id="main-hud">
         <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
-        <div id="tournament-title-area">
-            <input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE">
-        </div>
+        <div id="tournament-title-area"><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
 
         <div id="p1-wrapper" class="player-wrapper">
             <input type="text" id="name1" class="name-input" value="BLADER 1">
@@ -195,14 +142,14 @@
                     <div class="player-stats-block p1-stats-block">
                         <div class="stat-item"><span class="s-label">RANK</span><span id="p1-val-rank" class="s-val">--</span></div>
                         <div class="stat-item"><span class="s-label">BP</span><span id="p1-val-bp" class="s-val">----</span></div>
-                        <div class="stat-item"><span class="s-label">WR</span><span id="p1-val-wr" class="s-val">--%</span></div>
+                        <div class="stat-item"><span class="s-label">WR</span><span id="p1-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
                     </div>
                 </div>
                 <div class="buttons-col">
-                    <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(1, 3, 'XTREME')">X</div>
-                    <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="addScore(1, 2, 'BURST')">B</div>
-                    <div id="p1-btn-over" class="hud-btn btn-over" onclick="addScore(1, 2, 'OVER')">O</div>
-                    <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="addScore(1, 1, 'SPIN')">S</div>
+                    <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P1_X')">X</div>
+                    <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P1_B')">B</div>
+                    <div id="p1-btn-over" class="hud-btn btn-over" onclick="executeCommand('P1_O')">O</div>
+                    <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P1_S')">S</div>
                 </div>
             </div>
         </div>
@@ -215,14 +162,14 @@
                     <div class="player-stats-block p2-stats-block">
                         <div class="stat-item"><span class="s-label">RANK</span><span id="p2-val-rank" class="s-val">--</span></div>
                         <div class="stat-item"><span class="s-label">BP</span><span id="p2-val-bp" class="s-val">----</span></div>
-                        <div class="stat-item"><span class="s-label">WR</span><span id="p2-val-wr" class="s-val">--%</span></div>
+                        <div class="stat-item"><span class="s-label">WR</span><span id="p2-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
                     </div>
                 </div>
                 <div class="buttons-col">
-                    <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="addScore(2, 3, 'XTREME')">X</div>
-                    <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="addScore(2, 2, 'BURST')">B</div>
-                    <div id="p2-btn-over" class="hud-btn btn-over" onclick="addScore(2, 2, 'OVER')">O</div>
-                    <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="addScore(2, 1, 'SPIN')">S</div>
+                    <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P2_X')">X</div>
+                    <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P2_B')">B</div>
+                    <div id="p2-btn-over" class="hud-btn btn-over" onclick="executeCommand('P2_O')">O</div>
+                    <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P2_S')">S</div>
                 </div>
             </div>
         </div>
@@ -230,11 +177,11 @@
 
     <div id="win-display"></div>
 
-    <div class="system-btn btn-reset" onclick="resetGame()">R</div>
+    <div class="system-btn btn-reset" onclick="executeCommand('SYS_RESET')">R</div>
     <div class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</div>
-    <div class="system-btn btn-timer" onclick="toggleTimer()">T</div>
+    <div class="system-btn btn-timer" onclick="executeCommand('TIMER')">T</div>
     <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
-    <div class="system-btn btn-rotate" onclick="rotateCamera()">180</div>
+    <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
     <div class="system-btn btn-mic" onclick="toggleMic()" id="btn-mic">M</div>
     <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 
@@ -244,13 +191,13 @@
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
         
-        // LocalStorageからカメラのズーム・位置・回転を読み込む
         let currentScale = parseFloat(localStorage.getItem('tbh_cam_scale')) || 1;
         let currentTranslateX = parseFloat(localStorage.getItem('tbh_cam_tx')) || 0;
         let currentTranslateY = parseFloat(localStorage.getItem('tbh_cam_ty')) || 0;
         let currentRotation = parseInt(localStorage.getItem('tbh_cam_rot')) || 0;
-        
         let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
+
+        let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null;
 
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
@@ -262,18 +209,12 @@
         if (localStorage.getItem('tbh_t1')) tName1.value = localStorage.getItem('tbh_t1');
         tName1.addEventListener('input', () => localStorage.setItem('tbh_t1', tName1.value));
 
-        // カメラ状態を適用しつつLocalStorageに保存
         function applyTransforms() {
             const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
-            camVideo.style.transform = transformStr; 
-            replayVideo.style.transform = transformStr;
-            
-            localStorage.setItem('tbh_cam_scale', currentScale);
-            localStorage.setItem('tbh_cam_tx', currentTranslateX);
-            localStorage.setItem('tbh_cam_ty', currentTranslateY);
-            localStorage.setItem('tbh_cam_rot', currentRotation);
+            camVideo.style.transform = transformStr; replayVideo.style.transform = transformStr;
+            localStorage.setItem('tbh_cam_scale', currentScale); localStorage.setItem('tbh_cam_tx', currentTranslateX);
+            localStorage.setItem('tbh_cam_ty', currentTranslateY); localStorage.setItem('tbh_cam_rot', currentRotation);
         }
-        
         applyTransforms();
 
         document.body.addEventListener('touchstart', e => {
@@ -286,8 +227,7 @@
             if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
             e.preventDefault();
             if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                currentScale = Math.min(Math.max(initialScale * (dist / startDist), 1), 5);
+                currentScale = Math.min(Math.max(initialScale * (Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY) / startDist), 1), 5);
                 applyTransforms();
             } else if (e.touches.length === 1 && currentScale > 1) {
                 currentTranslateX = initialTX + (e.touches[0].pageX - startX) / currentScale;
@@ -299,10 +239,7 @@
         async function initMedia(withMic = false) {
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
             try {
-                currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } },
-                    audio: withMic
-                });
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }, audio: withMic });
                 camVideo.srcObject = currentStream; camVideo.muted = !withMic; startBuffering(currentStream);
             } catch (err) { console.error(err); }
         }
@@ -317,19 +254,16 @@
         }
 
         function updateStatusMsg(msg, duration = 0) {
-            clearTimeout(statusMsgTimeout);
-            replayStatus.innerText = msg; replayStatus.style.display = 'block';
+            clearTimeout(statusMsgTimeout); replayStatus.innerText = msg; replayStatus.style.display = 'block';
             if (duration > 0) statusMsgTimeout = setTimeout(() => { replayStatus.innerText = replayVideo.paused ? "‖ STOP" : "▶ " + replayVideo.playbackRate.toFixed(1); }, duration);
         }
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
-                isReplayMode = true;
-                const blob = new Blob(chunks, { type: 'video/mp4' });
+                isReplayMode = true; const blob = new Blob(chunks, { type: 'video/mp4' });
                 replayVideo.src = URL.createObjectURL(blob);
                 replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block'; hud.style.display = 'none';
-                updateStatusMsg("▶ 1.0");
-                replayVideo.load();
+                updateStatusMsg("▶ 1.0"); replayVideo.load();
                 replayVideo.oncanplay = () => { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); };
             } else {
                 isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none'; hud.style.display = 'block';
@@ -338,113 +272,167 @@
 
         function rotateCamera() { blurFocus(); currentRotation = (currentRotation === 0) ? 180 : 0; applyTransforms(); }
 
-        // ★ 戦績データの表示/非表示を切り替える関数
         function toggleStatsDisplay() {
             blurFocus();
-            const statsBlocks = document.querySelectorAll('.player-stats-block');
-            statsBlocks.forEach(block => {
-                if (block.style.display === 'none') {
-                    block.style.display = 'flex';
-                } else {
-                    block.style.display = 'none';
-                }
+            document.querySelectorAll('.player-stats-block').forEach(block => {
+                block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
             });
         }
 
+        function startCall() {
+            if (isCountingDown || isReplayMode) return;
+            isCalling = true; blurFocus();
+            const sequence = [ { text: "3", delay: 800, style: "call-number-style" }, { text: "2", delay: 800, style: "call-number-style" }, { text: "1", delay: 800, style: "call-number-style" }, { text: "GO", delay: 600, style: "call-text-go-style" }, { text: "SHOOT!!", delay: 1000, style: "call-text-shoot-style" } ];
+            let step = 0;
+            function nextStep() {
+                if (step < sequence.length) {
+                    const current = sequence[step]; showOverlayText(current.text, current.style, current.delay);
+                    if (current.text === "SHOOT!!") isCalling = false;
+                    step++; callTimeout = setTimeout(nextStep, current.delay);
+                }
+            }
+            nextStep();
+        }
+
+        function cancelCall() {
+            if (callTimeout) clearTimeout(callTimeout); if (effectTimeout) clearTimeout(effectTimeout);
+            callTimeout = null; isCalling = false; document.getElementById('effect-overlay').style.display = 'none';
+        }
+
+        function showOverlayText(h, s, d) { 
+            const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); 
+            t.className = ''; void t.offsetWidth; t.className = s; t.innerHTML = h; o.style.display = 'flex'; 
+            if (effectTimeout) clearTimeout(effectTimeout);
+            if (d > 0) effectTimeout = setTimeout(() => o.style.display = 'none', d); 
+        }
+
         function addScore(p, pts, t) {
-            blurFocus();
-            if (isFinished || isReplayMode) return;
+            blurFocus(); if (isFinished || isReplayMode) return;
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
             if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); else s2 = Math.min(s2 + pts, winScoreLimit);
             document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
             if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(p), 2500); }
-            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
+            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ((s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
         }
 
-        window.addEventListener('keydown', e => {
-            if (document.activeElement.tagName === 'INPUT') return;
-            const key = e.key;
-            if (key === '-') { e.preventDefault(); location.reload(); return; }
-            if (key === 'Tab') { e.preventDefault(); toggleReplayMode(); return; }
-            if (isReplayMode) {
-                if (key === '5') { if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } }
-                if (key === '6') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
-                if (key === '4') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
-                if (key === 'Enter') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
-            } else {
-                if (key === 'Backspace') document.body.classList.toggle('pro-mode');
-                if (key === 'Enter') { e.preventDefault(); toggleTimer(); }
-                if (key === 'b' || key === 'B') toggleBackground();
-                if (key === 'm' || key === 'M') toggleMic();
-                if (key === 't' || key === 'T') toggleTimer();
-                if (key === 'r' || key === 'R' || key === '/') resetGame();
-                
-                // ★ショートカットキー変更・追加
-                if (key === '+') rotateCamera();
-                if (key === '*') toggleStatsDisplay();
-
-                if (key === '5') {
-                    // 名前とスコアの入れ替え
-                    const n1 = document.getElementById('name1');
-                    const n2 = document.getElementById('name2');
-                    const tempName = n1.value; n1.value = n2.value; n2.value = tempName;
-                    
-                    const tempScore = s1; s1 = s2; s2 = tempScore;
-                    document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
-
-                    // 戦績ステータスの入れ替え
-                    const r1 = document.getElementById('p1-val-rank').innerText;
-                    const bp1 = document.getElementById('p1-val-bp').innerText;
-                    const wr1 = document.getElementById('p1-val-wr').innerHTML;
-
-                    document.getElementById('p1-val-rank').innerText = document.getElementById('p2-val-rank').innerText;
-                    document.getElementById('p1-val-bp').innerText = document.getElementById('p2-val-bp').innerText;
-                    document.getElementById('p1-val-wr').innerHTML = document.getElementById('p2-val-wr').innerHTML;
-
-                    document.getElementById('p2-val-rank').innerText = r1;
-                    document.getElementById('p2-val-bp').innerText = bp1;
-                    document.getElementById('p2-val-wr').innerHTML = wr1;
-                }
-
-                if (key === '7') addScore(1, 3, 'XTREME'); if (key === '4') addScore(1, 2, 'BURST'); if (key === '1') addScore(1, 2, 'OVER'); if (key === '0') addScore(1, 1, 'SPIN');
-                if (key === '9') addScore(2, 3, 'XTREME'); if (key === '6') addScore(2, 2, 'BURST'); if (key === '3') addScore(2, 2, 'OVER'); if (key === '.') addScore(2, 1, 'SPIN');
-                if (key === '8') { s1 = Math.max(0, s1-1); document.getElementById('score1').innerText = s1; }
-                if (key === '2') { s2 = Math.max(0, s2-1); document.getElementById('score2').innerText = s2; }
-            }
-        });
-
         function resetGame() { 
+            if (isCalling) cancelCall();
             blurFocus(); s1 = 0; s2 = 0; battleCount = 1; isFinished = false; 
             document.getElementById('score1').innerText = 0; document.getElementById('score2').innerText = 0; 
             updateBattleCounterDisplay(); document.getElementById('win-display').classList.remove('show-win'); 
             document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); 
-            
-            // リプレイの初期化処理
-            if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") {
-                try { mediaRecorder.stop(); } catch(e){}
-                setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50);
-            }
+            if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") { try { mediaRecorder.stop(); } catch(e){} setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50); }
         }
 
-        function showOverlayText(h, s, d) { const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); t.className = s; t.innerHTML = h; o.style.display = 'flex'; if (d > 0) setTimeout(() => o.style.display = 'none', d); }
-        function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ( (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7 ) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
+        function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ((s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
         function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
         function toggleMic() { const b = document.getElementById('btn-mic'); b.classList.toggle('active'); initMedia(b.classList.contains('active')); }
         function toggleWinPoint() { blurFocus(); winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
         function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
         function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
-        function toggleTimer() { blurFocus(); if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } else startTimer(); }
-        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
+        
+        function toggleTimer() { 
+            blurFocus(); if (isCalling) return; 
+            if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } 
+            else startTimer(); 
+        }
+
+        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; effectTimeout = setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
-        // ★変更：小数部分だけを小さくし、％はそのままの大きさに保つ
         function formatRate(rateStr) {
             if (!rateStr) return '--%';
-            // (\.\d+) で小数点と続く数字のみにマッチさせ、そこだけ小さくする
             return rateStr.replace(/(\.\d+)/, '<span style="font-size: 11px;">$1</span>');
         }
+
+        // ========================================================
+        // ★ リモコン＆テンキー 共通コマンドハンドラ
+        // ========================================================
+        function executeCommand(cmd) {
+            if (cmd === 'SYS_RESET') { resetGame(); return; }
+            if (cmd === 'REPLAY_TOGGLE') { toggleReplayMode(); return; }
+            
+            if (isReplayMode) {
+                if (cmd === 'REPLAY_PLAY') { if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } }
+                if (cmd === 'REPLAY_SLOW') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
+                if (cmd === 'REPLAY_REV') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
+                if (cmd === 'REPLAY_LATEST') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
+            } else {
+                if (cmd === 'SYS_PRO') document.body.classList.toggle('pro-mode');
+                if (cmd === 'SYS_CAM') rotateCamera();
+                if (cmd === 'SYS_STATS') toggleStatsDisplay();
+                if (cmd === 'CALL') { if (isCalling) cancelCall(); else startCall(); }
+                if (cmd === 'TIMER') toggleTimer();
+                if (cmd === 'SYS_SWAP') {
+                    const n1 = document.getElementById('name1'), n2 = document.getElementById('name2');
+                    const tempName = n1.value; n1.value = n2.value; n2.value = tempName;
+                    const tempScore = s1; s1 = s2; s2 = tempScore;
+                    document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
+                    const r1 = document.getElementById('p1-val-rank').innerText, bp1 = document.getElementById('p1-val-bp').innerText, wr1 = document.getElementById('p1-val-wr').innerHTML;
+                    document.getElementById('p1-val-rank').innerText = document.getElementById('p2-val-rank').innerText;
+                    document.getElementById('p1-val-bp').innerText = document.getElementById('p2-val-bp').innerText;
+                    document.getElementById('p1-val-wr').innerHTML = document.getElementById('p2-val-wr').innerHTML;
+                    document.getElementById('p2-val-rank').innerText = r1; document.getElementById('p2-val-bp').innerText = bp1; document.getElementById('p2-val-wr').innerHTML = wr1;
+                }
+                
+                if (cmd === 'P1_X') addScore(1, 3, 'XTREME');
+                if (cmd === 'P1_B') addScore(1, 2, 'BURST');
+                if (cmd === 'P1_O') addScore(1, 2, 'OVER');
+                if (cmd === 'P1_S') addScore(1, 1, 'SPIN');
+                if (cmd === 'P1_MINUS') { s1 = Math.max(0, s1-1); document.getElementById('score1').innerText = s1; }
+                
+                if (cmd === 'P2_X') addScore(2, 3, 'XTREME');
+                if (cmd === 'P2_B') addScore(2, 2, 'BURST');
+                if (cmd === 'P2_O') addScore(2, 2, 'OVER');
+                if (cmd === 'P2_S') addScore(2, 1, 'SPIN');
+                if (cmd === 'P2_MINUS') { s2 = Math.max(0, s2-1); document.getElementById('score2').innerText = s2; }
+            }
+        }
+
+        // 物理テンキーの入力をコマンドに変換
+        window.addEventListener('keydown', e => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            const key = e.key;
+            if (key === '-') { e.preventDefault(); location.reload(); return; }
+            
+            if (isReplayMode) {
+                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === '5') executeCommand('REPLAY_PLAY');
+                if (key === '6') executeCommand('REPLAY_SLOW');
+                if (key === '4') executeCommand('REPLAY_REV');
+                if (key === 'Enter') executeCommand('REPLAY_LATEST');
+            } else {
+                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === 'Backspace') executeCommand('SYS_PRO');
+                if (key === 'r' || key === 'R' || key === '/') executeCommand('SYS_RESET');
+                if (key === '+') executeCommand('SYS_CAM');
+                if (key === '*') executeCommand('SYS_STATS');
+                if (key === 'Enter') { e.preventDefault(); executeCommand('CALL'); }
+                if (key === '5') executeCommand('SYS_SWAP');
+
+                // 「00」検知の特殊処理
+                if (key === '0') {
+                    zeroCount++;
+                    if (zeroCount === 1) {
+                        zeroTimeout = setTimeout(() => { executeCommand('P1_S'); zeroCount = 0; }, 50);
+                    } else if (zeroCount === 2) {
+                        clearTimeout(zeroTimeout); executeCommand('TIMER'); zeroCount = 0;
+                    }
+                } else {
+                    if (key === '7') executeCommand('P1_X'); 
+                    if (key === '4') executeCommand('P1_B'); 
+                    if (key === '1') executeCommand('P1_O'); 
+                    if (key === '9') executeCommand('P2_X'); 
+                    if (key === '6') executeCommand('P2_B'); 
+                    if (key === '3') executeCommand('P2_O'); 
+                    if (key === '.') executeCommand('P2_S');
+                    if (key === '8') executeCommand('P1_MINUS');
+                    if (key === '2') executeCommand('P2_MINUS');
+                }
+            }
+        });
 
         initMedia();
 
@@ -460,14 +448,16 @@
             });
 
             peer.on('connection', (conn) => {
-                if (activeConn && activeConn.open) {
-                    activeConn.close();
-                }
+                if (activeConn && activeConn.open) { activeConn.close(); }
                 activeConn = conn;
                 document.getElementById('link-dot').classList.add('connected');
                 
                 conn.on('data', (data) => {
-                    if (data.type === 'SET_MATCH') {
+                    // ★追加：iPadからのリモコンコマンドを受信して実行
+                    if (data.type === 'REMOTE_CMD') {
+                        executeCommand(data.cmd);
+                    }
+                    else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;
                         document.getElementById('name2').value = data.p2;
                         
