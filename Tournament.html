@@ -56,166 +56,165 @@
     ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
   </style>
 </head>
-<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden">
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
-  <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
-    <h1 class="text-2xl font-sf text-cyber-blue">ITABASHI BEY-ROULETTE</h1>
-    <p class="text-xs text-cyber-text opacity-70 font-sf tracking-widest">TOURNAMENT SYSTEM</p>
-    
-    <div class="absolute top-1/2 -translate-y-1/2 right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
-      <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
-      <input type="text" id="linkCodeInput" placeholder="CODE" class="w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
-      <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-3 py-1 text-xs font-sf font-bold transition-colors rounded">CONNECT</button>
-      <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
-      <div id="link-status-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
-    </div>
-  </header>
-
-  <div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0">
-    <button onclick="switchTab('participants')" id="tab-participants" class="flex-1 py-3 text-center font-bold border-b-4 border-cyber-blue text-cyber-blue transition-colors">👤 参加者管理・受付</button>
-    <button onclick="switchTab('tournament')" id="tab-tournament" class="flex-1 py-3 text-center font-bold border-b-4 border-transparent text-cyber-text transition-colors">🏆 トーナメント進行</button>
-  </div>
-
-  <div class="p-4 flex-1 overflow-y-auto">
-    <div id="view-participants" class="h-full flex flex-col">
-      <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
-        <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
-        <div class="mb-4">
-          <label class="block font-bold mb-2 text-cyber-text font-sf">TOURNAMENT NAME</label>
-          <input type="text" id="tournamentNameInput" placeholder="例: 第1回 板橋会カップ" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
-        </div>
-        <div class="mb-6">
-          <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
-          <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
-        </div>
-        <button id="btn-confirm-setup" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
+    <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
+      <h1 class="text-2xl font-sf text-cyber-blue">ITABASHI BEY-ROULETTE</h1>
+      <p class="text-xs text-cyber-text opacity-70 font-sf tracking-widest">TOURNAMENT SYSTEM</p>
+      
+      <div class="absolute top-1/2 -translate-y-1/2 right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
+        <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
+        <input type="text" id="linkCodeInput" placeholder="CODE" class="w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
+        <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-3 py-1 text-xs font-sf font-bold transition-colors rounded">CONNECT</button>
+        <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+        <div id="link-status-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
       </div>
+    </header>
 
-      <div id="mainManagementSection" class="hidden flex-col h-full">
-        <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
-          <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
-            📁 CSVファイル <input type="file" id="csvInput" accept=".csv" class="hidden">
-          </label>
-          <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
-          
-          <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors ml-2">🔄 配置手動入替</button>
-          
-          <div class="flex-grow"></div>
-          <button onclick="addParticipant()" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text px-4 py-2 rounded font-bold shadow text-sm transition-transform active:scale-95">＋ 手動追加</button>
-        </div>
+    <div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0">
+      <button onclick="switchTab('participants')" id="tab-participants" class="flex-1 py-3 text-center font-bold border-b-4 border-cyber-blue text-cyber-blue transition-colors">👤 参加者管理・受付</button>
+      <button onclick="switchTab('tournament')" id="tab-tournament" class="flex-1 py-3 text-center font-bold border-b-4 border-transparent text-cyber-text transition-colors">🏆 トーナメント進行</button>
+    </div>
+
+    <div class="p-4 flex-1 overflow-y-auto">
+      <div id="view-participants" class="h-full flex flex-col">
         
-        <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
-          <div class="overflow-y-auto flex-1">
-            <table class="w-full text-left border-collapse">
-              <thead class="sticky top-0 bg-[#111827] z-10">
-                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
-                  <th class="p-3 text-sm font-sf">NAME / STATS</th>
-                  <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
-                  <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
-                  <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
-                </tr>
-              </thead>
-              <tbody id="participantList"></tbody>
-            </table>
+        <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
+          <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
+          <div class="mb-4">
+            <label class="block font-bold mb-2 text-cyber-text font-sf">TOURNAMENT NAME</label>
+            <input type="text" id="tournamentNameInput" placeholder="例: 第1回 板橋会カップ" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
+          </div>
+          <div class="mb-6">
+            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
+            <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
+          </div>
+          <button id="btn-confirm-setup" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
+        </div>
+
+        <div id="mainManagementSection" class="hidden flex-col h-full">
+          <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
+            <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+            <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
+              📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
+            </label>
+            <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+            <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置手動入替</button>
+            
+            <div class="flex-grow"></div>
+            
+            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+          </div>
+          
+          <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
+            <div class="overflow-y-auto flex-1">
+              <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-[#111827] z-10">
+                  <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
+                    <th class="p-3 text-sm font-sf">NAME / STATS</th>
+                    <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
+                    <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
+                    <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="participantList"></tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="text-center pt-4 shrink-0">
+            <button id="btn-start-tournament" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
           </div>
         </div>
+      </div>
+
+      <div id="view-tournament" class="hidden h-full flex-col">
+        <div id="tournamentPreStart" class="text-center mt-8 hidden"></div>
         
-        <div class="text-center pt-4 shrink-0">
-          <button id="btn-start-tournament" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="view-tournament" class="hidden h-full flex-col">
-      <div id="tournamentPreStart" class="text-center mt-8 hidden"></div>
-      
-      <div id="tournamentActive" class="flex flex-col h-full">
-        <div class="flex justify-between items-center mb-4 shrink-0">
-          <div class="flex items-center gap-2 md:gap-4 flex-wrap">
-            <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
-            <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
+        <div id="tournamentActive" class="flex flex-col h-full">
+          <div class="flex justify-between items-center mb-4 shrink-0">
+            <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+              <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
+              <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
+            </div>
+            <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
-          <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
+          <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
+          <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
+            <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
+          </div>
         </div>
-        <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
-        <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
-          <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
+      </div>
+    </div>
+
+    <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
+        <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
+        <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
+          スプレッドシート等からコピーしたテキストを貼り付けてください。<br>
+          <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br>
+          <span class="text-cyber-pink">※勝率は自動計算されるため、入力は不要です。</span>
+        </p>
+        <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
+        <div class="flex gap-4">
+          <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf transition-colors">CANCEL</button>
+          <button onclick="processPasteData()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf">IMPORT</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
-      <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
-      <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
-        スプレッドシート等からコピーしたテキストを貼り付けてください。<br>
-        <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br>
-        <span class="text-cyber-pink">※勝率は自動計算されるため、入力は不要です。</span>
-      </p>
-      <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
-      <div class="flex gap-4">
-        <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf transition-colors">CANCEL</button>
-        <button onclick="processPasteData()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf">IMPORT</button>
+    <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-blue neon-blue flex flex-col h-[70vh]">
+        <h2 class="text-2xl font-sf text-cyber-blue mb-2">📋 MATCH DATA EXPORT</h2>
+        <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
+          下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
+          （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
+        </p>
+        <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
+        <div class="flex gap-4">
+          <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+          <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-blue neon-blue flex flex-col h-[70vh]">
-      <h2 class="text-2xl font-sf text-cyber-blue mb-2">📋 MATCH DATA EXPORT</h2>
-      <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
-        下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
-        （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
-      </p>
-      <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
-      <div class="flex gap-4">
-        <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
-        <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
+    <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
+        <h2 class="text-xl md:text-2xl text-cyber-blue font-sf mb-4 md:mb-8" id="resultTournamentName"></h2>
+        <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
+        <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
+        <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+        <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
+        <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
+          <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
+          <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
+        </div>
+        <div class="flex justify-center gap-4 mt-6 md:mt-10">
+          <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button onclick="closeResults()" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
-      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <h2 class="text-xl md:text-2xl text-cyber-blue font-sf mb-4 md:mb-8" id="resultTournamentName"></h2>
+    <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
       
-      <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
-      <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
-      
-      <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-      <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
-      
-      <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
-        <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
-        <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
-      </div>
-      
-      <div class="flex justify-center gap-4 mt-6 md:mt-10">
-        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-        <button onclick="closeResults()" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
-      </div>
+      <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50">
+        </div>
+
+      <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10">
+        </div>
     </div>
-  </div>
 
-  <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl text-center w-full max-w-md border border-cyber-blue neon-blue">
-      <h2 class="text-2xl font-sf text-cyber-blue mb-2" id="lotteryTargetName"></h2>
-      <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
-      <div class="grid grid-cols-2 gap-4" id="modalColorButtons"></div>
-      <button onclick="closeLotteryModal()" class="mt-6 bg-cyber-bg text-cyber-text px-6 py-2 rounded-full font-sf">CANCEL</button>
+    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+      <img id="resultImage" class="max-w-full max-h-[70vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
+      <button onclick="closeCameraModal()" class="bg-cyber-green text-cyber-bg px-8 py-3 rounded-full font-bold font-sf">CLOSE</button>
     </div>
-  </div>
+    <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
 
-  <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-    <img id="resultImage" class="max-w-full max-h-[70vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
-    <button onclick="closeCameraModal()" class="bg-cyber-green text-cyber-bg px-8 py-3 rounded-full font-bold font-sf">CLOSE</button>
-  </div>
-  <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
-
-  <script>
+  </div> <script>
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
     const colors = ['赤', '青', '黄', '緑']; const colorCodes = { '赤': 'bg-cyber-pink', '青': 'bg-cyber-blue', '黄': 'bg-yellow-400 text-black', '緑': 'bg-cyber-green' };
     
@@ -228,6 +227,8 @@
     let setupSwapPending = null;
     let isSwapMode = false;
     let swapPending = null;
+
+    let isEffectOn = true;
 
     // ==========================================
     // レーティング・勝率計算処理
@@ -243,7 +244,6 @@
         
         let s1 = match.p1.currentStats;
         let s2 = match.p2.currentStats;
-        
         if (!s1 || !s2) return;
 
         let winnerStats = (match.winner === 1) ? s1 : s2;
@@ -260,13 +260,8 @@
         s1.matches += 1;
         s2.matches += 1;
         
-        if (match.winner === 1) {
-            s1.wins += 1;
-            s2.loses += 1;
-        } else {
-            s2.wins += 1;
-            s1.loses += 1;
-        }
+        if (match.winner === 1) { s1.wins += 1; s2.loses += 1; } 
+        else { s2.wins += 1; s1.loses += 1; }
         
         s1.rate = calculateRate(s1.wins, s1.matches);
         s2.rate = calculateRate(s2.wins, s2.matches);
@@ -276,10 +271,8 @@
         participants.forEach(p => {
             if (p.initialStats) {
                 p.currentStats = {
-                    power: p.initialStats.power,
-                    matches: p.initialStats.matches,
-                    wins: p.initialStats.wins,
-                    loses: p.initialStats.loses,
+                    power: p.initialStats.power, matches: p.initialStats.matches,
+                    wins: p.initialStats.wins, loses: p.initialStats.loses,
                     rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
                 };
             }
@@ -289,9 +282,7 @@
 
         let maxRounds = 0;
         ['A', 'B', 'C', 'D'].forEach(bName => {
-            if (blockMatches[bName] && blockMatches[bName].length > maxRounds) {
-                maxRounds = blockMatches[bName].length;
-            }
+            if (blockMatches[bName] && blockMatches[bName].length > maxRounds) maxRounds = blockMatches[bName].length;
         });
 
         for (let r = 0; r < maxRounds; r++) {
@@ -301,7 +292,6 @@
                 }
             });
         }
-
         if (finals.sf) finals.sf.forEach(processMatchForStats);
         if (finals.third) processMatchForStats(finals.third);
         if (finals.f) processMatchForStats(finals.f);
@@ -310,83 +300,49 @@
     // ==========================================
     // BEY-ROULETTE LINK SYSTEM
     // ==========================================
-    let peer = null; 
-    let conn = null;
+    let peer = null; let conn = null;
 
     function initPeer() {
-      if (peer) {
-        peer.destroy();
-      }
+      if (peer) peer.destroy();
       peer = new Peer();
-      peer.on('error', (err) => {
-        console.error(err);
-        resetLinkUI();
-        alert("通信エラーが発生しました: " + err.type + "\n右上の「✖」を押してリセットしてください。");
-      });
-      peer.on('disconnected', () => {
-        if (!peer.destroyed) {
-          peer.reconnect();
-        }
-      });
+      peer.on('error', (err) => { console.error(err); resetLinkUI(); alert("通信エラーが発生しました: " + err.type); });
+      peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
     }
 
-    function forceResetLink() {
-      if (conn) { conn.close(); conn = null; }
-      initPeer();
-      resetLinkUI();
-    }
+    function forceResetLink() { if (conn) { conn.close(); conn = null; } initPeer(); resetLinkUI(); }
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONNECT"; 
-      btn.classList.replace('text-cyber-green', 'text-cyber-blue'); 
-      btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
       const dot = document.getElementById('link-status-dot');
-      dot.classList.replace('bg-cyber-green', 'bg-red-500'); 
-      dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
+      dot.classList.replace('bg-cyber-green', 'bg-red-500'); dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
       conn = null;
     }
 
     function connectLink() {
-      if (conn && conn.open) {
-        conn.close();
-        resetLinkUI();
-        return;
-      }
+      if (conn && conn.open) { conn.close(); resetLinkUI(); return; }
       const code = document.getElementById('linkCodeInput').value;
       if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力してください");
-      const btn = document.getElementById('btn-connect'); 
-      btn.innerText = "WAIT...";
-      if (!peer || peer.destroyed) {
-        initPeer();
-      }
-      if (conn) {
-        conn.close();
-      }
+      const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
+      if (!peer || peer.destroyed) initPeer();
+      if (conn) conn.close();
+      
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
       conn.on('open', () => {
-        btn.innerText = "DISCONN"; 
-        btn.classList.replace('text-cyber-blue', 'text-cyber-green'); 
-        btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+        btn.innerText = "DISCONN"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
         const dot = document.getElementById('link-status-dot');
-        dot.classList.replace('bg-red-500', 'bg-cyber-green'); 
-        dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
+        dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
       });
-      conn.on('close', () => {
-        resetLinkUI();
-      });
+      conn.on('close', () => resetLinkUI());
     }
 
     function sendMatchToScore(p1Id, p2Id, buttonElement) {
-      if(!conn || !conn.open) return alert("スコアシステムとリンクされていません。右上の「✖」でリセットしてCONNECTし直してください。");
+      if(!conn || !conn.open) return alert("スコアシステムとリンクされていません。");
       const p1 = participants.find(p => p.id === p1Id);
       const p2 = participants.find(p => p.id === p2Id);
 
       conn.send({ 
-        type: 'SET_MATCH', 
-        p1: p1.name, 
-        p2: p2.name, 
-        tName: tournamentName,
+        type: 'SET_MATCH', p1: p1.name, p2: p2.name, tName: tournamentName,
         p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
         p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate }
       });
@@ -394,13 +350,14 @@
       const originalText = buttonElement.innerText; buttonElement.innerText = "SENT!"; buttonElement.classList.replace('bg-cyber-blue', 'bg-cyber-green'); buttonElement.classList.replace('text-cyber-blue', 'text-cyber-bg');
       setTimeout(() => { buttonElement.innerText = originalText; buttonElement.classList.replace('bg-cyber-green', 'bg-cyber-blue'); buttonElement.classList.replace('text-cyber-bg', 'text-cyber-blue'); }, 1500);
     }
-    // ==========================================
 
+    // ==========================================
+    // 基本アプリ制御
+    // ==========================================
     function initApp() {
       const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
       colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
       
-      // ★ PC/iPad両対応の安全なイベントリスナー登録
       const btnSetup = document.getElementById('btn-confirm-setup');
       if (btnSetup) {
           btnSetup.addEventListener('click', (e) => { e.preventDefault(); handleConfirmSetup(); });
@@ -419,10 +376,7 @@
       if (setupDebounce) return;
       setupDebounce = true;
       setTimeout(() => { setupDebounce = false; }, 500);
-      
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
-          document.activeElement.blur();
-      }
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       confirmSetup();
     }
 
@@ -431,10 +385,7 @@
       if (startDebounce) return;
       startDebounce = true;
       setTimeout(() => { startDebounce = false; }, 500);
-      
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
-          document.activeElement.blur();
-      }
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       startTournament();
     }
 
@@ -448,21 +399,14 @@
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       let totalSize = parseInt(sizeStr);
       
-      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { 
-          totalSize = 32; 
-          if(sizeInput) sizeInput.value = "32"; 
-      }
+      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
 
-      if (totalSize <= 8) globalBlockSize = 2;
-      else if (totalSize <= 16) globalBlockSize = 4;
-      else globalBlockSize = 8;
-
+      if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
       colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
 
       const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
       const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize };
       if (remainder >= 1) caps['A']++; if (remainder >= 2) caps['C']++; if (remainder >= 3) caps['B']++;
-      
       colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
 
       isSetupDone = true;
@@ -499,12 +443,26 @@
         document.getElementById(`tab-${id}`).classList.replace('text-cyber-blue', 'text-cyber-text');
       });
       const targetView = document.getElementById(`view-${tabId}`);
-      if (tabId === 'participants') { targetView.classList.remove('hidden'); } 
-      else { targetView.classList.remove('hidden'); targetView.classList.add('flex'); }
+      if (tabId === 'participants') { targetView.classList.remove('hidden'); } else { targetView.classList.remove('hidden'); targetView.classList.add('flex'); }
       document.getElementById(`tab-${tabId}`).classList.replace('border-transparent', 'border-cyber-blue');
       document.getElementById(`tab-${tabId}`).classList.replace('text-cyber-text', 'text-cyber-blue');
-      
       if (tabId === 'tournament') { isSetupSwapMode = false; setupSwapPending = null; renderTournament(); }
+    }
+
+    function toggleEffectMode() {
+        isEffectOn = !isEffectOn;
+        const btn = document.getElementById('btn-toggle-effect');
+        if (isEffectOn) {
+            btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink');
+            btn.classList.replace('text-cyber-pink', 'text-white');
+            btn.classList.add('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: ON";
+        } else {
+            btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark');
+            btn.classList.replace('text-white', 'text-cyber-pink');
+            btn.classList.remove('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: OFF";
+        }
     }
 
     function openPasteModal() { if(isTournamentStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
@@ -610,11 +568,7 @@
       participants.forEach(p => {
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
-        
-        let statsDisplay = '';
-        if (p.currentStats) {
-            statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
-        }
+        const statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
 
         let lotteryHTML = '';
         if (p.color) {
@@ -635,30 +589,162 @@
       });
     }
 
+
+    // ==========================================
+    // ★ 抽選 ＆ ルーレット演出機能
+    // ==========================================
     function openLotteryModal(id) {
-      if(isTournamentStarted || isSetupSwapMode) return; currentLotteryId = id; document.getElementById('lotteryTargetName').innerText = `TARGET: ${participants.find(x => x.id === id).name}`;
+      if(isTournamentStarted || isSetupSwapMode) return; 
+      currentLotteryId = id; 
+
+      // 演出ONの場合、アニメーションなしで一瞬で180度回転
+      if (isEffectOn) {
+          const wrapper = document.getElementById('app-wrapper');
+          wrapper.style.transform = 'rotate(180deg)';
+      }
+
+      const p = participants.find(x => x.id === id);
       const counts = {}; colors.forEach(c => counts[c] = blockData[c].filter(x => x !== null).length);
       let activeCounts = []; colors.forEach(col => { if(counts[col] < blockCapacities[col]) activeCounts.push(counts[col]); });
       const minCount = activeCounts.length > 0 ? Math.min(...activeCounts) : 0;
-      const container = document.getElementById('modalColorButtons'); container.innerHTML = '';
+      
+      const modalContent = document.getElementById('lotteryModalContent');
+      modalContent.innerHTML = `
+          <h2 class="text-2xl font-sf text-cyber-blue mb-2">TARGET: ${p.name}</h2>
+          <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
+          <div class="grid grid-cols-2 gap-4" id="modalColorButtons"></div>
+          <button onclick="closeLotteryModal()" class="mt-6 bg-cyber-bg text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-sf hover:bg-gray-800 transition-colors">CANCEL</button>
+      `;
+
+      const container = document.getElementById('modalColorButtons');
       colors.forEach(c => {
         const remain = blockCapacities[c] - counts[c]; const isDisabled = remain === 0 || (counts[c] > minCount);
         const btn = document.createElement('button'); btn.className = `py-6 rounded-lg font-bold text-cyber-text shadow-lg text-2xl ${colorCodes[c]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform`;
-        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`; if(!isDisabled) btn.onclick = () => doLotteryModal(c); container.appendChild(btn);
+        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`; 
+        if(!isDisabled) btn.onclick = () => doLotteryModal(c); 
+        container.appendChild(btn);
       });
-      document.getElementById('lotteryModal').classList.remove('hidden'); document.getElementById('lotteryModal').classList.add('flex');
+
+      document.getElementById('lotteryModal').classList.remove('hidden'); 
+      document.getElementById('lotteryModal').classList.add('flex');
     }
+
     function doLotteryModal(selectedColor) {
-      const p = participants.find(x => x.id === currentLotteryId); const emptyPositions = []; blockActivePositions[selectedColor].forEach(idx => { if(blockData[selectedColor][idx] === null) emptyPositions.push(idx); });
-      if(emptyPositions.length === 0) return alert("満員です");
-      const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
-      p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; closeLotteryModal(); renderParticipants();
+        const p = participants.find(x => x.id === currentLotteryId); 
+        const emptyPositions = []; 
+        blockActivePositions[selectedColor].forEach(idx => { 
+            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx); 
+        });
+        
+        if(emptyPositions.length === 0) return alert("満員です");
+        const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+        const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
+
+        if (!isEffectOn) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`); 
+            closeLotteryModal(); 
+            renderParticipants();
+            return;
+        }
+
+        let totalCap = 0;
+        let totalEmpty = 0;
+        let allEmptySlots = [];
+        colors.forEach(c => {
+            totalCap += blockCapacities[c];
+            blockActivePositions[c].forEach(idx => {
+                if (blockData[c][idx] === null) {
+                    totalEmpty++;
+                    allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
+                }
+            });
+        });
+
+        if (totalEmpty === 1) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+            showLotteryResultScreen(p.name, finalSlotName);
+            return;
+        }
+
+        // 残り枠の割合で演出時間を分岐（2秒 or 1秒）
+        const remainRatio = totalEmpty / totalCap;
+        const duration = remainRatio >= 0.5 ? 2000 : 1000;
+
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
+            <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
+        `;
+
+        const rDisplay = document.getElementById('rouletteDisplay');
+        let startTime = Date.now();
+        
+        let rInterval = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            if (elapsed > duration) {
+                clearInterval(rInterval);
+                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+                showLotteryResultScreen(p.name, finalSlotName);
+            } else {
+                let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
+                rDisplay.innerText = randomSlot;
+            }
+        }, 50);
     }
+
+    function showLotteryResultScreen(playerName, slotName) {
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <div class="flex flex-col items-center justify-center">
+                <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
+                <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
+                <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">Confirmed</button>
+            </div>
+        `;
+        
+        // ★ 操作者(運営)向け反転表示を独立した別枠に表示
+        const opBox = document.getElementById('operatorViewBox');
+        if (isEffectOn) {
+            opBox.innerHTML = `
+                <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
+                <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
+                <span class="text-xl font-bold font-sf text-cyber-pink">【${slotName}】</span>
+            `;
+            opBox.classList.remove('hidden');
+            opBox.classList.add('flex');
+        }
+    }
+
+    function confirmLotteryResult() {
+        closeLotteryModal();
+        renderParticipants();
+    }
+
+    function closeLotteryModal() { 
+        document.getElementById('lotteryModal').classList.add('hidden'); 
+        document.getElementById('lotteryModal').classList.remove('flex'); 
+        
+        // 運営用表示枠を隠す
+        const opBox = document.getElementById('operatorViewBox');
+        if(opBox) {
+            opBox.classList.add('hidden');
+            opBox.classList.remove('flex');
+        }
+
+        currentLotteryId = null;
+
+        // 画面の回転を元に戻す
+        const wrapper = document.getElementById('app-wrapper');
+        wrapper.style.transform = '';
+    }
+
     function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
       if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
-    function closeLotteryModal() { document.getElementById('lotteryModal').classList.add('hidden'); document.getElementById('lotteryModal').classList.remove('flex'); currentLotteryId = null; }
+
 
     function openCamera(id) { currentCheckId = id; document.getElementById('cameraInput').click(); }
     document.getElementById('cameraInput').addEventListener('change', function(e) {

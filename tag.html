@@ -56,6 +56,9 @@
         <div class="p-4 border-b border-cyber-table-border shrink-0">
           <h3 class="font-sf font-bold text-cyber-blue text-lg mb-2">1. INDIVIDUAL ENTRY</h3>
           <div class="flex gap-2">
+            <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-1 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
+              📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
+            </label>
             <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green text-cyber-green px-3 py-1 rounded text-xs font-bold">📋 貼付</button>
             <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded text-xs font-bold">＋ 手動</button>
           </div>
@@ -65,12 +68,12 @@
       <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-pink rounded-lg min-h-0">
         <div class="p-4 border-b border-cyber-table-border shrink-0 flex justify-between items-center bg-[#1a0b14]">
           <h3 class="font-sf font-bold text-cyber-pink text-lg">2. FORM TEAMS</h3>
-          <button ontouchend="handleFormTeam(event)" onclick="handleFormTeam(event)" id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed">FORM TAG 🤝</button>
+          <button id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed transition-transform">FORM TAG 🤝</button>
         </div>
         <div class="overflow-y-auto p-4 flex-1 space-y-2" id="teamList"></div>
         <div class="p-4 border-t border-cyber-table-border shrink-0 text-center">
           <input type="text" id="tournamentNameInput" placeholder="大会名 (例: タッグ杯)" class="w-full mb-3 p-2 bg-cyber-bg border border-cyber-pink rounded text-center font-bold text-cyber-text outline-none font-sf">
-          <button ontouchend="handleStartQual(event)" onclick="handleStartQual(event)" id="btn-start-qual" class="w-full bg-cyber-pink text-white px-6 py-4 rounded font-bold shadow-[0_0_15px_#ec4899] font-sf active:scale-95 text-xl hidden">▶ START QUALIFIERS</button>
+          <button id="btn-start-qual" class="w-full bg-cyber-pink text-white px-6 py-4 rounded font-bold shadow-[0_0_15px_#ec4899] font-sf transition-transform active:scale-95 text-xl hidden">▶ START QUALIFIERS</button>
           <p id="start-msg" class="text-xs text-cyber-pink font-bold mt-2">※決勝(8枠)を行うため、最低4チーム(推奨8以上)が必要です</p>
         </div>
       </div>
@@ -147,7 +150,9 @@
       </div>
     </div>
 
-  </div> <div id="scoreModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-50 p-2 md:p-4 overflow-y-auto">
+  </div>
+
+  <div id="scoreModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-50 p-2 md:p-4 overflow-y-auto">
     <div class="bg-cyber-dark p-4 md:p-6 rounded-lg shadow-xl w-full max-w-3xl border-2 border-cyber-pink flex flex-col my-auto">
       <h2 class="text-xl font-sf text-center text-cyber-pink mb-2">TAG MATCH RESULT</h2>
       <div class="text-center text-cyber-text font-bold mb-4 flex justify-around items-center bg-[#0d131f] p-2 rounded border border-cyber-table-border">
@@ -167,7 +172,7 @@
   <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green flex flex-col h-[60vh]">
       <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
-      <p class="mb-2 text-cyber-text text-xs opacity-80"><span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 勝率</span> の順</p>
+      <p class="mb-2 text-cyber-text text-xs opacity-80"><span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br><span class="text-cyber-pink">※勝率は自動計算されます。</span></p>
       <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
       <div class="flex gap-4">
         <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf">CANCEL</button>
@@ -223,7 +228,7 @@
     let participants = [], pidCounter = 1, selectedForTeam = [];
     let teams = [], tidCounter = 1;
     
-    // スイスドロー＆決勝データ
+    let isTournamentStarted = false;
     let r1Matches = [], r2Matches = [];
     let standings = []; 
     let finalsMatches = { qf1:null, qf2:null, qf3:null, qf4:null, sf1:null, sf2:null, f:null, third:null };
@@ -234,11 +239,86 @@
     let finalsType = 'QF'; 
     let currentCheckTarget = null;
     
-    // R1入れ替え用
     let isSwapMode = false;
     let swapPending = null;
 
-    // --- PeerJS通信 ---
+    // ==========================================
+    // ★ レーティング・勝率計算処理
+    // ==========================================
+    function calculateRate(wins, matches) {
+        if (matches === 0) return '0.00%';
+        return ((wins / matches) * 100).toFixed(2) + '%';
+    }
+
+    function processBattleForStats(b) {
+        if (!b || b.winner === null || !b.p1Id || !b.p2Id) return;
+
+        let p1 = participants.find(p => p.id === b.p1Id);
+        let p2 = participants.find(p => p.id === b.p2Id);
+        if (!p1 || !p2) return;
+
+        let s1 = p1.currentStats;
+        let s2 = p2.currentStats;
+        if (!s1 || !s2) return;
+
+        let winnerStats = (b.winner === 1) ? s1 : s2;
+        let loserStats = (b.winner === 1) ? s2 : s1;
+
+        // イロレーティング (K=32, 400スケール)
+        let rWin = winnerStats.power;
+        let rLose = loserStats.power;
+        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
+        let change = Math.round(32 * (1 - eWin));
+
+        winnerStats.power += change;
+        loserStats.power -= change;
+
+        s1.matches += 1;
+        s2.matches += 1;
+
+        if (b.winner === 1) {
+            s1.wins += 1;
+            s2.loses += 1;
+        } else {
+            s2.wins += 1;
+            s1.loses += 1;
+        }
+
+        s1.rate = calculateRate(s1.wins, s1.matches);
+        s2.rate = calculateRate(s2.wins, s2.matches);
+    }
+
+    function recalculateAllStats() {
+        participants.forEach(p => {
+            if (p.initialStats) {
+                p.currentStats = {
+                    power: p.initialStats.power,
+                    matches: p.initialStats.matches,
+                    wins: p.initialStats.wins,
+                    loses: p.initialStats.loses,
+                    rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
+                };
+            }
+        });
+
+        if (!isTournamentStarted) return;
+
+        const allM = [...r1Matches, ...r2Matches];
+        if (finalsMatches.qf1) allM.push(finalsMatches.qf1, finalsMatches.qf2, finalsMatches.qf3, finalsMatches.qf4);
+        if (finalsMatches.sf1) allM.push(finalsMatches.sf1, finalsMatches.sf2);
+        if (finalsMatches.third) allM.push(finalsMatches.third);
+        if (finalsMatches.f) allM.push(finalsMatches.f);
+
+        allM.forEach(m => {
+            if (m && m.battles) {
+                m.battles.forEach(b => processBattleForStats(b));
+            }
+        });
+    }
+
+    // ==========================================
+    // BEY-ROULETTE LINK SYSTEM
+    // ==========================================
     let peer = null, conn = null;
     function initPeer() {
       if(peer) peer.destroy();
@@ -271,14 +351,49 @@
       const p1 = participants.find(p => p.id == p1Id);
       const p2 = participants.find(p => p.id == p2Id);
       if(!p1 || !p2) return alert("プレイヤーを選択してください");
+      
+      // 送信時に最新の再計算済みステータスを送信
       conn.send({ 
         type: 'SET_MATCH', p1: p1.name, p2: p2.name, tName: tournamentName,
-        p1Stats: { rank: p1.rank, power: p1.power, rate: p1.rate },
-        p2Stats: { rank: p2.rank, power: p2.power, rate: p2.rate }
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate }
       });
       const btn = document.getElementById(btnId);
       const originalText = btn.innerText; btn.innerText = "SENT!"; btn.classList.replace('text-cyber-blue', 'text-white'); btn.classList.replace('border-cyber-blue', 'border-white');
       setTimeout(() => { btn.innerText = originalText; btn.classList.replace('text-white', 'text-cyber-blue'); btn.classList.replace('border-white', 'border-cyber-blue'); }, 1500);
+    }
+
+    // --- 初期化 ＆ iPad/PCタップ抜け防止イベント登録 ---
+    function initApp() {
+        const btnFormTeam = document.getElementById('btn-form-team');
+        if (btnFormTeam) {
+            btnFormTeam.addEventListener('click', (e) => { e.preventDefault(); handleFormTeam(); });
+            btnFormTeam.addEventListener('touchend', (e) => { e.preventDefault(); handleFormTeam(); }, { passive: false });
+        }
+
+        const btnStartQual = document.getElementById('btn-start-qual');
+        if (btnStartQual) {
+            btnStartQual.addEventListener('click', (e) => { e.preventDefault(); handleStartQual(); });
+            btnStartQual.addEventListener('touchend', (e) => { e.preventDefault(); handleStartQual(); }, { passive: false });
+        }
+    }
+
+    let formTeamDebounce = false;
+    function handleFormTeam() {
+        if (formTeamDebounce) return;
+        formTeamDebounce = true;
+        setTimeout(() => { formTeamDebounce = false; }, 500);
+        if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+        formTeam();
+    }
+
+    let startQualDebounce = false;
+    function handleStartQual() {
+        if (startQualDebounce) return;
+        startQualDebounce = true;
+        setTimeout(() => { startQualDebounce = false; }, 500);
+        if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+        startTournament();
     }
 
     // --- タブ切り替え ---
@@ -301,39 +416,64 @@
     // --- 1. 受付＆結成 ---
     function openPasteModal() { document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
+    
     function processPasteData() {
       const text = document.getElementById('pasteArea').value; if(!text.trim()) return;
       text.split(/\r\n|\n/).forEach(line => {
         if(!line.trim() || participants.length >= 24) return; const cols = line.split(line.includes('\t') ? '\t' : ',');
-        if(cols[0]) participants.push({ id: pidCounter++, name: cols[0].trim(), memo: cols[1]?cols[1].trim():'', rank: cols[2]?cols[2].trim():'--', power: cols[3]?cols[3].trim():'----', rate: cols[4]?cols[4].trim():'--%', teamId: null }); 
+        if(cols[0]) {
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
+            
+            participants.push({ 
+                id: pidCounter++, name: cols[0].trim(), memo: cols[1]?cols[1].trim():'', 
+                rank: cols[2]?cols[2].trim():'--', 
+                initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+                currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+                teamId: null 
+            }); 
+        }
       });
       renderParticipants(); closePasteModal();
     }
+    
     function addParticipant() {
       if(participants.length >= 24) return alert("最大24名です。");
-      let name = prompt("参加者名を入力"); if(name) participants.push({ id: pidCounter++, name, memo: '', rank: '--', power: '----', rate: '--%', teamId: null }); renderParticipants();
+      let name = prompt("参加者名を入力"); 
+      if(name) {
+          participants.push({ 
+              id: pidCounter++, name, memo: '', rank: '--', 
+              initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
+              currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+              teamId: null 
+          }); 
+          renderParticipants();
+      }
     }
-
-    // ★ iPadタップ抜け対策 (ontouchend)
-    let formTeamDebounce = false;
-    function handleFormTeam(e) {
-        if (e && e.type === 'touchend') e.preventDefault();
-        if (formTeamDebounce) return;
-        formTeamDebounce = true;
-        setTimeout(() => { formTeamDebounce = false; }, 500);
-        if (document.activeElement) document.activeElement.blur();
-        formTeam();
-    }
-
-    let startQualDebounce = false;
-    function handleStartQual(e) {
-        if (e && e.type === 'touchend') e.preventDefault();
-        if (startQualDebounce) return;
-        startQualDebounce = true;
-        setTimeout(() => { startQualDebounce = false; }, 500);
-        if (document.activeElement) document.activeElement.blur();
-        startTournament();
-    }
+    
+    document.getElementById('csvInput').addEventListener('change', function(e) {
+      if(isTournamentStarted) return alert("開始後は追加できません"); const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader(); reader.onload = function(event) {
+        event.target.result.split(/\r\n|\n/).forEach(line => {
+          if(!line.trim() || participants.length >= 24) return; const cols = line.split(',');
+          if(cols[0]) { 
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
+            participants.push({ 
+              id: pidCounter++, name: cols[0].trim(), memo: cols[1]?cols[1].trim():'', 
+              rank: cols[2] ? cols[2].trim() : '--', 
+              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+              teamId: null 
+            }); 
+          }
+        }); e.target.value = ''; renderParticipants();
+      }; reader.readAsText(file);
+    });
 
     function renderParticipants() {
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
@@ -348,7 +488,9 @@
           renderParticipants();
         };
         const memoBadge = p.memo ? `<span class="memo-badge">${p.memo}</span>` : '';
-        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap">${p.name} ${memoBadge} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
+        const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
+        
+        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap leading-tight">${p.name} ${memoBadge}${statsDisplay} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
         tbody.appendChild(tr);
       });
       const btn = document.getElementById('btn-form-team');
@@ -411,6 +553,7 @@
     function startTournament() {
       if(teams.length < 4) return alert("最低4チーム必要です。");
       if(!confirm("予選（スイスドロー2回戦）を開始しますか？")) return;
+      isTournamentStarted = true;
       tournamentName = document.getElementById('tournamentNameInput').value || 'CYBER BEY-TAG-LEAGUE';
       document.getElementById('displayQualName').innerText = `${tournamentName} - QUALIFIERS`;
       
@@ -665,6 +808,7 @@
       currentScoreMatch.battles.forEach(b=>{b.p1Id=null;b.p2Id=null;b.s1=null;b.s2=null;b.winner=null;});
       currentScoreMatch.winnerTeam=null; currentScoreMatch.t1Pts=0; currentScoreMatch.t2Pts=0;
       closeScoreModal(); 
+      recalculateAllStats();
       if(currentScoreRound==='finals') renderFinals(); else { renderQualifiers(); renderRanking(); }
     }
     function saveScoreMatch() {
@@ -674,6 +818,10 @@
       currentScoreMatch.battles = JSON.parse(JSON.stringify(tempBattles));
       currentScoreMatch.winnerTeam = w1>=2 ? 1 : 2; currentScoreMatch.t1Pts = pt1; currentScoreMatch.t2Pts = pt2;
       closeScoreModal(); 
+      
+      // ★試合保存後に成績を再計算
+      recalculateAllStats();
+
       if(currentScoreRound==='finals'){ processFinals(); renderFinals(); } else { renderQualifiers(); renderRanking(); }
     }
 
@@ -736,7 +884,7 @@
       render(finalsMatches.sf1, 'card-sf1'); render(finalsMatches.sf2, 'card-sf2'); render(finalsMatches.f, 'card-f'); render(finalsMatches.third, 'card-third');
     }
 
-    // --- 6. 結果発表 & ★ CSVエクスポート（個人戦用フォーマット） ---
+    // --- 6. 結果発表 & CSVエクスポート ---
     function showResults() {
       document.getElementById('resultLeagueName').innerText = tournamentName;
       if(finalsMatches.f && finalsMatches.f.winnerTeam){ document.getElementById('res1').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team1.name:finalsMatches.f.team2.name; document.getElementById('res2').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team2.name:finalsMatches.f.team1.name; }
@@ -749,7 +897,6 @@
       let exportText = "";
       const addMatch = (m) => {
         if (m && m.team1 && m.team2 && m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && m.team1.name !== 'TBD' && m.team2.name !== 'TBD' && m.winnerTeam !== null) {
-          // タッグ名ではなく、バトルごとに個人の勝敗を出力する
           m.battles.forEach(b => {
              if(b.p1Id !== null && b.p2Id !== null && b.winner !== null) {
                  const p1 = participants.find(p => p.id === b.p1Id);
@@ -758,7 +905,6 @@
                      const p1Name = p1.name;
                      const p2Name = p2.name;
                      const winnerName = b.winner === 1 ? p1Name : (b.winner === 2 ? p2Name : "");
-                     // タブ2回連続 (\t\t) で間に1列分の空欄（B列とD列）をあける
                      exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
                  }
              }
@@ -796,6 +942,9 @@
         btn.classList.replace('bg-cyber-green', 'bg-cyber-pink');
       }, 2000);
     }
+
+    // 初期化実行
+    initApp();
   </script>
 </body>
 </html>
