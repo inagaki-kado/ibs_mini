@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.30 (Ready Set Edition)</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.33 (Score Adjust Ready)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -90,15 +90,13 @@
         .win-label { font-size: 15vmin; display: block; margin-top: 0.25em; color: white; text-shadow: 0 0 30px white; line-height: 1; }
 
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
-        #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 90%; text-align: center; opacity: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 100%; text-align: center; opacity: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
         .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0; transform: scale(1.1); white-space: pre-wrap; }
         .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
         
-        /* ★追加：READY SET のスタイル */
         .ready-set-style { font-family: 'Orbitron', sans-serif !important; font-size: 15vmin !important; font-style: italic; font-weight: 900; color: var(--bx-blue); text-shadow: 0 0 30px var(--bx-blue), 4px 4px 0 black; line-height: 1.2; }
-        .ready-set-timer { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 25vmin !important; color: white; display: block; margin-top: 20px; font-style: italic; text-shadow: 0 0 20px white, 4px 4px 0 black; }
 
         @keyframes zoomInBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1); opacity: 1; filter: brightness(1); } }
         @keyframes slideCutIn { 0% { transform: translateX(-30vw) scale(0.8) skewX(-15deg); opacity: 0; } 70% { transform: translateX(5vw) scale(1.1) skewX(5deg); opacity: 1; } 100% { transform: translateX(0) scale(1) skewX(0); opacity: 1; } }
@@ -201,7 +199,6 @@
         let currentRotation = parseInt(localStorage.getItem('tbh_cam_rot')) || 0;
         let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
 
-        // ★追加：コール用アニメーション管理変数
         let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null, readySetReq = null;
 
         const camVideo = document.getElementById('camera-bg');
@@ -284,9 +281,6 @@
             });
         }
 
-        // ========================================================
-        // ★ カウントダウン ＋ 準備時間(Ready Set)演出
-        // ========================================================
         function startCall() {
             if (isCountingDown || isReplayMode) return;
             isCalling = true; blurFocus();
@@ -294,26 +288,27 @@
             const o = document.getElementById('effect-overlay');
             const t = document.getElementById('effect-text'); 
             
-            // スタイルをセットして表示
             t.className = 'ready-set-style';
             o.style.display = 'flex';
             
             let startTime = performance.now();
-            let duration = 3000; // 3秒の準備時間
+            let duration = 2000; 
             
             function updateReadySet(now) {
                 let elapsed = now - startTime;
                 let remain = duration - elapsed;
                 if (remain < 0) remain = 0;
                 
-                // コンマ01秒単位で減っていく表示
-                let seconds = (remain / 1000).toFixed(2);
-                t.innerHTML = `READY SET<span class="ready-set-timer">${seconds}</span>`;
+                let widthPct = (remain / duration) * 100;
+                
+                t.innerHTML = `READY SET
+                <div style="width: 80vw; max-width: 800px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid var(--bx-blue); margin: 30px auto 0; border-radius: 10px; overflow: hidden; box-shadow: 0 0 15px rgba(0, 234, 255, 0.3); display: flex; justify-content: flex-end;">
+                    <div style="width: ${widthPct}%; height: 100%; background: var(--bx-blue); box-shadow: 0 0 15px var(--bx-blue);"></div>
+                </div>`;
                 
                 if (remain > 0) {
                     readySetReq = requestAnimationFrame(updateReadySet);
                 } else {
-                    // 3秒経過後に本来の「3・2・1」のコールを開始
                     readySetReq = null;
                     startMainCall();
                 }
@@ -323,9 +318,9 @@
 
         function startMainCall() {
             const sequence = [ 
-                { text: "3", delay: 800, style: "call-number-style" }, 
-                { text: "2", delay: 800, style: "call-number-style" }, 
-                { text: "1", delay: 800, style: "call-number-style" }, 
+                { text: "3", delay: 1000, style: "call-number-style" }, 
+                { text: "2", delay: 1000, style: "call-number-style" }, 
+                { text: "1", delay: 1000, style: "call-number-style" }, 
                 { text: "GO", delay: 600, style: "call-text-go-style" }, 
                 { text: "SHOOT!!", delay: 1000, style: "call-text-shoot-style" } 
             ];
@@ -435,16 +430,19 @@
                 if (cmd === 'P1_O') addScore(1, 2, 'OVER');
                 if (cmd === 'P1_S') addScore(1, 1, 'SPIN');
                 if (cmd === 'P1_MINUS') { s1 = Math.max(0, s1-1); document.getElementById('score1').innerText = s1; }
+                // ★追加：P1 +1 コマンド
+                if (cmd === 'P1_PLUS') { s1 = Math.min(winScoreLimit, s1+1); document.getElementById('score1').innerText = s1; }
                 
                 if (cmd === 'P2_X') addScore(2, 3, 'XTREME');
                 if (cmd === 'P2_B') addScore(2, 2, 'BURST');
                 if (cmd === 'P2_O') addScore(2, 2, 'OVER');
                 if (cmd === 'P2_S') addScore(2, 1, 'SPIN');
                 if (cmd === 'P2_MINUS') { s2 = Math.max(0, s2-1); document.getElementById('score2').innerText = s2; }
+                // ★追加：P2 +1 コマンド
+                if (cmd === 'P2_PLUS') { s2 = Math.min(winScoreLimit, s2+1); document.getElementById('score2').innerText = s2; }
             }
         }
 
-        // 物理テンキーの入力をコマンドに変換
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;

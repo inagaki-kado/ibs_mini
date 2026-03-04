@@ -23,6 +23,9 @@
             'cyber-blue': '#0ea5e9',
             'cyber-green': '#22c55e',
             'cyber-pink': '#ec4899',
+            'cyber-red': '#ff0055',
+            'cyber-red-orange': '#ff4500',
+            'cyber-orange': '#ffaa00',
             'cyber-text': '#e2e8f0',
             'cyber-table-border': '#1f2937'
           }
@@ -243,20 +246,26 @@
       </div>
 
       <div id="remote-score-area" class="flex flex-col gap-4">
-        <div class="flex justify-between gap-4">
-          <div class="flex-1 grid grid-cols-2 gap-2">
-            <button onclick="sendRemoteCmd('P1_X')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg">X (3)</button>
-            <button onclick="sendRemoteCmd('P1_B')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg">B (2)</button>
-            <button onclick="sendRemoteCmd('P1_O')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg">O (2)</button>
-            <button onclick="sendRemoteCmd('P1_S')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg">S (1)</button>
-            <button onclick="sendRemoteCmd('P1_MINUS')" class="col-span-2 py-3 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1 (MINUS)</button>
+        <div class="flex justify-between gap-6">
+          <div class="flex-1 flex flex-col gap-2">
+            <button onclick="sendRemoteCmd('P1_X')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="sendRemoteCmd('P1_B')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="sendRemoteCmd('P1_O')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="sendRemoteCmd('P1_S')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <div class="flex gap-2 mt-1">
+                <button onclick="sendRemoteCmd('P1_MINUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="sendRemoteCmd('P1_PLUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+            </div>
           </div>
-          <div class="flex-1 grid grid-cols-2 gap-2">
-            <button onclick="sendRemoteCmd('P2_X')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg">X (3)</button>
-            <button onclick="sendRemoteCmd('P2_B')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg">B (2)</button>
-            <button onclick="sendRemoteCmd('P2_O')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg">O (2)</button>
-            <button onclick="sendRemoteCmd('P2_S')" class="py-4 md:py-6 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg">S (1)</button>
-            <button onclick="sendRemoteCmd('P2_MINUS')" class="col-span-2 py-3 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1 (MINUS)</button>
+          <div class="flex-1 flex flex-col gap-2">
+            <button onclick="sendRemoteCmd('P2_X')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="sendRemoteCmd('P2_B')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="sendRemoteCmd('P2_O')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="sendRemoteCmd('P2_S')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <div class="flex gap-2 mt-1">
+                <button onclick="sendRemoteCmd('P2_MINUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="sendRemoteCmd('P2_PLUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+            </div>
           </div>
         </div>
 
@@ -286,7 +295,6 @@
           <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -743,7 +751,6 @@
       participants.forEach(p => {
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
-        
         const statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
 
         let lotteryHTML = '';
@@ -765,8 +772,9 @@
       });
     }
 
+
     // ==========================================
-    // 抽選モーダル処理（oldtournament完全準拠）
+    // ★ 抽選 ＆ ルーレット演出機能
     // ==========================================
     function openLotteryModal(id) {
       if(isTournamentStarted || isSetupSwapMode) return; 
@@ -804,66 +812,66 @@
     }
 
     function doLotteryModal(selectedColor) {
-      const p = participants.find(x => x.id === currentLotteryId); 
-      const emptyPositions = []; 
-      blockActivePositions[selectedColor].forEach(idx => { 
-          if(blockData[selectedColor][idx] === null) emptyPositions.push(idx); 
-      });
-      
-      if(emptyPositions.length === 0) return alert("満員です");
-      const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
-      const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
+        const p = participants.find(x => x.id === currentLotteryId); 
+        const emptyPositions = []; 
+        blockActivePositions[selectedColor].forEach(idx => { 
+            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx); 
+        });
+        
+        if(emptyPositions.length === 0) return alert("満員です");
+        const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+        const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
 
-      if (!isEffectOn) {
-          p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-          alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`); 
-          closeLotteryModal(); 
-          renderParticipants();
-          return;
-      }
+        if (!isEffectOn) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`); 
+            closeLotteryModal(); 
+            renderParticipants();
+            return;
+        }
 
-      let totalCap = 0;
-      let totalEmpty = 0;
-      let allEmptySlots = [];
-      colors.forEach(c => {
-          totalCap += blockCapacities[c];
-          blockActivePositions[c].forEach(idx => {
-              if (blockData[c][idx] === null) {
-                  totalEmpty++;
-                  allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
-              }
-          });
-      });
+        let totalCap = 0;
+        let totalEmpty = 0;
+        let allEmptySlots = [];
+        colors.forEach(c => {
+            totalCap += blockCapacities[c];
+            blockActivePositions[c].forEach(idx => {
+                if (blockData[c][idx] === null) {
+                    totalEmpty++;
+                    allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
+                }
+            });
+        });
 
-      if (totalEmpty === 1) {
-          p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-          showLotteryResultScreen(p.name, finalSlotName);
-          return;
-      }
+        if (totalEmpty === 1) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+            showLotteryResultScreen(p.name, finalSlotName);
+            return;
+        }
 
-      const remainRatio = totalEmpty / totalCap;
-      const duration = remainRatio >= 0.5 ? 2000 : 1000;
+        const remainRatio = totalEmpty / totalCap;
+        const duration = remainRatio >= 0.5 ? 2000 : 1000;
 
-      const modalContent = document.getElementById('lotteryModalContent');
-      modalContent.innerHTML = `
-          <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
-          <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
-      `;
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
+            <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
+        `;
 
-      const rDisplay = document.getElementById('rouletteDisplay');
-      let startTime = Date.now();
-      
-      let rInterval = setInterval(() => {
-          let elapsed = Date.now() - startTime;
-          if (elapsed > duration) {
-              clearInterval(rInterval);
-              p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-              showLotteryResultScreen(p.name, finalSlotName);
-          } else {
-              let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
-              rDisplay.innerText = randomSlot;
-          }
-      }, 50);
+        const rDisplay = document.getElementById('rouletteDisplay');
+        let startTime = Date.now();
+        
+        let rInterval = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            if (elapsed > duration) {
+                clearInterval(rInterval);
+                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
+                showLotteryResultScreen(p.name, finalSlotName);
+            } else {
+                let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
+                rDisplay.innerText = randomSlot;
+            }
+        }, 50);
     }
 
     function showLotteryResultScreen(playerName, slotName) {
@@ -873,7 +881,8 @@
                 <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
                 <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
                 <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
-                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">Confirmed</button>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">
+OK</button>
             </div>
         `;
         
@@ -914,6 +923,7 @@
       if(isTournamentStarted || isSetupSwapMode) return;
       if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
+
 
     function openCamera(id) { currentCheckId = id; document.getElementById('cameraInput').click(); }
     document.getElementById('cameraInput').addEventListener('change', function(e) {
