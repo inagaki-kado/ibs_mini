@@ -51,4 +51,899 @@
 
   <div class="p-4 flex-1 overflow-y-auto w-full max-w-7xl mx-auto">
     
-    <div
+    <div id="view-setup" class="flex flex-col lg:flex-row gap-6 h-full">
+      <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-table-border rounded-lg min-h-0">
+        <div class="p-4 border-b border-cyber-table-border shrink-0">
+          <h3 class="font-sf font-bold text-cyber-blue text-lg mb-2">1. INDIVIDUAL ENTRY</h3>
+          <div class="flex gap-2">
+            <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-1 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
+              📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
+            </label>
+            <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green text-cyber-green px-3 py-1 rounded text-xs font-bold">📋 貼付</button>
+            <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded text-xs font-bold">＋ 手動</button>
+          </div>
+        </div>
+        <div class="overflow-y-auto p-2 flex-1"><table class="w-full text-left text-sm"><tbody id="participantList"></tbody></table></div>
+      </div>
+      <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-pink rounded-lg min-h-0">
+        <div class="p-4 border-b border-cyber-table-border shrink-0 flex justify-between items-center bg-[#1a0b14]">
+          <h3 class="font-sf font-bold text-cyber-pink text-lg">2. FORM TEAMS</h3>
+          <button id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed transition-transform">FORM TAG 🤝</button>
+        </div>
+        <div class="overflow-y-auto p-4 flex-1 space-y-2" id="teamList"></div>
+        <div class="p-4 border-t border-cyber-table-border shrink-0 text-center">
+          <input type="text" id="tournamentNameInput" placeholder="大会名 (例: タッグ杯)" class="w-full mb-3 p-2 bg-cyber-bg border border-cyber-pink rounded text-center font-bold text-cyber-text outline-none font-sf">
+          <button id="btn-start-qual" class="w-full bg-cyber-pink text-white px-6 py-4 rounded font-bold shadow-[0_0_15px_#ec4899] font-sf transition-transform active:scale-95 text-xl hidden">▶ START QUALIFIERS</button>
+          <p id="start-msg" class="text-xs text-cyber-pink font-bold mt-2">※決勝(8枠)を行うため、最低4チーム(推奨8以上)が必要です</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-qual" class="hidden h-full flex flex-col max-w-4xl mx-auto">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <h2 class="text-2xl font-sf border-l-4 border-cyber-blue pl-4 text-cyber-blue" id="displayQualName">QUALIFYING ROUNDS</h2>
+        <button id="btn-gen-r2" onclick="generateRound2()" class="hidden bg-cyber-green text-cyber-bg px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 animate-pulse">GENERATE ROUND 2 ➡</button>
+        <button id="btn-go-rank" onclick="switchTab('rank')" class="hidden bg-cyber-pink text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 animate-pulse">CHECK RANKING 📊</button>
+      </div>
+      <div class="flex-1 overflow-y-auto space-y-6 pb-8">
+        <div class="bg-cyber-dark border border-cyber-table-border p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-3 border-b border-cyber-table-border pb-2">
+            <h3 class="font-sf font-bold text-cyber-text">ROUND 1 (Random Matchup)</h3>
+            <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 手動入れ替え</button>
+          </div>
+          <div id="r1-list" class="space-y-2"></div>
+        </div>
+        <div id="r2-container" class="bg-cyber-dark border border-cyber-green p-4 rounded-lg hidden">
+          <h3 class="font-sf font-bold text-cyber-green mb-3 border-b border-cyber-green pb-2">ROUND 2 (Swiss Matchup)</h3>
+          <div id="r2-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-rank" class="hidden h-full flex flex-col max-w-5xl mx-auto">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <h2 class="text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4">QUALIFYING RESULTS</h2>
+        <button id="btn-gen-finals" onclick="generateFinals()" class="hidden bg-yellow-500 text-black px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_15px_#facc15] active:scale-95 animate-pulse">GENERATE FINALS 🏆</button>
+      </div>
+      <div class="bg-cyber-dark border border-cyber-green rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
+        <div class="overflow-y-auto p-2 flex-1">
+          <table class="w-full text-center border-collapse text-sm">
+            <thead class="sticky top-0 bg-[#111827] z-10 text-cyber-blue font-sf text-xs border-b border-cyber-table-border shadow-md">
+              <tr>
+                <th class="p-3">R</th><th class="p-3 text-left">TEAM NAME</th><th class="p-3 text-cyber-green" title="個人勝利数">INDIV.WIN</th><th class="p-3">PTS</th><th class="p-3 text-cyber-pink">LOST</th><th class="p-3 text-yellow-400">DIFF</th><th class="p-3 text-purple-400" title="対戦相手の強さ合計">OPP</th><th class="p-3">ADJ</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+        <p class="p-3 text-xs text-cyber-text opacity-70 bg-black border-t border-cyber-table-border">
+          ※順位決定優先度：①個人勝利数 ＞ ②得失点差(DIFF) ＞ ③直接対決 ＞ ④オポネント(OPP) ＞ ⑤手動調整(ADJ)<br>
+          ※上位8チームが決勝トーナメントへ進出します。
+        </p>
+      </div>
+    </div>
+
+    <div id="view-finals" class="hidden h-full flex flex-col max-w-6xl mx-auto w-full">
+      <div class="text-center mb-4 shrink-0">
+        <h2 class="text-3xl font-sf text-yellow-400 mb-2 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
+        <button onclick="showResults()" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
+      </div>
+      <div class="flex-1 overflow-y-auto pb-8 space-y-6 pr-2">
+        <div id="qf-container" class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg">
+          <h3 class="text-center font-bold text-lg text-cyber-text font-sf mb-4">QUARTER FINALS (Top 8)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="card-qf1"></div><div id="card-qf2"></div><div id="card-qf3"></div><div id="card-qf4"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="border border-cyber-blue bg-[#0d131f] p-4 rounded-lg flex flex-col gap-4 shadow-[0_0_10px_rgba(14,165,233,0.1)]">
+            <h3 class="text-center font-bold text-lg text-cyber-blue font-sf">SEMIFINALS</h3>
+            <div id="card-sf1"></div><div id="card-sf2"></div>
+          </div>
+          <div class="border border-cyber-pink bg-[#0d131f] p-4 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.2)] flex flex-col gap-4">
+            <h3 class="text-center font-bold text-lg text-yellow-400 font-sf">GRAND FINAL</h3>
+            <div id="card-f"></div>
+            <h3 class="text-center font-bold text-sm text-orange-400 font-sf mt-4">3RD PLACE MATCH</h3>
+            <div id="card-third"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <div id="scoreModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-50 p-2 md:p-4 overflow-y-auto">
+    <div class="bg-cyber-dark p-4 md:p-6 rounded-lg shadow-xl w-full max-w-3xl border-2 border-cyber-pink flex flex-col my-auto">
+      <h2 class="text-xl font-sf text-center text-cyber-pink mb-2">TAG MATCH RESULT</h2>
+      <div class="text-center text-cyber-text font-bold mb-4 flex justify-around items-center bg-[#0d131f] p-2 rounded border border-cyber-table-border">
+        <span id="sm-t1-name" class="flex-1 text-cyber-blue truncate">TEAM 1</span>
+        <span class="px-2 text-xs opacity-50">VS</span>
+        <span id="sm-t2-name" class="flex-1 text-cyber-green truncate">TEAM 2</span>
+      </div>
+      <div id="battleInputsContainer" class="space-y-4 mb-6"></div>
+      <div class="flex gap-4 mt-auto">
+        <button onclick="closeScoreModal()" class="flex-1 bg-cyber-bg border border-cyber-table-border text-cyber-text px-4 py-3 rounded font-sf">CANCEL</button>
+        <button onclick="resetScoreMatch()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded font-sf text-xs">RESET</button>
+        <button onclick="saveScoreMatch()" class="flex-[2] bg-cyber-pink text-white px-4 py-3 rounded font-bold font-sf text-lg shadow-[0_0_10px_#ec4899]">SAVE RESULT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green flex flex-col h-[60vh]">
+      <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
+      <p class="mb-2 text-cyber-text text-xs opacity-80"><span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br><span class="text-cyber-pink">※勝率は自動計算されます。</span></p>
+      <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
+      <div class="flex gap-4">
+        <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf">CANCEL</button>
+        <button onclick="processPasteData()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 font-bold font-sf">IMPORT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-pink neon-pink flex flex-col h-[70vh]">
+      <h2 class="text-2xl font-sf text-cyber-pink mb-2">📋 MATCH DATA EXPORT (INDIVIDUAL)</h2>
+      <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
+        下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
+        （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
+      </p>
+      <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
+      <div class="flex gap-4">
+        <button onclick="copyExportData()" class="flex-[2] bg-cyber-pink text-white px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+        <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
+      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
+      <h2 class="text-2xl text-cyber-pink font-sf mb-8" id="resultLeagueName"></h2>
+      <h1 class="text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
+      <p class="text-4xl font-bold mb-10 text-white" id="res1"></p>
+      <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+      <p class="text-2xl font-bold mb-8 text-white" id="res2"></p>
+      <div class="flex justify-around mt-4 border-t border-cyber-table-border pt-6">
+        <div><h3 class="text-xl text-orange-400 font-sf mb-2">🥉 3RD PLACE</h3><p class="text-xl font-bold text-white" id="res3"></p></div>
+        <div><h3 class="text-xl text-cyber-text font-sf mb-2 opacity-70">4TH PLACE</h3><p class="text-xl font-bold text-gray-400" id="res4"></p></div>
+      </div>
+      
+      <div class="flex justify-center gap-4 mt-6 md:mt-10">
+        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button onclick="closeResults()" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+    <img id="resultImage" class="max-w-full max-h-[70vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
+    <button onclick="closeCameraModal()" class="bg-cyber-green text-cyber-bg px-8 py-3 rounded-full font-bold font-sf">CLOSE</button>
+  </div>
+  <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+
+  <script>
+    // --- 変数定義 ---
+    const ALPHABETS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let participants = [], pidCounter = 1, selectedForTeam = [];
+    let teams = [], tidCounter = 1;
+    
+    let isTournamentStarted = false;
+    let r1Matches = [], r2Matches = [];
+    let standings = []; 
+    let finalsMatches = { qf1:null, qf2:null, qf3:null, qf4:null, sf1:null, sf2:null, f:null, third:null };
+    
+    let tournamentName = '';
+    let currentScoreMatch = null, currentScoreRound = null; 
+    let tempBattles = [];
+    let finalsType = 'QF'; 
+    let currentCheckTarget = null;
+    
+    let isSwapMode = false;
+    let swapPending = null;
+
+    // ==========================================
+    // ★ レーティング・勝率計算処理
+    // ==========================================
+    function calculateRate(wins, matches) {
+        if (matches === 0) return '0.00%';
+        return ((wins / matches) * 100).toFixed(2) + '%';
+    }
+
+    function processBattleForStats(b) {
+        if (!b || b.winner === null || !b.p1Id || !b.p2Id) return;
+
+        let p1 = participants.find(p => p.id === b.p1Id);
+        let p2 = participants.find(p => p.id === b.p2Id);
+        if (!p1 || !p2) return;
+
+        let s1 = p1.currentStats;
+        let s2 = p2.currentStats;
+        if (!s1 || !s2) return;
+
+        let winnerStats = (b.winner === 1) ? s1 : s2;
+        let loserStats = (b.winner === 1) ? s2 : s1;
+
+        // イロレーティング (K=32, 400スケール)
+        let rWin = winnerStats.power;
+        let rLose = loserStats.power;
+        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
+        let change = Math.round(32 * (1 - eWin));
+
+        winnerStats.power += change;
+        loserStats.power -= change;
+
+        s1.matches += 1;
+        s2.matches += 1;
+
+        if (b.winner === 1) {
+            s1.wins += 1;
+            s2.loses += 1;
+        } else {
+            s2.wins += 1;
+            s1.loses += 1;
+        }
+
+        s1.rate = calculateRate(s1.wins, s1.matches);
+        s2.rate = calculateRate(s2.wins, s2.matches);
+    }
+
+    function recalculateAllStats() {
+        participants.forEach(p => {
+            if (p.initialStats) {
+                p.currentStats = {
+                    power: p.initialStats.power,
+                    matches: p.initialStats.matches,
+                    wins: p.initialStats.wins,
+                    loses: p.initialStats.loses,
+                    rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
+                };
+            }
+        });
+
+        if (!isTournamentStarted) return;
+
+        const allM = [...r1Matches, ...r2Matches];
+        if (finalsMatches.qf1) allM.push(finalsMatches.qf1, finalsMatches.qf2, finalsMatches.qf3, finalsMatches.qf4);
+        if (finalsMatches.sf1) allM.push(finalsMatches.sf1, finalsMatches.sf2);
+        if (finalsMatches.third) allM.push(finalsMatches.third);
+        if (finalsMatches.f) allM.push(finalsMatches.f);
+
+        allM.forEach(m => {
+            if (m && m.battles) {
+                m.battles.forEach(b => processBattleForStats(b));
+            }
+        });
+    }
+
+    // ==========================================
+    // BEY-ROULETTE LINK SYSTEM
+    // ==========================================
+    let peer = null, conn = null;
+    function initPeer() {
+      if(peer) peer.destroy();
+      peer = new Peer();
+      peer.on('error', err => resetLinkUI());
+      peer.on('disconnected', () => { if(!peer.destroyed) peer.reconnect(); });
+    }
+    function forceResetLink() { if(conn){ conn.close(); conn = null; } initPeer(); resetLinkUI(); }
+    function resetLinkUI() {
+      const btn = document.getElementById('btn-connect');
+      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
+      conn = null;
+    }
+    function connectLink() {
+      if(conn && conn.open) { conn.close(); resetLinkUI(); return; }
+      const code = document.getElementById('linkCodeInput').value;
+      if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力");
+      const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
+      if(!peer || peer.destroyed) initPeer();
+      conn = peer.connect('itabashi-link-' + code, { reliable: true });
+      conn.on('open', () => {
+        btn.innerText = "DISCONN"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+        document.getElementById('link-status-dot').classList.replace('bg-red-500', 'bg-cyber-green');
+      });
+      conn.on('close', resetLinkUI);
+    }
+    function sendMatchToScore(p1Id, p2Id, btnId) {
+      if(!conn || !conn.open) return alert("スコアシステムとリンクされていません。");
+      const p1 = participants.find(p => p.id == p1Id);
+      const p2 = participants.find(p => p.id == p2Id);
+      if(!p1 || !p2) return alert("プレイヤーを選択してください");
+      
+      conn.send({ 
+        type: 'SET_MATCH', p1: p1.name, p2: p2.name, tName: tournamentName,
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate }
+      });
+      const btn = document.getElementById(btnId);
+      const originalText = btn.innerText; btn.innerText = "SENT!"; btn.classList.replace('text-cyber-blue', 'text-white'); btn.classList.replace('border-cyber-blue', 'border-white');
+      setTimeout(() => { btn.innerText = originalText; btn.classList.replace('text-white', 'text-cyber-blue'); btn.classList.replace('border-white', 'border-cyber-blue'); }, 1500);
+    }
+
+    // --- 初期化 ＆ iPad/PCタップ抜け防止イベント登録 ---
+    function initApp() {
+        const btnFormTeam = document.getElementById('btn-form-team');
+        if (btnFormTeam) {
+            btnFormTeam.addEventListener('click', (e) => { e.preventDefault(); handleFormTeam(); });
+            btnFormTeam.addEventListener('touchend', (e) => { e.preventDefault(); handleFormTeam(); }, { passive: false });
+        }
+
+        const btnStartQual = document.getElementById('btn-start-qual');
+        if (btnStartQual) {
+            btnStartQual.addEventListener('click', (e) => { e.preventDefault(); handleStartQual(); });
+            btnStartQual.addEventListener('touchend', (e) => { e.preventDefault(); handleStartQual(); }, { passive: false });
+        }
+    }
+
+    let formTeamDebounce = false;
+    function handleFormTeam() {
+        if (formTeamDebounce) return;
+        formTeamDebounce = true;
+        setTimeout(() => { formTeamDebounce = false; }, 500);
+        if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+        formTeam();
+    }
+
+    let startQualDebounce = false;
+    function handleStartQual() {
+        if (startQualDebounce) return;
+        startQualDebounce = true;
+        setTimeout(() => { startQualDebounce = false; }, 500);
+        if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+        startTournament();
+    }
+
+    // --- タブ切り替え ---
+    function switchTab(tabId) {
+      ['setup', 'qual', 'rank', 'finals'].forEach(id => {
+        const el = document.getElementById(`view-${id}`);
+        const tab = document.getElementById(`tab-${id}`);
+        if(el) el.classList.add('hidden');
+        if(tab) { tab.classList.replace('border-cyber-pink', 'border-transparent'); tab.classList.replace('text-cyber-pink', 'text-cyber-text'); }
+      });
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabId}`).classList.replace('border-transparent', 'border-cyber-pink');
+      document.getElementById(`tab-${tabId}`).classList.replace('text-cyber-text', 'text-cyber-pink');
+      
+      if(tabId === 'qual') renderQualifiers();
+      if(tabId === 'rank') renderRanking();
+      if(tabId === 'finals') renderFinals();
+    }
+
+    // --- 1. 受付＆結成 ---
+    function openPasteModal() { document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); }
+    function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
+    
+    function processPasteData() {
+      const text = document.getElementById('pasteArea').value; if(!text.trim()) return;
+      const lines = text.split(/\r\n|\n/); let count = 0;
+      lines.forEach(line => {
+        if(!line.trim() || participants.length >= 28) return; 
+        const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
+        if(cols[0] && cols[0].trim() !== '') { 
+          let initialPower = parseInt(cols[3]) || 1500;
+          let initialMatches = parseInt(cols[4]) || 0;
+          let initialWins = parseInt(cols[5]) || 0;
+          let initialLoses = parseInt(cols[6]) || 0;
+
+          participants.push({ 
+            id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
+            rank: cols[2] ? cols[2].trim() : '--',
+            initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+            currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+            teamId: null 
+          }); 
+          count++; 
+        }
+      });
+      renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！`);
+    }
+
+    function addParticipant() {
+      if(participants.length >= 28) return alert("最大28名（14チーム）までです。");
+      let name = prompt("参加者名を入力"); 
+      if(name) {
+          participants.push({ 
+              id: pidCounter++, name, memo1: '', rank: '--', 
+              initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
+              currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+              teamId: null 
+          }); 
+          renderParticipants();
+      }
+    }
+    
+    document.getElementById('csvInput').addEventListener('change', function(e) {
+      if(isTournamentStarted) return alert("開始後は追加できません"); const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader(); reader.onload = function(event) {
+        event.target.result.split(/\r\n|\n/).forEach(line => {
+          if(!line.trim() || participants.length >= 28) return; const cols = line.split(',');
+          if(cols[0]) { 
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
+            participants.push({ 
+              id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', 
+              rank: cols[2] ? cols[2].trim() : '--', 
+              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+              teamId: null 
+            }); 
+          }
+        }); e.target.value = ''; renderParticipants();
+      }; reader.readAsText(file);
+    });
+
+    function renderParticipants() {
+      const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
+      participants.forEach(p => {
+        if (p.teamId) return;
+        const isSelected = selectedForTeam.includes(p.id);
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-cyber-table-border cursor-pointer transition-colors ${isSelected ? 'bg-cyber-pink/20' : 'hover:bg-cyber-dark'}`;
+        tr.onclick = () => {
+          if (selectedForTeam.includes(p.id)) selectedForTeam = selectedForTeam.filter(x => x !== p.id);
+          else { if (selectedForTeam.length >= 2) selectedForTeam.shift(); selectedForTeam.push(p.id); }
+          renderParticipants();
+        };
+        const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
+        const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
+        
+        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap leading-tight">${p.name} ${memoBadge}${statsDisplay} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
+        tbody.appendChild(tr);
+      });
+      const btn = document.getElementById('btn-form-team');
+      if (selectedForTeam.length === 2) { btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink'); btn.classList.replace('text-cyber-text', 'text-white'); btn.classList.replace('opacity-50', 'opacity-100'); btn.classList.replace('cursor-not-allowed', 'cursor-pointer'); } 
+      else { btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark'); btn.classList.replace('text-white', 'text-cyber-text'); btn.classList.replace('opacity-100', 'opacity-50'); btn.classList.replace('cursor-pointer', 'cursor-not-allowed'); }
+    }
+    
+    function formTeam() {
+      if(selectedForTeam.length !== 2) return;
+      const p1 = participants.find(p => p.id === selectedForTeam[0]); const p2 = participants.find(p => p.id === selectedForTeam[1]);
+      const tId = tidCounter++; p1.teamId = tId; p2.teamId = tId;
+      
+      const letter = ALPHABETS[teams.length % 26];
+      teams.push({ id: tId, name: `【${letter}】${p1.name}・${p2.name} タッグ`, p1, p2, bayChecked: false, tieBreaker: 0 });
+      
+      selectedForTeam = []; renderParticipants(); renderTeams();
+    }
+    
+    function unformTeam(tId) {
+      const team = teams.find(t => t.id === tId); team.p1.teamId = null; team.p2.teamId = null;
+      teams = teams.filter(t => t.id !== tId); renderParticipants(); renderTeams();
+    }
+    
+    function renderTeams() {
+      const list = document.getElementById('teamList'); list.innerHTML = '';
+      teams.forEach(t => { 
+        const checkBtnColor = t.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-pink border border-cyber-pink';
+        list.innerHTML += `<div class="bg-[#0d131f] border border-cyber-pink p-3 rounded flex justify-between items-center"><span class="font-bold text-cyber-text text-sm">${t.name}</span>
+        <div class="flex gap-2">
+          <button onclick="openTeamCamera(${t.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all shadow-sm" title="ベイチェック">📷</button>
+          <button onclick="unformTeam(${t.id})" class="text-cyber-pink text-[10px] border border-cyber-pink px-2 py-1 rounded">解散</button>
+        </div></div>`; 
+      });
+      const btnNext = document.getElementById('btn-start-qual'); const msg = document.getElementById('start-msg');
+      if (teams.length >= 4) { btnNext.classList.remove('hidden'); msg.classList.add('hidden'); } 
+      else { btnNext.classList.add('hidden'); msg.classList.remove('hidden'); }
+    }
+
+    // カメラ
+    function openTeamCamera(id) { currentCheckTarget = { type: 'team', id }; document.getElementById('cameraInput').click(); }
+    document.getElementById('cameraInput').addEventListener('change', function(e) {
+      const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
+      reader.onload = function(event) { img.onload = function() {
+        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+        let textName = ""; if(currentCheckTarget.type === 'team') { const t = teams.find(x => x.id === currentCheckTarget.id); textName = `${t.name} 様`; t.bayChecked = true; renderTeams(); }
+        const fontSize = Math.max(img.width / 15, 30); ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#ec4899'; ctx.strokeStyle = 'white'; ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.strokeText(textName, canvas.width - 20, 20); ctx.fillText(textName, canvas.width - 20, 20);
+        document.getElementById('resultImage').src = canvas.toDataURL('image/jpeg', 0.8); document.getElementById('cameraModal').classList.remove('hidden'); document.getElementById('cameraModal').classList.add('flex'); 
+      }; img.src = event.target.result; }; reader.readAsDataURL(file);
+    });
+    function closeCameraModal() { document.getElementById('cameraModal').classList.add('hidden'); document.getElementById('cameraModal').classList.remove('flex'); document.getElementById('cameraInput').value = ''; }
+
+    // --- 2. 予選進行 ---
+    function createMatchObj(id, t1, t2) {
+      let m = { id, team1: t1, team2: t2, battles:[{p1Id:null,p2Id:null,s1:null,s2:null,winner:null},{p1Id:null,p2Id:null,s1:null,s2:null,winner:null},{p1Id:null,p2Id:null,s1:null,s2:null,winner:null}], winnerTeam: null, t1Pts: 0, t2Pts: 0 };
+      if(t1.id === 'BYE' || t2.id === 'BYE') { m.winnerTeam = t1.id === 'BYE' ? 2 : 1; m.battles[0].winner = m.winnerTeam; m.battles[1].winner = m.winnerTeam; }
+      return m;
+    }
+
+    function startTournament() {
+      if(teams.length < 4) return alert("最低4チーム必要です。");
+      if(!confirm("予選（スイスドロー2回戦）を開始しますか？")) return;
+      isTournamentStarted = true;
+      tournamentName = document.getElementById('tournamentNameInput').value || 'CYBER BEY-TAG-LEAGUE';
+      document.getElementById('displayQualName').innerText = `${tournamentName} - QUALIFIERS`;
+      
+      document.getElementById('tab-setup').classList.add('hidden');
+      document.getElementById('tab-qual').classList.remove('hidden');
+      document.getElementById('tab-rank').classList.remove('hidden');
+      
+      let shuffled = [...teams].sort(()=>Math.random()-0.5);
+      if(shuffled.length % 2 !== 0) shuffled.push({id:'BYE', name:'BYE (不戦勝)', p1:{}, p2:{}});
+      r1Matches = [];
+      for(let i=0; i<shuffled.length; i+=2) r1Matches.push(createMatchObj(`R1-${i/2+1}`, shuffled[i], shuffled[i+1]));
+      
+      switchTab('qual');
+    }
+
+    function toggleSwapMode() {
+      isSwapMode = !isSwapMode;
+      swapPending = null;
+      const btn = document.getElementById('btn-toggle-swap');
+      if (isSwapMode) {
+        btn.classList.replace('bg-cyber-dark', 'bg-yellow-500'); btn.classList.replace('text-cyber-blue', 'text-black'); btn.classList.replace('border-cyber-blue', 'border-yellow-500');
+      } else {
+        btn.classList.replace('bg-yellow-500', 'bg-cyber-dark'); btn.classList.replace('text-black', 'text-cyber-blue'); btn.classList.replace('border-yellow-500', 'border-cyber-blue');
+      }
+      renderQualifiers();
+    }
+
+    function handleSwapClick(matchIndex, teamSide) {
+      if(!swapPending) {
+          swapPending = { matchIndex, teamSide };
+      } else {
+          if(swapPending.matchIndex === matchIndex && swapPending.teamSide === teamSide) {
+              swapPending = null; 
+          } else {
+              let m1 = r1Matches[swapPending.matchIndex];
+              let m2 = r1Matches[matchIndex];
+              let t1 = swapPending.teamSide === 1 ? m1.team1 : m1.team2;
+              let t2 = teamSide === 1 ? m2.team1 : m2.team2;
+              
+              if(swapPending.teamSide === 1) m1.team1 = t2; else m1.team2 = t2;
+              if(teamSide === 1) m2.team1 = t1; else m2.team2 = t1;
+              swapPending = null;
+          }
+      }
+      renderQualifiers();
+    }
+
+    function generateRound2() {
+      if(!r1Matches.every(m => m.winnerTeam !== null)) return alert("Round 1 の全試合結果を入力してください。");
+      if(!confirm("Round 1の成績をもとにRound 2のマッチングを生成しますか？")) return;
+      
+      calcStandings();
+      let pool = [...standings.map(s => s.team)];
+      if(teams.length % 2 !== 0 && !pool.find(t=>t.id==='BYE')) pool.push({id:'BYE', name:'BYE (不戦勝)', p1:{}, p2:{}});
+      
+      r2Matches = []; let matchId = 1;
+      while(pool.length > 0) {
+          let t1 = pool.shift();
+          let t2Index = 0; 
+          for(let i=0; i<pool.length; i++) {
+              let t2 = pool[i];
+              let played = r1Matches.some(m => (m.team1.id===t1.id && m.team2.id===t2.id) || (m.team1.id===t2.id && m.team2.id===t1.id));
+              if(!played) { t2Index = i; break; }
+          }
+          let t2 = pool.splice(t2Index, 1)[0];
+          r2Matches.push(createMatchObj(`R2-${matchId++}`, t1, t2));
+      }
+      
+      document.getElementById('r2-container').classList.remove('hidden');
+      renderQualifiers();
+    }
+
+    function renderMatchCardHTML(m, roundId, mIndex) {
+      if(!m) return '';
+      const fin = m.winnerTeam !== null; const isBye = m.team1.id === 'BYE' || m.team2.id === 'BYE';
+      const bgClass = fin ? "bg-[#0d131f] border-cyber-green opacity-80" : "bg-[#111827] border-cyber-table-border";
+      const btnClass = isBye ? "hidden" : (fin ? "bg-transparent text-cyber-green border border-cyber-green" : "bg-cyber-blue text-cyber-bg font-bold");
+      const btnText = fin ? "EDIT" : "SCORE";
+      let centerArea = fin ? `<span class="font-sf text-sm text-cyber-green px-2">${m.winnerTeam===1?'WIN':'LOSE'} - ${m.winnerTeam===2?'WIN':'LOSE'}</span>` : `<span class="font-sf text-xs opacity-50 px-2">VS</span>`;
+
+      let t1UI = `<div class="flex-1 flex justify-end truncate ${m.winnerTeam===1?'text-cyber-green font-bold':''}">${m.team1.name}</div>`;
+      let t2UI = `<div class="flex-1 flex justify-start truncate ${m.winnerTeam===2?'text-cyber-green font-bold':''}">${m.team2.name}</div>`;
+
+      if(roundId === 'r1' && isSwapMode && !fin) {
+          let active1 = (swapPending && swapPending.matchIndex === mIndex && swapPending.teamSide === 1) ? 'bg-yellow-400 text-black' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151]';
+          let active2 = (swapPending && swapPending.matchIndex === mIndex && swapPending.teamSide === 2) ? 'bg-yellow-400 text-black' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151]';
+          
+          t1UI = `<button onclick="handleSwapClick(${mIndex}, 1)" class="flex-1 text-right truncate px-2 py-1 rounded font-bold ${active1} transition-colors border border-cyber-table-border shadow-sm">${m.team1.name}</button>`;
+          t2UI = `<button onclick="handleSwapClick(${mIndex}, 2)" class="flex-1 text-left truncate px-2 py-1 rounded font-bold ${active2} transition-colors border border-cyber-table-border shadow-sm">${m.team2.name}</button>`;
+      }
+
+      const scoreBtnHTML = (!isSwapMode || roundId !== 'r1') ? `<button onclick="openScoreModal('${roundId}', '${m.id}')" class="${btnClass} text-xs rounded px-3 py-2 shrink-0 transition-colors">${btnText}</button>` : `<div class="w-12"></div>`;
+
+      return `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm text-sm my-1">
+        <div class="flex items-center flex-1 overflow-hidden pr-2 gap-2">
+          <span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0 text-center">${m.id}</span>
+          ${t1UI}
+          ${centerArea}
+          ${t2UI}
+        </div>
+        ${scoreBtnHTML}
+      </div>`;
+    }
+
+    function renderQualifiers() {
+      document.getElementById('r1-list').innerHTML = r1Matches.map((m, i) => renderMatchCardHTML(m, 'r1', i)).join('');
+      if(r2Matches.length > 0) {
+        document.getElementById('r2-list').innerHTML = r2Matches.map((m, i) => renderMatchCardHTML(m, 'r2', i)).join('');
+      }
+      
+      const r1Done = r1Matches.length > 0 && r1Matches.every(m => m.winnerTeam !== null);
+      const r2Done = r2Matches.length > 0 && r2Matches.every(m => m.winnerTeam !== null);
+
+      document.getElementById('btn-gen-r2').classList.toggle('hidden', !(r1Done && r2Matches.length === 0));
+      document.getElementById('btn-go-rank').classList.toggle('hidden', !r2Done);
+
+      if(r1Done && isSwapMode) toggleSwapMode();
+      document.getElementById('btn-toggle-swap').classList.toggle('hidden', r1Done);
+    }
+
+    // --- 3. ランキングとオポネント計算 ---
+    function calcStandings() {
+      let stMap = {};
+      teams.forEach(t => stMap[t.id] = { team: t, id: t.id, name: t.name, indivW:0, pts:0, lost:0, diff:0, opp:0, tieBreaker:t.tieBreaker||0 });
+      stMap['BYE'] = { team:{id:'BYE',name:'BYE'}, id:'BYE', name:'BYE', indivW:0, pts:0, lost:0, diff:0, opp:0, tieBreaker:0 };
+
+      let allM = [...r1Matches, ...r2Matches];
+      allM.forEach(m => {
+        if(m.winnerTeam) {
+          let st1 = stMap[m.team1.id]; let st2 = stMap[m.team2.id];
+          if(m.team1.id!=='BYE' && m.team2.id!=='BYE') {
+            let w1=0, w2=0; m.battles.forEach(b=>{ if(b.winner===1) w1++; if(b.winner===2) w2++; });
+            st1.indivW += w1; st2.indivW += w2;
+            st1.pts+=m.t1Pts; st1.lost+=m.t2Pts; st1.diff = st1.pts-st1.lost;
+            st2.pts+=m.t2Pts; st2.lost+=m.t1Pts; st2.diff = st2.pts-st2.lost;
+          } else {
+             let wST = m.winnerTeam===1 ? st1 : st2; wST.indivW += 2; 
+          }
+        }
+      });
+
+      teams.forEach(t => {
+        let st = stMap[t.id];
+        allM.forEach(m => {
+          if(m.winnerTeam) {
+            if(m.team1.id === t.id && m.team2.id !== 'BYE') st.opp += (stMap[m.team2.id].indivW * 100 + stMap[m.team2.id].diff);
+            if(m.team2.id === t.id && m.team1.id !== 'BYE') st.opp += (stMap[m.team1.id].indivW * 100 + stMap[m.team1.id].diff);
+          }
+        });
+      });
+
+      standings = Object.values(stMap).filter(s => s.id !== 'BYE').sort((a,b) => {
+        if(b.indivW !== a.indivW) return b.indivW - a.indivW;
+        if(b.diff !== a.diff) return b.diff - a.diff;
+        let h2h = allM.find(m => (m.team1.id===a.id && m.team2.id===b.id) || (m.team1.id===b.id && m.team2.id===a.id));
+        if(h2h && h2h.winnerTeam) return (h2h.team1.id===a.id && h2h.winnerTeam===1) ? -1 : 1;
+        if(b.opp !== a.opp) return b.opp - a.opp;
+        return b.tieBreaker - a.tieBreaker;
+      });
+    }
+
+    function renderRanking() {
+      calcStandings();
+      const tbody = document.getElementById('rankingBody'); tbody.innerHTML = '';
+      standings.forEach((st, i) => {
+        let rc = i<8 ? "text-yellow-400 font-bold" : "text-cyber-text";
+        tbody.innerHTML += `<tr class="border-b border-cyber-table-border hover:bg-[#1a2333]">
+          <td class="p-3 font-sf ${rc}">${i+1}</td><td class="p-3 text-left font-bold text-cyber-text text-xs max-w-[100px] truncate">${st.name}</td>
+          <td class="p-3 font-sf text-cyber-green text-lg font-bold">${st.indivW}</td><td class="p-3 font-sf">${st.pts}</td><td class="p-3 font-sf text-cyber-pink opacity-80">${st.lost}</td><td class="p-3 font-sf text-yellow-400">${st.diff>0?'+'+st.diff:st.diff}</td><td class="p-3 font-sf text-purple-400">${st.opp}</td>
+          <td class="p-2 font-sf"><div class="flex items-center justify-center gap-1"><button onclick="changeTie(${st.id},1)" class="w-5 h-5 rounded border border-cyber-green text-cyber-green leading-none">+</button><span class="text-[10px] w-3 text-center">${st.tieBreaker}</span><button onclick="changeTie(${st.id},-1)" class="w-5 h-5 rounded border border-cyber-pink text-cyber-pink leading-none">-</button></div></td></tr>`;
+      });
+      const r2Done = r2Matches.length > 0 && r2Matches.every(m => m.winnerTeam !== null);
+      document.getElementById('btn-gen-finals').classList.toggle('hidden', !r2Done);
+    }
+    function changeTie(tid, v) { const t = teams.find(x=>x.id===tid); if(t) { t.tieBreaker=(t.tieBreaker||0)+v; renderRanking(); } }
+
+    // --- 4. スコア入力 (勝ち抜き戦対応 ＆ 自動セット) ---
+    function openScoreModal(rId, mId) {
+      currentScoreRound = rId;
+      const dataArr = rId === 'r1' ? r1Matches : (rId === 'r2' ? r2Matches : Object.values(finalsMatches));
+      currentScoreMatch = dataArr.find(m => m && m.id === mId);
+      tempBattles = JSON.parse(JSON.stringify(currentScoreMatch.battles));
+      document.getElementById('sm-t1-name').innerText = currentScoreMatch.team1.name; document.getElementById('sm-t2-name').innerText = currentScoreMatch.team2.name;
+      renderBattleInputs(); document.getElementById('scoreModal').classList.remove('hidden'); document.getElementById('scoreModal').classList.add('flex');
+    }
+
+    function renderBattleInputs() {
+      const c = document.getElementById('battleInputsContainer'); c.innerHTML = '';
+      const t1 = currentScoreMatch.team1, t2 = currentScoreMatch.team2;
+      
+      let t1Elim = [], t2Elim = [];
+
+      for (let i=0; i<3; i++) {
+        let b = tempBattles[i];
+        if (t1Elim.includes(b.p1Id)) b.p1Id = null; if (t2Elim.includes(b.p2Id)) b.p2Id = null;
+
+        let p1Opts = `<option value="">選択...</option>`;
+        if (!t1Elim.includes(t1.p1.id)) p1Opts += `<option value="${t1.p1.id}" ${b.p1Id==t1.p1.id?'selected':''}>${t1.p1.name}</option>`;
+        if (!t1Elim.includes(t1.p2.id)) p1Opts += `<option value="${t1.p2.id}" ${b.p1Id==t1.p2.id?'selected':''}>${t1.p2.name}</option>`;
+        
+        let p2Opts = `<option value="">選択...</option>`;
+        if (!t2Elim.includes(t2.p1.id)) p2Opts += `<option value="${t2.p1.id}" ${b.p2Id==t2.p1.id?'selected':''}>${t2.p1.name}</option>`;
+        if (!t2Elim.includes(t2.p2.id)) p2Opts += `<option value="${t2.p2.id}" ${b.p2Id==t2.p2.id?'selected':''}>${t2.p2.name}</option>`;
+        
+        let s1Btns='', s2Btns='';
+        for(let v=0;v<=4;v++){
+          s1Btns+=`<button onclick="setBtlScore(${i},'s1',${v})" class="score-btn ${b.s1===v?'active':''}">${v}</button>`;
+          s2Btns+=`<button onclick="setBtlScore(${i},'s2',${v})" class="score-btn ${b.s2===v?'active':''}">${v}</button>`;
+        }
+
+        c.innerHTML += `<div class="bg-[#0a0e17] border ${b.winner?'border-cyber-green':'border-cyber-table-border'} p-3 rounded flex flex-col gap-2">
+          <div class="flex justify-between items-center bg-[#111827] p-1 rounded"><span class="text-xs font-sf text-cyber-blue w-12">BTL ${i+1}</span><button id="btn-send-${i}" onclick="triggerSend(${i})" class="text-cyber-blue border border-cyber-blue hover:text-white hover:border-white px-2 py-0.5 rounded text-[10px] font-sf transition-colors">SEND HUD</button><div class="flex-1 text-right"></div></div>
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex-1 flex flex-col gap-2"><select id="sel-p1-${i}" onchange="tempBattles[${i}].p1Id=parseInt(this.value); renderBattleInputs();" class="bg-[#111827] text-cyber-text border border-cyber-table-border rounded p-1 text-sm outline-none ${b.winner===1?'text-cyber-green font-bold':''}">${p1Opts}</select><div class="flex justify-center gap-1 md:gap-2">${s1Btns}</div></div>
+            <div class="text-xs font-sf opacity-50 shrink-0">VS</div>
+            <div class="flex-1 flex flex-col gap-2"><select id="sel-p2-${i}" onchange="tempBattles[${i}].p2Id=parseInt(this.value); renderBattleInputs();" class="bg-[#111827] text-cyber-text border border-cyber-table-border rounded p-1 text-sm outline-none ${b.winner===2?'text-cyber-green font-bold':''}">${p2Opts}</select><div class="flex justify-center gap-1 md:gap-2">${s2Btns}</div></div>
+          </div></div>`;
+
+        if (b.winner !== null) {
+            if (b.winner === 1 && b.p2Id) t2Elim.push(b.p2Id);
+            if (b.winner === 2 && b.p1Id) t1Elim.push(b.p1Id);
+            
+            if (i < 2) {
+                let nextB = tempBattles[i+1];
+                if(b.winner === 1) {
+                    nextB.p1Id = b.p1Id;
+                    if(b.p2Id === t2.p1.id) nextB.p2Id = t2.p2.id;
+                    else if(b.p2Id === t2.p2.id) nextB.p2Id = t2.p1.id;
+                } else if (b.winner === 2) {
+                    nextB.p2Id = b.p2Id;
+                    if(b.p1Id === t1.p1.id) nextB.p1Id = t1.p2.id;
+                    else if(b.p1Id === t1.p2.id) nextB.p1Id = t1.p1.id;
+                }
+            }
+        }
+      }
+    }
+
+    function setBtlScore(i, type, v) {
+      tempBattles[i][type] = v; let b = tempBattles[i];
+      if(b.s1!==null && b.s2!==null) b.winner = b.s1>b.s2 ? 1 : b.s2>b.s1 ? 2 : null;
+      renderBattleInputs();
+    }
+    function triggerSend(i) {
+      let b = tempBattles[i];
+      b.p1Id = parseInt(document.getElementById(`sel-p1-${i}`).value); b.p2Id = parseInt(document.getElementById(`sel-p2-${i}`).value);
+      sendMatchToScore(b.p1Id, b.p2Id, `btn-send-${i}`);
+    }
+    function closeScoreModal() { document.getElementById('scoreModal').classList.add('hidden'); document.getElementById('scoreModal').classList.remove('flex'); }
+    
+    function resetScoreMatch() {
+      if(!confirm("リセットしますか？")) return;
+      currentScoreMatch.battles.forEach(b=>{b.p1Id=null;b.p2Id=null;b.s1=null;b.s2=null;b.winner=null;});
+      currentScoreMatch.winnerTeam=null; currentScoreMatch.t1Pts=0; currentScoreMatch.t2Pts=0;
+      closeScoreModal(); 
+      recalculateAllStats();
+      if(currentScoreRound==='finals') renderFinals(); else { renderQualifiers(); renderRanking(); }
+    }
+    
+    function saveScoreMatch() {
+      let w1=0, w2=0, pt1=0, pt2=0;
+      tempBattles.forEach(b=>{ if(b.winner===1)w1++; if(b.winner===2)w2++; if(b.s1!==null)pt1+=b.s1; if(b.s2!==null)pt2+=b.s2; });
+      if(w1<2 && w2<2) return alert("どちらかのチームが2勝するまで入力してください");
+      currentScoreMatch.battles = JSON.parse(JSON.stringify(tempBattles));
+      currentScoreMatch.winnerTeam = w1>=2 ? 1 : 2; currentScoreMatch.t1Pts = pt1; currentScoreMatch.t2Pts = pt2;
+      closeScoreModal(); 
+      recalculateAllStats();
+      if(currentScoreRound==='finals'){ processFinals(); renderFinals(); } else { renderQualifiers(); renderRanking(); }
+    }
+
+    // --- 5. 決勝トーナメント ---
+    function generateFinals() {
+      if(!confirm("決勝トーナメントを作成しますか？")) return;
+      calcStandings();
+      let t = standings.map(s => s.team);
+      if(t.length < 4) return alert("チーム数が足りません");
+      
+      const mt = (id,t1,t2) => ({ id, team1:t1, team2:t2, battles:[{p1Id:null,p2Id:null,s1:null,s2:null,winner:null},{p1Id:null,p2Id:null,s1:null,s2:null,winner:null},{p1Id:null,p2Id:null,s1:null,s2:null,winner:null}], winnerTeam:null, t1Pts:0, t2Pts:0 });
+      
+      if(t.length >= 8) {
+        finalsType = 'QF';
+        finalsMatches.qf1 = mt('QF-1', t[0], t[7]); finalsMatches.qf2 = mt('QF-2', t[3], t[4]);
+        finalsMatches.qf3 = mt('QF-3', t[2], t[5]); finalsMatches.qf4 = mt('QF-4', t[1], t[6]);
+        finalsMatches.sf1 = mt('SF-1',{id:'TBD',name:'W(QF1)',p1:{},p2:{}},{id:'TBD',name:'W(QF2)',p1:{},p2:{}});
+        finalsMatches.sf2 = mt('SF-2',{id:'TBD',name:'W(QF3)',p1:{},p2:{}},{id:'TBD',name:'W(QF4)',p1:{},p2:{}});
+      } else {
+        finalsType = 'SF';
+        finalsMatches.qf1 = null; finalsMatches.qf2 = null; finalsMatches.qf3 = null; finalsMatches.qf4 = null;
+        finalsMatches.sf1 = mt('SF-1', t[0], t[3]); finalsMatches.sf2 = mt('SF-2', t[1], t[2]);
+      }
+      finalsMatches.f = mt('FINAL',{id:'TBD',name:'W(SF1)',p1:{},p2:{}},{id:'TBD',name:'W(SF2)',p1:{},p2:{}});
+      finalsMatches.third = mt('3RD',{id:'TBD',name:'L(SF1)',p1:{},p2:{}},{id:'TBD',name:'L(SF2)',p1:{},p2:{}});
+      
+      document.getElementById('tab-finals').classList.remove('hidden'); switchTab('finals');
+    }
+    
+    function processFinals() {
+      const adv = (m) => m.winnerTeam ? (m.winnerTeam===1 ? m.team1 : m.team2) : {id:'TBD', name:'TBD', p1:{}, p2:{}};
+      const los = (m) => m.winnerTeam ? (m.winnerTeam===1 ? m.team2 : m.team1) : {id:'TBD', name:'TBD', p1:{}, p2:{}};
+      
+      if(finalsType === 'QF') {
+        if(finalsMatches.qf1.winnerTeam && finalsMatches.qf2.winnerTeam) {
+          finalsMatches.sf1.team1 = adv(finalsMatches.qf1); finalsMatches.sf1.team2 = adv(finalsMatches.qf2);
+        }
+        if(finalsMatches.qf3.winnerTeam && finalsMatches.qf4.winnerTeam) {
+          finalsMatches.sf2.team1 = adv(finalsMatches.qf3); finalsMatches.sf2.team2 = adv(finalsMatches.qf4);
+        }
+      }
+      if(finalsMatches.sf1.winnerTeam && finalsMatches.sf2.winnerTeam) {
+        finalsMatches.f.team1 = adv(finalsMatches.sf1); finalsMatches.f.team2 = adv(finalsMatches.sf2);
+        finalsMatches.third.team1 = los(finalsMatches.sf1); finalsMatches.third.team2 = los(finalsMatches.sf2);
+      }
+    }
+    
+    function renderFinals() {
+      const render = (m, cid) => {
+        if(!m) return; const fin = m.winnerTeam !== null; const canScore = m.team1.id!=='TBD' && m.team2.id!=='TBD';
+        document.getElementById(cid).innerHTML = `<div class="flex items-center justify-between p-2 rounded border ${fin?'bg-[#0d131f] border-cyber-green opacity-80':'bg-[#111827] border-cyber-table-border'} shadow-sm"><div class="flex items-center flex-1 overflow-hidden pr-2 text-sm"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0">${m.id}</span><div class="flex-1 flex justify-end truncate ${m.winnerTeam===1?'text-cyber-green font-bold':''}">${m.team1.name}</div>${fin?`<span class="font-sf text-cyber-green px-2 text-sm">${m.winnerTeam===1?'WIN':'LOSE'} - ${m.winnerTeam===2?'WIN':'LOSE'}</span>`:`<span class="font-sf text-[10px] opacity-50 px-2">VS</span>`}<div class="flex-1 flex justify-start truncate ${m.winnerTeam===2?'text-cyber-green font-bold':''}">${m.team2.name}</div></div>${canScore?`<button onclick="openScoreModal('finals', '${m.id}')" class="${fin?'bg-transparent text-cyber-green border border-cyber-green':'bg-cyber-blue text-cyber-bg'} text-xs font-bold px-3 py-2 rounded transition-colors">${fin?'EDIT':'SCORE'}</button>`:''}</div>`;
+      };
+      
+      if(finalsType === 'QF') {
+        document.getElementById('qf-container').classList.remove('hidden');
+        render(finalsMatches.qf1, 'card-qf1'); render(finalsMatches.qf2, 'card-qf2'); render(finalsMatches.qf3, 'card-qf3'); render(finalsMatches.qf4, 'card-qf4');
+      } else {
+        document.getElementById('qf-container').classList.add('hidden');
+      }
+      render(finalsMatches.sf1, 'card-sf1'); render(finalsMatches.sf2, 'card-sf2'); render(finalsMatches.f, 'card-f'); render(finalsMatches.third, 'card-third');
+    }
+
+    // --- 6. 結果発表 & CSVエクスポート ---
+    function showResults() {
+      document.getElementById('resultLeagueName').innerText = tournamentName;
+      if(finalsMatches.f && finalsMatches.f.winnerTeam){ document.getElementById('res1').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team1.name:finalsMatches.f.team2.name; document.getElementById('res2').innerText = finalsMatches.f.winnerTeam===1?finalsMatches.f.team2.name:finalsMatches.f.team1.name; }
+      if(finalsMatches.third && finalsMatches.third.winnerTeam){ document.getElementById('res3').innerText = finalsMatches.third.winnerTeam===1?finalsMatches.third.team1.name:finalsMatches.third.team2.name; document.getElementById('res4').innerText = finalsMatches.third.winnerTeam===1?finalsMatches.third.team2.name:finalsMatches.third.team1.name; }
+      document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
+    }
+    function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+
+    function openExportModal() {
+      let exportText = "";
+      const addMatch = (m) => {
+        if (m && m.team1 && m.team2 && m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && m.team1.name !== 'TBD' && m.team2.name !== 'TBD' && m.winnerTeam !== null) {
+          m.battles.forEach(b => {
+             if(b.p1Id !== null && b.p2Id !== null && b.winner !== null) {
+                 const p1 = participants.find(p => p.id === b.p1Id);
+                 const p2 = participants.find(p => p.id === b.p2Id);
+                 if (p1 && p2) {
+                     const p1Name = p1.name;
+                     const p2Name = p2.name;
+                     const winnerName = b.winner === 1 ? p1Name : (b.winner === 2 ? p2Name : "");
+                     exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+                 }
+             }
+          });
+        }
+      };
+
+      r1Matches.forEach(addMatch);
+      r2Matches.forEach(addMatch);
+      if (finalsMatches.qf1) { addMatch(finalsMatches.qf1); addMatch(finalsMatches.qf2); addMatch(finalsMatches.qf3); addMatch(finalsMatches.qf4); }
+      if (finalsMatches.sf1) { addMatch(finalsMatches.sf1); addMatch(finalsMatches.sf2); }
+      if (finalsMatches.third) addMatch(finalsMatches.third);
+      if (finalsMatches.f) addMatch(finalsMatches.f);
+
+      document.getElementById('exportArea').value = exportText;
+      document.getElementById('exportModal').classList.remove('hidden');
+      document.getElementById('exportModal').classList.add('flex');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+      document.getElementById('exportModal').classList.remove('flex');
+    }
+
+    function copyExportData() {
+      const area = document.getElementById('exportArea');
+      area.select();
+      document.execCommand('copy');
+      const btn = event.currentTarget;
+      const originalText = btn.innerText;
+      btn.innerText = "✅ COPIED!";
+      btn.classList.replace('bg-cyber-pink', 'bg-cyber-green');
+      setTimeout(() => {
+        btn.innerText = originalText;
+        btn.classList.replace('bg-cyber-green', 'bg-cyber-pink');
+      }, 2000);
+    }
+
+    // 初期化実行
+    initApp();
+  </script>
+</body>
+</html>
