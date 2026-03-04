@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ITABASHI BEYBLADE HUD - Ver.29 Remote Ready</title>
+    <title>ITABASHI BEYBLADE HUD - Ver.30 (Ready Set Edition)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -96,6 +96,10 @@
         .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
         .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
         
+        /* ★追加：READY SET のスタイル */
+        .ready-set-style { font-family: 'Orbitron', sans-serif !important; font-size: 15vmin !important; font-style: italic; font-weight: 900; color: var(--bx-blue); text-shadow: 0 0 30px var(--bx-blue), 4px 4px 0 black; line-height: 1.2; }
+        .ready-set-timer { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 25vmin !important; color: white; display: block; margin-top: 20px; font-style: italic; text-shadow: 0 0 20px white, 4px 4px 0 black; }
+
         @keyframes zoomInBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1); opacity: 1; filter: brightness(1); } }
         @keyframes slideCutIn { 0% { transform: translateX(-30vw) scale(0.8) skewX(-15deg); opacity: 0; } 70% { transform: translateX(5vw) scale(1.1) skewX(5deg); opacity: 1; } 100% { transform: translateX(0) scale(1) skewX(0); opacity: 1; } }
         @keyframes explodeShoot { 0% { transform: scale(3) rotate(-5deg); opacity: 0; filter: brightness(2); } 50% { transform: scale(0.9) rotate(2deg); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); } }
@@ -197,7 +201,8 @@
         let currentRotation = parseInt(localStorage.getItem('tbh_cam_rot')) || 0;
         let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
 
-        let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null;
+        // ★追加：コール用アニメーション管理変数
+        let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null, readySetReq = null;
 
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
@@ -279,24 +284,72 @@
             });
         }
 
+        // ========================================================
+        // ★ カウントダウン ＋ 準備時間(Ready Set)演出
+        // ========================================================
         function startCall() {
             if (isCountingDown || isReplayMode) return;
             isCalling = true; blurFocus();
-            const sequence = [ { text: "3", delay: 800, style: "call-number-style" }, { text: "2", delay: 800, style: "call-number-style" }, { text: "1", delay: 800, style: "call-number-style" }, { text: "GO", delay: 600, style: "call-text-go-style" }, { text: "SHOOT!!", delay: 1000, style: "call-text-shoot-style" } ];
+            
+            const o = document.getElementById('effect-overlay');
+            const t = document.getElementById('effect-text'); 
+            
+            // スタイルをセットして表示
+            t.className = 'ready-set-style';
+            o.style.display = 'flex';
+            
+            let startTime = performance.now();
+            let duration = 3000; // 3秒の準備時間
+            
+            function updateReadySet(now) {
+                let elapsed = now - startTime;
+                let remain = duration - elapsed;
+                if (remain < 0) remain = 0;
+                
+                // コンマ01秒単位で減っていく表示
+                let seconds = (remain / 1000).toFixed(2);
+                t.innerHTML = `READY SET<span class="ready-set-timer">${seconds}</span>`;
+                
+                if (remain > 0) {
+                    readySetReq = requestAnimationFrame(updateReadySet);
+                } else {
+                    // 3秒経過後に本来の「3・2・1」のコールを開始
+                    readySetReq = null;
+                    startMainCall();
+                }
+            }
+            readySetReq = requestAnimationFrame(updateReadySet);
+        }
+
+        function startMainCall() {
+            const sequence = [ 
+                { text: "3", delay: 800, style: "call-number-style" }, 
+                { text: "2", delay: 800, style: "call-number-style" }, 
+                { text: "1", delay: 800, style: "call-number-style" }, 
+                { text: "GO", delay: 600, style: "call-text-go-style" }, 
+                { text: "SHOOT!!", delay: 1000, style: "call-text-shoot-style" } 
+            ];
+            
             let step = 0;
             function nextStep() {
                 if (step < sequence.length) {
-                    const current = sequence[step]; showOverlayText(current.text, current.style, current.delay);
+                    const current = sequence[step]; 
+                    showOverlayText(current.text, current.style, current.delay);
                     if (current.text === "SHOOT!!") isCalling = false;
-                    step++; callTimeout = setTimeout(nextStep, current.delay);
+                    step++; 
+                    callTimeout = setTimeout(nextStep, current.delay);
                 }
             }
             nextStep();
         }
 
         function cancelCall() {
-            if (callTimeout) clearTimeout(callTimeout); if (effectTimeout) clearTimeout(effectTimeout);
-            callTimeout = null; isCalling = false; document.getElementById('effect-overlay').style.display = 'none';
+            if (readySetReq) { cancelAnimationFrame(readySetReq); readySetReq = null; }
+            if (callTimeout) clearTimeout(callTimeout); 
+            if (effectTimeout) clearTimeout(effectTimeout);
+            callTimeout = null; 
+            isCalling = false; 
+            document.getElementById('effect-overlay').style.display = 'none';
         }
 
         function showOverlayText(h, s, d) { 
@@ -348,7 +401,7 @@
         }
 
         // ========================================================
-        // ★ リモコン＆テンキー 共通コマンドハンドラ
+        // リモコン＆テンキー 共通コマンドハンドラ
         // ========================================================
         function executeCommand(cmd) {
             if (cmd === 'SYS_RESET') { resetGame(); return; }
@@ -412,7 +465,6 @@
                 if (key === 'Enter') { e.preventDefault(); executeCommand('CALL'); }
                 if (key === '5') executeCommand('SYS_SWAP');
 
-                // 「00」検知の特殊処理
                 if (key === '0') {
                     zeroCount++;
                     if (zeroCount === 1) {
@@ -453,7 +505,6 @@
                 document.getElementById('link-dot').classList.add('connected');
                 
                 conn.on('data', (data) => {
-                    // ★追加：iPadからのリモコンコマンドを受信して実行
                     if (data.type === 'REMOTE_CMD') {
                         executeCommand(data.cmd);
                     }
