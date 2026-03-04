@@ -44,7 +44,7 @@
     .memo-badge {
       display: inline-block; padding: 2px 6px; font-size: 0.75rem; font-weight: bold;
       color: #ec4899; background-color: transparent; border: 1px solid #ec4899;
-      border-radius: 9999px; vertical-align: middle; box-shadow: 0 0 5px #ec4899;
+      border-radius: 9999px; vertical-align: middle; box-shadow: 0 0 5px #ec4899; margin-left: 4px;
     }
     
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -74,8 +74,8 @@
   </div>
 
   <div class="p-4 flex-1 overflow-y-auto">
-    <div id="view-participants" class="max-w-4xl mx-auto">
-      <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl text-center border border-cyber-green neon-green mb-8">
+    <div id="view-participants" class="max-w-4xl mx-auto h-full flex flex-col">
+      <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl text-center border border-cyber-green neon-green mb-6 shrink-0">
         <h2 class="text-2xl font-sf text-cyber-green mb-4">⚙️ LEAGUE SETUP</h2>
         <div class="mb-4">
           <label class="block font-bold mb-2 text-cyber-text font-sf">LEAGUE NAME</label>
@@ -84,8 +84,8 @@
         <p class="text-sm text-cyber-pink mt-4 font-bold">※総当たり戦は3名〜最大12名まで対応しています。</p>
       </div>
 
-      <div id="mainManagementSection">
-        <div class="flex flex-wrap gap-2 mb-4 items-center">
+      <div id="mainManagementSection" class="flex-1 flex flex-col min-h-0">
+        <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
           <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
             📁 CSVファイル <input type="file" id="csvInput" accept=".csv" class="hidden">
           </label>
@@ -94,23 +94,24 @@
           <button onclick="addParticipant()" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text px-4 py-2 rounded font-bold shadow text-sm transition-transform active:scale-95">＋ 手動追加</button>
         </div>
         
-        <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border mb-8">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-cyber-dark border-b border-cyber-table-border text-cyber-text opacity-70">
-                <th class="p-3 text-sm font-sf w-16 text-center">NO.</th>
-                <th class="p-3 text-sm font-sf">NAME / MEMO</th>
-                <th class="p-3 text-sm text-center font-sf">BAY CHECK</th>
-                <th class="p-3 text-sm text-center font-sf">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="participantList"></tbody>
-          </table>
+        <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border mb-6 flex-1 flex flex-col min-h-0">
+          <div class="overflow-y-auto flex-1">
+            <table class="w-full text-left border-collapse">
+              <thead class="sticky top-0 bg-[#111827] z-10">
+                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
+                  <th class="p-3 text-sm font-sf w-16 text-center">NO.</th>
+                  <th class="p-3 text-sm font-sf">NAME / STATS</th>
+                  <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
+                  <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="participantList"></tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="text-center pb-8" id="startLeagueArea">
-          <button onclick="startLeague()" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-10 py-5 rounded-full font-bold shadow-lg text-2xl font-sf neon-green transition-transform active:scale-95">▶ START LEAGUE</button>
-          <p class="text-sm text-cyber-pink mt-4 font-bold">全員のエントリーが終わったら開始してください</p>
+        <div class="text-center pb-4 shrink-0" id="startLeagueArea">
+          <button id="btn-start-league" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-10 py-4 rounded-full font-bold shadow-lg text-2xl font-sf neon-green transition-transform active:scale-95">▶ START LEAGUE</button>
         </div>
       </div>
     </div>
@@ -118,16 +119,16 @@
     <div id="view-league" class="hidden h-full flex flex-col">
       <div class="flex justify-between items-center mb-4 shrink-0">
         <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
-        <button id="showResultsBtn" onclick="showResults()" class="bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
+        <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
       </div>
 
       <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
-        <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-green rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.1)] min-h-0 overflow-hidden">
+        <div class="flex-[1.2] flex flex-col bg-cyber-dark border border-cyber-green rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.1)] min-h-0 overflow-hidden">
           <h3 class="bg-cyber-green text-cyber-bg font-sf font-bold text-center py-2 shrink-0 relative">
             RANKING LEADERBOARD
             <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-cyber-dark opacity-70">TAP NAME TO FOCUS</span>
           </h3>
-          <div class="overflow-y-auto p-2">
+          <div class="overflow-y-auto p-2 flex-1">
             <table class="w-full text-center border-collapse text-sm">
               <thead class="sticky top-0 bg-cyber-dark z-10 text-cyber-blue font-sf text-[11px] border-b border-cyber-table-border">
                 <tr>
@@ -156,15 +157,15 @@
               <button onclick="clearFocus()" id="btn-sort-focus" class="hidden text-cyber-bg bg-cyber-pink px-2 py-0.5 rounded font-bold transition-colors shadow-[0_0_5px_#ec4899]"></button>
             </div>
           </h3>
-          <div class="overflow-y-auto p-3 space-y-3" id="matchScheduleList"></div>
+          <div class="overflow-y-auto p-3 space-y-3 flex-1" id="matchScheduleList"></div>
         </div>
       </div>
     </div>
   </div>
 
   <div id="scoreModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-md border-2 border-cyber-blue neon-blue flex flex-col">
-      <h2 class="text-xl font-sf text-center text-cyber-blue mb-6">MATCH RESULT INPUT</h2>
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-md border-2 border-cyber-green neon-green flex flex-col">
+      <h2 class="text-xl font-sf text-center text-cyber-green mb-6">MATCH RESULT INPUT</h2>
       
       <div class="mb-4 p-4 border border-cyber-table-border rounded-lg bg-[#0d131f]">
         <h3 class="text-lg font-bold text-center text-cyber-text mb-3 truncate" id="scoreModalP1Name">Player 1</h3>
@@ -193,39 +194,62 @@
       <div class="flex gap-4">
         <button onclick="closeScoreModal()" class="flex-1 bg-cyber-bg border border-cyber-table-border text-cyber-text px-4 py-3 rounded font-sf">CANCEL</button>
         <button onclick="resetScoreMatch()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded font-sf text-xs">RESET<br>MATCH</button>
-        <button onclick="saveScoreMatch()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf text-lg transition-transform active:scale-95">SAVE RESULT</button>
+        <button onclick="saveScoreMatch()" class="flex-[2] bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf text-lg transition-transform active:scale-95">SAVE RESULT</button>
       </div>
     </div>
   </div>
 
-  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
       <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
       <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
-        スプレッドシートやメモ帳等からコピーしたテキストを貼り付けてください。<br>
-        <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 勝率</span> の順で並べてください。
+        スプレッドシート等からコピーしたテキストを貼り付けてください。<br>
+        <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br>
+        <span class="text-cyber-pink">※勝率は自動計算されます。</span>
       </p>
       <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
       <div class="flex gap-4">
-        <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf">CANCEL</button>
-        <button onclick="processPasteData()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 font-bold shadow font-sf">IMPORT</button>
+        <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf transition-colors">CANCEL</button>
+        <button onclick="processPasteData()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf">IMPORT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-green neon-green flex flex-col h-[70vh]">
+      <h2 class="text-2xl font-sf text-cyber-green mb-2">📋 MATCH DATA EXPORT</h2>
+      <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
+        下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-blue font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
+        （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
+      </p>
+      <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
+      <div class="flex gap-4">
+        <button onclick="copyExportData()" class="flex-[2] bg-cyber-green text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+        <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
       </div>
     </div>
   </div>
 
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
-    <div class="bg-cyber-dark text-center p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative overflow-hidden">
+    <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <h2 class="text-2xl text-cyber-green font-sf mb-8" id="resultLeagueName"></h2>
-      <h1 class="text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 CHAMPION 🏆</h1>
-      <p class="text-5xl font-bold mb-10 text-white" id="res1"></p>
-      <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-      <p class="text-3xl font-bold mb-8 text-white" id="res2"></p>
-      <div class="flex justify-around mt-4 border-t border-cyber-table-border pt-6">
-        <div><h3 class="text-xl text-orange-400 font-sf mb-2">🥉 3RD PLACE</h3><p class="text-2xl font-bold text-white" id="res3"></p></div>
-        <div><h3 class="text-xl text-cyber-text font-sf mb-2 opacity-70">4TH PLACE</h3><p class="text-2xl font-bold text-gray-400" id="res4"></p></div>
+      <h2 class="text-xl md:text-2xl text-cyber-green font-sf mb-4 md:mb-8" id="resultLeagueName"></h2>
+      
+      <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 CHAMPION 🏆</h1>
+      <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
+      
+      <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+      <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
+      
+      <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
+        <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
+        <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
       </div>
-      <button onclick="closeResults()" class="mt-10 bg-cyber-bg border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-8 py-2 rounded-full font-bold font-sf transition-colors">CLOSE</button>
+      
+      <div class="flex justify-center gap-4 mt-6 md:mt-10">
+        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
+      </div>
     </div>
   </div>
 
@@ -252,19 +276,90 @@
     let focusPlayerId = null;
 
     // ==========================================
-    // BEY-ROULETTE LINK SYSTEM (再接続強化版)
+    // ★ レーティング・勝率計算処理
     // ==========================================
-    let peer = new Peer(); 
+    function calculateRate(wins, matches) {
+        if (matches === 0) return '0.00%';
+        return ((wins / matches) * 100).toFixed(2) + '%';
+    }
+
+    function processMatchForStats(match) {
+        if (!match || match.winner === null || !match.p1 || !match.p2) return;
+        if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+        
+        let s1 = match.p1.currentStats;
+        let s2 = match.p2.currentStats;
+        if (!s1 || !s2) return;
+
+        let winnerStats = (match.winner === 1) ? s1 : s2;
+        let loserStats = (match.winner === 1) ? s2 : s1;
+        
+        // イロレーティング (K=32, 400スケール)
+        let rWin = winnerStats.power;
+        let rLose = loserStats.power;
+        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
+        let change = Math.round(32 * (1 - eWin));
+        
+        winnerStats.power += change;
+        loserStats.power -= change;
+        
+        s1.matches += 1;
+        s2.matches += 1;
+        
+        if (match.winner === 1) {
+            s1.wins += 1;
+            s2.loses += 1;
+        } else {
+            s2.wins += 1;
+            s1.loses += 1;
+        }
+        
+        s1.rate = calculateRate(s1.wins, s1.matches);
+        s2.rate = calculateRate(s2.wins, s2.matches);
+    }
+
+    function recalculateAllStats() {
+        // 全員を初期状態に戻す
+        participants.forEach(p => {
+            if (p.initialStats) {
+                p.currentStats = {
+                    power: p.initialStats.power,
+                    matches: p.initialStats.matches,
+                    wins: p.initialStats.wins,
+                    loses: p.initialStats.loses,
+                    rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
+                };
+            }
+        });
+
+        if (!isLeagueStarted) return;
+        // 時系列で全試合を反映
+        leagueMatches.forEach(m => processMatchForStats(m));
+    }
+
+
+    // ==========================================
+    // BEY-ROULETTE LINK SYSTEM
+    // ==========================================
+    let peer = null; 
     let conn = null;
 
-    peer.on('disconnected', () => {
-      peer.reconnect();
-    });
+    function initPeer() {
+      if (peer) peer.destroy();
+      peer = new Peer();
+      peer.on('error', (err) => {
+        console.error(err);
+        resetLinkUI();
+        alert("通信エラーが発生しました: " + err.type + "\n右上の「✖」を押してリセットしてください。");
+      });
+      peer.on('disconnected', () => {
+        if (!peer.destroyed) peer.reconnect();
+      });
+    }
 
-    // ★追加：強制リセット機能
     function forceResetLink() {
       if (conn) { conn.close(); conn = null; }
-      if (peer) { peer.destroy(); peer = new Peer(); }
+      initPeer();
       resetLinkUI();
     }
 
@@ -280,25 +375,19 @@
     }
 
     function connectLink() {
-      // 接続中なら切断する
-      if (conn) {
+      if (conn && conn.open) {
         conn.close();
         resetLinkUI();
         return;
       }
-
       const code = document.getElementById('linkCodeInput').value;
       if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力してください");
-      
       const btn = document.getElementById('btn-connect'); 
       btn.innerText = "WAIT...";
-
-      if (peer.destroyed) {
-        peer = new Peer();
-      }
+      if (!peer || peer.destroyed) initPeer();
+      if (conn) conn.close();
 
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
-      
       conn.on('open', () => {
         btn.innerText = "DISCONN"; 
         btn.classList.replace('text-cyber-blue', 'text-cyber-green'); 
@@ -307,16 +396,7 @@
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); 
         dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
       });
-
-      conn.on('close', () => {
-        resetLinkUI();
-      });
-
-      conn.on('error', (err) => {
-        console.error("Connection Error:", err);
-        resetLinkUI();
-        alert("通信が切断されました。右上の「✖」を押してから再接続してください。");
-      });
+      conn.on('close', () => resetLinkUI());
     }
 
     function sendMatchToScore(p1Id, p2Id, buttonElement) {
@@ -329,14 +409,39 @@
         p1: p1.name, 
         p2: p2.name, 
         tName: leagueName,
-        p1Stats: { rank: p1.rank, power: p1.power, rate: p1.rate },
-        p2Stats: { rank: p2.rank, power: p2.power, rate: p2.rate }
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate }
       });
       
       const originalText = buttonElement.innerText; buttonElement.innerText = "SENT!"; buttonElement.classList.replace('bg-cyber-blue', 'bg-cyber-green'); buttonElement.classList.replace('text-cyber-blue', 'text-cyber-bg');
       setTimeout(() => { buttonElement.innerText = originalText; buttonElement.classList.replace('bg-cyber-green', 'bg-cyber-blue'); buttonElement.classList.replace('text-cyber-bg', 'text-cyber-blue'); }, 1500);
     }
+
+
     // ==========================================
+    // アプリ制御
+    // ==========================================
+    
+    // ★ iPadタップ抜け対策イベント登録
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnStart = document.getElementById('btn-start-league');
+        if (btnStart) {
+            btnStart.addEventListener('click', (e) => { e.preventDefault(); handleStartLeague(); });
+            btnStart.addEventListener('touchend', (e) => { e.preventDefault(); handleStartLeague(); }, { passive: false });
+        }
+    });
+
+    let startDebounce = false;
+    function handleStartLeague() {
+        if (startDebounce) return;
+        startDebounce = true;
+        setTimeout(() => { startDebounce = false; }, 500);
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+        startLeague();
+    }
+
 
     function switchTab(tabId) {
       ['participants', 'league'].forEach(id => {
@@ -351,19 +456,23 @@
 
     function openPasteModal() { if(isLeagueStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
+    
     function processPasteData() {
       const text = document.getElementById('pasteArea').value; if(!text.trim()) return;
       const lines = text.split(/\r\n|\n/); let count = 0;
       lines.forEach(line => {
         if(!line.trim() || participants.length >= 12) return; const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
         if(cols[0] && cols[0].trim() !== '') { 
+          let initialPower = parseInt(cols[3]) || 1500;
+          let initialMatches = parseInt(cols[4]) || 0;
+          let initialWins = parseInt(cols[5]) || 0;
+          let initialLoses = parseInt(cols[6]) || 0;
+
           participants.push({ 
-            id: pidCounter++, 
-            name: cols[0].trim(), 
-            memo1: cols[1] ? cols[1].trim() : '', 
+            id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
             rank: cols[2] ? cols[2].trim() : '--',
-            power: cols[3] ? cols[3].trim() : '----',
-            rate: cols[4] ? cols[4].trim() : '--%',
+            initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+            currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
             bayChecked: false, tieBreaker: 0 
           }); 
           count++; 
@@ -376,7 +485,13 @@
       if(isLeagueStarted) return alert("開始後は追加できません"); 
       if(participants.length >= 12) return alert("総当たり戦は最大12名までです。");
       let name = prompt("参加者名を入力"); if(!name) return;
-      participants.push({ id: pidCounter++, name, memo1: '', rank: '--', power: '----', rate: '--%', bayChecked: false, tieBreaker: 0 }); renderParticipants();
+      participants.push({ 
+          id: pidCounter++, name, memo1: '', rank: '--', 
+          initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
+          currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          bayChecked: false, tieBreaker: 0 
+      }); 
+      renderParticipants();
     }
     
     function removeParticipant(id) {
@@ -390,13 +505,15 @@
         event.target.result.split(/\r\n|\n/).forEach(line => {
           if(!line.trim() || participants.length >= 12) return; const cols = line.split(',');
           if(cols[0]) {
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
             participants.push({ 
-              id: pidCounter++, 
-              name: cols[0].trim(), 
-              memo1: cols[1] ? cols[1].trim() : '', 
+              id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
               rank: cols[2] ? cols[2].trim() : '--',
-              power: cols[3] ? cols[3].trim() : '----',
-              rate: cols[4] ? cols[4].trim() : '--%',
+              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
               bayChecked: false, tieBreaker: 0 
             });
           }
@@ -409,8 +526,13 @@
       participants.forEach((p, idx) => {
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
-        const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg hover:bg-cyber-green/80' : 'bg-transparent text-cyber-green border border-cyber-green hover:bg-cyber-green/20';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue">${idx + 1}</td><td class="p-3 font-bold text-cyber-text">${p.name} ${memoBadge}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} px-4 py-1 rounded text-sm font-sf transition-colors">📷 ${p.bayChecked ? '済' : '撮影'}</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
+        const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
+        
+        const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-green border border-cyber-green hover:bg-cyber-green/20';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue">${idx + 1}</td>
+        <td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td>
+        <td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック">📷</button></td>
+        <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
     }
@@ -490,13 +612,17 @@
     function resetScoreMatch() {
       if(!confirm("この試合を未対戦の状態に戻しますか？")) return;
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
-      match.s1 = null; match.s2 = null; match.winner = null; updateLeagueDisplay(); closeScoreModal();
+      match.s1 = null; match.s2 = null; match.winner = null; 
+      recalculateAllStats();
+      updateLeagueDisplay(); closeScoreModal();
     }
 
     function saveScoreMatch() {
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
       if (tempScoreP1 === tempScoreP2) return alert("ベイブレードの公式ルールでは引き分けはありません。勝者が決まるまで再試合を行ってからスコアを入力してください。");
       match.s1 = tempScoreP1; match.s2 = tempScoreP2; match.winner = tempScoreP1 > tempScoreP2 ? 1 : 2;
+      
+      recalculateAllStats();
       updateLeagueDisplay(); closeScoreModal();
     }
 
@@ -521,16 +647,13 @@
     function updateLeagueDisplay() {
       let standingsMap = {};
       participants.forEach(p => { 
-        // ★追加：games（試合数）を追加
         standingsMap[p.id] = { id: p.id, name: p.name, games: 0, wins: 0, loses: 0, pts: 0, lost: 0, diff: 0, tieBreaker: p.tieBreaker || 0 }; 
       });
 
       leagueMatches.forEach(m => {
         if (m.winner !== null) {
           let st1 = standingsMap[m.p1.id]; let st2 = standingsMap[m.p2.id];
-          // ★追加：試合数をカウント
           st1.games++; st2.games++;
-          
           st1.pts += m.s1; st1.lost += m.s2; st1.diff = st1.pts - st1.lost;
           st2.pts += m.s2; st2.lost += m.s1; st2.diff = st2.pts - st2.lost;
           if (m.winner === 1) { st1.wins++; st2.loses++; } else { st2.wins++; st1.loses++; }
@@ -667,6 +790,44 @@
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
     }
     function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+
+    // ==========================================
+    // ★ 追加：CSVエクスポート機能
+    // ==========================================
+    function openExportModal() {
+      let exportText = "";
+      leagueMatches.forEach(m => {
+        if (m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.winner !== null) {
+          const p1Name = m.p1.name;
+          const p2Name = m.p2.name;
+          const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+          // タブ2回連続 (\t\t) で間に1列分の空欄（B列とD列）をあける
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+        }
+      });
+      document.getElementById('exportArea').value = exportText;
+      document.getElementById('exportModal').classList.remove('hidden');
+      document.getElementById('exportModal').classList.add('flex');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+      document.getElementById('exportModal').classList.remove('flex');
+    }
+
+    function copyExportData() {
+      const area = document.getElementById('exportArea');
+      area.select();
+      document.execCommand('copy');
+      const btn = event.currentTarget;
+      const originalText = btn.innerText;
+      btn.innerText = "✅ COPIED!";
+      btn.classList.replace('bg-cyber-green', 'bg-cyber-blue'); // ボタンの元色がグリーンなのでブルーに変化させる
+      setTimeout(() => {
+        btn.innerText = originalText;
+        btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
+      }, 2000);
+    }
 
   </script>
 </body>
