@@ -136,8 +136,9 @@
             <div class="overflow-y-auto flex-1">
               <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-[#111827] z-10">
-                  <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
-                    <th class="p-3 text-sm font-sf">NAME / STATS</th>
+                  <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
+                    <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-t">🔽</span></th>
+                    <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
                     <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
                     <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
@@ -324,9 +325,23 @@
   </div>
 
   <script>
+
+    // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
+    let _tDebounce = false;
+    function handleTouch(e, fn) {
+      e.preventDefault();
+      if (_tDebounce) return;
+      _tDebounce = true;
+      setTimeout(() => { _tDebounce = false; }, 400);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+      fn();
+    }
+
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
     const colors = ['赤', '青', '黄', '緑']; const colorCodes = { '赤': 'bg-cyber-pink', '青': 'bg-cyber-blue', '黄': 'bg-yellow-400 text-black', '緑': 'bg-cyber-green' };
     
+    let participantSortMode = 'id';
+
     let globalBlockSize = 8;
     let blockMap = {}; let blockData = {}; let blockCapacities = {}; let blockActivePositions = {};
     let blockMatches = {}; let finals = {}; const BYE = { id: 'BYE', name: 'BYE (シード)' };
@@ -685,9 +700,27 @@
       renderParticipants();
     }
 
+
+    function getSortedParticipants() {
+      let sorted = [...participants];
+      if (participantSortMode === 'name') {
+        sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      } else {
+        sorted.sort((a, b) => a.id - b.id);
+      }
+      return sorted;
+    }
+
+    function toggleParticipantSort(mode) {
+      participantSortMode = mode;
+      renderParticipants();
+    }
+
     function renderParticipants() {
       if(!isSetupDone) return; const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
-      participants.forEach(p => {
+      const sortedP = getSortedParticipants();
+      sortedP.forEach(p => {
+        const originalNo = participants.indexOf(p) + 1;
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
@@ -707,6 +740,10 @@
         tr.innerHTML = `<td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
+      const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
+      const siNm = document.getElementById('sort-icon-name-t'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
+      const thNo = document.getElementById('th-no-t'); if(thNo) thNo.classList.toggle('text-cyber-blue', participantSortMode==='id');
+      const thNm = document.getElementById('th-name-t'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
       saveState();
     }
 
@@ -1093,7 +1130,7 @@
       try {
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
-          pidCounter, participants, blockMap, blockData, blockCapacities,
+          pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, blockMatches, finals, isEffectOn
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
@@ -1112,6 +1149,7 @@
         isTournamentStarted = s.isTournamentStarted || false;
         pidCounter = s.pidCounter || 1;
         participants = s.participants || [];
+        participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
         blockData = s.blockData || {};
         blockCapacities = s.blockCapacities || {};

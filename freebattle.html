@@ -37,7 +37,10 @@
     }
   </script>
   <style>
-    body { background-color: #0a0e17; color: #e2e8f0; }
+    /* ★修正：ここでタップの反応速度を最適化しています */
+    body { background-color: #0a0e17; color: #e2e8f0; touch-action: manipulation; }
+    button { touch-action: manipulation; }
+    
     .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
     
     .neon-orange { box-shadow: 0 0 10px rgba(249, 115, 22, 0.6); }
@@ -99,7 +102,6 @@
         <div class="flex-grow"></div>
         <button onclick="addParticipant()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 py-2 rounded font-bold shadow text-xs md:text-sm transition-transform active:scale-95">＋ 手動追加</button>
       </div>
-      
 
       <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-orange rounded-lg text-center mb-4" style="box-shadow:0 0 10px rgba(249,115,22,0.4)">
         <p class="text-cyber-orange font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
@@ -173,7 +175,9 @@
       </div>
     </div>
 
-  </div> <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+  </div> 
+  
+  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-orange neon-orange flex flex-col h-[60vh]">
       <h2 class="text-xl font-sf text-cyber-orange mb-2">📋 BATCH IMPORT</h2>
       <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
@@ -295,6 +299,7 @@
   </div>
 
   <script>
+
     let participants = []; 
     let pidCounter = 1; 
     let matches = [];
@@ -380,7 +385,7 @@
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
+      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
       document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
       conn = null;
     }
@@ -533,7 +538,6 @@
             winnerVal = isRemoteSwapped ? 1 : 2;
         }
         
-        // リモコンから勝敗を決めた場合は、マッチリスト側にも反映
         currentRemoteMatch.winner = winnerVal;
         recalculateAllStats();
         renderMatches();
@@ -715,7 +719,7 @@
     }
     
     function reTakePhoto() {
-        document.getElementById('cameraInput').click();
+        document.getElementById('cameraInput').click(); 
     }
 
     document.getElementById('cameraInput').addEventListener('change', function(e) {
@@ -830,6 +834,8 @@
         renderMatches();
         saveState();
     }
+
+    function renderMatches() {
         const list = document.getElementById('matchList');
         list.innerHTML = '';
         

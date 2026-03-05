@@ -115,9 +115,9 @@
           <div class="overflow-y-auto flex-1">
             <table class="w-full text-left border-collapse">
               <thead class="sticky top-0 bg-[#111827] z-10">
-                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
-                  <th class="p-3 text-sm font-sf w-16 text-center">NO.</th>
-                  <th class="p-3 text-sm font-sf">NAME / STATS</th>
+                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
+                  <th id="th-no-s" class="p-3 text-sm font-sf w-16 text-center cursor-pointer hover:text-cyber-green transition-colors text-cyber-green" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-s">🔽</span></th>
+                  <th id="th-name-s" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-green transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-s"></span></th>
                   <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                   <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                 </tr>
@@ -369,7 +369,21 @@
   </div>
 
   <script>
+
+    // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
+    let _tDebounce = false;
+    function handleTouch(e, fn) {
+      e.preventDefault();
+      if (_tDebounce) return;
+      _tDebounce = true;
+      setTimeout(() => { _tDebounce = false; }, 400);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+      fn();
+    }
+
     let participants = []; 
+    let participantSortMode = 'id';
+
     let pidCounter = 1; 
     let isLeagueStarted = false; 
     let leagueName = '';
@@ -663,7 +677,7 @@
 
     function saveState() {
       try {
-        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches };
+        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -678,6 +692,7 @@
         isLeagueStarted = s.isLeagueStarted || false;
         pidCounter = s.pidCounter || 1;
         participants = s.participants || [];
+        participantSortMode = s.participantSortMode || 'id';
         leagueMatches = s.leagueMatches || [];
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
@@ -804,9 +819,26 @@
       }; reader.readAsText(file);
     });
 
+
+    function getSortedParticipants() {
+      let sorted = [...participants];
+      if (participantSortMode === 'name') {
+        sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      } else {
+        sorted.sort((a, b) => a.id - b.id);
+      }
+      return sorted;
+    }
+
+    function toggleParticipantSort(mode) {
+      participantSortMode = mode;
+      renderParticipants();
+    }
+
     function renderParticipants() {
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
-      participants.forEach((p, idx) => {
+      const sortedP = getSortedParticipants();
+      sortedP.forEach((p, idx) => {
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
@@ -818,6 +850,10 @@
         <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
+      const siId = document.getElementById('sort-icon-id-s'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
+      const siNm = document.getElementById('sort-icon-name-s'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
+      const thNo = document.getElementById('th-no-s'); if(thNo) thNo.classList.toggle('text-cyber-green', participantSortMode==='id');
+      const thNm = document.getElementById('th-name-s'); if(thNm) thNm.classList.toggle('text-cyber-green', participantSortMode==='name');
       saveState();
     }
 
