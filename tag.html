@@ -467,6 +467,15 @@
       conn.on('close', resetLinkUI);
     }
     
+    // HUDへコマンドを送信する基幹関数
+    function sendRemoteCmd(cmd) {
+      if (!conn || !conn.open) {
+        console.warn("HUDと接続されていません。");
+        return;
+      }
+      conn.send({ type: 'REMOTE_CMD', cmd: cmd });
+    }
+
     // タッグ戦用のSEND処理（BTLごとに呼び出される）
     function sendMatchToScore(p1Id, p2Id, btnId, btlIndex) {
       if(!conn || !conn.open) return alert("スコアシステムとリンクされていません。");
@@ -524,7 +533,13 @@
     }
 
     function handleScoreCmd(side, cmd, pts) {
-        sendRemoteCmd(cmd); 
+        // SWAP中はP1_/P2_コマンドを入れ替えてHUDに送信
+        let actualCmd = cmd;
+        if (isRemoteSwapped) {
+            if (cmd.startsWith('P1_')) actualCmd = cmd.replace('P1_', 'P2_');
+            else if (cmd.startsWith('P2_')) actualCmd = cmd.replace('P2_', 'P1_');
+        }
+        sendRemoteCmd(actualCmd);
         if (cmd === 'SYS_RESET' || cmd === 'reset') {
             remoteScoreLeft = 0;
             remoteScoreRight = 0;
