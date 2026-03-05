@@ -60,10 +60,9 @@
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
-  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center transition-transform duration-500">
 
     <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
-      
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
@@ -88,8 +87,8 @@
     </div>
 
     <div class="p-4 flex-1 overflow-y-auto">
+      
       <div id="view-participants" class="h-full flex flex-col">
-        
         <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
           <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
           <div class="mb-4">
@@ -113,8 +112,7 @@
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置手動入替</button>
             
             <div class="flex-grow"></div>
-            
-            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
           </div>
           
           <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
@@ -139,10 +137,10 @@
         </div>
       </div>
 
-      <div id="view-tournament" class="hidden h-full flex-col">
+      <div id="view-tournament" class="hidden flex-col">
         <div id="tournamentPreStart" class="text-center mt-8 hidden"></div>
         
-        <div id="tournamentActive" class="flex flex-col h-full">
+        <div id="tournamentActive" class="flex flex-col">
           <div class="flex justify-between items-center mb-4 shrink-0">
             <div class="flex items-center gap-2 md:gap-4 flex-wrap">
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
@@ -150,16 +148,16 @@
             </div>
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
+          
           <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
-          <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
+          
+          <div class="mt-2 pt-4 border-t border-cyber-blue">
             <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
           </div>
         </div>
       </div>
-    </div>
-
-    <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+    </div> <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
       <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
         <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
         <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
@@ -210,12 +208,8 @@
     </div>
 
     <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-      
-      <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50">
-        </div>
-
-      <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10">
-        </div>
+      <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50"></div>
+      <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
 
     <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
@@ -232,12 +226,18 @@
       </div>
 
       <div class="flex justify-between items-center text-lg md:text-xl font-bold text-cyber-text mb-4 bg-[#0d131f] p-3 rounded border border-cyber-table-border shrink-0">
-        <div id="remote-left-name" class="flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9]">Player 1</div>
-        <div class="flex flex-col items-center justify-center px-2 md:px-4">
-            <div class="text-sm opacity-50 font-sf mb-1">VS</div>
-            <button onclick="handleRemoteSwap()" class="text-[10px] md:text-xs bg-[#111827] border border-gray-600 text-gray-300 px-2 py-1 rounded font-sf hover:bg-gray-800 hover:text-white transition-colors shadow-sm" title="左右を入れ替える">🔁 SWAP</button>
+        <div class="flex-1 flex justify-end items-center gap-2 overflow-hidden">
+            <span id="remote-left-name" class="truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right">Player 1</span>
+            <span id="remote-left-score" class="text-3xl md:text-4xl font-mono text-white font-bold shrink-0 ml-1 w-8 text-center drop-shadow-[0_0_8px_#fff]">0</span>
         </div>
-        <div id="remote-right-name" class="flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899]">Player 2</div>
+        <div class="flex flex-col items-center justify-center px-2 shrink-0 w-16">
+            <div class="text-xs opacity-50 font-sf mb-1">VS</div>
+            <button onclick="handleRemoteSwap()" class="text-[10px] bg-[#111827] border border-gray-600 text-gray-300 px-2 py-1 rounded font-sf hover:bg-gray-800 hover:text-white transition-colors shadow-sm" title="左右を入れ替える">🔁 SWAP</button>
+        </div>
+        <div class="flex-1 flex justify-start items-center gap-2 overflow-hidden">
+            <span id="remote-right-score" class="text-3xl md:text-4xl font-mono text-white font-bold shrink-0 mr-1 w-8 text-center drop-shadow-[0_0_8px_#fff]">0</span>
+            <span id="remote-right-name" class="truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left">Player 2</span>
+        </div>
       </div>
 
       <div class="flex gap-2 mb-4 shrink-0">
@@ -248,23 +248,23 @@
       <div id="remote-score-area" class="flex flex-col gap-4">
         <div class="flex justify-between gap-6">
           <div class="flex-1 flex flex-col gap-2">
-            <button onclick="sendRemoteCmd('P1_X')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
-            <button onclick="sendRemoteCmd('P1_B')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
-            <button onclick="sendRemoteCmd('P1_O')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
-            <button onclick="sendRemoteCmd('P1_S')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <button onclick="handleScoreCmd('left', 'P1_X', 3)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="handleScoreCmd('left', 'P1_B', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="handleScoreCmd('left', 'P1_O', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="handleScoreCmd('left', 'P1_S', 1)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
             <div class="flex gap-2 mt-1">
-                <button onclick="sendRemoteCmd('P1_MINUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
-                <button onclick="sendRemoteCmd('P1_PLUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+                <button onclick="handleScoreCmd('left', 'P1_MINUS', -1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="handleScoreCmd('left', 'P1_PLUS', 1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
             </div>
           </div>
           <div class="flex-1 flex flex-col gap-2">
-            <button onclick="sendRemoteCmd('P2_X')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
-            <button onclick="sendRemoteCmd('P2_B')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
-            <button onclick="sendRemoteCmd('P2_O')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
-            <button onclick="sendRemoteCmd('P2_S')" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <button onclick="handleScoreCmd('right', 'P2_X', 3)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="handleScoreCmd('right', 'P2_B', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="handleScoreCmd('right', 'P2_O', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="handleScoreCmd('right', 'P2_S', 1)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
             <div class="flex gap-2 mt-1">
-                <button onclick="sendRemoteCmd('P2_MINUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
-                <button onclick="sendRemoteCmd('P2_PLUS')" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+                <button onclick="handleScoreCmd('right', 'P2_MINUS', -1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="handleScoreCmd('right', 'P2_PLUS', 1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
             </div>
           </div>
         </div>
@@ -285,7 +285,7 @@
       </div>
 
       <div class="mt-6 pt-4 border-t border-cyber-table-border shrink-0 text-right">
-        <button onclick="sendRemoteCmd('SYS_RESET')" class="px-6 py-2 bg-[#111827] border border-cyber-red text-cyber-red rounded font-sf hover:bg-cyber-red hover:text-white transition-colors text-xs">♻️ MATCH RESET</button>
+        <button onclick="handleScoreCmd('both', 'SYS_RESET', 'reset')" class="px-6 py-2 bg-[#111827] border border-cyber-red text-cyber-red rounded font-sf hover:bg-cyber-red hover:text-white transition-colors text-xs">♻️ MATCH RESET</button>
       </div>
 
       <div class="mt-4 p-4 bg-[#0a0e17] border border-cyber-green rounded-lg shrink-0">
@@ -424,9 +424,40 @@
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
+    // ==========================================
+    // ★ リモコンモーダル ＆ スコア連動制御
+    // ==========================================
     let currentRemoteMatch = null;
     let currentRemoteMode = 'score';
     let isRemoteSwapped = false;
+    
+    // リモコン内で表示するための仮スコア
+    let remoteScoreLeft = 0;
+    let remoteScoreRight = 0;
+    let remoteWinScoreLimit = 4;
+
+    function updateRemoteScoreUI() {
+        document.getElementById('remote-left-score').innerText = remoteScoreLeft;
+        document.getElementById('remote-right-score').innerText = remoteScoreRight;
+    }
+
+    function handleScoreCmd(side, cmd, pts) {
+        // iPhone側へコマンド送信
+        sendRemoteCmd(cmd); 
+        
+        // iPad側の表示用スコアを計算
+        if (cmd === 'SYS_RESET') {
+            remoteScoreLeft = 0;
+            remoteScoreRight = 0;
+        } else {
+            if (side === 'left') {
+                remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
+            } else if (side === 'right') {
+                remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
+            }
+        }
+        updateRemoteScoreUI();
+    }
 
     function openRemoteModal(block, roundIdx, matchIdx) {
         let match;
@@ -437,8 +468,11 @@
         
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false;
+        remoteScoreLeft = 0;
+        remoteScoreRight = 0;
 
         updateRemoteNamesUI();
+        updateRemoteScoreUI();
 
         if(conn && conn.open) {
             conn.send({ 
@@ -477,8 +511,8 @@
         if (isRemoteSwapped) {
             leftNameEl.innerText = m.p2.name;
             rightNameEl.innerText = m.p1.name;
-            leftNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899]";
-            rightNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9]";
+            leftNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
+            rightNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
 
             leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`;
             leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
@@ -488,8 +522,8 @@
         } else {
             leftNameEl.innerText = m.p1.name;
             rightNameEl.innerText = m.p2.name;
-            leftNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9]";
-            rightNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899]";
+            leftNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
+            rightNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
 
             leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`;
             leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
@@ -501,7 +535,14 @@
 
     function handleRemoteSwap() {
         isRemoteSwapped = !isRemoteSwapped;
+        
+        // スコア表示も入れ替える
+        let tempScore = remoteScoreLeft;
+        remoteScoreLeft = remoteScoreRight;
+        remoteScoreRight = tempScore;
+
         updateRemoteNamesUI();
+        updateRemoteScoreUI();
         sendRemoteCmd('SYS_SWAP'); 
     }
 
@@ -772,10 +813,6 @@
       });
     }
 
-
-    // ==========================================
-    // ★ 抽選 ＆ ルーレット演出機能
-    // ==========================================
     function openLotteryModal(id) {
       if(isTournamentStarted || isSetupSwapMode) return; 
       currentLotteryId = id; 
@@ -791,6 +828,8 @@
       const minCount = activeCounts.length > 0 ? Math.min(...activeCounts) : 0;
       
       const modalContent = document.getElementById('lotteryModalContent');
+      if (!modalContent) return alert("System Error: Modal Container not found.");
+
       modalContent.innerHTML = `
           <h2 class="text-2xl font-sf text-cyber-blue mb-2">TARGET: ${p.name}</h2>
           <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
@@ -822,6 +861,9 @@
         const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
         const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
 
+        document.getElementById('lotteryModal').classList.add('hidden'); 
+        document.getElementById('lotteryModal').classList.remove('flex');
+
         if (!isEffectOn) {
             p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
             alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`); 
@@ -830,35 +872,30 @@
             return;
         }
 
-        let totalCap = 0;
-        let totalEmpty = 0;
-        let allEmptySlots = [];
+        let totalCap = 0; let totalEmpty = 0; let allEmptySlots = [];
         colors.forEach(c => {
             totalCap += blockCapacities[c];
             blockActivePositions[c].forEach(idx => {
-                if (blockData[c][idx] === null) {
-                    totalEmpty++;
-                    allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
+                if (blockData[c][idx] === null || (c === selectedColor && idx === position)) {
+                    totalEmpty++; allEmptySlots.push({ name: `${blockMap[c]}-${idx + 1}`, color: c });
                 }
             });
         });
 
-        if (totalEmpty === 1) {
+        const box = document.getElementById('effectRouletteBox');
+        document.getElementById('effectPlayerName').innerText = p.name;
+        box.innerText = "?"; box.style.borderColor = "#ffffff"; box.style.color = "#ffffff"; box.style.boxShadow = "0 0 20px #ffffff";
+
+        document.getElementById('effectLotteryModal').classList.remove('hidden');
+        document.getElementById('effectLotteryModal').classList.add('flex');
+
+        if (totalEmpty <= 1) {
             p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-            showLotteryResultScreen(p.name, finalSlotName);
+            showLotteryResultScreen(p.name, finalSlotName, selectedColor);
             return;
         }
 
-        const remainRatio = totalEmpty / totalCap;
-        const duration = remainRatio >= 0.5 ? 2000 : 1000;
-
-        const modalContent = document.getElementById('lotteryModalContent');
-        modalContent.innerHTML = `
-            <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
-            <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
-        `;
-
-        const rDisplay = document.getElementById('rouletteDisplay');
+        const duration = (totalEmpty / totalCap) >= 0.5 ? 2000 : 1000;
         let startTime = Date.now();
         
         let rInterval = setInterval(() => {
@@ -866,36 +903,41 @@
             if (elapsed > duration) {
                 clearInterval(rInterval);
                 p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-                showLotteryResultScreen(p.name, finalSlotName);
+                box.innerText = finalSlotName;
+                box.style.borderColor = getBorderColorHex(selectedColor);
+                box.style.color = getBorderColorHex(selectedColor);
+                box.style.boxShadow = `0 0 40px ${getBorderColorHex(selectedColor)}`;
+                setTimeout(() => { showLotteryResultScreen(p.name, finalSlotName, selectedColor); }, 1000); 
             } else {
                 let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
-                rDisplay.innerText = randomSlot;
+                box.innerText = randomSlot.name;
+                box.style.borderColor = getBorderColorHex(randomSlot.color);
+                box.style.color = getBorderColorHex(randomSlot.color);
+                box.style.boxShadow = `0 0 20px ${getBorderColorHex(randomSlot.color)}`;
             }
         }, 50);
     }
 
-    function showLotteryResultScreen(playerName, slotName) {
-        const modalContent = document.getElementById('lotteryModalContent');
-        modalContent.innerHTML = `
-            <div class="flex flex-col items-center justify-center">
-                <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
+    function showLotteryResultScreen(playerName, slotName, color) {
+        const content = document.getElementById('effectLotteryModalContent');
+        content.innerHTML = `
+            <h2 class="text-xl md:text-2xl font-sf text-cyber-blue mb-2 tracking-widest">LOTTERY SYSTEM</h2>
+            <div class="flex flex-col items-center justify-center w-full">
+                <h2 class="text-3xl md:text-5xl font-bold font-sf text-white mb-4 truncate w-full px-4 drop-shadow-[0_0_15px_#fff]">${playerName}</h2>
                 <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
-                <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
-                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">
-OK</button>
+                <div class="text-6xl md:text-8xl font-bold font-sf mb-10" style="color: ${getBorderColorHex(color)}; text-shadow: 0 0 20px ${getBorderColorHex(color)}">【${slotName}】</div>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-dark border border-cyber-table-border text-white px-10 py-4 rounded-full font-bold font-sf hover:bg-gray-800 active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
             </div>
         `;
         
         const opBox = document.getElementById('operatorViewBox');
-        if (isEffectOn) {
-            opBox.innerHTML = `
-                <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
-                <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
-                <span class="text-xl font-bold font-sf text-cyber-pink">【${slotName}】</span>
-            `;
-            opBox.classList.remove('hidden');
-            opBox.classList.add('flex');
-        }
+        opBox.innerHTML = `
+            <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
+            <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
+            <span class="text-xl font-bold font-sf" style="color: ${getBorderColorHex(color)};">【${slotName}】</span>
+        `;
+        opBox.classList.remove('hidden');
+        opBox.classList.add('flex');
     }
 
     function confirmLotteryResult() {
@@ -917,13 +959,23 @@ OK</button>
 
         const wrapper = document.getElementById('app-wrapper');
         wrapper.style.transform = '';
+
+        const content = document.getElementById('effectLotteryModalContent');
+        if (content) {
+            content.innerHTML = `
+              <h2 class="text-xl md:text-2xl font-sf text-cyber-blue mb-2 tracking-widest">LOTTERY SYSTEM</h2>
+              <h1 id="effectPlayerName" class="text-4xl md:text-5xl font-bold text-white mb-10 drop-shadow-[0_0_15px_#fff]">PLAYER NAME</h1>
+              <div id="effectRouletteBox" class="w-48 h-48 md:w-64 md:h-64 flex items-center justify-center text-6xl md:text-7xl font-sf font-bold border-4 rounded-xl shadow-[0_0_20px_#fff] transition-colors duration-75">
+                 ?
+              </div>
+            `;
+        }
     }
 
     function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
       if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
-
 
     function openCamera(id) { currentCheckId = id; document.getElementById('cameraInput').click(); }
     document.getElementById('cameraInput').addEventListener('change', function(e) {
@@ -967,6 +1019,9 @@ OK</button>
       
       finals = { sf: [ {p1:null, p2:null, winner:null}, {p1:null, p2:null, winner:null} ], third: {p1:null, p2:null, winner:null}, f: {p1:null, p2:null, winner:null} }; 
       updateAdvancements();
+
+      // ★追加：トーナメント開始時に自動でタブを切り替える
+      switchTab('tournament');
     }
 
     function toggleSwapMode() {
