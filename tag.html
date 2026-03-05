@@ -47,8 +47,8 @@
     <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
       <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
       <input type="text" id="linkCodeInput" placeholder="CODE" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf transition-colors" maxlength="4">
-      <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 text-[10px] md:text-xs font-sf font-bold rounded">CONN</button>
-      <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1" title="通信リセット">✖</button>
+      <button onclick="connectLink()" ontouchend="handleTouch(event,connectLink)" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 text-[10px] md:text-xs font-sf font-bold rounded">CONN</button>
+      <button onclick="forceResetLink()" ontouchend="handleTouch(event,forceResetLink)" class="text-cyber-pink hover:text-white font-bold text-sm px-1" title="通信リセット">✖</button>
       <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
     </div>
   </header>
@@ -67,8 +67,8 @@
         <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
         <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
         <div class="flex gap-3 max-w-sm mx-auto">
-          <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
-          <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+          <button onclick="resumeFromSave()" ontouchend="handleTouch(event,resumeFromSave)" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+          <button onclick="clearSave()" ontouchend="handleTouch(event,clearSave)" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
         </div>
       </div>
 
@@ -76,12 +76,9 @@
         <div class="p-4 border-b border-cyber-table-border shrink-0">
           <h3 class="font-sf font-bold text-cyber-blue text-lg mb-2">1. INDIVIDUAL ENTRY</h3>
           <div class="flex gap-2 flex-wrap">
-            <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-1 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
-              📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
-            </label>
-            <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green text-cyber-green px-3 py-1 rounded text-xs font-bold">📋 貼付</button>
+            <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green text-cyber-green px-3 py-1 rounded text-xs font-bold">📋 貼付</button>
             <div class="flex-grow"></div>
-            <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded text-xs font-bold">＋ 手動</button>
+            <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded text-xs font-bold">＋ 手動</button>
           </div>
         </div>
         <div class="overflow-y-auto p-2 flex-1"><table class="w-full text-left text-sm"><thead class="sticky top-0 bg-[#111827] z-10"><tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none"><th id="th-no-tg" class="p-2 text-xs font-sf text-center w-10 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-tg">🔽</span></th><th id="th-name-tg" class="p-2 text-xs font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME <span id="sort-icon-name-tg"></span></th><th class="p-2 text-xs font-sf text-center w-16">CHECK</th><th class="p-2 text-xs font-sf text-center w-12">DEL</th></tr></thead><tbody id="participantList"></tbody></table></div>
@@ -91,7 +88,7 @@
         <div class="p-4 border-b border-cyber-table-border shrink-0 flex justify-between items-center bg-[#1a0b14]">
           <h3 class="font-sf font-bold text-cyber-pink text-lg flex items-center gap-2">
             2. FORM TEAMS
-            <button onclick="downloadAllTeamImagesZip()" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded shadow text-[10px] transition-colors ml-2">📦 画像DL(ZIP)</button>
+            <button onclick="downloadAllTeamImagesZip()" ontouchend="handleTouch(event,downloadAllTeamImagesZip)" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded shadow text-[10px] transition-colors ml-2">📦 画像DL(ZIP)</button>
             <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded shadow text-[10px] transition-colors ml-1" title="リセット">🗑</button>
           </h3>
           <button id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed transition-transform">FORM TAG 🤝</button>
@@ -152,7 +149,7 @@
     <div id="view-finals" class="hidden h-full flex flex-col max-w-6xl mx-auto w-full">
       <div class="text-center mb-4 shrink-0">
         <h2 class="text-3xl font-sf text-yellow-400 mb-2 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
-        <button onclick="showResults()" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
+        <button onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
       </div>
       <div class="flex-1 overflow-y-auto pb-8 space-y-6 pr-2">
         <div id="qf-container" class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg">
@@ -234,8 +231,8 @@
       </div>
       
       <div class="flex justify-center gap-4 mt-6 md:mt-10">
-        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-        <button onclick="closeResults()" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
+        <button onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
       </div>
     </div>
   </div>
@@ -742,27 +739,6 @@
       }
     }
     
-    document.getElementById('csvInput').addEventListener('change', function(e) {
-      if(isTournamentStarted) return alert("開始後は追加できません"); const file = e.target.files[0]; if(!file) return;
-      const reader = new FileReader(); reader.onload = function(event) {
-        event.target.result.split(/\r\n|\n/).forEach(line => {
-          if(!line.trim() || participants.length >= 28) return; const cols = line.split(',');
-          if(cols[0]) { 
-            let initialPower = parseInt(cols[3]) || 1500;
-            let initialMatches = parseInt(cols[4]) || 0;
-            let initialWins = parseInt(cols[5]) || 0;
-            let initialLoses = parseInt(cols[6]) || 0;
-            participants.push({ 
-              id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', 
-              rank: cols[2] ? cols[2].trim() : '--', 
-              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
-              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              teamId: null 
-            }); 
-          }
-        }); e.target.value = ''; renderParticipants();
-      }; reader.readAsText(file);
-    });
 
 
     function getSortedParticipants() {
@@ -783,7 +759,13 @@
     function renderParticipants() {
 
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
-      participants.forEach(p => {
+      const sortedP = getSortedParticipants();
+      // アイコン更新
+      const siId = document.getElementById('sort-icon-id-tg'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
+      const siNm = document.getElementById('sort-icon-name-tg'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
+      const thNo = document.getElementById('th-no-tg'); if(thNo) thNo.classList.toggle('text-cyber-blue', participantSortMode==='id');
+      const thNm = document.getElementById('th-name-tg'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
+      sortedP.forEach(p => {
         if (p.teamId) return;
         const isSelected = selectedForTeam.includes(p.id);
         const tr = document.createElement('tr');

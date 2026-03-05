@@ -60,7 +60,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
   </style>
 </head>
-<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden">
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden cursor-pointer">
 
   <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-green flex flex-col justify-center min-h-[80px] shrink-0">
     
@@ -100,9 +100,6 @@
 
       <div id="mainManagementSection" class="flex-1 flex flex-col min-h-0">
         <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
-          <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs md:text-sm text-cyber-blue transition-colors">
-            📁 CSVファイル <input type="file" id="csvInput" accept=".csv" class="hidden">
-          </label>
           <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📋 テキスト貼付</button>
           
           <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📦 画像DL(ZIP)</button>
@@ -116,8 +113,8 @@
             <table class="w-full text-left border-collapse">
               <thead class="sticky top-0 bg-[#111827] z-10">
                 <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
-                  <th id="th-no-s" class="p-3 text-sm font-sf w-16 text-center cursor-pointer hover:text-cyber-green transition-colors text-cyber-green" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-s">🔽</span></th>
-                  <th id="th-name-s" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-green transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-s"></span></th>
+                  <th id="th-no-s" class="p-3 text-sm font-sf w-16 text-center cursor-pointer hover:text-cyber-green transition-colors text-cyber-green" onclick="toggleParticipantSort('id')">NO. <span id="sort-icon-id-s">🔽</span></th>
+                  <th id="th-name-s" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-green transition-colors" onclick="toggleParticipantSort('name')">NAME / STATS <span id="sort-icon-name-s"></span></th>
                   <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                   <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                 </tr>
@@ -369,17 +366,6 @@
   </div>
 
   <script>
-
-    // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
-    let _tDebounce = false;
-    function handleTouch(e, fn) {
-      e.preventDefault();
-      if (_tDebounce) return;
-      _tDebounce = true;
-      setTimeout(() => { _tDebounce = false; }, 400);
-      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
-      fn();
-    }
 
     let participants = []; 
     let participantSortMode = 'id';
@@ -796,28 +782,6 @@
       if(isLeagueStarted) return alert("開始後は削除できません"); if(!confirm("削除しますか？")) return;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
-    
-    document.getElementById('csvInput').addEventListener('change', function(e) {
-      if(isLeagueStarted) return; const file = e.target.files[0]; if(!file) return;
-      const reader = new FileReader(); reader.onload = function(event) {
-        event.target.result.split(/\r\n|\n/).forEach(line => {
-          if(!line.trim() || participants.length >= 12) return; const cols = line.split(',');
-          if(cols[0]) {
-            let initialPower = parseInt(cols[3]) || 1500;
-            let initialMatches = parseInt(cols[4]) || 0;
-            let initialWins = parseInt(cols[5]) || 0;
-            let initialLoses = parseInt(cols[6]) || 0;
-            participants.push({ 
-              id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
-              rank: cols[2] ? cols[2].trim() : '--',
-              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
-              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              bayChecked: false, bayImage: null, tieBreaker: 0 
-            });
-          }
-        }); e.target.value = ''; renderParticipants();
-      }; reader.readAsText(file);
-    });
 
 
     function getSortedParticipants() {

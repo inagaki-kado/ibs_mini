@@ -78,8 +78,8 @@
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
         <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
         <input type="text" id="linkCodeInput" placeholder="CODE" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
-        <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
-        <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+        <button onclick="connectLink()" ontouchend="handleTouch(event,connectLink)" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
+        <button onclick="forceResetLink()" ontouchend="handleTouch(event,forceResetLink)" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
         <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
       </div>
     </header>
@@ -96,8 +96,8 @@
           <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
           <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
           <div class="flex gap-3">
-            <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
-            <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+            <button onclick="resumeFromSave()" ontouchend="handleTouch(event,resumeFromSave)" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+            <button onclick="clearSave()" ontouchend="handleTouch(event,clearSave)" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
           </div>
         </div>
 
@@ -116,19 +116,16 @@
 
         <div id="mainManagementSection" class="hidden flex-col h-full">
           <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
-            <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
-            <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs text-cyber-blue transition-colors">
-              📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
-            </label>
-            <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+            <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+            <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
-            <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
+            <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
 
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
             <div class="flex-grow"></div>
             
-            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
+            <button onclick="toggleEffectMode()" ontouchend="handleTouch(event,toggleEffectMode)" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
             <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -164,7 +161,7 @@
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
             </div>
-            <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
+            <button id="showResultsBtn" onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
           
           <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
@@ -221,8 +218,8 @@
           <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
         </div>
         <div class="flex justify-center gap-4 mt-6 md:mt-10">
-          <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-          <button onclick="closeResults()" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+          <button onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
         </div>
       </div>
     </div>
@@ -657,22 +654,6 @@
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
     
-    document.getElementById('csvInput').addEventListener('change', function(e) {
-      if(isTournamentStarted) return alert("開始後は追加できません"); const file = e.target.files[0]; if(!file) return;
-      const reader = new FileReader(); reader.onload = function(event) {
-        let count = 0; event.target.result.split(/\r\n|\n/).forEach(line => {
-          if(!line.trim()) return; const cols = line.split(',');
-          if(cols[0]) {
-            let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
-            let initialWins = parseInt(cols[5]) || 0; let initialLoses = parseInt(cols[6]) || 0;
-            participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', rank: cols[2]?cols[2].trim():'--',
-              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
-              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              bayChecked: false, bayImage: null, color: null, position: null }); count++;
-          }
-        }); e.target.value = ''; renderParticipants(); alert(`${count}名追加しました`);
-      }; reader.readAsText(file);
-    });
 
     function toggleSetupSwapMode() {
       if(isTournamentStarted) return;
