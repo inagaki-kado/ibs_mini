@@ -723,7 +723,7 @@
         const originalNo = participants.indexOf(p) + 1;
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
-        const statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
+        const statsDisplay = `<span class="text-[10px] text-cyber-green font-mono font-normal opacity-80 ml-1">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
         let lotteryHTML = '';
         if (p.color) {
             if (isSetupSwapMode) {
@@ -737,7 +737,7 @@
             lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
         }
         const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        tr.innerHTML = `<td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
