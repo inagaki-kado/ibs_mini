@@ -127,6 +127,14 @@
           </div>
         </div>
 
+        <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-green rounded-lg text-center neon-green mb-4">
+          <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
+          <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
+          <div class="flex gap-3">
+            <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+            <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+          </div>
+        </div>
         <div class="text-center pb-4 shrink-0" id="startLeagueArea">
           <button id="btn-start-league" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-10 py-4 rounded-full font-bold shadow-lg text-2xl font-sf neon-green transition-transform active:scale-95">▶ START LEAGUE</button>
         </div>
@@ -333,7 +341,7 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#22c55e]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf font-bold rounded hover:bg-cyber-green/20 transition-colors text-lg">⏱ 10s TIMER</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf font-bold rounded hover:bg-cyber-green/20 transition-colors text-lg">⏱ TIMER</button>
         </div>
       </div>
 
@@ -446,7 +454,7 @@
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
       const dot = document.getElementById('link-status-dot');
       dot.classList.replace('bg-cyber-green', 'bg-red-500'); dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
       conn = null;
@@ -480,7 +488,7 @@
     }
 
     // ==========================================
-    // ★ HUDリモートコントロールモーダル
+    // HUDリモートコントロールモーダル
     // ==========================================
     let currentRemoteMatch = null;
     let currentRemoteMode = 'score';
@@ -532,11 +540,6 @@
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
             });
-            // リモコンを開いた時点で、iPhone側のスコアも同期させる（不要なら削除可）
-            if (remoteScoreLeft > 0 || remoteScoreRight > 0) {
-               // 簡易的にiPhone側に直接スコアを送る機能はないため、0からスタートさせる前提
-               // sendRemoteCmd('SYS_RESET');
-            }
         } else {
             alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
         }
@@ -610,7 +613,7 @@
             finalWinnerVal = isRemoteSwapped ? 1 : 2;
         }
 
-        // リモコンで操作したスコアと勝敗を総当たりの表に保存する
+        // リモコンで操作したスコアと勝敗をリーグ表に保存する
         currentRemoteMatch.s1 = finalScore1;
         currentRemoteMatch.s2 = finalScore2;
         currentRemoteMatch.winner = finalWinnerVal;
@@ -652,7 +655,58 @@
     // ==========================================
     // アプリ制御
     // ==========================================
-    document.addEventListener('DOMContentLoaded', () => {
+
+    // ==========================================
+    // localStorage 自動保存・復元
+    // ==========================================
+    const SAVE_KEY = 'tbh_league';
+
+    function saveState() {
+      try {
+        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('saveState error:', e); }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s.participants || s.participants.length === 0) return false;
+        leagueName = s.leagueName || '';
+        isLeagueStarted = s.isLeagueStarted || false;
+        pidCounter = s.pidCounter || 1;
+        participants = s.participants || [];
+        leagueMatches = s.leagueMatches || [];
+        return true;
+      } catch(e) { console.warn('loadState error:', e); return false; }
+    }
+
+    function clearSave() {
+      if (!confirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+
+    function showResumeBanner() {
+      document.getElementById('resume-banner').classList.remove('hidden');
+    }
+
+    function resumeFromSave() {
+      document.getElementById('resume-banner').classList.add('hidden');
+      renderParticipants();
+      if (isLeagueStarted) {
+        document.getElementById('startLeagueArea').classList.add('hidden');
+        document.getElementById('displayLeagueName').innerText = leagueName;
+        updateLeagueDisplay();
+        switchTab('league');
+      }
+    }
+
+        document.addEventListener('DOMContentLoaded', () => {
+        if (loadState()) { showResumeBanner(); }
+
         const btnStart = document.getElementById('btn-start-league');
         if (btnStart) {
             btnStart.addEventListener('click', (e) => { e.preventDefault(); handleStartLeague(); });
@@ -764,6 +818,7 @@
         <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
+      saveState();
     }
 
     // ==========================================
@@ -802,7 +857,7 @@
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
         
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         p.bayImage = dataUrl; 
         p.bayChecked = true; 
         
@@ -875,6 +930,7 @@
         pList.splice(1, 0, pList.pop());
       }
       updateLeagueDisplay();
+      saveState();
     }
 
     // ==========================================
@@ -1066,11 +1122,11 @@
         let p2Display = `<span class="truncate ${m.winner === 2 ? 'text-cyber-green font-bold text-lg' : 'text-cyber-text'}">${m.p2.name}</span>`;
         let centerArea = isFinished ? `<span class="font-sf text-lg text-cyber-green px-2">${m.s1} - ${m.s2}</span>` : `<span class="font-sf text-xs text-cyber-text opacity-50 px-2">VS</span>`;
         
-        // ★修正：未対戦の試合には REMOTE ボタンを表示
         const sendBtn = !isFinished ? `<button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors mr-2">REMOTE</button>` : '';
 
         scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
       });
+      saveState();
     }
 
     function showResults() {

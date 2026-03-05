@@ -63,7 +63,6 @@
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
-  <!-- ★ transition クラスを削除（旧コードと同じ、回転アニメなし） -->
   <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
     <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
@@ -93,6 +92,15 @@
     <div class="p-4 flex-1 overflow-y-auto">
       <div id="view-participants" class="h-full flex flex-col">
         
+        <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-green rounded-lg max-w-md mx-auto mt-8 text-center neon-green">
+          <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
+          <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
+          <div class="flex gap-3">
+            <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+            <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+          </div>
+        </div>
+
         <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
           <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
           <div class="mb-4">
@@ -121,6 +129,7 @@
             <div class="flex-grow"></div>
             
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
+            <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
           <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
@@ -217,9 +226,7 @@
       </div>
     </div>
 
-    <!-- ★ 抽選モーダル（旧コードと同じ構造） -->
     <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-      <!-- 運営者向け反転表示ボックス（旧コードと同じ） -->
       <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50"></div>
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
@@ -289,7 +296,7 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">⏱ 10s TIMER</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">⏱ TIMER</button>
         </div>
       </div>
 
@@ -416,7 +423,7 @@
       if (conn) conn.close();
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
       conn.on('open', () => {
-        btn.innerText = "OK!"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+        btn.innerText = "DISCONN"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
         const dot = document.getElementById('link-status-dot');
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
       });
@@ -529,6 +536,7 @@
     function initApp() {
       const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
       colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
+      if (loadState()) { showResumeBanner(); }
     }
 
     let setupDebounce = false;
@@ -580,6 +588,7 @@
       } else if (blockSize === 2) {
         switch(count) { case 2: return [0,1]; case 1: return [0]; default: return []; }
       }
+      return [];
     }
 
     function switchTab(tabId) {
@@ -698,16 +707,17 @@
         tr.innerHTML = `<td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
+      saveState();
     }
 
     // ==========================================
-    // ★ 抽選 ＆ ルーレット演出機能【旧コード(oldtournament.html)準拠】
+    // 抽選 ＆ ルーレット演出機能
     // ==========================================
     function openLotteryModal(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
       currentLotteryId = id;
 
-      // 演出ONの場合、即座に180度回転（transitionなし）
+      // 演出ONの場合、即座に180度回転
       if (isEffectOn) {
           const wrapper = document.getElementById('app-wrapper');
           wrapper.style.transform = 'rotate(180deg)';
@@ -750,7 +760,7 @@
         const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
         const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
 
-        // 演出OFFの場合：即座に結果をalertで表示して終了（旧コード準拠）
+        // 演出OFFの場合：即座に結果をalertで表示して終了
         if (!isEffectOn) {
             p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
             alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
@@ -759,7 +769,7 @@
             return;
         }
 
-        // 演出ONの場合：旧コード準拠のシンプルテキストルーレット
+        // 演出ONの場合：シンプルなテキストルーレット
         let totalCap = 0; let totalEmpty = 0; let allEmptySlots = [];
         colors.forEach(c => {
             totalCap += blockCapacities[c];
@@ -777,7 +787,7 @@
             return;
         }
 
-        // 旧コード準拠：シンプルなテキストルーレット表示
+        // 演出ONの場合：シンプルなテキストルーレット表示
         const modalContent = document.getElementById('lotteryModalContent');
         modalContent.innerHTML = `
             <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
@@ -785,7 +795,8 @@
         `;
 
         const rDisplay = document.getElementById('rouletteDisplay');
-        // 残り枠の割合で演出時間を分岐（旧コードと同じロジック: 50%以上なら2秒、未満なら1秒）
+        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
+        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
         const remainRatio = totalEmpty / totalCap;
         const duration = remainRatio >= 0.5 ? 2000 : 1000;
         let startTime = Date.now();
@@ -797,14 +808,14 @@
                 p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
                 showLotteryResultScreen(p.name, finalSlotName);
             } else {
-                // ランダムにスロット名をテキスト表示（旧コード準拠）
+                // ランダムにスロット名をテキスト表示
                 let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
                 rDisplay.innerText = randomSlot;
             }
         }, 50);
     }
 
-    // 旧コード準拠の結果画面：「Your Battlefield is」→ ピンク色の結果 → Confirmedボタン
+    // 結果画面：「Your Battlefield is」→ ピンク色の結果 → Confirmedボタン
     function showLotteryResultScreen(playerName, slotName) {
         const modalContent = document.getElementById('lotteryModalContent');
         modalContent.innerHTML = `
@@ -816,7 +827,7 @@
             </div>
         `;
 
-        // 運営者向け反転表示（旧コード準拠）
+        // 運営者向け反転表示
         const opBox = document.getElementById('operatorViewBox');
         if (isEffectOn) {
             opBox.innerHTML = `
@@ -840,7 +851,7 @@
         const opBox = document.getElementById('operatorViewBox');
         if(opBox) { opBox.classList.add('hidden'); opBox.classList.remove('flex'); }
         currentLotteryId = null;
-        // 画面回転を元に戻す（旧コード準拠：transitionなしで即座に戻す）
+        // 画面回転を元に戻す
         const wrapper = document.getElementById('app-wrapper');
         wrapper.style.transform = '';
     }
@@ -877,7 +888,7 @@
         const x = canvas.width - 20; const y1 = 20; const y2 = 20 + fontSize * 1.2;
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         p.bayImage = dataUrl; p.bayChecked = true;
         document.getElementById('resultImage').src = dataUrl;
         document.getElementById('cameraModal').classList.remove('hidden');
@@ -985,7 +996,7 @@
       setNextMatch(finals.third, getL(finals.sf[0]), getL(finals.sf[1])); autoProcessBye(finals.third);
       if (finals.f.winner !== null && finals.third.winner !== null) document.getElementById('showResultsBtn').classList.remove('hidden');
       else document.getElementById('showResultsBtn').classList.add('hidden');
-      recalculateAllStats(); renderTournament();
+      recalculateAllStats(); renderTournament(); saveState();
     }
 
     function setWinner(block, roundIdx, matchIdx, winnerVal) {
@@ -1070,6 +1081,79 @@
       const area = document.getElementById('exportArea'); area.select(); document.execCommand('copy');
       const btn = event.currentTarget; const originalText = btn.innerText; btn.innerText = "✅ COPIED!"; btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
       setTimeout(() => { btn.innerText = originalText; btn.classList.replace('bg-cyber-green', 'bg-cyber-blue'); }, 2000);
+    }
+
+
+    // ==========================================
+    // localStorage 自動保存・復元
+    // ==========================================
+    const SAVE_KEY = 'tbh_tournament';
+
+    function saveState() {
+      try {
+        const state = {
+          tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
+          pidCounter, participants, blockMap, blockData, blockCapacities,
+          blockActivePositions, blockMatches, finals, isEffectOn
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('saveState error:', e); }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s.isSetupDone) return false;
+        tournamentName = s.tournamentName || '';
+        globalBlockSize = s.globalBlockSize || 8;
+        isSetupDone = s.isSetupDone || false;
+        isTournamentStarted = s.isTournamentStarted || false;
+        pidCounter = s.pidCounter || 1;
+        participants = s.participants || [];
+        blockMap = s.blockMap || {};
+        blockData = s.blockData || {};
+        blockCapacities = s.blockCapacities || {};
+        blockActivePositions = s.blockActivePositions || {};
+        blockMatches = s.blockMatches || {};
+        finals = s.finals || {};
+        isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        return true;
+      } catch(e) { console.warn('loadState error:', e); return false; }
+    }
+
+    function clearSave() {
+      if (!confirm("セーブデータを削除して最初からやり直しますか？\n※この操作は元に戻せません")) return;
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+
+    function showResumeBanner() {
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('resume-banner').classList.remove('hidden');
+    }
+
+    function resumeFromSave() {
+      document.getElementById('resume-banner').classList.add('hidden');
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('mainManagementSection').classList.remove('hidden');
+      document.getElementById('mainManagementSection').classList.add('flex');
+      const effectBtn = document.getElementById('btn-toggle-effect');
+      if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
+      recalculateAllStats();
+      renderParticipants();
+      if (isTournamentStarted) {
+        document.getElementById('displayTournamentName').innerText = tournamentName;
+        document.getElementById('tournamentActive').classList.remove('hidden');
+        document.getElementById('tournamentActive').classList.add('flex');
+        document.getElementById('tournamentPreStart').classList.add('hidden');
+        if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
+        updateAdvancements();
+        switchTab('tournament');
+      } else {
+        switchTab('participants');
+      }
     }
 
     initApp();

@@ -63,6 +63,15 @@
   <div class="p-4 flex-1 overflow-y-auto w-full max-w-7xl mx-auto">
     
     <div id="view-setup" class="flex flex-col lg:flex-row gap-6 h-full">
+      <div id="resume-banner" class="hidden col-span-2 p-4 bg-cyber-dark border border-cyber-green rounded-lg text-center neon-green mb-2">
+        <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
+        <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
+        <div class="flex gap-3 max-w-sm mx-auto">
+          <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+          <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+        </div>
+      </div>
+
       <div class="flex-1 flex flex-col bg-cyber-dark border border-cyber-table-border rounded-lg min-h-0">
         <div class="p-4 border-b border-cyber-table-border shrink-0">
           <h3 class="font-sf font-bold text-cyber-blue text-lg mb-2">1. INDIVIDUAL ENTRY</h3>
@@ -83,6 +92,7 @@
           <h3 class="font-sf font-bold text-cyber-pink text-lg flex items-center gap-2">
             2. FORM TEAMS
             <button onclick="downloadAllTeamImagesZip()" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded shadow text-[10px] transition-colors ml-2">📦 画像DL(ZIP)</button>
+            <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded shadow text-[10px] transition-colors ml-1" title="リセット">🗑</button>
           </h3>
           <button id="btn-form-team" class="bg-cyber-dark text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-bold font-sf opacity-50 cursor-not-allowed transition-transform">FORM TAG 🤝</button>
         </div>
@@ -293,7 +303,7 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">⏱ 10s TIMER</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">⏱ TIMER</button>
         </div>
       </div>
 
@@ -418,7 +428,7 @@
     function forceResetLink() { if(conn){ conn.close(); conn = null; } initPeer(); resetLinkUI(); }
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
       document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
       conn = null;
     }
@@ -458,7 +468,7 @@
     }
 
     // ==========================================
-    // ★ HUDリモートコントロールモーダル
+    // HUDリモートコントロールモーダル
     // ==========================================
     let currentRemoteMode = 'score';
     let isRemoteSwapped = false;
@@ -563,6 +573,8 @@
     // 初期化 ＆ iPad/PCタップ抜け防止イベント登録
     // ==========================================
     function initApp() {
+        if (loadState()) { showResumeBanner(); }
+
         const btnFormTeam = document.getElementById('btn-form-team');
         if (btnFormTeam) {
             btnFormTeam.addEventListener('click', (e) => { e.preventDefault(); handleFormTeam(); });
@@ -679,6 +691,7 @@
     });
 
     function renderParticipants() {
+
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
       participants.forEach(p => {
         if (p.teamId) return;
@@ -707,7 +720,7 @@
       const tId = tidCounter++; p1.teamId = tId; p2.teamId = tId;
       
       const letter = ALPHABETS[teams.length % 26];
-      // ★タッグ配列に bayChecked と bayImage を持たせる
+      // タッグ配列に bayChecked と bayImage を持たせる
       teams.push({ id: tId, name: `【${letter}】${p1.name}・${p2.name} タッグ`, p1, p2, bayChecked: false, bayImage: null, tieBreaker: 0 });
       
       selectedForTeam = []; renderParticipants(); renderTeams();
@@ -731,6 +744,7 @@
       const btnNext = document.getElementById('btn-start-qual'); const msg = document.getElementById('start-msg');
       if (teams.length >= 4) { btnNext.classList.remove('hidden'); msg.classList.add('hidden'); } 
       else { btnNext.classList.add('hidden'); msg.classList.remove('hidden'); }
+      saveState();
     }
 
     // ==========================================
@@ -776,7 +790,7 @@
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         if(t) {
             t.bayImage = dataUrl;
             t.bayChecked = true;
@@ -848,6 +862,7 @@
       for(let i=0; i<shuffled.length; i+=2) r1Matches.push(createMatchObj(`R1-${i/2+1}`, shuffled[i], shuffled[i+1]));
       
       switchTab('qual');
+      saveState();
     }
 
     function toggleSwapMode() {
@@ -953,6 +968,7 @@
 
       if(r1Done && isSwapMode) toggleSwapMode();
       document.getElementById('btn-toggle-swap').classList.toggle('hidden', r1Done);
+      saveState();
     }
 
     // --- 3. ランキングとオポネント計算 ---
@@ -1162,6 +1178,7 @@
         document.getElementById('qf-container').classList.add('hidden');
       }
       render(finalsMatches.sf1, 'card-sf1'); render(finalsMatches.sf2, 'card-sf2'); render(finalsMatches.f, 'card-f'); render(finalsMatches.third, 'card-third');
+      saveState();
     }
 
     // --- 6. 結果発表 & CSVエクスポート ---
@@ -1223,7 +1240,82 @@
       }, 2000);
     }
 
-    // 初期化実行
+
+    // ==========================================
+    // localStorage 自動保存・復元
+    // ==========================================
+    const SAVE_KEY = 'tbh_tag';
+
+    function saveState() {
+      try {
+        const state = {
+          tournamentName, isTournamentStarted,
+          pidCounter, tidCounter,
+          participants, teams,
+          r1Matches, r2Matches, standings,
+          finalsMatches, finalsType
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('saveState error:', e); }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s.participants || s.participants.length === 0) return false;
+        tournamentName = s.tournamentName || '';
+        isTournamentStarted = s.isTournamentStarted || false;
+        pidCounter = s.pidCounter || 1;
+        tidCounter = s.tidCounter || 1;
+        participants = s.participants || [];
+        teams = s.teams || [];
+        r1Matches = s.r1Matches || [];
+        r2Matches = s.r2Matches || [];
+        standings = s.standings || [];
+        finalsMatches = s.finalsMatches || { qf1:null, qf2:null, qf3:null, qf4:null, sf1:null, sf2:null, f:null, third:null };
+        finalsType = s.finalsType || 'QF';
+        return true;
+      } catch(e) { console.warn('loadState error:', e); return false; }
+    }
+
+    function clearSave() {
+      if (!confirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+
+    function showResumeBanner() {
+      document.getElementById('resume-banner').classList.remove('hidden');
+    }
+
+    function resumeFromSave() {
+      document.getElementById('resume-banner').classList.add('hidden');
+      renderParticipants();
+      renderTeams();
+      if (isTournamentStarted) {
+        document.getElementById('tab-setup').classList.add('hidden');
+        document.getElementById('tab-qual').classList.remove('hidden');
+        document.getElementById('tab-rank').classList.remove('hidden');
+        document.getElementById('displayQualName').innerText = tournamentName + ' - QUALIFIERS';
+        if (r2Matches.length > 0) {
+          document.getElementById('r2-container').classList.remove('hidden');
+        }
+        renderQualifiers();
+        calcStandings();
+        renderRanking();
+        if (finalsMatches.sf1) {
+          document.getElementById('tab-finals').classList.remove('hidden');
+          switchTab('finals');
+          renderFinals();
+        } else {
+          switchTab('qual');
+        }
+      }
+    }
+
+        // 初期化実行
     initApp();
   </script>
 </body>

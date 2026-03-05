@@ -94,11 +94,21 @@
         </label>
         <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📋 テキスト貼付</button>
         <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📦 画像DL(ZIP)</button>
+        <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors" title="データを削除して最初から">🗑 リセット</button>
         
         <div class="flex-grow"></div>
         <button onclick="addParticipant()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 py-2 rounded font-bold shadow text-xs md:text-sm transition-transform active:scale-95">＋ 手動追加</button>
       </div>
       
+
+      <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-orange rounded-lg text-center mb-4" style="box-shadow:0 0 10px rgba(249,115,22,0.4)">
+        <p class="text-cyber-orange font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
+        <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
+        <div class="flex gap-3 max-w-sm mx-auto">
+          <button onclick="resumeFromSave()" class="flex-1 bg-cyber-orange hover:bg-cyber-orange/80 text-white font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+          <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+        </div>
+      </div>
       <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
         <div class="overflow-y-auto flex-1">
           <table class="w-full text-left border-collapse">
@@ -257,7 +267,7 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-orange hover:bg-[#ea580c] text-white font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#f97316]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange/20 transition-colors text-lg">⏱ 10s TIMER</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange/20 transition-colors text-lg">⏱ TIMER</button>
         </div>
       </div>
 
@@ -370,7 +380,7 @@
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
+      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
       document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
       conn = null;
     }
@@ -686,6 +696,7 @@
         tbody.appendChild(tr);
       });
       if (document.getElementById('view-matches').classList.contains('flex')) updateMatchSelects();
+      saveState();
     }
 
     // ==========================================
@@ -723,7 +734,7 @@
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
         
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         p.bayImage = dataUrl; 
         p.bayChecked = true; 
         
@@ -806,6 +817,7 @@
         document.getElementById('select-p2').value = "";
 
         renderMatches();
+        saveState();
     }
 
     function setMatchWinner(matchId, winnerVal) {
@@ -816,9 +828,8 @@
         
         recalculateAllStats();
         renderMatches();
+        saveState();
     }
-
-    function renderMatches() {
         const list = document.getElementById('matchList');
         list.innerHTML = '';
         
@@ -865,6 +876,7 @@
         });
         
         document.getElementById('matchCountDisplay').innerText = `TOTAL: ${matches.length} MATCHES`;
+        saveState();
     }
 
     // ==========================================
@@ -933,6 +945,57 @@
       }, 2000);
     }
 
+
+    // ==========================================
+    // localStorage 自動保存・復元
+    // ==========================================
+    const SAVE_KEY = 'tbh_free';
+
+    function saveState() {
+      try {
+        const state = { pidCounter, matchIdCounter, participants, matches, participantSortMode };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('saveState error:', e); }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s.participants || s.participants.length === 0) return false;
+        pidCounter = s.pidCounter || 1;
+        matchIdCounter = s.matchIdCounter || 1;
+        participants = s.participants || [];
+        matches = s.matches || [];
+        participantSortMode = s.participantSortMode || 'id';
+        return true;
+      } catch(e) { console.warn('loadState error:', e); return false; }
+    }
+
+    function clearSave() {
+      if (!confirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+
+    function showResumeBanner() {
+      document.getElementById('resume-banner').classList.remove('hidden');
+    }
+
+    function resumeFromSave() {
+      document.getElementById('resume-banner').classList.add('hidden');
+      renderParticipants();
+      updateMatchSelects();
+      renderMatches();
+    }
+
+    // 起動時に復元チェック
+    (function() {
+      if (loadState()) { showResumeBanner(); }
+    })();
+
+    
   </script>
 </body>
 </html>
