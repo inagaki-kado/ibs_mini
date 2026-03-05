@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>板橋会抽選アプリ - CYBER BEY-ROULETTE</title>
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBhMGUxNyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzBlYTVlOSI+44OIPC90ZXh0Pgo8L3N2Zz4=">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
@@ -61,7 +63,8 @@
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
-  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center transition-transform duration-500">
+  <!-- ★ transition クラスを削除（旧コードと同じ、回転アニメなし） -->
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
     <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
@@ -153,7 +156,9 @@
             </div>
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
+          
           <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
+          
           <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
             <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
@@ -212,7 +217,9 @@
       </div>
     </div>
 
+    <!-- ★ 抽選モーダル（旧コードと同じ構造） -->
     <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+      <!-- 運営者向け反転表示ボックス（旧コードと同じ） -->
       <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50"></div>
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
@@ -227,7 +234,9 @@
     </div>
     <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
 
-  </div> <div id="remoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+  </div>
+
+  <div id="remoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
     <div class="bg-cyber-dark p-4 md:p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative overflow-y-auto max-h-full">
       <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-2 shrink-0">
         <h2 class="text-xl font-sf text-cyber-blue tracking-widest">HUD REMOTE</h2>
@@ -339,14 +348,6 @@
         }
     }
 
-    function getBorderColorHex(colorName) {
-        if(colorName==='赤') return '#ec4899'; 
-        if(colorName==='青') return '#0ea5e9'; 
-        if(colorName==='黄') return '#facc15'; 
-        if(colorName==='緑') return '#22c55e'; 
-        return '#ffffff';
-    }
-
     function calculateRate(wins, matches) {
         if (matches === 0) return '0.00%';
         return ((wins / matches) * 100).toFixed(2) + '%';
@@ -355,62 +356,38 @@
     function processMatchForStats(match) {
         if (!match || match.winner === null || !match.p1 || !match.p2) return;
         if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
-        
-        let s1 = match.p1.currentStats;
-        let s2 = match.p2.currentStats;
+        let s1 = match.p1.currentStats; let s2 = match.p2.currentStats;
         if (!s1 || !s2) return;
-
-        let winnerStats = (match.winner === 1) ? s1 : s2;
-        let loserStats = (match.winner === 1) ? s2 : s1;
-        
-        let rWin = winnerStats.power;
-        let rLose = loserStats.power;
+        let winnerStats = (match.winner === 1) ? s1 : s2; let loserStats = (match.winner === 1) ? s2 : s1;
+        let rWin = winnerStats.power; let rLose = loserStats.power;
         let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
         let change = Math.round(32 * (1 - eWin));
-        
-        winnerStats.power += change;
-        loserStats.power -= change;
-        
-        s1.matches += 1;
-        s2.matches += 1;
-        
-        if (match.winner === 1) { s1.wins += 1; s2.loses += 1; } 
-        else { s2.wins += 1; s1.loses += 1; }
-        
-        s1.rate = calculateRate(s1.wins, s1.matches);
-        s2.rate = calculateRate(s2.wins, s2.matches);
+        winnerStats.power += change; loserStats.power -= change;
+        s1.matches += 1; s2.matches += 1;
+        if (match.winner === 1) { s1.wins += 1; s2.loses += 1; } else { s2.wins += 1; s1.loses += 1; }
+        s1.rate = calculateRate(s1.wins, s1.matches); s2.rate = calculateRate(s2.wins, s2.matches);
     }
 
     function recalculateAllStats() {
         participants.forEach(p => {
             if (p.initialStats) {
-                p.currentStats = {
-                    power: p.initialStats.power, matches: p.initialStats.matches,
-                    wins: p.initialStats.wins, loses: p.initialStats.loses,
-                    rate: calculateRate(p.initialStats.wins, p.initialStats.matches)
-                };
+                p.currentStats = { power: p.initialStats.power, matches: p.initialStats.matches, wins: p.initialStats.wins, loses: p.initialStats.loses, rate: calculateRate(p.initialStats.wins, p.initialStats.matches) };
             }
         });
-
         if (!isTournamentStarted) return;
-
         let maxRounds = 0;
-        ['A', 'B', 'C', 'D'].forEach(bName => {
-            if (blockMatches[bName] && blockMatches[bName].length > maxRounds) maxRounds = blockMatches[bName].length;
-        });
-
+        ['A', 'B', 'C', 'D'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName].length > maxRounds) maxRounds = blockMatches[bName].length; });
         for (let r = 0; r < maxRounds; r++) {
-            ['A', 'B', 'C', 'D'].forEach(bName => {
-                if (blockMatches[bName] && blockMatches[bName][r]) {
-                    blockMatches[bName][r].forEach(processMatchForStats);
-                }
-            });
+            ['A', 'B', 'C', 'D'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName][r]) { blockMatches[bName][r].forEach(processMatchForStats); } });
         }
         if (finals.sf) finals.sf.forEach(processMatchForStats);
         if (finals.third) processMatchForStats(finals.third);
         if (finals.f) processMatchForStats(finals.f);
     }
 
+    // ==========================================
+    // リモート通信 / PeerJS
+    // ==========================================
     let peer = null; let conn = null;
 
     function initPeer() {
@@ -437,7 +414,6 @@
       const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
       if (!peer || peer.destroyed) initPeer();
       if (conn) conn.close();
-      
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
       conn.on('open', () => {
         btn.innerText = "OK!"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
@@ -449,21 +425,17 @@
 
     function sendRemoteCmd(cmd) {
         if(!conn || !conn.open) {
-            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') {
-                return alert("⚠️ HUD（スコアアプリ）がリンクされていません。");
-            }
+            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return alert("⚠️ HUD（スコアアプリ）がリンクされていません。");
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
-    let currentRemoteMatch = null;
-    let currentRemoteMode = 'score';
-    let isRemoteSwapped = false;
-    
-    let remoteScoreLeft = 0;
-    let remoteScoreRight = 0;
-    let remoteWinScoreLimit = 4;
+    // ==========================================
+    // リモコンモーダル ＆ スコア連動
+    // ==========================================
+    let currentRemoteMatch = null; let currentRemoteMode = 'score'; let isRemoteSwapped = false;
+    let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
 
     function updateRemoteScoreUI() {
         document.getElementById('remote-left-score').innerText = remoteScoreLeft;
@@ -471,149 +443,89 @@
     }
 
     function handleScoreCmd(side, cmd, pts) {
-        sendRemoteCmd(cmd); 
-        
-        if (cmd === 'SYS_RESET') {
-            remoteScoreLeft = 0;
-            remoteScoreRight = 0;
-        } else {
-            if (side === 'left') {
-                remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
-            } else if (side === 'right') {
-                remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
-            }
+        sendRemoteCmd(cmd);
+        if (cmd === 'SYS_RESET') { remoteScoreLeft = 0; remoteScoreRight = 0; }
+        else {
+            if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
+            else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
         }
         updateRemoteScoreUI();
     }
 
     function openRemoteModal(block, roundIdx, matchIdx) {
         let match;
-        if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; } 
+        if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
         else { match = blockMatches[block][roundIdx][matchIdx]; }
-        
         if (!match || !match.p1 || !match.p2) return;
-        
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
-        isRemoteSwapped = false;
-        remoteScoreLeft = 0;
-        remoteScoreRight = 0;
-
-        updateRemoteNamesUI();
-        updateRemoteScoreUI();
-
+        isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
+        updateRemoteNamesUI(); updateRemoteScoreUI();
         if(conn && conn.open) {
-            conn.send({ 
-                type: 'SET_MATCH', 
-                p1: match.p1.name, 
-                p2: match.p2.name, 
-                tName: tournamentName,
+            conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
             });
-        } else {
-            alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
-        }
-
-        currentRemoteMode = 'score';
-        switchRemoteTab('score');
-
-        document.getElementById('remoteModal').classList.remove('hidden');
-        document.getElementById('remoteModal').classList.add('flex');
+        } else { alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
+        currentRemoteMode = 'score'; switchRemoteTab('score');
+        document.getElementById('remoteModal').classList.remove('hidden'); document.getElementById('remoteModal').classList.add('flex');
     }
 
-    function closeRemoteModal() {
-        document.getElementById('remoteModal').classList.add('hidden');
-        document.getElementById('remoteModal').classList.remove('flex');
-        currentRemoteMatch = null;
-    }
+    function closeRemoteModal() { document.getElementById('remoteModal').classList.add('hidden'); document.getElementById('remoteModal').classList.remove('flex'); currentRemoteMatch = null; }
 
     function updateRemoteNamesUI() {
         if (!currentRemoteMatch) return;
         const m = currentRemoteMatch.match;
-        const leftNameEl = document.getElementById('remote-left-name');
-        const rightNameEl = document.getElementById('remote-right-name');
-        const leftWinBtn = document.getElementById('remote-left-win-btn');
-        const rightWinBtn = document.getElementById('remote-right-win-btn');
-
+        const leftNameEl = document.getElementById('remote-left-name'); const rightNameEl = document.getElementById('remote-right-name');
+        const leftWinBtn = document.getElementById('remote-left-win-btn'); const rightWinBtn = document.getElementById('remote-right-win-btn');
         if (isRemoteSwapped) {
-            leftNameEl.innerText = m.p2.name;
-            rightNameEl.innerText = m.p1.name;
+            leftNameEl.innerText = m.p2.name; rightNameEl.innerText = m.p1.name;
             leftNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
             rightNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
-
-            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`;
-            leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
-            
-            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`;
-            rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
         } else {
-            leftNameEl.innerText = m.p1.name;
-            rightNameEl.innerText = m.p2.name;
+            leftNameEl.innerText = m.p1.name; rightNameEl.innerText = m.p2.name;
             leftNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
             rightNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
-
-            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`;
-            leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
-            
-            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`;
-            rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
         }
     }
 
     function handleRemoteSwap() {
         isRemoteSwapped = !isRemoteSwapped;
-        
-        let tempScore = remoteScoreLeft;
-        remoteScoreLeft = remoteScoreRight;
-        remoteScoreRight = tempScore;
-
-        updateRemoteNamesUI();
-        updateRemoteScoreUI();
-        sendRemoteCmd('SYS_SWAP'); 
+        let tempScore = remoteScoreLeft; remoteScoreLeft = remoteScoreRight; remoteScoreRight = tempScore;
+        updateRemoteNamesUI(); updateRemoteScoreUI(); sendRemoteCmd('SYS_SWAP');
     }
 
     function handleRemoteWinner(side) {
         if (!currentRemoteMatch) return;
-        let winnerVal;
-        if (side === 'left') {
-            winnerVal = isRemoteSwapped ? 2 : 1;
-        } else {
-            winnerVal = isRemoteSwapped ? 1 : 2;
-        }
+        let winnerVal = (side === 'left') ? (isRemoteSwapped ? 2 : 1) : (isRemoteSwapped ? 1 : 2);
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
         closeRemoteModal();
     }
 
     function switchRemoteTab(mode) {
-        const tabScore = document.getElementById('tab-remote-score');
-        const tabReplay = document.getElementById('tab-remote-replay');
-        const areaScore = document.getElementById('remote-score-area');
-        const areaReplay = document.getElementById('remote-replay-area');
-
+        const tabScore = document.getElementById('tab-remote-score'); const tabReplay = document.getElementById('tab-remote-replay');
+        const areaScore = document.getElementById('remote-score-area'); const areaReplay = document.getElementById('remote-replay-area');
         if (mode === 'score') {
             tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue bg-cyber-blue text-cyber-bg rounded transition-all shadow-[0_0_10px_#0ea5e9]";
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 rounded transition-all";
             areaScore.classList.remove('hidden'); areaScore.classList.add('flex');
             areaReplay.classList.add('hidden'); areaReplay.classList.remove('flex');
-            
-            if (currentRemoteMode === 'replay') {
-                 sendRemoteCmd('REPLAY_TOGGLE'); 
-                 currentRemoteMode = 'score';
-            }
+            if (currentRemoteMode === 'replay') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'score'; }
         } else {
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_10px_#ec4899]";
             tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 rounded transition-all";
             areaReplay.classList.remove('hidden'); areaReplay.classList.add('flex');
             areaScore.classList.add('hidden'); areaScore.classList.remove('flex');
-            
-            if (currentRemoteMode === 'score') {
-                 sendRemoteCmd('REPLAY_TOGGLE'); 
-                 currentRemoteMode = 'replay';
-            }
+            if (currentRemoteMode === 'score') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'replay'; }
         }
     }
 
-
+    // ==========================================
+    // 基本セットアップ & タブ切り替え
+    // ==========================================
     function initApp() {
       const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
       colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
@@ -622,9 +534,7 @@
     let setupDebounce = false;
     function handleConfirmSetup(e) {
       if (e) e.preventDefault();
-      if (setupDebounce) return;
-      setupDebounce = true;
-      setTimeout(() => { setupDebounce = false; }, 500);
+      if (setupDebounce) return; setupDebounce = true; setTimeout(() => { setupDebounce = false; }, 500);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       confirmSetup();
     }
@@ -632,9 +542,7 @@
     let startDebounce = false;
     function handleStartTournament(e) {
       if (e) e.preventDefault();
-      if (startDebounce) return;
-      startDebounce = true;
-      setTimeout(() => { startDebounce = false; }, 500);
+      if (startDebounce) return; startDebounce = true; setTimeout(() => { startDebounce = false; }, 500);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       startTournament();
     }
@@ -642,25 +550,19 @@
     function confirmSetup() {
       const nameInput = document.getElementById('tournamentNameInput');
       tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'CYBER BEY-ROULETTE';
-      
-      let sizeInput = document.getElementById('tournamentSizeInput');
-      let sizeStr = sizeInput ? sizeInput.value : "32";
+      let sizeInput = document.getElementById('tournamentSizeInput'); let sizeStr = sizeInput ? sizeInput.value : "32";
       if (!sizeStr) sizeStr = "32";
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       let totalSize = parseInt(sizeStr);
-      
       if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
-
       if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
       colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
-
       const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
       const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize };
       if (remainder >= 1) caps['A']++; if (remainder >= 2) caps['C']++; if (remainder >= 3) caps['B']++;
       colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
-
       isSetupDone = true;
-      document.getElementById('setupSection').classList.add('hidden'); 
+      document.getElementById('setupSection').classList.add('hidden');
       document.getElementById('mainManagementSection').classList.remove('hidden');
       document.getElementById('mainManagementSection').classList.add('flex');
       renderParticipants();
@@ -669,20 +571,14 @@
     function getFairPositions(count, blockSize) {
       if (blockSize === 8) {
         switch(count) {
-          case 8: return [0, 1, 2, 3, 4, 5, 6, 7]; case 7: return [0, 2, 3, 4, 5, 6, 7];
-          case 6: return [0, 2, 3, 4, 5, 7]; case 5: return [0, 2, 4, 5, 7];
-          case 4: return [0, 2, 4, 6]; case 3: return [0, 1, 4];
-          case 2: return [0, 4]; case 1: return [0]; default: return [];
+          case 8: return [0,1,2,3,4,5,6,7]; case 7: return [0,2,3,4,5,6,7]; case 6: return [0,2,3,4,5,7];
+          case 5: return [0,2,4,5,7]; case 4: return [0,2,4,6]; case 3: return [0,1,4];
+          case 2: return [0,4]; case 1: return [0]; default: return [];
         }
       } else if (blockSize === 4) {
-        switch(count) {
-          case 4: return [0, 1, 2, 3]; case 3: return [0, 1, 2];
-          case 2: return [0, 2]; case 1: return [0]; default: return [];
-        }
+        switch(count) { case 4: return [0,1,2,3]; case 3: return [0,1,2]; case 2: return [0,2]; case 1: return [0]; default: return []; }
       } else if (blockSize === 2) {
-        switch(count) {
-          case 2: return [0, 1]; case 1: return [0]; default: return [];
-        }
+        switch(count) { case 2: return [0,1]; case 1: return [0]; default: return []; }
       }
     }
 
@@ -699,22 +595,9 @@
       if (tabId === 'tournament') { isSetupSwapMode = false; setupSwapPending = null; renderTournament(); }
     }
 
-    function toggleEffectMode() {
-        isEffectOn = !isEffectOn;
-        const btn = document.getElementById('btn-toggle-effect');
-        if (isEffectOn) {
-            btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink');
-            btn.classList.replace('text-cyber-pink', 'text-white');
-            btn.classList.add('shadow-[0_0_8px_#ec4899]');
-            btn.innerText = "✨ 演出: ON";
-        } else {
-            btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark');
-            btn.classList.replace('text-white', 'text-cyber-pink');
-            btn.classList.remove('shadow-[0_0_8px_#ec4899]');
-            btn.innerText = "✨ 演出: OFF";
-        }
-    }
-
+    // ==========================================
+    // 参加者管理
+    // ==========================================
     function openPasteModal() { if(isTournamentStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
@@ -723,33 +606,24 @@
       const lines = text.split(/\r\n|\n/); let count = 0;
       lines.forEach(line => {
         if(!line.trim()) return; const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
-        if(cols[0] && cols[0].trim() !== '') { 
-          let initialPower = parseInt(cols[3]) || 1500;
-          let initialMatches = parseInt(cols[4]) || 0;
-          let initialWins = parseInt(cols[5]) || 0;
-          let initialLoses = parseInt(cols[6]) || 0;
-
-          participants.push({ 
-            id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
-            rank: cols[2] ? cols[2].trim() : '--',
+        if(cols[0] && cols[0].trim() !== '') {
+          let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
+          let initialWins = parseInt(cols[5]) || 0; let initialLoses = parseInt(cols[6]) || 0;
+          participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            bayChecked: false, bayImage: null, color: null, position: null 
-          }); 
-          count++; 
+            bayChecked: false, bayImage: null, color: null, position: null }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！`);
     }
 
-    function addParticipant(name = '', memo1 = '', memo2 = '') {
+    function addParticipant(name = '', memo1 = '') {
       if(isTournamentStarted) return alert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
-      participants.push({ 
-          id: pidCounter++, name, memo1, rank: '--', 
+      participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, bayImage: null, color: null, position: null 
-      }); 
+          bayChecked: false, bayImage: null, color: null, position: null });
       renderParticipants();
     }
     
@@ -764,20 +638,13 @@
       const reader = new FileReader(); reader.onload = function(event) {
         let count = 0; event.target.result.split(/\r\n|\n/).forEach(line => {
           if(!line.trim()) return; const cols = line.split(',');
-          if(cols[0]) { 
-            let initialPower = parseInt(cols[3]) || 1500;
-            let initialMatches = parseInt(cols[4]) || 0;
-            let initialWins = parseInt(cols[5]) || 0;
-            let initialLoses = parseInt(cols[6]) || 0;
-
-            participants.push({ 
-              id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', 
-              rank: cols[2] ? cols[2].trim() : '--', 
+          if(cols[0]) {
+            let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0; let initialLoses = parseInt(cols[6]) || 0;
+            participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1]?cols[1].trim():'', rank: cols[2]?cols[2].trim():'--',
               initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
               currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              bayChecked: false, bayImage: null, color: null, position: null 
-            }); 
-            count++; 
+              bayChecked: false, bayImage: null, color: null, position: null }); count++;
           }
         }); e.target.value = ''; renderParticipants(); alert(`${count}名追加しました`);
       }; reader.readAsText(file);
@@ -785,21 +652,17 @@
 
     function toggleSetupSwapMode() {
       if(isTournamentStarted) return;
-      isSetupSwapMode = !isSetupSwapMode;
-      setupSwapPending = null;
+      isSetupSwapMode = !isSetupSwapMode; setupSwapPending = null;
       const btn = document.getElementById('btn-setup-swap');
-      if (isSetupSwapMode) {
-        btn.classList.replace('bg-cyber-dark', 'bg-yellow-400'); btn.classList.replace('text-yellow-400', 'text-black'); btn.innerText = "✖ 入替キャンセル";
-      } else {
-        btn.classList.replace('bg-yellow-400', 'bg-cyber-dark'); btn.classList.replace('text-black', 'text-yellow-400'); btn.innerText = "🔄 配置手動入替";
-      }
+      if (isSetupSwapMode) { btn.classList.replace('bg-cyber-dark', 'bg-yellow-400'); btn.classList.replace('text-yellow-400', 'text-black'); btn.innerText = "✖ 入替キャンセル"; }
+      else { btn.classList.replace('bg-yellow-400', 'bg-cyber-dark'); btn.classList.replace('text-black', 'text-yellow-400'); btn.innerText = "🔄 配置入替"; }
       renderParticipants();
     }
 
     function handleSetupSwap(pid) {
-      if (!setupSwapPending) { setupSwapPending = pid; } 
+      if (!setupSwapPending) { setupSwapPending = pid; }
       else {
-        if (setupSwapPending === pid) { setupSwapPending = null; } 
+        if (setupSwapPending === pid) { setupSwapPending = null; }
         else {
           const p1 = participants.find(x => x.id === setupSwapPending); const p2 = participants.find(x => x.id === pid);
           if (p1 && p2 && p1.color && p2.color) {
@@ -819,7 +682,6 @@
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
-
         let lotteryHTML = '';
         if (p.color) {
             if (isSetupSwapMode) {
@@ -832,7 +694,6 @@
         } else {
             lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
         }
-
         const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         tr.innerHTML = `<td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
@@ -840,12 +701,13 @@
     }
 
     // ==========================================
-    // 抽選 ＆ ルーレット演出機能
+    // ★ 抽選 ＆ ルーレット演出機能【旧コード(oldtournament.html)準拠】
     // ==========================================
     function openLotteryModal(id) {
-      if(isTournamentStarted || isSetupSwapMode) return; 
-      currentLotteryId = id; 
+      if(isTournamentStarted || isSetupSwapMode) return;
+      currentLotteryId = id;
 
+      // 演出ONの場合、即座に180度回転（transitionなし）
       if (isEffectOn) {
           const wrapper = document.getElementById('app-wrapper');
           wrapper.style.transform = 'rotate(180deg)';
@@ -855,10 +717,8 @@
       const counts = {}; colors.forEach(c => counts[c] = blockData[c].filter(x => x !== null).length);
       let activeCounts = []; colors.forEach(col => { if(counts[col] < blockCapacities[col]) activeCounts.push(counts[col]); });
       const minCount = activeCounts.length > 0 ? Math.min(...activeCounts) : 0;
-      
-      const modalContent = document.getElementById('lotteryModalContent');
-      if (!modalContent) return alert("System Error: Modal Container not found.");
 
+      const modalContent = document.getElementById('lotteryModalContent');
       modalContent.innerHTML = `
           <h2 class="text-2xl font-sf text-cyber-blue mb-2">TARGET: ${p.name}</h2>
           <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
@@ -870,103 +730,103 @@
       colors.forEach(c => {
         const remain = blockCapacities[c] - counts[c]; const isDisabled = remain === 0 || (counts[c] > minCount);
         const btn = document.createElement('button'); btn.className = `py-6 rounded-lg font-bold text-cyber-text shadow-lg text-2xl ${colorCodes[c]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform`;
-        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`; 
-        if(!isDisabled) btn.onclick = () => doLotteryModal(c); 
+        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`;
+        if(!isDisabled) btn.onclick = () => doLotteryModal(c);
         container.appendChild(btn);
       });
 
-      document.getElementById('lotteryModal').classList.remove('hidden'); 
+      document.getElementById('lotteryModal').classList.remove('hidden');
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
     function doLotteryModal(selectedColor) {
-        const p = participants.find(x => x.id === currentLotteryId); 
-        const emptyPositions = []; 
-        blockActivePositions[selectedColor].forEach(idx => { 
-            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx); 
+        const p = participants.find(x => x.id === currentLotteryId);
+        const emptyPositions = [];
+        blockActivePositions[selectedColor].forEach(idx => {
+            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx);
         });
-        
+
         if(emptyPositions.length === 0) return alert("満員です");
         const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
         const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
 
-        document.getElementById('lotteryModal').classList.add('hidden'); 
-        document.getElementById('lotteryModal').classList.remove('flex');
-
+        // 演出OFFの場合：即座に結果をalertで表示して終了（旧コード準拠）
         if (!isEffectOn) {
-            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`); 
-            closeLotteryModal(); 
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
+            closeLotteryModal();
             renderParticipants();
             return;
         }
 
+        // 演出ONの場合：旧コード準拠のシンプルテキストルーレット
         let totalCap = 0; let totalEmpty = 0; let allEmptySlots = [];
         colors.forEach(c => {
             totalCap += blockCapacities[c];
             blockActivePositions[c].forEach(idx => {
-                if (blockData[c][idx] === null || (c === selectedColor && idx === position)) {
-                    totalEmpty++; allEmptySlots.push({ name: `${blockMap[c]}-${idx + 1}`, color: c });
+                if (blockData[c][idx] === null) {
+                    totalEmpty++; allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
                 }
             });
         });
 
-        const box = document.getElementById('effectRouletteBox');
-        document.getElementById('effectPlayerName').innerText = p.name;
-        box.innerText = "?"; box.style.borderColor = "#ffffff"; box.style.color = "#ffffff"; box.style.boxShadow = "0 0 20px #ffffff";
-
-        document.getElementById('effectLotteryModal').classList.remove('hidden');
-        document.getElementById('effectLotteryModal').classList.add('flex');
-
-        if (totalEmpty <= 1) {
-            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-            showLotteryResultScreen(p.name, finalSlotName, selectedColor);
+        // 最後の1枠なら即結果表示
+        if (totalEmpty === 1) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+            showLotteryResultScreen(p.name, finalSlotName);
             return;
         }
 
-        const duration = (totalEmpty / totalCap) >= 0.5 ? 2000 : 1000;
+        // 旧コード準拠：シンプルなテキストルーレット表示
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
+            <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
+        `;
+
+        const rDisplay = document.getElementById('rouletteDisplay');
+        // 残り枠の割合で演出時間を分岐（旧コードと同じロジック: 50%以上なら2秒、未満なら1秒）
+        const remainRatio = totalEmpty / totalCap;
+        const duration = remainRatio >= 0.5 ? 2000 : 1000;
         let startTime = Date.now();
-        
+
         let rInterval = setInterval(() => {
             let elapsed = Date.now() - startTime;
             if (elapsed > duration) {
                 clearInterval(rInterval);
-                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p; 
-                box.innerText = finalSlotName;
-                box.style.borderColor = getBorderColorHex(selectedColor);
-                box.style.color = getBorderColorHex(selectedColor);
-                box.style.boxShadow = `0 0 40px ${getBorderColorHex(selectedColor)}`;
-                setTimeout(() => { showLotteryResultScreen(p.name, finalSlotName, selectedColor); }, 1000); 
+                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+                showLotteryResultScreen(p.name, finalSlotName);
             } else {
+                // ランダムにスロット名をテキスト表示（旧コード準拠）
                 let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
-                box.innerText = randomSlot.name;
-                box.style.borderColor = getBorderColorHex(randomSlot.color);
-                box.style.color = getBorderColorHex(randomSlot.color);
-                box.style.boxShadow = `0 0 20px ${getBorderColorHex(randomSlot.color)}`;
+                rDisplay.innerText = randomSlot;
             }
         }, 50);
     }
 
-    function showLotteryResultScreen(playerName, slotName, color) {
-        const content = document.getElementById('effectLotteryModalContent');
-        content.innerHTML = `
-            <h2 class="text-xl md:text-2xl font-sf text-cyber-blue mb-2 tracking-widest">LOTTERY SYSTEM</h2>
-            <div class="flex flex-col items-center justify-center w-full">
-                <h2 class="text-3xl md:text-5xl font-bold font-sf text-white mb-4 truncate w-full px-4 drop-shadow-[0_0_15px_#fff]">${playerName}</h2>
+    // 旧コード準拠の結果画面：「Your Battlefield is」→ ピンク色の結果 → Confirmedボタン
+    function showLotteryResultScreen(playerName, slotName) {
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <div class="flex flex-col items-center justify-center">
+                <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
                 <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
-                <div class="text-6xl md:text-8xl font-bold font-sf mb-10" style="color: ${getBorderColorHex(color)}; text-shadow: 0 0 20px ${getBorderColorHex(color)}">【${slotName}】</div>
-                <button onclick="confirmLotteryResult()" class="bg-cyber-dark border border-cyber-table-border text-white px-10 py-4 rounded-full font-bold font-sf hover:bg-gray-800 active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
+                <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
             </div>
         `;
-        
+
+        // 運営者向け反転表示（旧コード準拠）
         const opBox = document.getElementById('operatorViewBox');
-        opBox.innerHTML = `
-            <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
-            <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
-            <span class="text-xl font-bold font-sf" style="color: ${getBorderColorHex(color)};">【${slotName}】</span>
-        `;
-        opBox.classList.remove('hidden');
-        opBox.classList.add('flex');
+        if (isEffectOn) {
+            opBox.innerHTML = `
+                <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
+                <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
+                <span class="text-xl font-bold font-sf text-cyber-pink">【${slotName}】</span>
+            `;
+            opBox.classList.remove('hidden');
+            opBox.classList.add('flex');
+        }
     }
 
     function confirmLotteryResult() {
@@ -974,31 +834,15 @@
         renderParticipants();
     }
 
-    function closeLotteryModal() { 
-        document.getElementById('lotteryModal').classList.add('hidden'); 
-        document.getElementById('lotteryModal').classList.remove('flex'); 
-        
+    function closeLotteryModal() {
+        document.getElementById('lotteryModal').classList.add('hidden');
+        document.getElementById('lotteryModal').classList.remove('flex');
         const opBox = document.getElementById('operatorViewBox');
-        if(opBox) {
-            opBox.classList.add('hidden');
-            opBox.classList.remove('flex');
-        }
-
+        if(opBox) { opBox.classList.add('hidden'); opBox.classList.remove('flex'); }
         currentLotteryId = null;
-
+        // 画面回転を元に戻す（旧コード準拠：transitionなしで即座に戻す）
         const wrapper = document.getElementById('app-wrapper');
         wrapper.style.transform = '';
-
-        const content = document.getElementById('effectLotteryModalContent');
-        if (content) {
-            content.innerHTML = `
-              <h2 class="text-xl md:text-2xl font-sf text-cyber-blue mb-2 tracking-widest">LOTTERY SYSTEM</h2>
-              <h1 id="effectPlayerName" class="text-4xl md:text-5xl font-bold text-white mb-10 drop-shadow-[0_0_15px_#fff]">PLAYER NAME</h1>
-              <div id="effectRouletteBox" class="w-48 h-48 md:w-64 md:h-64 flex items-center justify-center text-6xl md:text-7xl font-sf font-bold border-4 rounded-xl shadow-[0_0_20px_#fff] transition-colors duration-75">
-                 ?
-              </div>
-            `;
-        }
     }
 
     function reLottery(id) {
@@ -1007,147 +851,109 @@
     }
 
     // ==========================================
-    // ★ ベイチェック画像のアプリ内保持・再確認
+    // カメラ撮影 ＆ ZIP保存
     // ==========================================
-    function openCamera(id) { 
-        currentCheckId = id; 
+    function openCamera(id) {
+        currentCheckId = id;
         const p = participants.find(x => x.id === id);
-        
         if (p.bayChecked && p.bayImage) {
             document.getElementById('resultImage').src = p.bayImage;
-            document.getElementById('cameraModal').classList.remove('hidden'); 
-            document.getElementById('cameraModal').classList.add('flex'); 
-        } else {
-            document.getElementById('cameraInput').click(); 
-        }
+            document.getElementById('cameraModal').classList.remove('hidden');
+            document.getElementById('cameraModal').classList.add('flex');
+        } else { document.getElementById('cameraInput').click(); }
     }
-    
-    function reTakePhoto() {
-        document.getElementById('cameraInput').click();
-    }
+
+    function reTakePhoto() { document.getElementById('cameraInput').click(); }
 
     document.getElementById('cameraInput').addEventListener('change', function(e) {
       const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
       reader.onload = function(event) { img.onload = function() {
-        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
         const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
-        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white'; ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        
-        // ★修正：「（大会名） ／ （参加者名）」 を2行に分けて描画
-        const tName = tournamentName || '大会';
-        const pName = p.name;
-        const x = canvas.width - 20; 
-        const y1 = 20;
-        const y2 = 20 + fontSize * 1.2; // 2行目の高さ
-
+        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white';
+        ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        const tName = tournamentName || '大会'; const pName = p.name;
+        const x = canvas.width - 20; const y1 = 20; const y2 = 20 + fontSize * 1.2;
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
-        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        p.bayImage = dataUrl; 
-        p.bayChecked = true; 
-        
-        document.getElementById('resultImage').src = dataUrl; 
-        document.getElementById('cameraModal').classList.remove('hidden'); 
-        document.getElementById('cameraModal').classList.add('flex'); 
+        p.bayImage = dataUrl; p.bayChecked = true;
+        document.getElementById('resultImage').src = dataUrl;
+        document.getElementById('cameraModal').classList.remove('hidden');
+        document.getElementById('cameraModal').classList.add('flex');
         renderParticipants();
       }; img.src = event.target.result; }; reader.readAsDataURL(file);
     });
-    
-    function closeCameraModal() { 
-        document.getElementById('cameraModal').classList.add('hidden'); 
-        document.getElementById('cameraModal').classList.remove('flex'); 
-        document.getElementById('cameraInput').value = ''; 
+
+    function closeCameraModal() {
+        document.getElementById('cameraModal').classList.add('hidden');
+        document.getElementById('cameraModal').classList.remove('flex');
+        document.getElementById('cameraInput').value = '';
     }
 
-    // ==========================================
-    // ★ ZIPでの画像一括ダウンロード処理
-    // ==========================================
     async function downloadAllImagesZip() {
-        if (typeof JSZip === 'undefined') {
-            return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
-        }
-
+        if (typeof JSZip === 'undefined') return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
         const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
         if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
-        
-        const zip = new JSZip();
-        const safeTournamentName = tournamentName || 'Tournament';
-        const folderName = safeTournamentName + "_BeyCheck";
-        const folder = zip.folder(folderName);
-        
+        const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
+        const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
         checkedParticipants.forEach(p => {
             const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-            // ★修正：ファイル名を「（大会名）_（参加者名）.jpg」に変更
             folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
         });
-        
         zip.generateAsync({type:"blob"}).then(function(content) {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `${folderName}.zip`;
-            link.click();
-            URL.revokeObjectURL(link.href);
+            const link = document.createElement('a'); link.href = URL.createObjectURL(content);
+            link.download = `${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
         });
     }
 
     // ==========================================
-    // トーナメント進行管理
+    // トーナメント進行
     // ==========================================
     function startTournament() {
       if(!confirm("トーナメントを開始しますか？")) return;
       isSetupSwapMode = false; setupSwapPending = null;
       if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
-
-      isTournamentStarted = true; 
-      document.getElementById('tournamentPreStart').classList.add('hidden'); 
-      document.getElementById('tournamentActive').classList.remove('hidden'); 
-      document.getElementById('tournamentActive').classList.add('flex'); 
+      isTournamentStarted = true;
+      document.getElementById('tournamentPreStart').classList.add('hidden');
+      document.getElementById('tournamentActive').classList.remove('hidden');
+      document.getElementById('tournamentActive').classList.add('flex');
       document.getElementById('displayTournamentName').innerText = tournamentName;
       
       ['A', 'B', 'C', 'D'].forEach(bName => {
-        const color = colors.find(c => blockMap[c] === bName); const members = blockData[color];
-        let rounds = [];
+        const color = colors.find(c => blockMap[c] === bName); const members = blockData[color]; let rounds = [];
         if (globalBlockSize === 8) {
           let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
-          rounds = [ r1, [ {p1:null, p2:null, winner:null}, {p1:null, p2:null, winner:null} ], [ {p1:null, p2:null, winner:null} ] ];
+          rounds = [ r1, [ {p1:null,p2:null,winner:null}, {p1:null,p2:null,winner:null} ], [ {p1:null,p2:null,winner:null} ] ];
         } else if (globalBlockSize === 4) {
           let r1 = []; for(let i=0; i<4; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
-          rounds = [ r1, [ {p1:null, p2:null, winner:null} ] ];
+          rounds = [ r1, [ {p1:null,p2:null,winner:null} ] ];
         } else if (globalBlockSize === 2) {
           let r1 = []; for(let i=0; i<2; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
           rounds = [ r1 ];
         }
         blockMatches[bName] = rounds;
       });
-      
-      finals = { sf: [ {p1:null, p2:null, winner:null}, {p1:null, p2:null, winner:null} ], third: {p1:null, p2:null, winner:null}, f: {p1:null, p2:null, winner:null} }; 
-      updateAdvancements();
-
-      switchTab('tournament');
+      finals = { sf: [{p1:null,p2:null,winner:null},{p1:null,p2:null,winner:null}], third: {p1:null,p2:null,winner:null}, f: {p1:null,p2:null,winner:null} };
+      updateAdvancements(); switchTab('tournament');
     }
 
     function toggleSwapMode() {
       isSwapMode = !isSwapMode; swapPending = null;
       const btn = document.getElementById('btn-toggle-swap');
-      if (isSwapMode) {
-        btn.classList.replace('bg-cyber-dark', 'bg-yellow-500'); btn.classList.replace('text-cyber-blue', 'text-black'); btn.classList.replace('border-cyber-blue', 'border-yellow-500');
-      } else {
-        btn.classList.replace('bg-yellow-500', 'bg-cyber-dark'); btn.classList.replace('text-black', 'text-cyber-blue'); btn.classList.replace('border-yellow-500', 'border-cyber-blue');
-      }
+      if (isSwapMode) { btn.classList.replace('bg-cyber-dark','bg-yellow-500'); btn.classList.replace('text-cyber-blue','text-black'); btn.classList.replace('border-cyber-blue','border-yellow-500'); }
+      else { btn.classList.replace('bg-yellow-500','bg-cyber-dark'); btn.classList.replace('text-black','text-cyber-blue'); btn.classList.replace('border-yellow-500','border-cyber-blue'); }
       renderTournament();
     }
 
     function handleSwapClick(block, matchIdx, playerSide) {
-      if (!swapPending) { swapPending = { block, matchIdx, playerSide }; } 
+      if (!swapPending) { swapPending = { block, matchIdx, playerSide }; }
       else {
-          if (swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === playerSide) {
-              swapPending = null; 
-          } else {
-              let m1 = blockMatches[swapPending.block][0][swapPending.matchIdx];
-              let m2 = blockMatches[block][0][matchIdx];
+          if (swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === playerSide) { swapPending = null; }
+          else {
+              let m1 = blockMatches[swapPending.block][0][swapPending.matchIdx]; let m2 = blockMatches[block][0][matchIdx];
               let p1 = swapPending.playerSide === 1 ? m1.p1 : m1.p2; let p2 = playerSide === 1 ? m2.p1 : m2.p2;
-              
               if(swapPending.playerSide === 1) m1.p1 = p2; else m1.p2 = p2;
               if(playerSide === 1) m2.p1 = p1; else m2.p2 = p1;
               swapPending = null; m1.winner = null; m2.winner = null;
@@ -1161,41 +967,32 @@
     function getW(match) { if (match.winner === 1) return match.p1; if (match.winner === 2) return match.p2; if (match.winner === 0) return BYE; return null; }
     function getL(match) { if (match.winner === 1) return match.p2; if (match.winner === 2) return match.p1; return null; }
     function setNextMatch(match, newP1, newP2) { let changed = false; if (match.p1?.id !== newP1?.id) { match.p1 = newP1; changed = true; } if (match.p2?.id !== newP2?.id) { match.p2 = newP2; changed = true; } if (changed) match.winner = null; }
-    
+
     function updateAdvancements() {
       ['A', 'B', 'C', 'D'].forEach(bName => {
         let rounds = blockMatches[bName];
         for (let i = 0; i < rounds.length; i++) {
           rounds[i].forEach(autoProcessBye);
-          if (i < rounds.length - 1) {
-            let nextRound = rounds[i+1];
-            for (let j = 0; j < nextRound.length; j++) {
-              setNextMatch(nextRound[j], getW(rounds[i][j*2]), getW(rounds[i][j*2+1]));
-            }
-          }
+          if (i < rounds.length - 1) { let nextRound = rounds[i+1]; for (let j = 0; j < nextRound.length; j++) { setNextMatch(nextRound[j], getW(rounds[i][j*2]), getW(rounds[i][j*2+1])); } }
         }
       });
-      
-      let repA = getW(blockMatches['A'][blockMatches['A'].length - 1][0]);
-      let repB = getW(blockMatches['B'][blockMatches['B'].length - 1][0]);
-      let repC = getW(blockMatches['C'][blockMatches['C'].length - 1][0]);
-      let repD = getW(blockMatches['D'][blockMatches['D'].length - 1][0]);
-
+      let repA = getW(blockMatches['A'][blockMatches['A'].length-1][0]);
+      let repB = getW(blockMatches['B'][blockMatches['B'].length-1][0]);
+      let repC = getW(blockMatches['C'][blockMatches['C'].length-1][0]);
+      let repD = getW(blockMatches['D'][blockMatches['D'].length-1][0]);
       setNextMatch(finals.sf[0], repA, repB); setNextMatch(finals.sf[1], repC, repD); finals.sf.forEach(autoProcessBye);
-      setNextMatch(finals.f, getW(finals.sf[0]), getW(finals.sf[1])); autoProcessBye(finals.f); setNextMatch(finals.third, getL(finals.sf[0]), getL(finals.sf[1])); autoProcessBye(finals.third);
-      
-      if (finals.f.winner !== null && finals.third.winner !== null) document.getElementById('showResultsBtn').classList.remove('hidden'); 
-      else document.getElementById('showResultsBtn').classList.add('hidden'); 
-      
-      recalculateAllStats();
-      renderTournament();
+      setNextMatch(finals.f, getW(finals.sf[0]), getW(finals.sf[1])); autoProcessBye(finals.f);
+      setNextMatch(finals.third, getL(finals.sf[0]), getL(finals.sf[1])); autoProcessBye(finals.third);
+      if (finals.f.winner !== null && finals.third.winner !== null) document.getElementById('showResultsBtn').classList.remove('hidden');
+      else document.getElementById('showResultsBtn').classList.add('hidden');
+      recalculateAllStats(); renderTournament();
     }
 
     function setWinner(block, roundIdx, matchIdx, winnerVal) {
       let match;
-      if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; } 
+      if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
       else { match = blockMatches[block][roundIdx][matchIdx]; }
-      if (match.p1.id === 'BYE' || match.p2.id === 'BYE' || !match.p1 || !match.p2) return; 
+      if (match.p1.id === 'BYE' || match.p2.id === 'BYE' || !match.p1 || !match.p2) return;
       match.winner = (match.winner === winnerVal) ? null : winnerVal; updateAdvancements();
     }
 
@@ -1204,55 +1001,45 @@
       const isP1Bye = p1?.id === 'BYE'; const isP2Bye = p2?.id === 'BYE'; const canSelect = p1 && p2 && !isP1Bye && !isP2Bye;
       const baseBtnClass = "flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans ";
       let p1Class = baseBtnClass; let p2Class = baseBtnClass;
-      
       if (match.winner === 1) { p1Class += "bg-cyber-blue text-cyber-bg shadow-[0_0_8px_#0ea5e9]"; p2Class += "bg-cyber-bg text-gray-600 opacity-50"; }
       else if (match.winner === 2) { p1Class += "bg-cyber-bg text-gray-600 opacity-50"; p2Class += "bg-cyber-pink text-cyber-bg shadow-[0_0_8px_#ec4899]"; }
       else { p1Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; p2Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; }
       if (isP1Bye) p1Class += " italic opacity-40"; if (isP2Bye) p2Class += " italic opacity-40";
-      
+
       if (roundIdx === 0 && isSwapMode && match.winner === null) {
           let active1 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 1) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
           let active2 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 2) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
-          
           let btnHtml1 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 1)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-left flex items-center gap-1 ${active1} ${isP1Bye ? 'italic opacity-40' : ''}"><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>`;
           let btnHtml2 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 2)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-right flex items-center justify-end gap-1 ${active2} ${isP2Bye ? 'italic opacity-40' : ''}"><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button>`;
-          
           return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${btnHtml1}<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>${btnHtml2}</div>`;
       }
 
       const onclick1 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 1)"` : '';
       const onclick2 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 2)"` : '';
-
-      const canSendToScore = canSelect && match.winner === null; 
-      const vsArea = canSendToScore 
+      const canSendToScore = canSelect && match.winner === null;
+      const vsArea = canSendToScore
         ? `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`
         : `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
-
       return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm"><button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
     }
 
     function renderTournament() {
       if (!isTournamentStarted) return;
       const container = document.getElementById('tournamentContainer'); container.innerHTML = '';
-      
       ['A', 'B', 'C', 'D'].forEach(blockName => {
         const rounds = blockMatches[blockName];
         let html = `<div class="bracket min-w-[280px] border border-cyber-blue shadow-lg"><h3 class="text-center font-bold text-xl mb-4 border-b-2 border-cyber-blue text-cyber-blue font-sf pb-2">${blockName} BLOCK</h3>`;
-        
         for (let i = 0; i < rounds.length; i++) {
           let roundTitle = (i === rounds.length - 1) ? `<h4 class="text-xs font-sf text-cyber-pink mb-1 mt-4">BLOCK FINAL</h4>` : `<h4 class="text-xs font-sf text-cyber-green mb-1 mt-4">ROUND ${i+1}</h4>`;
           if (i === 0) roundTitle = roundTitle.replace('mt-4', 'mt-2');
           html += roundTitle;
-          
           rounds[i].forEach((match, j) => {
-            let label1 = '', label2 = '';
-            if (i === 0) { label1 = j * 2 + 1; label2 = j * 2 + 2; }
+            let label1 = '', label2 = ''; if (i === 0) { label1 = j * 2 + 1; label2 = j * 2 + 2; }
             html += renderMatchCard(match, blockName, i, j, label1, label2);
           });
         }
         html += `</div>`; container.innerHTML += html;
       });
-
       document.getElementById('finalsContainer').innerHTML = `<div class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg"><h3 class="text-center font-bold text-lg mb-4 text-cyber-blue font-sf">SEMIFINALS</h3>${renderMatchCard(finals.sf[0], 'finals', 'sf', 0, 'A代表', 'B代表')}<div class="my-4"></div>${renderMatchCard(finals.sf[1], 'finals', 'sf', 1, 'C代表', 'D代表')}</div><div class="border border-cyber-pink bg-[#0d131f] p-4 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.3)]"><h3 class="text-center font-bold text-lg mb-2 text-yellow-400 font-sf">GRAND FINAL</h3>${renderMatchCard(finals.f, 'finals', 'f', 0, 'W1', 'W2')}<h3 class="text-center font-bold text-sm mb-2 mt-6 text-orange-400 font-sf">3RD PLACE MATCH</h3>${renderMatchCard(finals.third, 'finals', 'third', 0, 'L1', 'L2')}</div>`;
     }
 
@@ -1272,7 +1059,6 @@
           exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
         }
       };
-
       ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
       if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
       document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
