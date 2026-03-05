@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -60,9 +61,10 @@
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
-  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center transition-transform duration-500">
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
     <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
+      
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
@@ -87,8 +89,8 @@
     </div>
 
     <div class="p-4 flex-1 overflow-y-auto">
-      
       <div id="view-participants" class="h-full flex flex-col">
+        
         <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
           <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
           <div class="mb-4">
@@ -109,9 +111,13 @@
               📁 CSV <input type="file" id="csvInput" accept=".csv" class="hidden">
             </label>
             <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
-            <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置手動入替</button>
+            
+            <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
+
+            <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
             <div class="flex-grow"></div>
+            
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
           </div>
           
@@ -148,16 +154,16 @@
             </div>
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
-          
           <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
-          
-          <div class="mt-2 pt-4 border-t border-cyber-blue">
+          <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
             <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
           </div>
         </div>
       </div>
-    </div> <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+    </div>
+
+    <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
       <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
         <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
         <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
@@ -212,9 +218,13 @@
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
 
-    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-      <img id="resultImage" class="max-w-full max-h-[70vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
-      <button onclick="closeCameraModal()" class="bg-cyber-green text-cyber-bg px-8 py-3 rounded-full font-bold font-sf">CLOSE</button>
+    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+      <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
+      <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
+      <div class="flex gap-4 w-full max-w-sm">
+        <button onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
+        <button onclick="closeCameraModal()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 transition-transform">OK</button>
+      </div>
     </div>
     <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
 
@@ -313,6 +323,30 @@
     let swapPending = null;
 
     let isEffectOn = true;
+
+    function toggleEffectMode() {
+        isEffectOn = !isEffectOn;
+        const btn = document.getElementById('btn-toggle-effect');
+        if (isEffectOn) {
+            btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink');
+            btn.classList.replace('text-cyber-pink', 'text-white');
+            btn.classList.add('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: ON";
+        } else {
+            btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark');
+            btn.classList.replace('text-white', 'text-cyber-pink');
+            btn.classList.remove('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: OFF";
+        }
+    }
+
+    function getBorderColorHex(colorName) {
+        if(colorName==='赤') return '#ec4899'; 
+        if(colorName==='青') return '#0ea5e9'; 
+        if(colorName==='黄') return '#facc15'; 
+        if(colorName==='緑') return '#22c55e'; 
+        return '#ffffff';
+    }
 
     function calculateRate(wins, matches) {
         if (matches === 0) return '0.00%';
@@ -424,14 +458,10 @@
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
-    // ==========================================
-    // ★ リモコンモーダル ＆ スコア連動制御
-    // ==========================================
     let currentRemoteMatch = null;
     let currentRemoteMode = 'score';
     let isRemoteSwapped = false;
     
-    // リモコン内で表示するための仮スコア
     let remoteScoreLeft = 0;
     let remoteScoreRight = 0;
     let remoteWinScoreLimit = 4;
@@ -442,10 +472,8 @@
     }
 
     function handleScoreCmd(side, cmd, pts) {
-        // iPhone側へコマンド送信
         sendRemoteCmd(cmd); 
         
-        // iPad側の表示用スコアを計算
         if (cmd === 'SYS_RESET') {
             remoteScoreLeft = 0;
             remoteScoreRight = 0;
@@ -511,8 +539,8 @@
         if (isRemoteSwapped) {
             leftNameEl.innerText = m.p2.name;
             rightNameEl.innerText = m.p1.name;
-            leftNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
-            rightNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
+            leftNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
+            rightNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
 
             leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`;
             leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
@@ -522,8 +550,8 @@
         } else {
             leftNameEl.innerText = m.p1.name;
             rightNameEl.innerText = m.p2.name;
-            leftNameEl.className = "flex-1 text-center truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
-            rightNameEl.className = "flex-1 text-center truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
+            leftNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
+            rightNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
 
             leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`;
             leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
@@ -536,7 +564,6 @@
     function handleRemoteSwap() {
         isRemoteSwapped = !isRemoteSwapped;
         
-        // スコア表示も入れ替える
         let tempScore = remoteScoreLeft;
         remoteScoreLeft = remoteScoreRight;
         remoteScoreRight = tempScore;
@@ -708,7 +735,7 @@
             rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            bayChecked: false, color: null, position: null 
+            bayChecked: false, bayImage: null, color: null, position: null 
           }); 
           count++; 
         }
@@ -722,7 +749,7 @@
           id: pidCounter++, name, memo1, rank: '--', 
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, color: null, position: null 
+          bayChecked: false, bayImage: null, color: null, position: null 
       }); 
       renderParticipants();
     }
@@ -749,7 +776,7 @@
               rank: cols[2] ? cols[2].trim() : '--', 
               initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
               currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              bayChecked: false, color: null, position: null 
+              bayChecked: false, bayImage: null, color: null, position: null 
             }); 
             count++; 
           }
@@ -813,6 +840,9 @@
       });
     }
 
+    // ==========================================
+    // 抽選 ＆ ルーレット演出機能
+    // ==========================================
     function openLotteryModal(id) {
       if(isTournamentStarted || isSetupSwapMode) return; 
       currentLotteryId = id; 
@@ -977,19 +1007,89 @@
       if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
 
-    function openCamera(id) { currentCheckId = id; document.getElementById('cameraInput').click(); }
+    // ==========================================
+    // ★ ベイチェック画像のアプリ内保持・再確認
+    // ==========================================
+    function openCamera(id) { 
+        currentCheckId = id; 
+        const p = participants.find(x => x.id === id);
+        
+        if (p.bayChecked && p.bayImage) {
+            document.getElementById('resultImage').src = p.bayImage;
+            document.getElementById('cameraModal').classList.remove('hidden'); 
+            document.getElementById('cameraModal').classList.add('flex'); 
+        } else {
+            document.getElementById('cameraInput').click(); 
+        }
+    }
+    
+    function reTakePhoto() {
+        document.getElementById('cameraInput').click();
+    }
+
     document.getElementById('cameraInput').addEventListener('change', function(e) {
       const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
       reader.onload = function(event) { img.onload = function() {
         const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
         const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
         ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white'; ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        const text = `${p.name} 様`; const x = canvas.width - 20; const y = 20; ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
-        document.getElementById('resultImage').src = canvas.toDataURL('image/jpeg', 0.8); document.getElementById('cameraModal').classList.remove('hidden'); document.getElementById('cameraModal').classList.add('flex'); p.bayChecked = true; renderParticipants();
+        
+        // ★修正：「（大会名） ／ （参加者名）」 に変更
+        const text = `${tournamentName || '大会'} ／ ${p.name}`; 
+        
+        const x = canvas.width - 20; const y = 20; ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        p.bayImage = dataUrl; 
+        p.bayChecked = true; 
+        
+        document.getElementById('resultImage').src = dataUrl; 
+        document.getElementById('cameraModal').classList.remove('hidden'); 
+        document.getElementById('cameraModal').classList.add('flex'); 
+        renderParticipants();
       }; img.src = event.target.result; }; reader.readAsDataURL(file);
     });
-    function closeCameraModal() { document.getElementById('cameraModal').classList.add('hidden'); document.getElementById('cameraModal').classList.remove('flex'); document.getElementById('cameraInput').value = ''; }
+    
+    function closeCameraModal() { 
+        document.getElementById('cameraModal').classList.add('hidden'); 
+        document.getElementById('cameraModal').classList.remove('flex'); 
+        document.getElementById('cameraInput').value = ''; 
+    }
 
+    // ==========================================
+    // ★ ZIPでの画像一括ダウンロード処理
+    // ==========================================
+    async function downloadAllImagesZip() {
+        if (typeof JSZip === 'undefined') {
+            return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
+        }
+
+        const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
+        if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
+        
+        const zip = new JSZip();
+        const safeTournamentName = tournamentName || 'Tournament';
+        const folderName = safeTournamentName + "_BeyCheck";
+        const folder = zip.folder(folderName);
+        
+        checkedParticipants.forEach(p => {
+            const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+            // ★修正：ファイル名を「（大会名）_（参加者名）.jpg」に変更
+            folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
+        });
+        
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `${folderName}.zip`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+    }
+
+    // ==========================================
+    // トーナメント進行管理
+    // ==========================================
     function startTournament() {
       if(!confirm("トーナメントを開始しますか？")) return;
       isSetupSwapMode = false; setupSwapPending = null;
@@ -1020,7 +1120,6 @@
       finals = { sf: [ {p1:null, p2:null, winner:null}, {p1:null, p2:null, winner:null} ], third: {p1:null, p2:null, winner:null}, f: {p1:null, p2:null, winner:null} }; 
       updateAdvancements();
 
-      // ★追加：トーナメント開始時に自動でタブを切り替える
       switchTab('tournament');
     }
 
