@@ -61,10 +61,9 @@
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
-  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center transition-transform duration-500">
 
     <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
-      
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
@@ -1034,10 +1033,15 @@
         const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
         ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white'; ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
         
-        // ★修正：「（大会名） ／ （参加者名）」 に変更
-        const text = `${tournamentName || '大会'} ／ ${p.name}`; 
-        
-        const x = canvas.width - 20; const y = 20; ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+        // ★修正：「（大会名） ／ （参加者名）」 を2行に分けて描画
+        const tName = tournamentName || '大会';
+        const pName = p.name;
+        const x = canvas.width - 20; 
+        const y1 = 20;
+        const y2 = 20 + fontSize * 1.2; // 2行目の高さ
+
+        ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
+        ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
         
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         p.bayImage = dataUrl; 
