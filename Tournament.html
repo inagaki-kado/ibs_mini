@@ -139,7 +139,7 @@
                   <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
                     <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-t">🔽</span></th>
                     <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
-                    <th class="p-3 text-sm text-center font-sf whitespace-nowrap">LOTTERY</th>
+                    <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')" ontouchend="handleTouch(event,()=>toggleParticipantSort('lottery'))">LOTTERY <span id="sort-icon-lottery-t"></span></th>
                     <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                   </tr>
@@ -705,6 +705,18 @@
       let sorted = [...participants];
       if (participantSortMode === 'name') {
         sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      } else if (participantSortMode === 'lottery') {
+        // 未抽選を先頭、抽選済みはブロック名(A→B→...)→ポジション順
+        sorted.sort((a, b) => {
+          const aHas = a.color != null, bHas = b.color != null;
+          if (!aHas && !bHas) return a.id - b.id;
+          if (!aHas) return -1;
+          if (!bHas) return 1;
+          const aName = blockMap[a.color] || a.color;
+          const bName = blockMap[b.color] || b.color;
+          if (aName !== bName) return aName.localeCompare(bName);
+          return a.position - b.position;
+        });
       } else {
         sorted.sort((a, b) => a.id - b.id);
       }
@@ -742,8 +754,10 @@
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
       const siNm = document.getElementById('sort-icon-name-t'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
+      const siLt = document.getElementById('sort-icon-lottery-t'); if(siLt) siLt.innerText = participantSortMode==='lottery'?'🔽':'';
       const thNo = document.getElementById('th-no-t'); if(thNo) thNo.classList.toggle('text-cyber-blue', participantSortMode==='id');
       const thNm = document.getElementById('th-name-t'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
+      const thLt = document.getElementById('th-lottery-t'); if(thLt) thLt.classList.toggle('text-cyber-blue', participantSortMode==='lottery');
       saveState();
     }
 
