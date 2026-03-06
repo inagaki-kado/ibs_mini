@@ -843,9 +843,16 @@
                 ? `<button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-orange border border-cyber-orange hover:bg-cyber-orange hover:text-white text-[10px] font-sf px-1 py-1 rounded transition-colors shadow-sm">REMOTE</button>` 
                 : `<span class="text-cyber-text text-xs font-sf opacity-50">VS</span>`;
 
+            const nextBtn = !isFinished
+                ? `<button onclick="sendNextBattle('${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','FREE MATCH','')" class="text-base leading-none shrink-0" title="NEXT BATTLE 予告">📢</button>`
+                : '';
+
             list.innerHTML += `
             <div class="flex items-center justify-between p-2 rounded-lg border ${bgClass} shadow-sm transition-colors mb-3 gap-2">
-                <span class="text-[10px] font-sf text-cyber-blue opacity-50 w-6 shrink-0 text-center">#${m.id}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                    ${nextBtn}
+                    <span class="text-[10px] font-sf text-cyber-blue opacity-50 w-6 text-center">#${m.id}</span>
+                </div>
                 <button class="${p1Class} text-left flex items-center gap-1" ${onclick1}>
                     <span class="truncate">${m.p1.name}</span>
                 </button>
@@ -898,6 +905,10 @@
     // ==========================================
     // CSVエクスポート機能
     // ==========================================
+    function sendNextBattle(p1, p2, stage, round) {
+        if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+    }
+
     function toggleTvMode(viewId) {
         isTvMode = !isTvMode;
         const btn = document.getElementById('tv-btn-ranking');

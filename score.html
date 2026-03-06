@@ -177,11 +177,29 @@
         body.pro-mode #link-code-display { opacity: 0; pointer-events: none; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
         .status-dot.connected { background-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
+
+        /* NEXT BATTLE overlay */
+        #next-battle-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 95; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        #next-battle-overlay.hidden { display: none !important; }
+        @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.4;text-shadow:none;} }
+        .next-battle-blink { animation: neonBlink 1s ease-in-out infinite; }
     </style>
 </head>
 <body>
     <!-- Monitor overlay: receives HTML from admin apps via PeerJS -->
     <div id="remote-content-overlay" class="hidden"></div>
+
+    <!-- NEXT BATTLE announcement overlay -->
+    <div id="next-battle-overlay" class="hidden" onclick="hideNextBattle()">
+        <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(12px,2.5vw,22px);color:#94a3b8;letter-spacing:0.3em;text-align:center;margin-bottom:1.5rem;text-transform:uppercase;"></div>
+        <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(24px,6vw,72px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.2em;text-align:center;margin-bottom:2rem;">NEXT BATTLE</div>
+        <div style="display:flex;flex-direction:column;align-items:center;width:90%;max-width:900px;gap:0.5rem;">
+            <div id="nb-p1" style="font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,64px);font-weight:900;color:#fff;text-shadow:0 0 20px #0ea5e9,0 0 40px #0ea5e9;text-align:center;line-height:1.1;word-break:break-all;"></div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:clamp(16px,4vw,48px);font-weight:900;color:#f59e0b;text-shadow:0 0 20px #f59e0b,0 0 40px #f59e0b;margin:0.5rem 0;">VS</div>
+            <div id="nb-p2" style="font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,64px);font-weight:900;color:#fff;text-shadow:0 0 20px #ec4899,0 0 40px #ec4899;text-align:center;line-height:1.1;word-break:break-all;"></div>
+        </div>
+        <div style="margin-top:2.5rem;font-family:'Orbitron',sans-serif;font-size:clamp(10px,1.5vw,14px);color:#475569;letter-spacing:0.2em;">TAP TO CLOSE</div>
+    </div>
 
     <div id="video-container">
         <video id="camera-bg" autoplay playsinline muted></video>
@@ -593,6 +611,9 @@
                         overlay.classList.add('hidden');
                         overlay.innerHTML = '';
                     }
+                    else if (data.type === 'NEXT_BATTLE_CALL') {
+                        showNextBattle(data.p1, data.p2, data.stage, data.round);
+                    }
                     else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;
                         document.getElementById('name2').value = data.p2;
@@ -640,6 +661,18 @@
             });
         }
         initPeer();
+
+        function showNextBattle(p1, p2, stage, round) {
+            const overlay = document.getElementById('next-battle-overlay');
+            const stageText = [stage, round].filter(Boolean).join('  /  ');
+            document.getElementById('nb-stage-round').textContent = stageText;
+            document.getElementById('nb-p1').textContent = p1;
+            document.getElementById('nb-p2').textContent = p2;
+            overlay.classList.remove('hidden');
+        }
+        function hideNextBattle() {
+            document.getElementById('next-battle-overlay').classList.add('hidden');
+        }
     </script>
 </body>
 </html>

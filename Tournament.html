@@ -1069,7 +1069,20 @@
       const vsArea = canSendToScore
         ? `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`
         : `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
-      return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm"><button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
+
+      const stageInfo = (block === 'finals') ? 'FINAL STAGE' : block + ' BLOCK';
+      const roundInfo = (block === 'finals')
+        ? (roundIdx === 'sf' ? 'SEMIFINALS' : roundIdx === 'f' ? 'GRAND FINAL' : '3RD PLACE MATCH')
+        : (blockMatches[block] && roundIdx === blockMatches[block].length - 1 ? 'BLOCK FINAL' : 'ROUND ' + (roundIdx + 1));
+      const nextBtn = canSendToScore
+        ? `<button onclick="sendNextBattle('${p1Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${p2Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${stageInfo}','${roundInfo}')" class="text-sm leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>`
+        : '';
+
+      return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
+    }
+
+    function sendNextBattle(p1, p2, stage, round) {
+      if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
     }
 
     function toggleTvMode(mode) {

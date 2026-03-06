@@ -1065,6 +1065,10 @@
       renderQualifiers();
     }
 
+    function sendNextBattle(p1, p2, stage, round) {
+      if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+    }
+
     function renderMatchCardHTML(m, roundId, mIndex) {
       if(!m) return '';
       const fin = m.winnerTeam !== null; const isBye = m.team1.id === 'BYE' || m.team2.id === 'BYE';
@@ -1086,9 +1090,14 @@
 
       const scoreBtnHTML = (!isSwapMode || roundId !== 'r1') ? `<button onclick="openScoreModal('${roundId}', '${m.id}')" class="${btnClass} text-xs rounded px-3 py-2 shrink-0 transition-colors">${btnText}</button>` : `<div class="w-12"></div>`;
 
+      const roundLabel = roundId === 'r1' ? 'ROUND 1' : roundId === 'r2' ? 'ROUND 2' : 'ROUND 3';
+      const t1Names = (m.team1.p1?.name && m.team1.p2?.name) ? m.team1.p1.name + ' & ' + m.team1.p2.name : m.team1.name;
+      const t2Names = (m.team2.p1?.name && m.team2.p2?.name) ? m.team2.p1.name + ' & ' + m.team2.p2.name : m.team2.name;
+      const nextBtn = (!fin && !isBye) ? `<button onclick="sendNextBattle('${t1Names.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${t2Names.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','QUALIFIERS','${roundLabel}')" class="text-base leading-none shrink-0" title="NEXT BATTLE 予告">📢</button>` : '';
+
       return `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm text-sm my-1">
         <div class="flex items-center flex-1 overflow-hidden pr-2 gap-2">
-          <span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0 text-center">${m.id}</span>
+          ${nextBtn}<span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0 text-center">${m.id}</span>
           ${t1UI}
           ${centerArea}
           ${t2UI}
@@ -1431,9 +1440,13 @@
         if(!m) { el.innerHTML = ''; el.closest('.card-wrapper') && el.closest('.card-wrapper').classList.add('hidden'); return; }
         const fin = m.winnerTeam !== null;
         const canScore = m.team1.id !== 'TBD' && m.team2.id !== 'TBD' && m.team1.id !== 'BYE' && m.team2.id !== 'BYE';
+        const stageLabel = { 'card-qf1':'QUARTER FINALS','card-qf2':'QUARTER FINALS','card-qf3':'QUARTER FINALS','card-qf4':'QUARTER FINALS','card-sf1':'SEMIFINALS','card-sf2':'SEMIFINALS','card-f':'GRAND FINAL','card-third':'3RD PLACE MATCH' }[cid] || 'FINAL STAGE';
+        const ft1Names = (m.team1.p1?.name && m.team1.p2?.name) ? m.team1.p1.name + ' & ' + m.team1.p2.name : m.team1.name;
+        const ft2Names = (m.team2.p1?.name && m.team2.p2?.name) ? m.team2.p1.name + ' & ' + m.team2.p2.name : m.team2.name;
+        const finNextBtn = (!fin && canScore) ? `<button onclick="sendNextBattle('${ft1Names.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${ft2Names.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','FINAL STAGE','${stageLabel}')" class="text-base leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>` : '';
         el.innerHTML = `<div class="flex items-center justify-between p-2 rounded border ${fin?'bg-[#0d131f] border-cyber-green opacity-80':'bg-[#111827] border-cyber-table-border'} shadow-sm">
           <div class="flex items-center flex-1 overflow-hidden pr-2 text-sm">
-            <span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0">${m.id}</span>
+            ${finNextBtn}<span class="text-[10px] font-sf text-cyber-blue opacity-70 w-8 shrink-0">${m.id}</span>
             <div class="flex-1 flex justify-end truncate ${m.winnerTeam===1?'text-cyber-green font-bold':''}">${m.team1.name}</div>
             ${fin ? `<span class="font-sf text-cyber-green px-2 text-sm">${m.winnerTeam===1?'WIN':'LOSE'} - ${m.winnerTeam===2?'WIN':'LOSE'}</span>` : `<span class="font-sf text-[10px] opacity-50 px-2">VS</span>`}
             <div class="flex-1 flex justify-start truncate ${m.winnerTeam===2?'text-cyber-green font-bold':''}">${m.team2.name}</div>
