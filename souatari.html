@@ -60,7 +60,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
   </style>
 </head>
-<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden cursor-pointer">
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden">
 
   <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-green flex flex-col justify-center min-h-[80px] shrink-0">
     
@@ -100,6 +100,9 @@
 
       <div id="mainManagementSection" class="flex-1 flex flex-col min-h-0">
         <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
+          <label class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs md:text-sm text-cyber-blue transition-colors">
+            📁 CSVファイル <input type="file" id="csvInput" accept=".csv" class="hidden">
+          </label>
           <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📋 テキスト貼付</button>
           
           <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📦 画像DL(ZIP)</button>
@@ -112,9 +115,9 @@
           <div class="overflow-y-auto flex-1">
             <table class="w-full text-left border-collapse">
               <thead class="sticky top-0 bg-[#111827] z-10">
-                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
-                  <th id="th-no-s" class="p-3 text-sm font-sf w-16 text-center cursor-pointer hover:text-cyber-green transition-colors text-cyber-green" onclick="toggleParticipantSort('id')">NO. <span id="sort-icon-id-s">🔽</span></th>
-                  <th id="th-name-s" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-green transition-colors" onclick="toggleParticipantSort('name')">NAME / STATS <span id="sort-icon-name-s"></span></th>
+                <tr class="border-b border-cyber-table-border text-cyber-text opacity-70">
+                  <th class="p-3 text-sm font-sf w-16 text-center">NO.</th>
+                  <th class="p-3 text-sm font-sf">NAME / STATS</th>
                   <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
                   <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                 </tr>
@@ -124,14 +127,6 @@
           </div>
         </div>
 
-        <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-green rounded-lg text-center neon-green mb-4">
-          <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
-          <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
-          <div class="flex gap-3">
-            <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
-            <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
-          </div>
-        </div>
         <div class="text-center pb-4 shrink-0" id="startLeagueArea">
           <button id="btn-start-league" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-10 py-4 rounded-full font-bold shadow-lg text-2xl font-sf neon-green transition-transform active:scale-95">▶ START LEAGUE</button>
         </div>
@@ -140,10 +135,7 @@
 
     <div id="view-league" class="hidden h-full flex flex-col">
       <div class="flex justify-between items-center mb-4 shrink-0">
-        <div class="flex items-center gap-2">
-          <button id="tv-btn-league" onclick="toggleTvMode('league')" class="w-9 h-9 rounded-full border-2 border-cyber-green text-cyber-green bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#22c55e]" title="モニター出力">📺</button>
-          <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
-        </div>
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
         <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
       </div>
 
@@ -258,10 +250,7 @@
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <div class="flex items-center justify-center gap-3 mb-4 md:mb-8">
-        <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-green text-cyber-green bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#22c55e]" title="モニター出力">📺</button>
-        <h2 class="text-xl md:text-2xl text-cyber-green font-sf" id="resultLeagueName"></h2>
-      </div>
+      <h2 class="text-xl md:text-2xl text-cyber-green font-sf mb-4 md:mb-8" id="resultLeagueName"></h2>
       
       <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 CHAMPION 🏆</h1>
       <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
@@ -274,8 +263,13 @@
         <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
       </div>
       
-      <div class="flex justify-center gap-4 mt-6 md:mt-10">
-        <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+      <div class="flex justify-center gap-4 mt-6 md:mt-10 flex-wrap">
+        <button onclick="toggleTvMode()" id="tv-mode-btn" class="bg-cyber-dark border border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white px-4 py-2 rounded-full font-bold font-sf shadow transition-all">📺 TV MODE</button>
+        <div id="scroll-controls" class="hidden inline-flex gap-2">
+          <button onclick="scrollRemote(-200)" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold transition-all">🔼</button>
+          <button onclick="scrollRemote(200)" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold transition-all">🔽</button>
+        </div>
+        <button onclick="openExportModal()" id="export-csv-btn" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
         <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
       </div>
     </div>
@@ -344,7 +338,7 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#22c55e]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf font-bold rounded hover:bg-cyber-green/20 transition-colors text-lg">⏱ TIMER</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf font-bold rounded hover:bg-cyber-green/20 transition-colors text-lg">⏱ 10s TIMER</button>
         </div>
       </div>
 
@@ -372,10 +366,7 @@
   </div>
 
   <script>
-
     let participants = []; 
-    let participantSortMode = 'id';
-
     let pidCounter = 1; 
     let isLeagueStarted = false; 
     let leagueName = '';
@@ -448,8 +439,7 @@
     // ==========================================
     let peer = null; 
     let conn = null;
-    let isTvMode_league = false;
-    let isTvMode_results = false;
+    let activeNextBattleId = null;
 
     function initPeer() {
       if (peer) peer.destroy();
@@ -462,7 +452,7 @@
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
       const dot = document.getElementById('link-status-dot');
       dot.classList.replace('bg-cyber-green', 'bg-red-500'); dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
       conn = null;
@@ -494,9 +484,81 @@
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
+    
+    // TVモード管理
+    let isTvMode = false;
+    
+    function toggleTvMode() {
+        isTvMode = !isTvMode;
+        const btn = document.getElementById('tv-mode-btn');
+        const csvBtn = document.getElementById('export-csv-btn');
+        const scrollControls = document.getElementById('scroll-controls');
+        
+        if (isTvMode) {
+            btn.classList.add('bg-amber-500', 'text-white');
+            btn.classList.remove('bg-cyber-dark', 'text-amber-500');
+            csvBtn.classList.add('hidden');
+            scrollControls.classList.remove('hidden');
+            
+            if (!conn || !conn.open) {
+                alert("⚠️ HUDがリンクされていません");
+                return;
+            }
+            
+            // リーグ戦表のHTMLを送信（実装に応じて調整）
+            const rankingHTML = document.getElementById('rankingBody')?.outerHTML || '';
+            conn.send({
+                type: 'SHOW_OVERLAY',
+                html: `
+                    <div class="text-amber-400 font-bold text-6xl mb-8" style="font-family: 'Orbitron', sans-serif;">SOUATARI LEAGUE</div>
+                    <div class="text-white text-3xl">${rankingHTML}</div>
+                `
+            });
+        } else {
+            btn.classList.remove('bg-amber-500', 'text-white');
+            btn.classList.add('bg-cyber-dark', 'text-amber-500');
+            csvBtn.classList.remove('hidden');
+            scrollControls.classList.add('hidden');
+            
+            if (conn && conn.open) {
+                conn.send({ type: 'HIDE_OVERLAY' });
+            }
+        }
+    }
+    
+    function scrollRemote(amount) {
+        if (conn && conn.open && isTvMode) {
+            conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
+        }
+    }
+    
+    function showNextBattle(battleId, p1, p2) {
+        if (!conn || !conn.open) {
+            alert('⚠️ TV接続が必要です');
+            return;
+        }
+        
+        // 同じ試合を再度押した場合は非表示
+        if (activeNextBattleId === battleId) {
+            conn.send({ type: 'HIDE_OVERLAY' });
+            activeNextBattleId = null;
+            return;
+        }
+        
+        // 次戦告知を表示
+        conn.send({
+            type: 'NEXT_BATTLE_CALL',
+            p1: p1,
+            p2: p2,
+            themeColor: '#f59e0b', // souatari用カラー（amber-500）
+            isTag: false
+        });
+        
+        activeNextBattleId = battleId;
+    }
 
     // ==========================================
-    // HUDリモートコントロールモーダル
+    // ★ HUDリモートコントロールモーダル
     // ==========================================
     let currentRemoteMatch = null;
     let currentRemoteMode = 'score';
@@ -526,6 +588,12 @@
     }
 
     function openRemoteModal(matchId) {
+        // 告知画面を自動で閉じる
+        if (conn && conn.open) {
+            conn.send({ type: 'HIDE_OVERLAY' });
+            activeNextBattleId = null;
+        }
+        
         const match = leagueMatches.find(m => m.id === matchId);
         if(!match) return;
         
@@ -548,6 +616,11 @@
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
             });
+            // リモコンを開いた時点で、iPhone側のスコアも同期させる（不要なら削除可）
+            if (remoteScoreLeft > 0 || remoteScoreRight > 0) {
+               // 簡易的にiPhone側に直接スコアを送る機能はないため、0からスタートさせる前提
+               // sendRemoteCmd('SYS_RESET');
+            }
         } else {
             alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
         }
@@ -621,7 +694,7 @@
             finalWinnerVal = isRemoteSwapped ? 1 : 2;
         }
 
-        // リモコンで操作したスコアと勝敗をリーグ表に保存する
+        // リモコンで操作したスコアと勝敗を総当たりの表に保存する
         currentRemoteMatch.s1 = finalScore1;
         currentRemoteMatch.s2 = finalScore2;
         currentRemoteMatch.winner = finalWinnerVal;
@@ -663,59 +736,7 @@
     // ==========================================
     // アプリ制御
     // ==========================================
-
-    // ==========================================
-    // localStorage 自動保存・復元
-    // ==========================================
-    const SAVE_KEY = 'tbh_league';
-
-    function saveState() {
-      try {
-        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode };
-        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-      } catch(e) { console.warn('saveState error:', e); }
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return false;
-        const s = JSON.parse(raw);
-        if (!s.participants || s.participants.length === 0) return false;
-        leagueName = s.leagueName || '';
-        isLeagueStarted = s.isLeagueStarted || false;
-        pidCounter = s.pidCounter || 1;
-        participants = s.participants || [];
-        participantSortMode = s.participantSortMode || 'id';
-        leagueMatches = s.leagueMatches || [];
-        return true;
-      } catch(e) { console.warn('loadState error:', e); return false; }
-    }
-
-    function clearSave() {
-      if (!confirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
-      localStorage.removeItem(SAVE_KEY);
-      location.reload();
-    }
-
-    function showResumeBanner() {
-      document.getElementById('resume-banner').classList.remove('hidden');
-    }
-
-    function resumeFromSave() {
-      document.getElementById('resume-banner').classList.add('hidden');
-      renderParticipants();
-      if (isLeagueStarted) {
-        document.getElementById('startLeagueArea').classList.add('hidden');
-        document.getElementById('displayLeagueName').innerText = leagueName;
-        updateLeagueDisplay();
-        switchTab('league');
-      }
-    }
-
-        document.addEventListener('DOMContentLoaded', () => {
-        if (loadState()) { showResumeBanner(); }
-
+    document.addEventListener('DOMContentLoaded', () => {
         const btnStart = document.getElementById('btn-start-league');
         if (btnStart) {
             btnStart.addEventListener('click', (e) => { e.preventDefault(); handleStartLeague(); });
@@ -790,27 +811,32 @@
       if(isLeagueStarted) return alert("開始後は削除できません"); if(!confirm("削除しますか？")) return;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
-
-
-    function getSortedParticipants() {
-      let sorted = [...participants];
-      if (participantSortMode === 'name') {
-        sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-      } else {
-        sorted.sort((a, b) => a.id - b.id);
-      }
-      return sorted;
-    }
-
-    function toggleParticipantSort(mode) {
-      participantSortMode = mode;
-      renderParticipants();
-    }
+    
+    document.getElementById('csvInput').addEventListener('change', function(e) {
+      if(isLeagueStarted) return; const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader(); reader.onload = function(event) {
+        event.target.result.split(/\r\n|\n/).forEach(line => {
+          if(!line.trim() || participants.length >= 12) return; const cols = line.split(',');
+          if(cols[0]) {
+            let initialPower = parseInt(cols[3]) || 1500;
+            let initialMatches = parseInt(cols[4]) || 0;
+            let initialWins = parseInt(cols[5]) || 0;
+            let initialLoses = parseInt(cols[6]) || 0;
+            participants.push({ 
+              id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
+              rank: cols[2] ? cols[2].trim() : '--',
+              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+              bayChecked: false, bayImage: null, tieBreaker: 0 
+            });
+          }
+        }); e.target.value = ''; renderParticipants();
+      }; reader.readAsText(file);
+    });
 
     function renderParticipants() {
       const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
-      const sortedP = getSortedParticipants();
-      sortedP.forEach((p, idx) => {
+      participants.forEach((p, idx) => {
         const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark";
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
@@ -822,11 +848,6 @@
         <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
-      const siId = document.getElementById('sort-icon-id-s'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
-      const siNm = document.getElementById('sort-icon-name-s'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
-      const thNo = document.getElementById('th-no-s'); if(thNo) thNo.classList.toggle('text-cyber-green', participantSortMode==='id');
-      const thNm = document.getElementById('th-name-s'); if(thNm) thNm.classList.toggle('text-cyber-green', participantSortMode==='name');
-      saveState();
     }
 
     // ==========================================
@@ -865,7 +886,7 @@
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
         
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         p.bayImage = dataUrl; 
         p.bayChecked = true; 
         
@@ -938,7 +959,6 @@
         pList.splice(1, 0, pList.pop());
       }
       updateLeagueDisplay();
-      saveState();
     }
 
     // ==========================================
@@ -1005,42 +1025,6 @@
     }
 
     function clearFocus() { currentSortMode = 'default'; focusPlayerId = null; updateLeagueDisplay(); }
-
-    function sendNextBattle(p1, p2, stage, round) {
-      if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
-    }
-
-    function toggleTvMode(mode) {
-      if (mode === 'league') {
-        isTvMode_league = !isTvMode_league;
-        const btn = document.getElementById('tv-btn-league');
-        const showBtn = document.getElementById('showResultsBtn');
-        if (isTvMode_league) {
-          const content = document.getElementById('view-league').innerHTML;
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
-          btn.style.cssText = 'background:#22c55e;color:#0a0f1a;box-shadow:0 0 16px #22c55e,0 0 32px #22c55e;border-color:#22c55e;';
-          if (showBtn) showBtn.classList.add('hidden');
-        } else {
-          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
-          btn.style.cssText = '';
-          if (showBtn) showBtn.classList.remove('hidden');
-        }
-      } else if (mode === 'results') {
-        isTvMode_results = !isTvMode_results;
-        const btn = document.getElementById('tv-btn-results');
-        const csvBtn = document.getElementById('results-export-csv-btn');
-        if (isTvMode_results) {
-          const content = document.getElementById('resultsModal').innerHTML;
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
-          btn.style.cssText = 'background:#22c55e;color:#0a0f1a;box-shadow:0 0 16px #22c55e,0 0 32px #22c55e;border-color:#22c55e;';
-          if (csvBtn) csvBtn.classList.add('hidden');
-        } else {
-          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
-          btn.style.cssText = '';
-          if (csvBtn) csvBtn.classList.remove('hidden');
-        }
-      }
-    }
 
     function updateLeagueDisplay() {
       let standingsMap = {};
@@ -1166,17 +1150,14 @@
         let p2Display = `<span class="truncate ${m.winner === 2 ? 'text-cyber-green font-bold text-lg' : 'text-cyber-text'}">${m.p2.name}</span>`;
         let centerArea = isFinished ? `<span class="font-sf text-lg text-cyber-green px-2">${m.s1} - ${m.s2}</span>` : `<span class="font-sf text-xs text-cyber-text opacity-50 px-2">VS</span>`;
         
-        const sendBtn = !isFinished ? `<button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors mr-2">REMOTE</button>` : '';
+        // ★修正：未対戦の試合には 📢 と REMOTE ボタンを表示
+        const sendBtn = !isFinished ? `
+          <button onclick="showNextBattle(${m.id}, '${m.p1.name.replace(/'/g, "\\'")}', '${m.p2.name.replace(/'/g, "\\'"')}')" class="bg-transparent text-amber-500 border border-amber-500 hover:bg-amber-500 hover:text-white text-[10px] font-sf px-2 py-1 rounded transition-colors mr-1">📢</button>
+          <button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors mr-2">REMOTE</button>
+        ` : '';
 
-        const nextBtn = !isFinished ? `<button onclick="sendNextBattle('${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',leagueName,'LEAGUE MATCH')" class="text-base leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>` : '';
-
-        scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${nextBtn}${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
+        scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
       });
-      saveState();
-      if (isTvMode_league) {
-        const content = document.getElementById('view-league').innerHTML;
-        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
-      }
     }
 
     function showResults() {

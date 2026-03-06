@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>板橋会ポータル - ITABASHI BEYBLADE PORTAL</title>
+  
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBhMGUxNyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmZmZmZiI+5p2/PC90ZXh0Pgo8L3N2Zz4=">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Noto Sans JP', 'sans-serif'],
+            'orbitron': ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            'cyber-bg': '#0a0e17',
+            'cyber-dark': '#111827',
+            'cyber-blue': '#0ea5e9',
+            'cyber-green': '#22c55e',
+            'cyber-pink': '#ec4899',
+            'cyber-orange': '#f97316',
+            'cyber-yellow': '#facc15',
+            'cyber-text': '#e2e8f0',
+            'cyber-table-border': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0e17; color: #e2e8f0; touch-action: manipulation; }
+    .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+    
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0e17; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+
+    .neon-border { border: 1px solid rgba(14, 165, 233, 0.5); box-shadow: 0 0 10px rgba(14, 165, 233, 0.2); }
+    .neon-text-blue { text-shadow: 0 0 10px rgba(14, 165, 233, 0.8); }
+    
+    .event-banner { transition: transform 0.3s, box-shadow 0.3s; }
+    .event-banner:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 0 20px rgba(14, 165, 233, 0.6); z-index: 10; }
+  </style>
+</head>
+<body class="font-sans select-none flex flex-col h-screen overflow-hidden">
+
+  <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-[0_4px_15px_rgba(0,0,0,0.8)] relative border-b border-cyber-blue shrink-0 z-20">
+    <h1 class="text-2xl md:text-3xl font-sf text-white neon-text-blue">ITABASHI BEYBLADE PORTAL</h1>
+    <p class="text-xs text-cyber-blue opacity-80 font-sf tracking-widest mt-1">BEYBLADE X TOURNAMENT NETWORK</p>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 w-full max-w-6xl mx-auto">
+
+    <section>
+      <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-3 mb-4 flex items-center gap-2">
+        <span class="text-xl">📅</span> LATEST EVENTS
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        
+        <a href="https://twipla.jp/" target="_blank" class="event-banner block bg-cyber-dark border border-cyber-table-border rounded-lg overflow-hidden group">
+          <div class="relative w-full h-32 md:h-40 bg-gray-800">
+            <img src="https://placehold.jp/111827/0ea5e9/600x300.png?text=EVENT%201%20BANNER" alt="Event 1" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-3">
+              <h3 class="font-bold text-white text-lg drop-shadow-md">第10回 板橋カップ</h3>
+            </div>
+          </div>
+        </a>
+
+        <a href="https://twipla.jp/" target="_blank" class="event-banner block bg-cyber-dark border border-cyber-table-border rounded-lg overflow-hidden group">
+          <div class="relative w-full h-32 md:h-40 bg-gray-800">
+            <img src="https://placehold.jp/111827/22c55e/600x300.png?text=EVENT%202%20BANNER" alt="Event 2" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-3">
+              <h3 class="font-bold text-white text-lg drop-shadow-md">秋のタッグトーナメント</h3>
+            </div>
+          </div>
+        </a>
+
+        <a href="https://twipla.jp/" target="_blank" class="event-banner block bg-cyber-dark border border-cyber-table-border rounded-lg overflow-hidden group">
+          <div class="relative w-full h-32 md:h-40 bg-gray-800">
+            <img src="https://placehold.jp/111827/ec4899/600x300.png?text=EVENT%203%20BANNER" alt="Event 3" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-3">
+              <h3 class="font-bold text-white text-lg drop-shadow-md">平日夜フリー対戦会</h3>
+            </div>
+          </div>
+        </a>
+
+        <a href="https://twipla.jp/" target="_blank" class="event-banner block bg-cyber-dark border border-cyber-table-border rounded-lg overflow-hidden group">
+          <div class="relative w-full h-32 md:h-40 bg-gray-800">
+            <img src="https://placehold.jp/111827/facc15/600x300.png?text=EVENT%204%20BANNER" alt="Event 4" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-3">
+              <h3 class="font-bold text-white text-lg drop-shadow-md">初心者歓迎 交流リーグ</h3>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      
+      <section class="flex-1">
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-yellow border-l-4 border-cyber-yellow pl-3 mb-4 flex items-center gap-2">
+          <span class="text-xl">⚙️</span> SYSTEM TOOLS
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <a href="score_index.html" target="_blank" class="col-span-1 sm:col-span-2 bg-gradient-to-r from-[#111827] to-[#1a2333] border-2 border-cyber-yellow p-4 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.2)] hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] transition-all group flex items-center justify-between">
+            <div>
+              <h3 class="font-sf font-bold text-cyber-yellow text-xl">SCORE HUD</h3>
+              <p class="text-xs text-cyber-text opacity-80 mt-1">モニター出力用 スコア表示システム</p>
+            </div>
+            <span class="text-4xl group-hover:scale-110 transition-transform">📱</span>
+          </a>
+
+          <a href="Tournament.html" class="bg-cyber-dark border border-cyber-blue p-4 rounded-xl hover:bg-[#1a2333] transition-colors flex items-center justify-between group">
+            <div>
+              <h3 class="font-sf font-bold text-cyber-blue">TOURNAMENT</h3>
+              <p class="text-[10px] text-cyber-text opacity-70 mt-1">勝ち抜きトーナメント管理</p>
+            </div>
+            <span class="text-2xl group-hover:scale-110 transition-transform opacity-80">🏆</span>
+          </a>
+
+          <a href="league.html" class="bg-cyber-dark border border-cyber-green p-4 rounded-xl hover:bg-[#1a2333] transition-colors flex items-center justify-between group">
+            <div>
+              <h3 class="font-sf font-bold text-cyber-green">LEAGUE</h3>
+              <p class="text-[10px] text-cyber-text opacity-70 mt-1">総当たりリーグ戦管理</p>
+            </div>
+            <span class="text-2xl group-hover:scale-110 transition-transform opacity-80">⚔️</span>
+          </a>
+
+          <a href="TagLeague.html" class="bg-cyber-dark border border-cyber-pink p-4 rounded-xl hover:bg-[#1a2333] transition-colors flex items-center justify-between group">
+            <div>
+              <h3 class="font-sf font-bold text-cyber-pink">TAG LEAGUE</h3>
+              <p class="text-[10px] text-cyber-text opacity-70 mt-1">2on2 タッグ戦管理</p>
+            </div>
+            <span class="text-2xl group-hover:scale-110 transition-transform opacity-80">🤝</span>
+          </a>
+
+          <a href="Free.html" class="bg-cyber-dark border border-cyber-orange p-4 rounded-xl hover:bg-[#1a2333] transition-colors flex items-center justify-between group">
+            <div>
+              <h3 class="font-sf font-bold text-cyber-orange">FREE MATCH</h3>
+              <p class="text-[10px] text-cyber-text opacity-70 mt-1">レーティング・フリー対戦</p>
+            </div>
+            <span class="text-2xl group-hover:scale-110 transition-transform opacity-80">🔄</span>
+          </a>
+
+        </div>
+      </section>
+
+      <section class="flex-1 flex flex-col">
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-3 mb-4 flex items-center gap-2">
+          <span class="text-xl">📊</span> BEY POWER RANKING
+        </h2>
+        <div class="bg-cyber-dark border border-cyber-green rounded-xl overflow-hidden flex-1 min-h-[300px] relative neon-border">
+          <iframe 
+            src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_EXAMPLE_URL_HERE/pubhtml?widget=true&amp;headers=false" 
+            class="w-full h-full border-none"
+            style="background-color: #fff;">
+          </iframe>
+          
+          <div class="absolute inset-0 bg-[#0a0e17]/90 flex flex-col items-center justify-center p-6 text-center z-10">
+            <span class="text-4xl mb-3">📈</span>
+            <p class="text-cyber-green font-bold font-sf mb-2">RANKING SPREADSHEET</p>
+            <p class="text-xs text-cyber-text opacity-80">Googleスプレッドシートの「ウェブに公開」で発行されたURLを、<br>HTMLの iframe src="..." に設定してください。</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <section>
+      <h2 class="text-xl md:text-2xl font-sf text-white border-l-4 border-white pl-3 mb-4 flex items-center gap-2">
+        <span class="text-xl">𝕏</span> OFFICIAL X
+      </h2>
+      <div class="bg-cyber-dark border border-cyber-table-border rounded-xl overflow-hidden p-2 flex justify-center">
+        <div class="w-full max-w-[500px] max-h-[500px] overflow-y-auto rounded-lg">
+          <a class="twitter-timeline" data-theme="dark" href="https://twitter.com/X_ACCOUNT_ID_HERE?ref_src=twsrc%5Etfw">
+            Tweets by Itabashi Beyblade
+          </a>
+          <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center py-6 text-[10px] text-cyber-text opacity-50 font-sf border-t border-cyber-table-border mt-8">
+      &copy; 2024 ITABASHI BEYBLADE SYSTEM. All Rights Reserved.
+    </footer>
+
+  </main>
+</body>
+</html>
