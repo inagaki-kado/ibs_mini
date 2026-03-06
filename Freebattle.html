@@ -148,6 +148,10 @@
       <div class="flex justify-between items-center mb-4 shrink-0">
         <div class="flex items-center gap-2">
           <button id="tv-btn-ranking" onclick="toggleTvMode('view-ranking')" class="w-9 h-9 rounded-full border-2 border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#f97316]" title="モニター出力">📺</button>
+          <span id="tv-scroll-btns-ranking" class="hidden flex items-center gap-1">
+            <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールUP">🔼</button>
+            <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
+          </span>
           <h2 class="text-xl md:text-2xl font-sf text-cyber-orange border-l-4 border-cyber-orange pl-4">CURRENT RANKING</h2>
         </div>
         <button id="export-csv-btn" onclick="openExportModal()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 md:px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#f97316] transition-transform active:scale-95 text-sm md:text-base">📋 EXPORT CSV</button>
@@ -367,6 +371,7 @@
     let peer = null; 
     let conn = null;
     let isTvMode = false;
+    let activeNextBattleId = null;
 
     function initPeer() {
       if (peer) { peer.destroy(); }
@@ -448,6 +453,8 @@
     function openRemoteModal(matchId) {
         const match = matches.find(m => m.id === matchId);
         if(!match) return;
+        if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+        activeNextBattleId = null;
         
         currentRemoteMatch = match;
         isRemoteSwapped = false;
@@ -844,7 +851,7 @@
                 : `<span class="text-cyber-text text-xs font-sf opacity-50">VS</span>`;
 
             const nextBtn = !isFinished
-                ? `<button onclick="sendNextBattle('${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','FREE MATCH','')" class="text-base leading-none shrink-0" title="NEXT BATTLE 予告">📢</button>`
+                ? `<button onclick="sendNextBattle(${m.id},'${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','FREE MATCH','')" class="text-base leading-none shrink-0" title="NEXT BATTLE 予告">📢</button>`
                 : '';
 
             list.innerHTML += `
@@ -905,23 +912,36 @@
     // ==========================================
     // CSVエクスポート機能
     // ==========================================
-    function sendNextBattle(p1, p2, stage, round) {
-        if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+    function sendNextBattle(matchId, p1, p2, stage, round) {
+        if (activeNextBattleId === matchId) {
+            if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+            activeNextBattleId = null;
+        } else {
+            if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+            activeNextBattleId = matchId;
+        }
+    }
+
+    function scrollRemote(amount) {
+        if (conn) conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
     }
 
     function toggleTvMode(viewId) {
         isTvMode = !isTvMode;
         const btn = document.getElementById('tv-btn-ranking');
         const csvBtn = document.getElementById('export-csv-btn');
+        const scrollBtns = document.getElementById('tv-scroll-btns-ranking');
         if (isTvMode) {
             const content = document.getElementById(viewId).innerHTML;
             if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
             btn.style.cssText = 'background:#f97316;color:#fff;box-shadow:0 0 16px #f97316,0 0 32px #f97316;border-color:#f97316;';
             if (csvBtn) csvBtn.classList.add('hidden');
+            if (scrollBtns) scrollBtns.classList.remove('hidden');
         } else {
             if (conn) conn.send({ type: 'HIDE_OVERLAY' });
             btn.style.cssText = '';
             if (csvBtn) csvBtn.classList.remove('hidden');
+            if (scrollBtns) scrollBtns.classList.add('hidden');
         }
     }
 
