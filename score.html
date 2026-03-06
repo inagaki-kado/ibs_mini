@@ -163,6 +163,13 @@
         .call-text-shoot-style { font-family: 'Orbitron', sans-serif !important; font-size: 28vmin !important; font-style: italic; font-weight: 900; color: white; text-shadow: 0 0 40px var(--bx-red), 0 0 80px var(--bx-red), 8px 8px 0 black; line-height: 1; white-space: nowrap; animation: explodeShoot 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
         #replay-indicator { position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
+
+        #remote-content-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 90; background: #000; overflow: auto; }
+        #remote-content-overlay.hidden { display: none !important; }
+        #remote-content-overlay * { pointer-events: none !important; cursor: default !important; }
+        #remote-content-overlay button,
+        #remote-content-overlay [onclick],
+        #remote-content-overlay input { pointer-events: none !important; cursor: default !important; }
         #replay-status { position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
@@ -173,6 +180,9 @@
     </style>
 </head>
 <body>
+    <!-- Monitor overlay: receives HTML from admin apps via PeerJS -->
+    <div id="remote-content-overlay" class="hidden"></div>
+
     <div id="video-container">
         <video id="camera-bg" autoplay playsinline muted></video>
         <video id="replay-video" playsinline muted preload="auto"></video>
@@ -572,6 +582,16 @@
                 conn.on('data', (data) => {
                     if (data.type === 'REMOTE_CMD') {
                         executeCommand(data.cmd);
+                    }
+                    else if (data.type === 'SHOW_OVERLAY') {
+                        const overlay = document.getElementById('remote-content-overlay');
+                        overlay.innerHTML = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"><style>*{pointer-events:none!important;cursor:default!important;}</style>' + data.html;
+                        overlay.classList.remove('hidden');
+                    }
+                    else if (data.type === 'HIDE_OVERLAY') {
+                        const overlay = document.getElementById('remote-content-overlay');
+                        overlay.classList.add('hidden');
+                        overlay.innerHTML = '';
                     }
                     else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;

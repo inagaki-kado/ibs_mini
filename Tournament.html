@@ -158,6 +158,7 @@
         <div id="tournamentActive" class="flex flex-col">
           <div class="flex justify-between items-center mb-4 shrink-0">
             <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+              <button id="tv-btn-active" onclick="toggleTvMode('active')" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#0ea5e9]" title="モニター出力">📺</button>
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
             </div>
@@ -208,7 +209,10 @@
     <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
       <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
         <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-        <h2 class="text-xl md:text-2xl text-cyber-blue font-sf mb-4 md:mb-8" id="resultTournamentName"></h2>
+        <div class="flex items-center justify-center gap-3 mb-4 md:mb-8">
+          <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#0ea5e9]" title="モニター出力">📺</button>
+          <h2 class="text-xl md:text-2xl text-cyber-blue font-sf" id="resultTournamentName"></h2>
+        </div>
         <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
         <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
         <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
@@ -218,7 +222,7 @@
           <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
         </div>
         <div class="flex justify-center gap-4 mt-6 md:mt-10">
-          <button onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
           <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
         </div>
       </div>
@@ -408,6 +412,8 @@
     // リモート通信 / PeerJS
     // ==========================================
     let peer = null; let conn = null;
+    let isTvMode_active = false;
+    let isTvMode_results = false;
 
     function initPeer() {
       if (peer) peer.destroy();
@@ -1066,6 +1072,37 @@
       return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm"><button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
     }
 
+    function toggleTvMode(mode) {
+      const colorBlue = 'background:#0ea5e9;color:#fff;box-shadow:0 0 16px #0ea5e9,0 0 32px #0ea5e9;border-color:#0ea5e9;';
+      if (mode === 'active') {
+        isTvMode_active = !isTvMode_active;
+        const btn = document.getElementById('tv-btn-active');
+        const showBtn = document.getElementById('showResultsBtn');
+        if (isTvMode_active) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+          btn.style.cssText = colorBlue;
+          if (showBtn) showBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (showBtn) showBtn.classList.remove('hidden');
+        }
+      } else if (mode === 'results') {
+        isTvMode_results = !isTvMode_results;
+        const btn = document.getElementById('tv-btn-results');
+        const csvBtn = document.getElementById('results-export-csv-btn');
+        if (isTvMode_results) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('resultsModal').innerHTML });
+          btn.style.cssText = colorBlue;
+          if (csvBtn) csvBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (csvBtn) csvBtn.classList.remove('hidden');
+        }
+      }
+    }
+
     function renderTournament() {
       if (!isTournamentStarted) return;
       const container = document.getElementById('tournamentContainer'); container.innerHTML = '';
@@ -1084,6 +1121,9 @@
         html += `</div>`; container.innerHTML += html;
       });
       document.getElementById('finalsContainer').innerHTML = `<div class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg"><h3 class="text-center font-bold text-lg mb-4 text-cyber-blue font-sf">SEMIFINALS</h3>${renderMatchCard(finals.sf[0], 'finals', 'sf', 0, 'A代表', 'B代表')}<div class="my-4"></div>${renderMatchCard(finals.sf[1], 'finals', 'sf', 1, 'C代表', 'D代表')}</div><div class="border border-cyber-pink bg-[#0d131f] p-4 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.3)]"><h3 class="text-center font-bold text-lg mb-2 text-yellow-400 font-sf">GRAND FINAL</h3>${renderMatchCard(finals.f, 'finals', 'f', 0, 'W1', 'W2')}<h3 class="text-center font-bold text-sm mb-2 mt-6 text-orange-400 font-sf">3RD PLACE MATCH</h3>${renderMatchCard(finals.third, 'finals', 'third', 0, 'L1', 'L2')}</div>`;
+      if (isTvMode_active) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+      }
     }
 
     function showResults() {

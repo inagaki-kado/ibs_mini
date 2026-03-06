@@ -104,7 +104,10 @@
 
     <div id="view-qual" class="hidden h-full flex flex-col max-w-4xl mx-auto">
       <div class="flex justify-between items-center mb-4 shrink-0">
-        <h2 class="text-2xl font-sf border-l-4 border-cyber-blue pl-4 text-cyber-blue" id="displayQualName">QUALIFYING ROUNDS</h2>
+        <div class="flex items-center gap-2">
+          <button id="tv-btn-qual" onclick="toggleTvMode('qual')" class="w-9 h-9 rounded-full border-2 border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#ec4899]" title="モニター出力">📺</button>
+          <h2 class="text-2xl font-sf border-l-4 border-cyber-blue pl-4 text-cyber-blue" id="displayQualName">QUALIFYING ROUNDS</h2>
+        </div>
         <button id="btn-gen-r2" onclick="generateRound2()" class="hidden bg-cyber-green text-cyber-bg px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 animate-pulse">GENERATE ROUND 2 ➡</button>
         <button id="btn-gen-r3" onclick="generateRound3()" class="hidden bg-cyber-green text-cyber-bg px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 animate-pulse">GENERATE ROUND 3 ➡</button>
         <button id="btn-go-rank" onclick="switchTab('rank')" class="hidden bg-cyber-pink text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 animate-pulse">CHECK RANKING 📊</button>
@@ -130,7 +133,10 @@
 
     <div id="view-rank" class="hidden h-full flex flex-col max-w-5xl mx-auto">
       <div class="flex justify-between items-center mb-4 shrink-0">
-        <h2 class="text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4">QUALIFYING RESULTS</h2>
+        <div class="flex items-center gap-2">
+          <button id="tv-btn-rank" onclick="toggleTvMode('rank')" class="w-9 h-9 rounded-full border-2 border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#ec4899]" title="モニター出力">📺</button>
+          <h2 class="text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4">QUALIFYING RESULTS</h2>
+        </div>
         <button id="btn-gen-finals" onclick="generateFinals()" class="hidden bg-yellow-500 text-black px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_15px_#facc15] active:scale-95 animate-pulse">GENERATE FINALS 🏆</button>
       </div>
       <div class="bg-cyber-dark border border-cyber-green rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
@@ -153,8 +159,11 @@
 
     <div id="view-finals" class="hidden h-full flex flex-col max-w-6xl mx-auto w-full">
       <div class="text-center mb-4 shrink-0">
-        <h2 class="text-3xl font-sf text-yellow-400 mb-2 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
-        <button onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
+        <div class="flex items-center justify-center gap-3 mb-2">
+          <button id="tv-btn-finals" onclick="toggleTvMode('finals')" class="w-9 h-9 rounded-full border-2 border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#ec4899]" title="モニター出力">📺</button>
+          <h2 class="text-3xl font-sf text-yellow-400 drop-shadow-[0_0_10px_#facc15]">FINAL STAGE</h2>
+        </div>
+        <button id="tag-show-results-btn" onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="bg-cyber-pink text-white px-8 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 mt-2">SHOW RESULTS 🏆</button>
       </div>
       <div class="flex-1 overflow-y-auto pb-8 space-y-6 pr-2">
         <div id="qf-container" class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg">
@@ -225,7 +234,10 @@
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <h2 class="text-2xl text-cyber-pink font-sf mb-8" id="resultLeagueName"></h2>
+      <div class="flex items-center justify-center gap-3 mb-8">
+        <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#ec4899]" title="モニター出力">📺</button>
+        <h2 class="text-2xl text-cyber-pink font-sf" id="resultLeagueName"></h2>
+      </div>
       <h1 class="text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
       <p class="text-4xl font-bold mb-10 text-white" id="res1"></p>
       <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
@@ -236,7 +248,7 @@
       </div>
       
       <div class="flex justify-center gap-4 mt-6 md:mt-10">
-        <button onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
         <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
       </div>
     </div>
@@ -442,6 +454,10 @@
     // BEY-ROULETTE LINK SYSTEM
     // ==========================================
     let peer = null, conn = null;
+    let isTvMode_qual = false;
+    let isTvMode_rank = false;
+    let isTvMode_finals = false;
+    let isTvMode_results = false;
     function initPeer() {
       if(peer) peer.destroy();
       peer = new Peer();
@@ -1081,6 +1097,57 @@
       </div>`;
     }
 
+    function toggleTvMode(mode) {
+      const colorPink = 'background:#ec4899;color:#fff;box-shadow:0 0 16px #ec4899,0 0 32px #ec4899;border-color:#ec4899;';
+      if (mode === 'qual') {
+        isTvMode_qual = !isTvMode_qual;
+        const btn = document.getElementById('tv-btn-qual');
+        if (isTvMode_qual) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-qual').innerHTML });
+          btn.style.cssText = colorPink;
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+        }
+      } else if (mode === 'rank') {
+        isTvMode_rank = !isTvMode_rank;
+        const btn = document.getElementById('tv-btn-rank');
+        if (isTvMode_rank) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-rank').innerHTML });
+          btn.style.cssText = colorPink;
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+        }
+      } else if (mode === 'finals') {
+        isTvMode_finals = !isTvMode_finals;
+        const btn = document.getElementById('tv-btn-finals');
+        const showBtn = document.getElementById('tag-show-results-btn');
+        if (isTvMode_finals) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-finals').innerHTML });
+          btn.style.cssText = colorPink;
+          if (showBtn) showBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (showBtn) showBtn.classList.remove('hidden');
+        }
+      } else if (mode === 'results') {
+        isTvMode_results = !isTvMode_results;
+        const btn = document.getElementById('tv-btn-results');
+        const csvBtn = document.getElementById('results-export-csv-btn');
+        if (isTvMode_results) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('resultsModal').innerHTML });
+          btn.style.cssText = colorPink;
+          if (csvBtn) csvBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (csvBtn) csvBtn.classList.remove('hidden');
+        }
+      }
+    }
+
     function renderQualifiers() {
       document.getElementById('r1-list').innerHTML = r1Matches.map((m, i) => renderMatchCardHTML(m, 'r1', i)).join('');
       if(r2Matches.length > 0) {
@@ -1101,6 +1168,12 @@
       if(r1Done && isSwapMode) toggleSwapMode();
       document.getElementById('btn-toggle-swap').classList.toggle('hidden', r1Done);
       saveState();
+      if (isTvMode_qual) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-qual').innerHTML });
+      }
+      if (isTvMode_rank) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-rank').innerHTML });
+      }
     }
 
     // --- 3. ランキングとオポネント計算 ---
@@ -1188,6 +1261,9 @@
       });
       const r3Done = r3Matches.length > 0 && r3Matches.every(m => m.winnerTeam !== null);
       document.getElementById('btn-gen-finals').classList.toggle('hidden', !r3Done);
+      if (isTvMode_rank) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-rank').innerHTML });
+      }
     }
     function changeTie(tid, v) { const t = teams.find(x=>x.id===tid); if(t) { t.tieBreaker=(t.tieBreaker||0)+v; renderRanking(); } }
 
@@ -1386,6 +1462,9 @@
       render(finalsMatches.f, 'card-f');
       render(finalsMatches.third, 'card-third');
       saveState();
+      if (isTvMode_finals) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-finals').innerHTML });
+      }
     }
 
     // --- 6. 結果発表 & CSVエクスポート ---

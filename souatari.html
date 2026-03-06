@@ -140,7 +140,10 @@
 
     <div id="view-league" class="hidden h-full flex flex-col">
       <div class="flex justify-between items-center mb-4 shrink-0">
-        <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
+        <div class="flex items-center gap-2">
+          <button id="tv-btn-league" onclick="toggleTvMode('league')" class="w-9 h-9 rounded-full border-2 border-cyber-green text-cyber-green bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#22c55e]" title="モニター出力">📺</button>
+          <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
+        </div>
         <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
       </div>
 
@@ -255,7 +258,10 @@
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <h2 class="text-xl md:text-2xl text-cyber-green font-sf mb-4 md:mb-8" id="resultLeagueName"></h2>
+      <div class="flex items-center justify-center gap-3 mb-4 md:mb-8">
+        <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-green text-cyber-green bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#22c55e]" title="モニター出力">📺</button>
+        <h2 class="text-xl md:text-2xl text-cyber-green font-sf" id="resultLeagueName"></h2>
+      </div>
       
       <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 CHAMPION 🏆</h1>
       <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
@@ -269,7 +275,7 @@
       </div>
       
       <div class="flex justify-center gap-4 mt-6 md:mt-10">
-        <button onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
         <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
       </div>
     </div>
@@ -442,6 +448,8 @@
     // ==========================================
     let peer = null; 
     let conn = null;
+    let isTvMode_league = false;
+    let isTvMode_results = false;
 
     function initPeer() {
       if (peer) peer.destroy();
@@ -998,6 +1006,38 @@
 
     function clearFocus() { currentSortMode = 'default'; focusPlayerId = null; updateLeagueDisplay(); }
 
+    function toggleTvMode(mode) {
+      if (mode === 'league') {
+        isTvMode_league = !isTvMode_league;
+        const btn = document.getElementById('tv-btn-league');
+        const showBtn = document.getElementById('showResultsBtn');
+        if (isTvMode_league) {
+          const content = document.getElementById('view-league').innerHTML;
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
+          btn.style.cssText = 'background:#22c55e;color:#0a0f1a;box-shadow:0 0 16px #22c55e,0 0 32px #22c55e;border-color:#22c55e;';
+          if (showBtn) showBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (showBtn) showBtn.classList.remove('hidden');
+        }
+      } else if (mode === 'results') {
+        isTvMode_results = !isTvMode_results;
+        const btn = document.getElementById('tv-btn-results');
+        const csvBtn = document.getElementById('results-export-csv-btn');
+        if (isTvMode_results) {
+          const content = document.getElementById('resultsModal').innerHTML;
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
+          btn.style.cssText = 'background:#22c55e;color:#0a0f1a;box-shadow:0 0 16px #22c55e,0 0 32px #22c55e;border-color:#22c55e;';
+          if (csvBtn) csvBtn.classList.add('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (csvBtn) csvBtn.classList.remove('hidden');
+        }
+      }
+    }
+
     function updateLeagueDisplay() {
       let standingsMap = {};
       participants.forEach(p => { 
@@ -1127,6 +1167,10 @@
         scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
       });
       saveState();
+      if (isTvMode_league) {
+        const content = document.getElementById('view-league').innerHTML;
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
+      }
     }
 
     function showResults() {
