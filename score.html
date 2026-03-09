@@ -170,8 +170,8 @@
             left: 0; 
             width: 100vw; 
             height: 100vh; 
-            z-index: 90; 
-            background: rgba(0,0,0,0.97); 
+            z-index: 999; 
+            background: #0a0e17; 
             overflow-y: auto; 
             overflow-x: hidden; 
             -webkit-overflow-scrolling: touch; 
@@ -186,9 +186,14 @@
             max-width: 100%;
             box-sizing: border-box;
         }
+        /* オーバーレイ内のボタンとボーダーを非表示 */
         #remote-content-overlay button,
         #remote-content-overlay [onclick],
-        #remote-content-overlay input { pointer-events: none !important; cursor: default !important; }
+        #remote-content-overlay input { 
+            pointer-events: none !important; 
+            cursor: default !important; 
+            display: none !important;
+        }
         #replay-status { position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
@@ -364,8 +369,11 @@
         const hud = document.getElementById('main-hud');
 
         const tName1 = document.getElementById('tournament-name-1');
-        if (localStorage.getItem('tbh_t1')) tName1.value = localStorage.getItem('tbh_t1');
-        tName1.addEventListener('input', () => localStorage.setItem('tbh_t1', tName1.value));
+        // v2キーを使用して古いlocalStorageデータを無効化
+        if (localStorage.getItem('tbh_t1_v2')) {
+            tName1.value = localStorage.getItem('tbh_t1_v2');
+        }
+        tName1.addEventListener('input', () => localStorage.setItem('tbh_t1_v2', tName1.value));
 
         function applyTransforms() {
             const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
@@ -774,7 +782,7 @@
                         
                         if (data.tName) {
                             document.getElementById('tournament-name-1').value = data.tName;
-                            localStorage.setItem('tbh_t1', data.tName);
+                            localStorage.setItem('tbh_t1_v2', data.tName);
                         }
 
                         if (data.p1Stats) {

@@ -37,10 +37,7 @@
     }
   </script>
   <style>
-    /* ★修正：ここでタップの反応速度を最適化しています */
-    body { background-color: #0a0e17; color: #e2e8f0; touch-action: manipulation; }
-    button { touch-action: manipulation; }
-    
+    body { background-color: #0a0e17; color: #e2e8f0; }
     .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
     
     .neon-orange { box-shadow: 0 0 10px rgba(249, 115, 22, 0.6); }
@@ -60,7 +57,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #ea580c; }
   </style>
 </head>
-<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden">
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden cursor-pointer">
 
   <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-orange flex flex-col justify-center min-h-[80px] shrink-0">
     
@@ -92,16 +89,20 @@
     
     <div id="view-participants" class="h-full flex flex-col max-w-5xl mx-auto">
       <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0 bg-cyber-dark p-4 rounded-lg border border-cyber-table-border">
-        <label class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded cursor-pointer font-bold shadow text-xs md:text-sm text-cyber-orange transition-colors">
-          📁 CSV読込 <input type="file" id="csvInput" accept=".csv" class="hidden">
-        </label>
-        <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📋 テキスト貼付</button>
-        <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📦 画像DL(ZIP)</button>
-        <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors" title="データを削除して最初から">🗑 リセット</button>
+        <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+        <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+        
+        <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
         
         <div class="flex-grow"></div>
-        <button onclick="addParticipant()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 py-2 rounded font-bold shadow text-xs md:text-sm transition-transform active:scale-95">＋ 手動追加</button>
+        
+        <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
+          <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
+          <span>🖼️ ロゴ表示</span>
+        </label>
+        <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
       </div>
+      
 
       <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-orange rounded-lg text-center mb-4" style="box-shadow:0 0 10px rgba(249,115,22,0.4)">
         <p class="text-cyber-orange font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
@@ -150,16 +151,16 @@
     </div>
 
     <div id="view-ranking" class="hidden h-full flex-col max-w-5xl mx-auto">
-      <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
-        <h2 class="text-xl md:text-2xl font-sf text-cyber-orange border-l-4 border-cyber-orange pl-4">CURRENT RANKING</h2>
+      <div class="flex justify-between items-center mb-3 shrink-0">
         <div class="flex items-center gap-2">
-          <button onclick="toggleTvMode()" id="tv-mode-btn" class="bg-cyber-dark border border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white px-4 py-2 rounded-full font-bold font-sf shadow transition-all text-sm md:text-base">📺 TV MODE</button>
-          <div id="scroll-controls" class="hidden inline-flex gap-2">
-            <button onclick="scrollRemote(-200)" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold transition-all">🔼</button>
-            <button onclick="scrollRemote(200)" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold transition-all">🔽</button>
-          </div>
-          <button onclick="openExportModal()" id="export-csv-btn" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 md:px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#f97316] transition-transform active:scale-95 text-sm md:text-base">📋 EXPORT CSV</button>
+          <button id="tv-btn-ranking" onclick="toggleTvMode('view-ranking')" class="w-9 h-9 rounded-full border-2 border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#f97316]" title="モニター出力">📺</button>
+          <span id="tv-scroll-btns-ranking" class="hidden flex items-center gap-1">
+            <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールUP">🔼</button>
+            <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
+          </span>
+          <h2 class="text-lg md:text-xl font-sf text-cyber-orange border-l-4 border-cyber-orange pl-3">CURRENT RANKING</h2>
         </div>
+        <button id="export-csv-btn" onclick="openExportModal()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-3 md:px-5 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#f97316] transition-transform active:scale-95 text-xs md:text-sm">📋 EXPORT CSV</button>
       </div>
 
       <div class="bg-cyber-dark border border-cyber-orange rounded-lg overflow-hidden flex-1 flex flex-col min-h-0 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
@@ -167,13 +168,13 @@
           <table class="w-full text-center border-collapse text-xs md:text-sm">
             <thead class="sticky top-0 bg-[#111827] z-10 text-cyber-orange font-sf text-[10px] md:text-xs border-b border-cyber-table-border shadow-md">
               <tr>
-                <th class="p-2 md:p-3">RANK</th>
-                <th class="p-2 md:p-3 text-left">NAME</th>
-                <th class="p-2 md:p-3 text-cyber-blue" title="現在のベイパワー">BP</th>
-                <th class="p-2 md:p-3">GAME</th>
-                <th class="p-2 md:p-3 text-cyber-green">WIN</th>
-                <th class="p-2 md:p-3 text-cyber-pink">LOSE</th>
-                <th class="p-2 md:p-3 text-yellow-400">WIN RATE</th>
+                <th class="p-2">RANK</th>
+                <th class="p-2 text-left">NAME</th>
+                <th class="p-2 text-cyber-blue" title="現在のベイパワー">BP</th>
+                <th class="p-2">GAME</th>
+                <th class="p-2 text-cyber-green">WIN</th>
+                <th class="p-2 text-cyber-pink">LOSE</th>
+                <th class="p-2 text-yellow-400">WIN RATE</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -182,9 +183,7 @@
       </div>
     </div>
 
-  </div> 
-  
-  <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+  </div> <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-orange neon-orange flex flex-col h-[60vh]">
       <h2 class="text-xl font-sf text-cyber-orange mb-2">📋 BATCH IMPORT</h2>
       <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
@@ -377,7 +376,9 @@
     // ==========================================
     let peer = null; 
     let conn = null;
+    let isTvMode = false;
     let activeNextBattleId = null;
+    let logoDisplayEnabled = true;
 
     function initPeer() {
       if (peer) { peer.destroy(); }
@@ -393,7 +394,7 @@
 
     function resetLinkUI() {
       const btn = document.getElementById('btn-connect');
-      btn.innerText = "CONNECT"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
+      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-orange'); btn.classList.replace('border-cyber-green', 'border-cyber-orange');
       document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
       conn = null;
     }
@@ -423,91 +424,6 @@
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
-    }
-    
-    // TVモード管理
-    let isTvMode = false;
-    
-    function toggleTvMode() {
-        isTvMode = !isTvMode;
-        const btn = document.getElementById('tv-mode-btn');
-        const csvBtn = document.getElementById('export-csv-btn');
-        const scrollControls = document.getElementById('scroll-controls');
-        
-        if (isTvMode) {
-            btn.classList.add('bg-emerald-500', 'text-white');
-            btn.classList.remove('bg-cyber-dark', 'text-emerald-500');
-            csvBtn.classList.add('hidden');
-            scrollControls.classList.remove('hidden');
-            
-            if (!conn || !conn.open) {
-                alert("⚠️ HUDがリンクされていません");
-                return;
-            }
-            
-            // ランキング表のHTMLを送信
-            const rankingHTML = document.getElementById('rankingBody').outerHTML;
-            conn.send({
-                type: 'SHOW_OVERLAY',
-                html: `
-                    <div class="text-emerald-400 font-bold text-6xl mb-8" style="font-family: 'Orbitron', sans-serif;">CURRENT RANKING</div>
-                    <table class="w-full text-center border-collapse text-3xl">
-                        <thead class="text-emerald-400" style="font-family: 'Orbitron', sans-serif;">
-                            <tr class="border-b-4 border-emerald-500">
-                                <th class="p-6">RANK</th>
-                                <th class="p-6 text-left">NAME</th>
-                                <th class="p-6">BP</th>
-                                <th class="p-6">GAME</th>
-                                <th class="p-6">WIN</th>
-                                <th class="p-6">LOSE</th>
-                                <th class="p-6">WIN RATE</th>
-                            </tr>
-                        </thead>
-                        ${rankingHTML.replace(/class="[^"]*"/g, 'style="padding: 1.5rem; border-bottom: 2px solid #374151;"')}
-                    </table>
-                `
-            });
-        } else {
-            btn.classList.remove('bg-emerald-500', 'text-white');
-            btn.classList.add('bg-cyber-dark', 'text-emerald-500');
-            csvBtn.classList.remove('hidden');
-            scrollControls.classList.add('hidden');
-            
-            if (conn && conn.open) {
-                conn.send({ type: 'HIDE_OVERLAY' });
-            }
-        }
-    }
-    
-    function scrollRemote(amount) {
-        if (conn && conn.open && isTvMode) {
-            conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
-        }
-    }
-    
-    function showNextBattle(battleId, p1, p2) {
-        if (!conn || !conn.open) {
-            alert('⚠️ TV接続が必要です');
-            return;
-        }
-        
-        // 同じ試合を再度押した場合は非表示
-        if (activeNextBattleId === battleId) {
-            conn.send({ type: 'HIDE_OVERLAY' });
-            activeNextBattleId = null;
-            return;
-        }
-        
-        // 次戦告知を表示
-        conn.send({
-            type: 'NEXT_BATTLE_CALL',
-            p1: p1,
-            p2: p2,
-            themeColor: '#10b981', // Freebattle用カラー（emerald-500）
-            isTag: false
-        });
-        
-        activeNextBattleId = battleId;
     }
 
     // ==========================================
@@ -542,14 +458,14 @@
     }
 
     function openRemoteModal(matchId) {
-        // 告知画面を自動で閉じる
-        if (conn && conn.open) {
-            conn.send({ type: 'HIDE_OVERLAY' });
-            activeNextBattleId = null;
-        }
-        
         const match = matches.find(m => m.id === matchId);
         if(!match) return;
+        // リモコン画面を開く際、score.htmlの次戦予告を閉じる
+        if (conn && conn.open) {
+            conn.send({ type: 'HIDE_PREVIEW' });
+        }
+        if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+        activeNextBattleId = null;
         
         currentRemoteMatch = match;
         isRemoteSwapped = false;
@@ -637,6 +553,7 @@
             winnerVal = isRemoteSwapped ? 1 : 2;
         }
         
+        // リモコンから勝敗を決めた場合は、マッチリスト側にも反映
         currentRemoteMatch.winner = winnerVal;
         recalculateAllStats();
         renderMatches();
@@ -737,27 +654,6 @@
       if(!confirm("削除しますか？\n※すでに対戦が組まれている場合はエラーになる可能性があります。")) return;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
-    
-    document.getElementById('csvInput').addEventListener('change', function(e) {
-      const file = e.target.files[0]; if(!file) return;
-      const reader = new FileReader(); reader.onload = function(event) {
-        event.target.result.split(/\r\n|\n/).forEach(line => {
-          if(!line.trim() || participants.length >= 32) return; const cols = line.split(',');
-          if(cols[0]) {
-            let initialPower = parseInt(cols[3]) || 1500;
-            let initialMatches = parseInt(cols[4]) || 0;
-            let initialWins = parseInt(cols[5]) || 0;
-            let initialLoses = parseInt(cols[6]) || 0;
-            participants.push({ 
-              id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
-              initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
-              currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-              bayChecked: false, bayImage: null
-            });
-          }
-        }); e.target.value = ''; renderParticipants();
-      }; reader.readAsText(file);
-    });
 
     function toggleParticipantSort(mode) {
         participantSortMode = mode;
@@ -818,7 +714,7 @@
     }
     
     function reTakePhoto() {
-        document.getElementById('cameraInput').click(); 
+        document.getElementById('cameraInput').click();
     }
 
     document.getElementById('cameraInput').addEventListener('change', function(e) {
@@ -962,15 +858,19 @@
             const onclick2 = `onclick="setMatchWinner(${m.id}, 2)"`;
 
             const sendBtn = !isFinished 
-                ? `<div class="flex flex-col gap-1">
-                     <button onclick="showNextBattle(${m.id}, '${m.p1.name.replace(/'/g, "\\'")}', '${m.p2.name.replace(/'/g, "\\'")}') " class="bg-transparent text-emerald-500 border border-emerald-500 hover:bg-emerald-500 hover:text-white text-[10px] font-sf px-2 py-1 rounded transition-colors">📢</button>
-                     <button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-orange border border-cyber-orange hover:bg-cyber-orange hover:text-white text-[10px] font-sf px-1 py-1 rounded transition-colors shadow-sm">REMOTE</button>
-                   </div>` 
+                ? `<button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-orange border border-cyber-orange hover:bg-cyber-orange hover:text-white text-[10px] font-sf px-1 py-1 rounded transition-colors shadow-sm">REMOTE</button>` 
                 : `<span class="text-cyber-text text-xs font-sf opacity-50">VS</span>`;
+
+            const nextBtn = !isFinished
+                ? `<button onclick="sendNextBattle(${m.id},'${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','FREE MATCH','')" class="text-base leading-none shrink-0" title="NEXT BATTLE 予告">📢</button>`
+                : '';
 
             list.innerHTML += `
             <div class="flex items-center justify-between p-2 rounded-lg border ${bgClass} shadow-sm transition-colors mb-3 gap-2">
-                <span class="text-[10px] font-sf text-cyber-blue opacity-50 w-6 shrink-0 text-center">#${m.id}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                    ${nextBtn}
+                    <span class="text-[10px] font-sf text-cyber-blue opacity-50 w-6 text-center">#${m.id}</span>
+                </div>
                 <button class="${p1Class} text-left flex items-center gap-1" ${onclick1}>
                     <span class="truncate">${m.p1.name}</span>
                 </button>
@@ -1014,11 +914,58 @@
                 </tr>
             `;
         });
+        if (isTvMode) {
+            const content = document.getElementById('view-ranking').innerHTML;
+            if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
+        }
     }
 
     // ==========================================
     // CSVエクスポート機能
     // ==========================================
+    function sendNextBattle(matchId, p1, p2, stage, round) {
+        if (activeNextBattleId === matchId) {
+            if (conn) conn.send({ type: 'HIDE_PREVIEW' });
+            activeNextBattleId = null;
+        } else {
+            const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
+            if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled });
+            activeNextBattleId = matchId;
+        }
+    }
+
+    function toggleLogoDisplay() {
+      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
+    }
+
+    function scrollRemote(amount) {
+        if (conn) conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
+    }
+
+    function toggleTvMode(viewId) {
+        isTvMode = !isTvMode;
+        const btn = document.getElementById('tv-btn-ranking');
+        const csvBtn = document.getElementById('export-csv-btn');
+        const scrollBtns = document.getElementById('tv-scroll-btns-ranking');
+        if (isTvMode) {
+            // TVモード送信前にHTMLからTVボタンを一時削除
+            const container = document.getElementById(viewId);
+            const clone = container.cloneNode(true);
+            const tvBtn = clone.querySelector('#tv-btn-ranking');
+            if (tvBtn) tvBtn.style.display = 'none';
+            if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
+            btn.style.cssText = 'background:#f97316;color:#fff;box-shadow:0 0 16px #f97316,0 0 32px #f97316;border-color:#f97316;';
+            if (csvBtn) csvBtn.classList.add('hidden');
+            // TVモード時はスクロールボタンを非表示
+            if (scrollBtns) scrollBtns.classList.add('hidden');
+        } else {
+            if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+            btn.style.cssText = '';
+            if (csvBtn) csvBtn.classList.remove('hidden');
+            if (scrollBtns) scrollBtns.classList.add('hidden');
+        }
+    }
+
     function openExportModal() {
       let exportText = "";
       matches.forEach(m => {
