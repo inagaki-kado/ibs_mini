@@ -2160,8 +2160,8 @@ UX,ワイバーンホバー,ワイバーンホバー,1`;
       const paths = {
         'BX': ['BX'],
         'UX': ['UX'],
-        'CX': ['RC', 'MB', 'AB'],
-        'CXEX': ['RC', 'MTB', 'OB', 'AB']
+        'CX': ['RC', 'CX', 'AB'],      // CX = メインブレード
+        'CXEX': ['RC', 'MB', 'OB', 'AB']  // MB = メタルブレード
       };
       
       const basePath = paths[typeId] || [];
@@ -2190,8 +2190,8 @@ UX,ワイバーンホバー,ワイバーンホバー,1`;
         'BX': 'BXブレード',
         'UX': 'UXブレード',
         'RC': 'ロックチップ',
-        'MB': 'メインブレード',
-        'MTB': 'メタルブレード',
+        'CX': 'メインブレード',
+        'MB': 'メタルブレード',
         'OB': 'オーバーブレード',
         'AB': 'アシストブレード',
         'RC2': 'ラチェット',
@@ -2258,10 +2258,12 @@ UX,ワイバーンホバー,ワイバーンホバー,1`;
       } else if (type === 'UX') {
         name = currentBeybladeSelection.UX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
       } else if (type === 'CX') {
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + 
+        // CX: ロックチップ + メインブレード(CX) + アシストブレード + ラチェット + ビット
+        name = currentBeybladeSelection.RC + currentBeybladeSelection.CX + 
                currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
       } else if (type === 'CXEX') {
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.MTB + 
+        // CXEX: ロックチップ + メタルブレード(MB) + オーバーブレード + アシストブレード + ラチェット + ビット
+        name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + 
                currentBeybladeSelection.OB + currentBeybladeSelection.AB + 
                currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
       }
