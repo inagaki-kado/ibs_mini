@@ -164,9 +164,28 @@
         
         #replay-indicator { position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
 
-        #remote-content-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 90; background: rgba(0,0,0,0.97); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 0; font-size: 18px; }
+        #remote-content-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 90; 
+            background: rgba(0,0,0,0.97); 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            -webkit-overflow-scrolling: touch; 
+            padding: 1rem; 
+            font-size: clamp(14px, 3.5vw, 18px);
+            box-sizing: border-box;
+        }
         #remote-content-overlay.hidden { display: none !important; }
-        #remote-content-overlay * { pointer-events: none !important; cursor: default !important; }
+        #remote-content-overlay * { 
+            pointer-events: none !important; 
+            cursor: default !important; 
+            max-width: 100%;
+            box-sizing: border-box;
+        }
         #remote-content-overlay button,
         #remote-content-overlay [onclick],
         #remote-content-overlay input { pointer-events: none !important; cursor: default !important; }
@@ -185,10 +204,11 @@
         #next-battle-content { position: relative; z-index: 1; width: 100%; }
         @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
-        .nb-vs-container { display: flex; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 4vw, 60px); margin: 2rem 0; }
-        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(22px, 5.5vw, 80px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; flex: 1; max-width: 40%; }
-        .nb-p1 { text-align: right; text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
-        .nb-p2 { text-align: left; text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
+        .nb-vs-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 3vw, 40px); margin: 2rem 0; }
+        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(26px, 6vw, 90px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
+        .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
+        .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
         
         /* 使用ベイブレード表示欄 */
@@ -237,9 +257,49 @@
         /* 文字数に応じた自動縮小 */
         .beyblade-text[data-length="long"] { font-size: clamp(11px, 1.8vw, 18px); }
         .beyblade-text[data-length="verylong"] { font-size: clamp(9px, 1.5vw, 15px); }
+        
+        /* ベイブレード名の個別表示枠（大会名の上、左右端） */
+        .beyblade-box {
+            position: fixed;
+            top: 8px;
+            z-index: 76;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid;
+            box-shadow: 0 0 12px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: clamp(14px, 2vw, 20px);
+            font-weight: 700;
+            font-style: italic;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            max-width: 35vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: none; /* デフォルトは非表示 */
+        }
+        .beyblade-box.p1 {
+            left: 8px;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+        }
+        .beyblade-box.p2 {
+            right: 8px;
+            border-color: #ec4899;
+            box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+        }
+        body.pro-mode .beyblade-box {
+            display: block; /* プロモードでのみ表示 */
+        }
     </style>
 </head>
 <body>
+    <!-- ベイブレード名の個別表示枠 -->
+    <div id="beyblade-box-p1" class="beyblade-box p1"></div>
+    <div id="beyblade-box-p2" class="beyblade-box p2"></div>
+    
     <!-- Monitor overlay: receives HTML from admin apps via PeerJS -->
     <div id="remote-content-overlay" class="hidden"></div>
 
@@ -322,11 +382,9 @@
     <!-- 使用ベイブレード表示欄 -->
     <div id="beyblade-display-bar">
         <div class="beyblade-info">
-            <span class="beyblade-label">P1:</span>
             <span class="beyblade-text" id="beyblade-display-p1">-</span>
         </div>
         <div class="beyblade-info">
-            <span class="beyblade-label">P2:</span>
             <span class="beyblade-text" id="beyblade-display-p2">-</span>
         </div>
     </div>
@@ -522,12 +580,31 @@
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
             if (t === 'XTREME') {
+                // XTREME FINISH専用の派手なエフェクト
                 const body = document.body;
-                body.style.transition = 'background 0.05s';
-                body.style.background = 'rgba(255,0,85,0.35)';
-                setTimeout(() => { body.style.background = ''; }, 100);
-                setTimeout(() => { body.style.background = 'rgba(255,0,85,0.2)'; }, 180);
-                setTimeout(() => { body.style.background = ''; }, 300);
+                body.style.transition = 'background 0.03s';
+                
+                // 連続フラッシュ（7回）
+                for (let i = 0; i < 7; i++) {
+                    setTimeout(() => {
+                        body.style.background = i % 2 === 0 ? 'rgba(255,215,0,0.5)' : 'rgba(255,0,85,0.5)';
+                    }, i * 80);
+                }
+                
+                // 最後にフェードアウト
+                setTimeout(() => {
+                    body.style.transition = 'background 0.5s';
+                    body.style.background = '';
+                }, 560);
+                
+                // 画面シェイク効果
+                const mainHud = document.getElementById('main-hud');
+                if (mainHud) {
+                    mainHud.style.animation = 'shake 0.5s ease-in-out';
+                    setTimeout(() => {
+                        mainHud.style.animation = '';
+                    }, 500);
+                }
             }
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
             
@@ -936,13 +1013,15 @@
          */
         function updateBeybladeBar(playerNum, beybladeName) {
             const displayEl = document.getElementById(`beyblade-display-p${playerNum}`);
+            const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
+            const beyBar = document.getElementById('beyblade-display-bar');
             
             if (!displayEl) {
                 console.warn(`⚠️ beyblade-display-p${playerNum} が見つかりません`);
                 return;
             }
 
-            // テキスト更新
+            // テキスト更新（下部バー）
             displayEl.textContent = beybladeName || '-';
             
             // 文字数に応じてサイズ調整
@@ -955,7 +1034,29 @@
                 displayEl.removeAttribute('data-length');
             }
             
-            console.log(`✅ P${playerNum}の下部バー更新: ${beybladeName}`);
+            // 個別枠の更新
+            if (boxEl) {
+                if (beybladeName) {
+                    boxEl.textContent = beybladeName;
+                    boxEl.style.display = 'block';
+                } else {
+                    boxEl.textContent = '';
+                    boxEl.style.display = 'none';
+                }
+            }
+            
+            // 下部バーの表示/非表示制御（両方とも未登録なら非表示）
+            if (beyBar) {
+                const p1Text = document.getElementById('beyblade-display-p1').textContent;
+                const p2Text = document.getElementById('beyblade-display-p2').textContent;
+                if (p1Text === '-' && p2Text === '-') {
+                    beyBar.style.display = 'none';
+                } else {
+                    beyBar.style.display = 'flex';
+                }
+            }
+            
+            console.log(`✅ P${playerNum}のベイ名更新: ${beybladeName}`);
         }
 
         /**
@@ -966,7 +1067,7 @@
             beybladeP2 = '';
             document.querySelectorAll('.beyblade-name').forEach(el => el.remove());
             
-            // 下部バーもクリア
+            // 下部バーと個別枠をクリア
             updateBeybladeBar(1, '');
             updateBeybladeBar(2, '');
         }
