@@ -119,13 +119,18 @@
             <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
             <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
+            <button onclick="exportParticipantsCSV()" ontouchend="handleTouch(event,exportParticipantsCSV)" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
             <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
 
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
             <div class="flex-grow"></div>
             
-            <button onclick="toggleEffectMode()" ontouchend="handleTouch(event,toggleEffectMode)" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
+            <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
+              <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
+              <span>🖼️ ロゴ表示</span>
+            </label>
+            <button onclick="toggleEffectMode()" ontouchend="handleTouch(event,toggleEffectMode)" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
             <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -221,15 +226,15 @@
           </span>
           <h2 class="text-xl md:text-2xl text-cyber-blue font-sf" id="resultTournamentName"></h2>
         </div>
-        <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
-        <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
-        <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-        <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
-        <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
-          <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
-          <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
+        <h1 class="text-3xl md:text-4xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
+        <p class="text-3xl md:text-4xl font-bold mb-4 md:mb-6 text-white" id="res1"></p>
+        <h2 class="text-xl md:text-2xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+        <p class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-white" id="res2"></p>
+        <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-3 md:pt-4">
+          <div><h3 class="text-base md:text-lg text-orange-400 font-sf mb-1">🥉 3RD PLACE</h3><p class="text-lg md:text-xl font-bold text-white" id="res3"></p></div>
+          <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
         </div>
-        <div class="flex justify-center gap-4 mt-6 md:mt-10">
+        <div class="flex justify-center gap-4 mt-4 md:mt-6">
           <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
           <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
         </div>
@@ -250,6 +255,49 @@
       </div>
     </div>
     <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+
+  <!-- ベイブレード登録モーダル -->
+  <div id="beybladeModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3">
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-blue tracking-widest">BEYBLADE REGISTRATION</h2>
+        <button onclick="closeBeybladeModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
+      </div>
+
+      <div id="beybladeContent" class="flex flex-col gap-4">
+        <!-- ベイブレードリスト表示エリア -->
+        <div id="beybladeList" class="space-y-3"></div>
+        
+        <!-- 追加ボタン -->
+        <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
+          ＋ ベイブレードを追加
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ベイブレード選択モーダル -->
+  <div id="beybladeSelectModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[110] p-4 overflow-y-auto">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-green neon-green flex flex-col relative my-8 max-h-[90vh]">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-green tracking-widest" id="selectModalTitle">SELECT TYPE</h2>
+        <button onclick="closeBeybladeSelectModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
+      </div>
+
+      <div id="selectContent" class="flex-1 overflow-y-auto">
+        <!-- 選択肢が動的に表示される -->
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-cyber-table-border flex gap-3 shrink-0">
+        <button id="selectBackBtn" onclick="beybladeSelectBack()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-2 rounded font-bold font-sf hover:bg-cyber-blue/20 transition-colors">
+          ← 戻る
+        </button>
+        <button onclick="cancelBeybladeSelect()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-2 rounded font-bold font-sf hover:bg-cyber-pink/20 transition-colors">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
 
   </div>
 
@@ -272,6 +320,18 @@
         <div class="flex-1 flex justify-start items-center gap-2 overflow-hidden">
             <span id="remote-right-score" class="text-3xl md:text-4xl font-mono text-white font-bold shrink-0 mr-1 w-8 text-center drop-shadow-[0_0_8px_#fff]">0</span>
             <span id="remote-right-name" class="truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left">Player 2</span>
+        </div>
+      </div>
+
+      <!-- 使用ベイ選択ボタン -->
+      <div id="beyblade-select-area" class="flex justify-between gap-4 mb-4 shrink-0">
+        <div class="flex-1 flex flex-col gap-1">
+          <div class="text-xs text-cyber-blue font-sf mb-1 text-center">LEFT 使用ベイ</div>
+          <div class="flex flex-col gap-1" id="remote-left-beyblades"></div>
+        </div>
+        <div class="flex-1 flex flex-col gap-1">
+          <div class="text-xs text-cyber-pink font-sf mb-1 text-center">RIGHT 使用ベイ</div>
+          <div class="flex flex-col gap-1" id="remote-right-beyblades"></div>
         </div>
       </div>
 
@@ -354,6 +414,13 @@
     let globalBlockSize = 8;
     let blockMap = {}; let blockData = {}; let blockCapacities = {}; let blockActivePositions = {};
     let blockMatches = {}; let finals = {}; const BYE = { id: 'BYE', name: 'BYE (シード)' };
+
+    // ベイブレード管理用変数
+    let currentBeybladeParticipantId = null;
+    let currentBeybladeSelection = {};
+    let beybladeSelectionStep = 0;
+    let beybladeSelectionPath = [];
+    let currentEditingBeybladeIndex = -1;
     let currentCheckId = null; let currentLotteryId = null;
 
     let isSetupSwapMode = false;
@@ -423,6 +490,7 @@
     let isTvMode_active = false;
     let isTvMode_results = false;
     let activeNextBattleId = null;
+    let logoDisplayEnabled = true;
 
     function initPeer() {
       if (peer) peer.destroy();
@@ -487,6 +555,10 @@
     }
 
     function openRemoteModal(block, roundIdx, matchIdx) {
+        // リモコン画面を開く際、score.htmlの次戦予告を閉じる
+        if (conn && conn.open) {
+            conn.send({ type: 'HIDE_PREVIEW' });
+        }
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
         let match;
@@ -495,7 +567,9 @@
         if (!match || !match.p1 || !match.p2) return;
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
-        updateRemoteNamesUI(); updateRemoteScoreUI();
+        updateRemoteNamesUI(); 
+        updateRemoteScoreUI();
+        updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
@@ -531,12 +605,92 @@
     function handleRemoteSwap() {
         isRemoteSwapped = !isRemoteSwapped;
         let tempScore = remoteScoreLeft; remoteScoreLeft = remoteScoreRight; remoteScoreRight = tempScore;
-        updateRemoteNamesUI(); updateRemoteScoreUI(); sendRemoteCmd('SYS_SWAP');
+        updateRemoteNamesUI(); 
+        updateRemoteScoreUI(); 
+        updateRemoteBeybladeButtons(); // ベイ選択ボタンも更新
+        sendRemoteCmd('SYS_SWAP');
+    }
+
+    function updateRemoteBeybladeButtons() {
+        if (!currentRemoteMatch) return;
+        const m = currentRemoteMatch.match;
+        
+        const leftContainer = document.getElementById('remote-left-beyblades');
+        const rightContainer = document.getElementById('remote-right-beyblades');
+        
+        leftContainer.innerHTML = '';
+        rightContainer.innerHTML = '';
+        
+        // 左側のプレイヤー（スワップ考慮）
+        const leftPlayer = isRemoteSwapped ? m.p2 : m.p1;
+        const rightPlayer = isRemoteSwapped ? m.p1 : m.p2;
+        const leftPlayerName = isRemoteSwapped ? 'P2' : 'P1';
+        const rightPlayerName = isRemoteSwapped ? 'P1' : 'P2';
+        
+        // 左側のベイボタン
+        if (leftPlayer.beyblades && leftPlayer.beyblades.length > 0) {
+            leftPlayer.beyblades.forEach((bey, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${idx + 1}. ${bey.name}`;
+                btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf text-xs rounded hover:bg-cyber-blue hover:text-white transition-colors truncate';
+                btn.onclick = () => selectBeyblade(leftPlayerName, bey.name);
+                leftContainer.appendChild(btn);
+            });
+        } else {
+            // ベイ未登録
+            for (let i = 0; i < 3; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = 'ー';
+                btn.className = 'py-2 px-3 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf text-xs rounded cursor-not-allowed';
+                btn.disabled = true;
+                leftContainer.appendChild(btn);
+            }
+        }
+        
+        // 右側のベイボタン
+        if (rightPlayer.beyblades && rightPlayer.beyblades.length > 0) {
+            rightPlayer.beyblades.forEach((bey, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${idx + 1}. ${bey.name}`;
+                btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf text-xs rounded hover:bg-cyber-pink hover:text-white transition-colors truncate';
+                btn.onclick = () => selectBeyblade(rightPlayerName, bey.name);
+                rightContainer.appendChild(btn);
+            });
+        } else {
+            // ベイ未登録
+            for (let i = 0; i < 3; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = 'ー';
+                btn.className = 'py-2 px-3 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf text-xs rounded cursor-not-allowed';
+                btn.disabled = true;
+                rightContainer.appendChild(btn);
+            }
+        }
+    }
+
+    function selectBeyblade(player, beybladeName) {
+        // SET_BEYBLADEメッセージをscore.htmlに送信
+        sendBeybladeSelection(player, beybladeName);
     }
 
     function handleRemoteWinner(side) {
         if (!currentRemoteMatch) return;
         let winnerVal = (side === 'left') ? (isRemoteSwapped ? 2 : 1) : (isRemoteSwapped ? 1 : 2);
+        
+        // ▼ スコア保存処理
+        const match = currentRemoteMatch.match;
+        let scoreP1, scoreP2;
+        if (isRemoteSwapped) {
+          scoreP1 = remoteScoreRight;
+          scoreP2 = remoteScoreLeft;
+        } else {
+          scoreP1 = remoteScoreLeft;
+          scoreP2 = remoteScoreRight;
+        }
+        // スコアを "4-2" 形式で保存
+        match.score = `${scoreP1}-${scoreP2}`;
+        // ▲ スコア保存処理ここまで
+        
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
         closeRemoteModal();
     }
@@ -650,7 +804,7 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            bayChecked: false, bayImage: null, color: null, position: null }); count++;
+            bayChecked: false, bayImage: null, beyblades: [], color: null, position: null }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！`);
@@ -661,7 +815,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, bayImage: null, color: null, position: null });
+          bayChecked: false, bayImage: null, beyblades: [], color: null, position: null });
       renderParticipants();
     }
     
@@ -746,8 +900,10 @@
         } else {
             lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
         }
-        const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        const beyCount = (p.beyblades || []).length;
+        const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
+        const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🎯${beyBadge}</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -937,6 +1093,45 @@
         const x = canvas.width - 20; const y1 = 20; const y2 = 20 + fontSize * 1.2;
         ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
         ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
+        
+        // 使用ベイ名を描画（参加者名の下に、1行目左揃え/2行目中央/3行目右揃え）
+        if (p.beyblades && p.beyblades.length > 0) {
+          const beyFontSize = Math.max(img.width / 20, 24);
+          ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
+          ctx.fillStyle = '#22c55e'; // 緑色
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = beyFontSize / 20;
+          ctx.textBaseline = 'top';
+          
+          let yOffset = y2 + fontSize * 1.5; // 参加者名の下から開始
+          
+          // ベイ1: 左揃え
+          if (p.beyblades[0]) {
+            ctx.textAlign = 'left';
+            const bey1Name = p.beyblades[0].name || 'ー';
+            ctx.strokeText(bey1Name, 20, yOffset);
+            ctx.fillText(bey1Name, 20, yOffset);
+            yOffset += beyFontSize * 1.2;
+          }
+          
+          // ベイ2: 中央揃え
+          if (p.beyblades[1]) {
+            ctx.textAlign = 'center';
+            const bey2Name = p.beyblades[1].name || 'ー';
+            ctx.strokeText(bey2Name, canvas.width / 2, yOffset);
+            ctx.fillText(bey2Name, canvas.width / 2, yOffset);
+            yOffset += beyFontSize * 1.2;
+          }
+          
+          // ベイ3: 右揃え
+          if (p.beyblades[2]) {
+            ctx.textAlign = 'right';
+            const bey3Name = p.beyblades[2].name || 'ー';
+            ctx.strokeText(bey3Name, canvas.width - 20, yOffset);
+            ctx.fillText(bey3Name, canvas.width - 20, yOffset);
+          }
+        }
+        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         p.bayImage = dataUrl; p.bayChecked = true;
         document.getElementById('resultImage').src = dataUrl;
@@ -958,20 +1153,169 @@
         if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
         const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
         const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
+        
+        // 画像を追加
         checkedParticipants.forEach(p => {
             const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
             folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
         });
+        
+        // CSVファイルを作成
+        let csvContent = '\uFEFF'; // BOM（UTF-8）
+        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
+        
+        checkedParticipants.forEach(p => {
+            const name = p.name || '';
+            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
+            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
+            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
+            
+            // CSVエスケープ処理（カンマや改行、ダブルクォートを含む場合）
+            const escapeCsv = (str) => {
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            };
+            
+            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
+        });
+        
+        // CSVファイルをZIPに追加
+        folder.file(`${safeTournamentName}_参加者リスト.csv`, csvContent);
+        
         zip.generateAsync({type:"blob"}).then(function(content) {
             const link = document.createElement('a'); link.href = URL.createObjectURL(content);
             link.download = `${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
         });
     }
 
+    function exportParticipantsCSV() {
+        if (participants.length === 0) {
+            alert("参加者がいません。");
+            return;
+        }
+        
+        // CSVテキストを生成
+        let csvContent = '\uFEFF'; // BOM（UTF-8）
+        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
+        
+        participants.forEach(p => {
+            const name = p.name || '';
+            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
+            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
+            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
+            
+            // CSVエスケープ処理
+            const escapeCsv = (str) => {
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            };
+            
+            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
+        });
+        
+        // クリップボードにコピーを試みる
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(csvContent).then(() => {
+                alert("📋 CSVテキストをクリップボードにコピーしました！");
+            }).catch(err => {
+                // コピー失敗時はテキストエリアに表示
+                showCSVModal(csvContent);
+            });
+        } else {
+            // クリップボード非対応の場合はモーダルで表示
+            showCSVModal(csvContent);
+        }
+    }
+    
+    function showCSVModal(csvText) {
+        // 簡易モーダルでCSVテキストを表示
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        
+        const content = document.createElement('div');
+        content.style.cssText = 'background:#111827;border:2px solid #0ea5e9;border-radius:8px;padding:20px;max-width:90%;max-height:80%;overflow:auto;';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'CSV出力結果';
+        title.style.cssText = 'color:#0ea5e9;margin-bottom:10px;font-weight:bold;';
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = csvText;
+        textarea.style.cssText = 'width:100%;min-height:200px;background:#0a0e17;color:#e2e8f0;border:1px solid #374151;border-radius:4px;padding:10px;font-family:monospace;';
+        textarea.readOnly = true;
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = '📋 コピー';
+        copyBtn.style.cssText = 'background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:4px;margin-right:10px;cursor:pointer;font-weight:bold;';
+        copyBtn.onclick = () => {
+            textarea.select();
+            document.execCommand('copy');
+            alert('コピーしました！');
+        };
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '閉じる';
+        closeBtn.style.cssText = 'background:#374151;color:white;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;';
+        closeBtn.onclick = () => document.body.removeChild(modal);
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'margin-top:15px;';
+        btnContainer.appendChild(copyBtn);
+        btnContainer.appendChild(closeBtn);
+        
+        content.appendChild(title);
+        content.appendChild(textarea);
+        content.appendChild(btnContainer);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+    }
+
+
     // ==========================================
     // トーナメント進行
     // ==========================================
     function startTournament() {
+      // ▼ オート抽選機能: 未抽選の参加者を自動配置
+      const unlotteryParticipants = participants.filter(p => p.color === null);
+      if (unlotteryParticipants.length > 0) {
+        // 空いている枠をすべて取得
+        const allEmptySlots = [];
+        colors.forEach(c => {
+          blockActivePositions[c].forEach(idx => {
+            if (blockData[c][idx] === null) {
+              allEmptySlots.push({ color: c, position: idx });
+            }
+          });
+        });
+
+        if (allEmptySlots.length < unlotteryParticipants.length) {
+          alert(`空き枠が不足しています。\n未抽選: ${unlotteryParticipants.length}名\n空き枠: ${allEmptySlots.length}枠`);
+          return;
+        }
+
+        // シャッフル
+        for (let i = allEmptySlots.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [allEmptySlots[i], allEmptySlots[j]] = [allEmptySlots[j], allEmptySlots[i]];
+        }
+
+        // 未抽選者を順番に配置
+        unlotteryParticipants.forEach((p, i) => {
+          const slot = allEmptySlots[i];
+          p.color = slot.color;
+          p.position = slot.position;
+          blockData[slot.color][slot.position] = p;
+        });
+
+        alert(`オート抽選完了！\n${unlotteryParticipants.length}名を自動配置しました。`);
+        renderParticipants();
+      }
+      // ▲ オート抽選機能ここまで
+
       if(!confirm("トーナメントを開始しますか？")) return;
       isSetupSwapMode = false; setupSwapPending = null;
       if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
@@ -984,18 +1328,18 @@
       ['A', 'B', 'C', 'D'].forEach(bName => {
         const color = colors.find(c => blockMap[c] === bName); const members = blockData[color]; let rounds = [];
         if (globalBlockSize === 8) {
-          let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
-          rounds = [ r1, [ {p1:null,p2:null,winner:null}, {p1:null,p2:null,winner:null} ], [ {p1:null,p2:null,winner:null} ] ];
+          let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
+          rounds = [ r1, [ {p1:null,p2:null,winner:null,score:null}, {p1:null,p2:null,winner:null,score:null} ], [ {p1:null,p2:null,winner:null,score:null} ] ];
         } else if (globalBlockSize === 4) {
-          let r1 = []; for(let i=0; i<4; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
-          rounds = [ r1, [ {p1:null,p2:null,winner:null} ] ];
+          let r1 = []; for(let i=0; i<4; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
+          rounds = [ r1, [ {p1:null,p2:null,winner:null,score:null} ] ];
         } else if (globalBlockSize === 2) {
-          let r1 = []; for(let i=0; i<2; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
+          let r1 = []; for(let i=0; i<2; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
           rounds = [ r1 ];
         }
         blockMatches[bName] = rounds;
       });
-      finals = { sf: [{p1:null,p2:null,winner:null},{p1:null,p2:null,winner:null}], third: {p1:null,p2:null,winner:null}, f: {p1:null,p2:null,winner:null} };
+      finals = { sf: [{p1:null,p2:null,winner:null,score:null},{p1:null,p2:null,winner:null,score:null}], third: {p1:null,p2:null,winner:null,score:null}, f: {p1:null,p2:null,winner:null,score:null} };
       updateAdvancements(); switchTab('tournament');
     }
 
@@ -1026,7 +1370,7 @@
     function autoProcessBye(match) { if (match.p1 && match.p2 && match.winner === null) { if (match.p1.id !== 'BYE' && match.p2.id === 'BYE') match.winner = 1; else if (match.p1.id === 'BYE' && match.p2.id !== 'BYE') match.winner = 2; else if (match.p1.id === 'BYE' && match.p2.id === 'BYE') match.winner = 0; } }
     function getW(match) { if (match.winner === 1) return match.p1; if (match.winner === 2) return match.p2; if (match.winner === 0) return BYE; return null; }
     function getL(match) { if (match.winner === 1) return match.p2; if (match.winner === 2) return match.p1; return null; }
-    function setNextMatch(match, newP1, newP2) { let changed = false; if (match.p1?.id !== newP1?.id) { match.p1 = newP1; changed = true; } if (match.p2?.id !== newP2?.id) { match.p2 = newP2; changed = true; } if (changed) match.winner = null; }
+    function setNextMatch(match, newP1, newP2) { let changed = false; if (match.p1?.id !== newP1?.id) { match.p1 = newP1; changed = true; } if (match.p2?.id !== newP2?.id) { match.p2 = newP2; changed = true; } if (changed) { match.winner = null; match.score = null; } }
 
     function updateAdvancements() {
       ['A', 'B', 'C', 'D'].forEach(bName => {
@@ -1053,7 +1397,16 @@
       if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
       else { match = blockMatches[block][roundIdx][matchIdx]; }
       if (match.p1.id === 'BYE' || match.p2.id === 'BYE' || !match.p1 || !match.p2) return;
-      match.winner = (match.winner === winnerVal) ? null : winnerVal; updateAdvancements();
+      
+      // 勝者をトグル（取り消し時はスコアもリセット）
+      if (match.winner === winnerVal) {
+        match.winner = null;
+        match.score = null;
+      } else {
+        match.winner = winnerVal;
+      }
+      
+      updateAdvancements();
     }
 
     function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
@@ -1077,9 +1430,20 @@
       const onclick1 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 1)"` : '';
       const onclick2 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 2)"` : '';
       const canSendToScore = canSelect && match.winner === null;
-      const vsArea = canSendToScore
-        ? `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`
-        : `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
+      
+      // ▼ スコア表示機能
+      let vsArea;
+      if (match.score) {
+        // スコアが記録されている場合は表示
+        vsArea = `<div class="flex flex-col items-center justify-center mx-1 min-w-[60px]"><span class="text-cyber-orange font-sf font-bold text-sm whitespace-nowrap">${match.score}</span></div>`;
+      } else if (canSendToScore) {
+        // 試合前の場合はREMOTEボタン
+        vsArea = `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`;
+      } else {
+        // それ以外はVS表示
+        vsArea = `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
+      }
+      // ▲ スコア表示機能ここまで
 
       const stageInfo = (block === 'finals') ? 'FINAL STAGE' : block + ' BLOCK';
       const roundInfo = (block === 'finals')
@@ -1095,12 +1459,17 @@
 
     function sendNextBattle(matchKey, p1, p2, stage, round) {
       if (activeNextBattleId === matchKey) {
-        if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+        if (conn) conn.send({ type: 'HIDE_PREVIEW' });
         activeNextBattleId = null;
       } else {
-        if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+        const label = `${stage} - ${round}`;
+        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled });
         activeNextBattleId = matchKey;
       }
+    }
+
+    function toggleLogoDisplay() {
+      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
     }
 
     function scrollRemote(amount) {
@@ -1115,7 +1484,12 @@
         const showBtn = document.getElementById('showResultsBtn');
         const scrollBtns = document.getElementById('tv-scroll-btns-active');
         if (isTvMode_active) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+          // TVモード送信前にHTMLからTVボタンを一時削除
+          const container = document.getElementById('tournamentActive');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-active');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorBlue;
           if (showBtn) showBtn.classList.add('hidden');
           if (scrollBtns) scrollBtns.classList.remove('hidden');
@@ -1131,10 +1505,16 @@
         const csvBtn = document.getElementById('results-export-csv-btn');
         const scrollBtns = document.getElementById('tv-scroll-btns-results');
         if (isTvMode_results) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('resultsModal').innerHTML });
+          // TVモード送信前にHTMLからTVボタンを一時削除
+          const container = document.getElementById('resultsModal');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-results');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorBlue;
           if (csvBtn) csvBtn.classList.add('hidden');
-          if (scrollBtns) scrollBtns.classList.remove('hidden');
+          // TVモード時はスクロールボタンを非表示
+          if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
           btn.style.cssText = '';
@@ -1173,7 +1553,14 @@
       document.getElementById('res3').innerText = getW(finals.third).name; document.getElementById('res4').innerText = getL(finals.third).name;
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
     }
-    function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+    function closeResults() {
+      // TVモードがONの場合、自動的に終了
+      if (isTvMode_results) {
+        toggleTvMode('results');
+      }
+      document.getElementById('resultsModal').classList.add('hidden');
+      document.getElementById('resultsModal').classList.remove('flex');
+    }
 
     function openExportModal() {
       let exportText = "";
@@ -1225,6 +1612,10 @@
         isTournamentStarted = s.isTournamentStarted || false;
         pidCounter = s.pidCounter || 1;
         participants = s.participants || [];
+        // 既存データにbeyblades配列がなければ追加
+        participants.forEach(p => {
+          if (!p.beyblades) p.beyblades = [];
+        });
         participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
         blockData = s.blockData || {};
@@ -1269,6 +1660,667 @@
         switchTab('participants');
       }
     }
+
+    // ==========================================
+    // parts.csv データ（埋め込み版）
+    // ==========================================
+    const PARTS_CSV_DATA = `パーツID,選択画面用名称,HUD表示用名称,頻出フラグ
+AB,A（アサルト）,A,
+AB,B（バンパー）,B,
+AB,C（チャージ）,C,
+AB,D（デュアル）,D,
+AB,E（イレイズ）,E,
+AB,F（フリー）,F,1
+AB,H（ヘビー）,H,1
+AB,J（ジャギー）,J,
+AB,K（ナックル）,K,
+AB,M（マッシブ）,M,
+AB,R（ラウンド）,R,
+AB,S（スラッシュ）,S,
+AB,T（ターン）,T,
+AB,V（ヴァーチカル）,V,
+AB,W（ウィール）,W,1
+AB,Z（ジリオン）,Z,
+BT,（なし）,,
+BT,A（アクセル）,A,
+BT,B（ボール）,B,
+BT,BS（バウンドスパイク）,BS,
+BT,C（サイクロン）,C,
+BT,D（ドット）,D,
+BT,DB（ディスクボール）,DB,
+BT,E（エレベート）,E,
+BT,F（フラット）,F,
+BT,FB（フリーボール）,FB,
+BT,G（グライド）,G,
+BT,GB（ギヤボール）,GB,
+BT,GF（ギヤフラット）,GF,
+BT,GN（ギヤニードル）,GN,
+BT,GP（ギヤポイント）,GP,
+BT,GR（ギアラッシュ）,GR,
+BT,H（ヘキサ）,H,
+BT,HN（ハイニードル）,HN,
+BT,HT（ハイテーパー）,HT,
+BT,I（イグニッション）,I,
+BT,J（ジョルト）,J,
+BT,K（キック）,K,
+BT,L（レベル）,L,
+BT,LF（ローフラット）,LF,
+BT,LO（ローオーブ）,LO,
+BT,LR（ローラッシュ）,LR,
+BT,M（マージ）,M,
+BT,MN（メタルニードル）,MN,
+BT,N（ニードル）,N,
+BT,O（オーブ）,O,
+BT,P（ポイント）,P,
+BT,Q（クエイク）,Q,
+BT,R（ラッシュ）,R,
+BT,RA（ラバーアクセル）,RA,
+BT,S（スパイク）,S,
+BT,T（テーパー）,T,
+BT,TK（トランスキック）,TK,
+BT,TP（トランスポイント）,TP,
+BT,U（ユナイト）,U,
+BT,UF（アンダーフラット）,UF,
+BT,UN（アンダーニードル）,UN,
+BT,V（ボルテックス）,V,
+BT,W（ウェッジ）,W,
+BT,WB（ウォールボール）,WB,
+BT,WW（ウォールウェッジ）,WW,
+BT,Y（イールディング）,Y,
+BT,Z（ザップ）,Z,
+BX,ヴァイスタイガー,ヴァイスタイガー,
+BX,ヴァイパーテイル,ヴァイパーテイル,
+BX,ウィザードアロー,ウィザードアロー,
+BX,クリムゾンガルーダ,クリムゾンガルーダ,
+BX,クロコクランチ,クロコクランチ,
+BX,コバルトドラグーン,コバルトドラグーン,
+BX,コバルトドレイク,コバルトドレイク,
+BX,サムライカリバー,サムライカリバー,
+BX,サムライスチール,サムライスチール,
+BX,シェルタードレイク,シェルタードレイク,
+BX,シノビナイフ,シノビナイフ,
+BX,シャークエッジ,シャークエッジ,
+BX,シャークギル,シャークギル,
+BX,スフィンクスカウル,スフィンクスカウル,
+BX,ティラノビート,ティラノビート,
+BX,ティラノロア,ティラノロア,
+BX,ドランソード,ドランソード,
+BX,ドランダガー,ドランダガー,
+BX,トリケラスパイキー,トリケラスパイキー,
+BX,トリケラプレス,トリケラプレス,
+BX,ナイトシールド,ナイトシールド,
+BX,ナイトランス,ナイトランス,
+BX,フェニックスウイング,フェニックスウイング,1
+BX,フェニックスフェザー,フェニックスフェザー,
+BX,プテラスイング,プテラスイング,
+BX,ブラックシェル,ブラックシェル,
+BX,ベアスクラッチ,ベアスクラッチ,
+BX,ヘルズサイズ,ヘルズサイズ,
+BX,ヘルズチェイン,ヘルズチェイン,
+BX,ホエールウェーブ,ホエールウェーブ,
+BX,マンモスタスク,マンモスタスク,
+BX,ユニコーンスティング,ユニコーンスティング,
+BX,ライノホーン,ライノホーン,
+BX,レオンクロー,レオンクロー,
+BX,ワイバーンゲイル,ワイバーンゲイル,
+BXB,ストームペガシス,ストームペガシス,
+BXB,ゼノエクスカリバー,ゼノエクスカリバー,
+BXB,ドライガースラッシュ,ドライガースラッシュ,
+BXB,ドラグーンストーム,ドラグーンストーム,
+BXB,ドラシエルシールド,ドラシエルシールド,
+BXB,ドランザースパイラル,ドランザースパイラル,
+BXB,ビクトリーヴァルキリー,ビクトリーヴァルキリー,
+BXB,ライトニングエルドラゴ（アッパー型）,ライトニングエルドラゴ（アッパー型）,
+BXB,ライトニングエルドラゴ（連打型）,ライトニングエルドラゴ（連打型）,
+BXB,ロックレオーネ,ロックレオーネ,
+BXC,T-レックス,T-レックス,
+BXC,アイアンマン,アイアンマン,
+BXC,オプティマスプライマル,オプティマスプライマル,
+BXC,オプティマスプライム,オプティマスプライム,
+BXC,ケツァルコアトルス,ケツァルコアトルス,
+BXC,サノス,サノス,
+BXC,サノス,サノス,
+BXC,スタースクリーム,スタースクリーム,
+BXC,スパイダーマン,スパイダーマン,
+BXC,スピノサウルス,スピノサウルス,
+BXC,ダース・ベイダー,ダース・ベイダー,
+BXC,マンダロリアン,マンダロリアン,
+BXC,メガトロン,メガトロン,
+BXC,モササウルス,モササウルス,
+BXC,モフ・ギデオン,モフ・ギデオン,
+BXC,ルーク・スカイウォーカー,ルーク・スカイウォーカー,
+CX,アーク,アーク,
+CX,エクリプス,エクリプス,
+CX,ダーク,ダーク,
+CX,ハント,ハント,
+CX,ファング,ファング,
+CX,ブラスト,ブラスト,1
+CX,ブラッシュ,ブラッシュ,
+CX,フレア,フレア,
+CX,ブレイブ,ブレイブ,
+CX,フレイム,フレイム,
+CX,ボルト,ボルト,
+CX,マイト,マイト,1
+CX,リーパー,リーパー,
+MB,フォートレス,フォートレス,
+MB,ブリッツ,ブリッツ,
+MB,レイジ,レイジ,
+MB,レイジ,レイジ,
+OB,B（ブレイク）,B,
+OB,F（フロー）,F,
+OB,G（ガード）,G,
+RA,0-60,0-60,
+RA,0-70,0-70,
+RA,0-80,0-80,
+RA,1-50,1-50,
+RA,1-60,1-60,1
+RA,1-70,1-70,1
+RA,1-80,1-80,
+RA,2-60,2-60,
+RA,2-70,2-70,
+RA,2-80,2-80,
+RA,3-60,3-60,1
+RA,3-70,3-70,
+RA,3-80,3-80,
+RA,3-85,3-85,
+RA,3-85,3-85,
+RA,4-50,4-50,
+RA,4-55,4-55,
+RA,4-60,4-60,
+RA,4-70,4-70,
+RA,4-80,4-80,
+RA,5-60,5-60,1
+RA,5-70,5-70,
+RA,5-80,5-80,
+RA,6-60,6-60,1
+RA,6-70,6-70,
+RA,6-80,6-80,
+RA,7-55,7-55,
+RA,7-60,7-60,1
+RA,7-70,7-70,
+RA,7-80,7-80,
+RA,8-70,8-70,
+RA,9-60,9-60,1
+RA,9-65,9-65,
+RA,9-70,9-70,
+RA,9-80,9-80,
+RA,M-85,M-85,
+RA,Op（オペレート）,Op,
+RA,Tr（ターボ）,Tr,
+RC,ウィザード,ウィザード,
+RC,ウルフ,ウルフ,
+RC,エンペラー,エンペラー,1
+RC,ケルベロス,ケルベロス,
+RC,ソル,ソル,
+RC,ドラン,ドラン,
+RC,ナイト,ナイト,
+RC,バハムート,バハムート,
+RC,フェニックス,フェニックス,
+RC,フォックス,フォックス,
+RC,ペガサス,ペガサス,
+RC,ヘルズ,ヘルズ,
+RC,ペルセウス,ペルセウス,
+RC,ライノ,ライノ,
+RC,ラグナ,ラグナ,
+RC,ワルキューレ,ワルキューレ,1
+UX,インパクトドレイク,インパクトドレイク,1
+UX,ウィザードロッド,ウィザードロッド,1
+UX,エアロペガサス,エアロペガサス,1
+UX,クロックミラージュ,クロックミラージュ,1
+UX,ゴーストサークル,ゴーストサークル,
+UX,ゴートタックル,ゴートタックル,
+UX,ゴーレムロック,ゴーレムロック,1
+UX,サムライセイバー,サムライセイバー,
+UX,シノビシャドウ,シノビシャドウ,
+UX,シャークスケイル,シャークスケイル,1
+UX,シルバーウルフ,シルバーウルフ,1
+UX,スコーピオスピア,スコーピオスピア,1
+UX,ドランバスター,ドランバスター,1
+UX,ナイトメイル,ナイトメイル,1
+UX,フェニックスラダー,フェニックスラダー,
+UX,ヘルズハンマー,ヘルズハンマー,
+UX,マミーカース,マミーカース,1
+UX,メテオドラグーン,メテオドラグーン,1
+UX,レオンクレスト,レオンクレスト,
+UX,ワイバーンホバー,ワイバーンホバー,1`;
+
+    let partsData = []; // パースしたパーツデータを保存
+
+    /**
+     * 埋め込みCSVデータを読み込んでパースする
+     */
+    function loadPartsCSV() {
+      try {
+        partsData = parsePartsCSV(PARTS_CSV_DATA);
+        console.log('✅ parts.csvデータ読み込み成功:', partsData.length, '件');
+        return partsData;
+      } catch (error) {
+        console.error('❌ parts.csvパースエラー:', error);
+        alert('パーツデータの読み込みに失敗しました。');
+        return [];
+      }
+    }
+
+    /**
+     * CSVテキストをパースしてソートする
+     * 頻出フラグ=1を優先、次に名前順（日本語対応）
+     */
+    function parsePartsCSV(csvText) {
+      const lines = csvText.split('\n');
+      const parts = [];
+      
+      // ヘッダー行をスキップ（1行目）
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // 空行はスキップ
+        
+        // CSVを分割（カンマ区切り、\r対応）
+        const values = line.replace(/\r/g, '').split(',');
+        
+        const part = {
+          id: values[0]?.trim() || '',
+          selectionName: values[1]?.trim() || '',
+          hudName: values[2]?.trim() || '',
+          isFrequent: parseFloat(values[3]) === 1 // 頻出フラグ
+        };
+        
+        // IDが空でない場合のみ追加
+        if (part.id && part.selectionName) {
+          parts.push(part);
+        }
+      }
+      
+      // ソート処理
+      parts.sort((a, b) => {
+        // 1. 頻出フラグ優先（1のものを先に）
+        if (a.isFrequent !== b.isFrequent) {
+          return b.isFrequent ? 1 : -1;
+        }
+        // 2. 名前順（日本語対応のlocaleCompare）
+        return a.selectionName.localeCompare(b.selectionName, 'ja');
+      });
+      
+      return parts;
+    }
+
+    /**
+     * パーツデータを取得（外部から呼び出し可能）
+     */
+    function getPartsData() {
+      return partsData;
+    }
+
+    /**
+     * 特定のパーツIDでフィルタリング
+     */
+    function getPartsByCategory(categoryId) {
+      return partsData.filter(p => p.id === categoryId);
+    }
+
+    // ==========================================
+    // ベイブレード登録機能
+    // ==========================================
+
+    /**
+     * ベイブレード管理モーダルを開く
+     */
+    function openBeybladeManager(participantId) {
+      currentBeybladeParticipantId = participantId;
+      const participant = participants.find(p => p.id === participantId);
+      
+      // ベイブレード配列の初期化
+      if (!participant.beyblades) {
+        participant.beyblades = [];
+      }
+      
+      renderBeybladeList();
+      
+      document.getElementById('beybladeModal').classList.remove('hidden');
+      document.getElementById('beybladeModal').classList.add('flex');
+    }
+
+    /**
+     * ベイブレードリストを描画
+     */
+    function renderBeybladeList() {
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      const listEl = document.getElementById('beybladeList');
+      const addBtn = document.getElementById('addBeybladeBtn');
+      
+      listEl.innerHTML = '';
+      
+      if (!participant.beyblades || participant.beyblades.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-cyber-text opacity-70 py-8">まだベイブレードが登録されていません</p>';
+      } else {
+        participant.beyblades.forEach((bey, index) => {
+          const div = document.createElement('div');
+          div.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-4 flex items-center gap-3';
+          
+          const isEditing = currentEditingBeybladeIndex === index;
+          
+          div.innerHTML = `
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-cyber-blue font-sf font-bold">#${index + 1}</span>
+                ${isEditing ? 
+                  `<input type="text" value="${bey.name}" id="editBeyName${index}" class="flex-1 bg-cyber-dark border border-cyber-green text-cyber-text px-2 py-1 rounded font-bold text-sm outline-none focus:border-cyber-blue">` :
+                  `<span class="text-cyber-text font-bold text-sm flex-1">${bey.name}</span>`
+                }
+              </div>
+              <div class="text-[10px] text-cyber-text opacity-50 mt-1">${bey.type}</div>
+            </div>
+            <div class="flex gap-2">
+              ${isEditing ?
+                `<button onclick="saveBeybladeEdit(${index})" class="bg-cyber-green text-cyber-bg px-3 py-1 rounded font-sf font-bold text-xs hover:bg-cyber-green/80 transition-colors">保存</button>
+                 <button onclick="cancelBeybladeEdit()" class="bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-1 rounded font-sf font-bold text-xs hover:bg-gray-800 transition-colors">✖</button>` :
+                `<button onclick="editBeybladeName(${index})" class="text-cyber-blue hover:text-cyber-green text-lg transition-colors" title="編集">✏️</button>
+                 <button onclick="deleteBeyblade(${index})" class="text-cyber-pink hover:text-cyber-red text-lg transition-colors" title="削除">🗑️</button>`
+              }
+            </div>
+          `;
+          
+          listEl.appendChild(div);
+        });
+      }
+      
+      // 3つまで追加可能
+      if (participant.beyblades.length >= 3) {
+        addBtn.style.display = 'none';
+      } else {
+        addBtn.style.display = 'block';
+      }
+    }
+
+    /**
+     * ベイブレード名を編集モードに
+     */
+    function editBeybladeName(index) {
+      currentEditingBeybladeIndex = index;
+      renderBeybladeList();
+    }
+
+    /**
+     * ベイブレード名の編集を保存
+     */
+    function saveBeybladeEdit(index) {
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      const input = document.getElementById(`editBeyName${index}`);
+      
+      if (input && input.value.trim()) {
+        participant.beyblades[index].name = input.value.trim();
+        currentEditingBeybladeIndex = -1;
+        renderBeybladeList();
+        renderParticipants();
+        saveState();
+      }
+    }
+
+    /**
+     * ベイブレード名の編集をキャンセル
+     */
+    function cancelBeybladeEdit() {
+      currentEditingBeybladeIndex = -1;
+      renderBeybladeList();
+    }
+
+    /**
+     * ベイブレードを削除
+     */
+    function deleteBeyblade(index) {
+      if (!confirm('このベイブレードを削除しますか?')) return;
+      
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      participant.beyblades.splice(index, 1);
+      
+      renderBeybladeList();
+      renderParticipants();
+      saveState();
+    }
+
+    /**
+     * ベイブレード登録を開始
+     */
+    function startBeybladeRegistration() {
+      currentBeybladeSelection = {};
+      beybladeSelectionStep = 0;
+      beybladeSelectionPath = [];
+      
+      // タイプ選択モーダルを開く
+      showBeybladeTypeSelection();
+    }
+
+    /**
+     * タイプ選択画面を表示
+     */
+    function showBeybladeTypeSelection() {
+      const modal = document.getElementById('beybladeSelectModal');
+      const title = document.getElementById('selectModalTitle');
+      const content = document.getElementById('selectContent');
+      const backBtn = document.getElementById('selectBackBtn');
+      
+      title.textContent = 'ベイブレードタイプを選択';
+      backBtn.style.display = 'none';
+      
+      const types = [
+        { id: 'BX', name: 'BX', color: 'cyber-blue' },
+        { id: 'UX', name: 'UX', color: 'cyber-pink' },
+        { id: 'CX', name: 'CX', color: 'cyber-green' },
+        { id: 'CXEX', name: 'CX(EX)', color: 'cyber-orange' }
+      ];
+      
+      content.innerHTML = '';
+      types.forEach(type => {
+        const btn = document.createElement('button');
+        btn.className = `w-full py-4 bg-${type.color} hover:opacity-80 text-cyber-bg font-sf font-bold rounded-lg text-xl mb-3 transition-all active:scale-95`;
+        btn.textContent = type.name;
+        btn.onclick = () => selectBeybladeType(type.id);
+        content.appendChild(btn);
+      });
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    /**
+     * ベイブレードタイプを選択
+     */
+    function selectBeybladeType(typeId) {
+      currentBeybladeSelection.type = typeId;
+      beybladeSelectionPath = getSelectionPath(typeId);
+      beybladeSelectionStep = 0;
+      
+      showNextPartSelection();
+    }
+
+    /**
+     * タイプに応じた選択パスを取得
+     */
+    function getSelectionPath(typeId) {
+      const paths = {
+        'BX': ['BX'],
+        'UX': ['UX'],
+        'CX': ['RC', 'MB', 'AB'],
+        'CXEX': ['RC', 'MTB', 'OB', 'AB']
+      };
+      
+      const basePath = paths[typeId] || [];
+      // 共通パーツ（ラチェット、ビット）を追加
+      return [...basePath, 'RC2', 'BT'];
+    }
+
+    /**
+     * 次のパーツ選択画面を表示
+     */
+    function showNextPartSelection() {
+      if (beybladeSelectionStep >= beybladeSelectionPath.length) {
+        // すべての選択が完了
+        completeBeybladeSelection();
+        return;
+      }
+      
+      const categoryId = beybladeSelectionPath[beybladeSelectionStep];
+      const title = document.getElementById('selectModalTitle');
+      const content = document.getElementById('selectContent');
+      const backBtn = document.getElementById('selectBackBtn');
+      
+      backBtn.style.display = beybladeSelectionStep > 0 ? 'block' : 'none';
+      
+      const categoryNames = {
+        'BX': 'BXブレード',
+        'UX': 'UXブレード',
+        'RC': 'ロックチップ',
+        'MB': 'メインブレード',
+        'MTB': 'メタルブレード',
+        'OB': 'オーバーブレード',
+        'AB': 'アシストブレード',
+        'RC2': 'ラチェット',
+        'BT': 'ビット'
+      };
+      
+      title.textContent = categoryNames[categoryId] + 'を選択';
+      
+      const parts = getPartsByCategory(categoryId);
+      
+      content.innerHTML = '';
+      content.className = 'grid grid-cols-2 gap-2 overflow-y-auto flex-1';
+      
+      parts.forEach(part => {
+        const btn = document.createElement('button');
+        const textColor = part.isFrequent ? 'text-cyber-red' : 'text-cyber-text';
+        btn.className = `py-3 px-2 bg-cyber-bg hover:bg-gray-800 ${textColor} border border-cyber-table-border rounded font-bold text-sm transition-colors`;
+        btn.textContent = part.selectionName;
+        btn.onclick = () => selectPart(categoryId, part);
+        content.appendChild(btn);
+      });
+    }
+
+    /**
+     * パーツを選択
+     */
+    function selectPart(categoryId, part) {
+      currentBeybladeSelection[categoryId] = part.hudName;
+      beybladeSelectionStep++;
+      showNextPartSelection();
+    }
+
+    /**
+     * 選択を1つ戻る
+     */
+    function beybladeSelectBack() {
+      if (beybladeSelectionStep > 0) {
+        beybladeSelectionStep--;
+        const categoryId = beybladeSelectionPath[beybladeSelectionStep];
+        delete currentBeybladeSelection[categoryId];
+        showNextPartSelection();
+      }
+    }
+
+    /**
+     * ベイブレード選択をキャンセル
+     */
+    function cancelBeybladeSelect() {
+      closeBeybladeSelectModal();
+    }
+
+    /**
+     * ベイブレード選択を完了
+     */
+    function completeBeybladeSelection() {
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      
+      // ベイブレード名を自動生成（記号なし、間を詰める）
+      let name = '';
+      const type = currentBeybladeSelection.type;
+      
+      if (type === 'BX') {
+        name = currentBeybladeSelection.BX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+      } else if (type === 'UX') {
+        name = currentBeybladeSelection.UX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+      } else if (type === 'CX') {
+        name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + 
+               currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+      } else if (type === 'CXEX') {
+        name = currentBeybladeSelection.RC + currentBeybladeSelection.MTB + 
+               currentBeybladeSelection.OB + currentBeybladeSelection.AB + 
+               currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+      }
+      
+      const beyblade = {
+        type: type === 'CXEX' ? 'CX(EX)' : type,
+        name: name,
+        parts: {...currentBeybladeSelection}
+      };
+      
+      participant.beyblades.push(beyblade);
+      
+      closeBeybladeSelectModal();
+      renderBeybladeList();
+      renderParticipants();
+      saveState();
+    }
+
+    /**
+     * ベイブレード管理モーダルを閉じる
+     */
+    function closeBeybladeModal() {
+      document.getElementById('beybladeModal').classList.add('hidden');
+      document.getElementById('beybladeModal').classList.remove('flex');
+      currentBeybladeParticipantId = null;
+      currentEditingBeybladeIndex = -1;
+    }
+
+    /**
+     * ベイブレード選択モーダルを閉じる
+     */
+    function closeBeybladeSelectModal() {
+      document.getElementById('beybladeSelectModal').classList.add('hidden');
+      document.getElementById('beybladeSelectModal').classList.remove('flex');
+    }
+
+
+    // ==========================================
+    // PeerJS: SET_BEYBLADE メッセージ送信
+    // ==========================================
+    
+    /**
+     * 選択されたベイブレード名をscore.htmlに送信
+     * @param {string} playerName - プレイヤー名（P1 または P2）
+     * @param {string} beybladeName - ベイブレード名
+     */
+    function sendBeybladeSelection(playerName, beybladeName) {
+      if (!conn || !conn.open) {
+        console.warn('⚠️ PeerJS接続がありません');
+        return;
+      }
+      
+      const message = {
+        type: 'SET_BEYBLADE',
+        data: {
+          player: playerName, // 'P1' or 'P2'
+          beyblade: beybladeName,
+          timestamp: Date.now()
+        }
+      };
+      
+      conn.send(message);
+      console.log('📤 ベイブレード選択送信:', message);
+    }
+
+    /**
+     * 使用例：ボタンクリックでベイブレード名を送信
+     * sendBeybladeSelection('P1', 'ドランバスター');
+     * sendBeybladeSelection('P2', 'ヘルズサイズ');
+     */
+
+    // ==========================================
+    // アプリ初期化時にCSVを読み込む
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPartsCSV();
+      // 読み込み結果をコンソールで確認
+      console.log('📋 パーツデータ一覧（最初の10件）:');
+      console.table(partsData.slice(0, 10));
+    });
 
     initApp();
   </script>

@@ -20,7 +20,7 @@
             --safe-left: env(safe-area-inset-left); --safe-right: env(safe-area-inset-right);
         }
 
-        body { margin: 0; padding: 0; background: black; font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s; touch-action: none; }
+        body { margin: 0; padding: 0; background: #0a0e17; font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s; touch-action: none; }
         input, div, .score { font-family: inherit; }
         
         body.green-mode { background-color: #00ff00 !important; }
@@ -28,23 +28,23 @@
         
         #video-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; }
         #camera-bg, #replay-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
-        #replay-video { z-index: 10; display: none; background: black; }
+        #replay-video { z-index: 10; display: none; background: #0a0e17; }
         .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
 
-        .system-btn { position: fixed; z-index: 80; background: rgba(0,0,0,0.5); color: #aaa; border: 1px solid #555; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; transition: 0.3s; font-family: 'Orbitron', sans-serif !important; user-select: none; }
-        .system-btn:hover { color: var(--bx-green); border-color: var(--bx-green); }
-        .system-btn:active { background: #333; transform: scale(0.95); }
+        .system-btn { position: fixed; z-index: 80; background: rgba(10,14,23,0.85); color: #0ea5e9; border: 2px solid #0ea5e9; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; transition: 0.3s; font-family: 'Orbitron', sans-serif !important; user-select: none; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .system-btn:hover { color: #22c55e; border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.5); }
+        .system-btn:active { background: rgba(14,165,233,0.2); transform: scale(0.95); }
 
         .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
-        .btn-reload { top: 20px; left: max(75px, calc(var(--safe-left) + 75px)); color: var(--bx-red); border-color: var(--bx-red); }
+        .btn-reload { top: 20px; left: max(75px, calc(var(--safe-left) + 75px)); color: #ec4899; border-color: #ec4899; box-shadow: 0 0 10px rgba(236,72,153,0.3); }
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
-        .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: var(--bx-blue); border-color: var(--bx-blue); }
+        .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
         .btn-safe { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: #aaa; }
-        .btn-safe.active { color: var(--bx-green); border-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
+        .btn-safe.active { color: #22c55e; border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.5); }
 
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
-        .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: var(--bx-blue); }
-        .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: var(--bx-orange); font-size: 18px; }
+        .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
         body.pro-mode .system-btn { display: none !important; }
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
@@ -179,10 +179,64 @@
         .status-dot.connected { background-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
 
         /* NEXT BATTLE overlay */
-        #next-battle-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 95; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        #next-battle-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 95; background: #0a0e17; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
         #next-battle-overlay.hidden { display: none !important; }
-        @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.4;text-shadow:none;} }
-        .next-battle-blink { animation: neonBlink 1s ease-in-out infinite; }
+        #next-battle-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40vw; max-width: 600px; opacity: 0.15; pointer-events: none; z-index: 0; }
+        #next-battle-content { position: relative; z-index: 1; width: 100%; }
+        @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
+        .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
+        .nb-vs-container { display: flex; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 4vw, 60px); margin: 2rem 0; }
+        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(22px, 5.5vw, 80px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; flex: 1; max-width: 40%; }
+        .nb-p1 { text-align: right; text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
+        .nb-p2 { text-align: left; text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
+        .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
+        
+        /* 使用ベイブレード表示欄 */
+        #beyblade-display-bar { 
+            position: fixed; 
+            bottom: 80px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 75; 
+            display: flex; 
+            gap: clamp(15px, 3vw, 40px); 
+            background: rgba(0, 0, 0, 0.75); 
+            padding: 8px 20px; 
+            border-radius: 10px; 
+            border: 2px solid #0ea5e9; 
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+            transition: bottom 0.3s, opacity 0.3s;
+        }
+        body.pro-mode #beyblade-display-bar { 
+            bottom: 15px; 
+        }
+        .beyblade-info { 
+            display: flex; 
+            align-items: baseline; 
+            gap: 8px; 
+        }
+        .beyblade-label { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: clamp(12px, 1.8vw, 18px); 
+            font-weight: 900; 
+            color: #0ea5e9; 
+            text-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
+        }
+        .beyblade-text { 
+            font-family: 'Chakra Petch', sans-serif; 
+            font-size: clamp(14px, 2.2vw, 22px); 
+            font-weight: 700; 
+            font-style: italic; 
+            color: #fff; 
+            text-shadow: 1px 1px 2px #000;
+            max-width: 30vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* 文字数に応じた自動縮小 */
+        .beyblade-text[data-length="long"] { font-size: clamp(11px, 1.8vw, 18px); }
+        .beyblade-text[data-length="verylong"] { font-size: clamp(9px, 1.5vw, 15px); }
     </style>
 </head>
 <body>
@@ -191,12 +245,15 @@
 
     <!-- NEXT BATTLE announcement overlay -->
     <div id="next-battle-overlay" class="hidden" onclick="hideNextBattle()">
-        <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(13px,2.2vw,26px);color:#94a3b8;letter-spacing:0.4em;text-align:center;margin-bottom:2rem;text-transform:uppercase;"></div>
-        <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vw,80px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.25em;text-align:center;margin-bottom:2.5rem;">NEXT BATTLE</div>
-        <div style="display:flex;flex-direction:column;align-items:center;width:94%;max-width:1100px;gap:1rem;">
-            <div id="nb-p1" style="font-family:'Orbitron',sans-serif;font-size:clamp(22px,5.5vw,80px);font-weight:900;color:#fff;text-shadow:0 0 24px #0ea5e9,0 0 48px #0ea5e9;text-align:center;line-height:1.15;letter-spacing:0.05em;"></div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,72px);font-weight:900;color:#f59e0b;text-shadow:0 0 24px #f59e0b,0 0 56px #f59e0b;margin:0.75rem 0;letter-spacing:0.3em;">VS</div>
-            <div id="nb-p2" style="font-family:'Orbitron',sans-serif;font-size:clamp(22px,5.5vw,80px);font-weight:900;color:#fff;text-shadow:0 0 24px #ec4899,0 0 48px #ec4899;text-align:center;line-height:1.15;letter-spacing:0.05em;"></div>
+        <img id="next-battle-logo" src="BEYX_logo_amb.png" alt="Logo" style="display:none;">
+        <div id="next-battle-content">
+            <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(13px,2.2vw,26px);color:#94a3b8;letter-spacing:0.4em;text-align:center;margin-bottom:2rem;text-transform:uppercase;"></div>
+            <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vw,80px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.25em;text-align:center;margin-bottom:2.5rem;">NEXT BATTLE</div>
+            <div class="nb-vs-container">
+                <div id="nb-p1" class="nb-player nb-p1"></div>
+                <div class="nb-vs">VS</div>
+                <div id="nb-p2" class="nb-player nb-p2"></div>
+            </div>
         </div>
     </div>
 
@@ -262,6 +319,18 @@
 
     <div id="win-display"></div>
 
+    <!-- 使用ベイブレード表示欄 -->
+    <div id="beyblade-display-bar">
+        <div class="beyblade-info">
+            <span class="beyblade-label">P1:</span>
+            <span class="beyblade-text" id="beyblade-display-p1">-</span>
+        </div>
+        <div class="beyblade-info">
+            <span class="beyblade-label">P2:</span>
+            <span class="beyblade-text" id="beyblade-display-p2">-</span>
+        </div>
+    </div>
+
     <div class="system-btn btn-reset" onclick="executeCommand('SYS_RESET')">R</div>
     <div class="system-btn btn-reload" onclick="location.reload()">RL</div>
     <div class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</div>
@@ -272,7 +341,7 @@
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 
     <script>
-        let s1 = 0, s2 = 0, winScoreLimit = 4, battleCount = 1, timerDuration = 10;
+        let s1 = 0, s2 = 0, winScoreLimit = 4, winPointMode = '4', battleCount = 1, timerDuration = 10;
         let isFinished = false, isCountingDown = false, timerInterval = null;
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
@@ -360,9 +429,19 @@
 
         function toggleStatsDisplay() {
             blurFocus();
+            // 戦績ブロックの表示切替
             document.querySelectorAll('.player-stats-block').forEach(block => {
                 block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
             });
+            // 使用ベイ名の表示切替
+            document.querySelectorAll('.beyblade-name').forEach(el => {
+                el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+            });
+            // 下部バーの表示切替
+            const beyBar = document.getElementById('beyblade-display-bar');
+            if (beyBar) {
+                beyBar.style.display = (beyBar.style.display === 'none') ? 'flex' : 'none';
+            }
         }
 
         function startCall() {
@@ -451,10 +530,34 @@
                 setTimeout(() => { body.style.background = ''; }, 300);
             }
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
-            if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); else s2 = Math.min(s2 + pts, winScoreLimit);
-            document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
-            if (s1 >= winScoreLimit || s2 >= winScoreLimit) { isFinished = true; setTimeout(() => finishGame(p), 2500); }
-            else { setTimeout(() => { battleCount++; updateBattleCounterDisplay(); let suffix = ["st","nd","rd"][battleCount-1] || "th"; let nextText = ((s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); }, 2500); }
+            
+            // スコア加算（2+モード時は上限なし）
+            if (winPointMode === '2+') {
+                if (p === 1) s1 += pts; 
+                else s2 += pts;
+            } else {
+                if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); 
+                else s2 = Math.min(s2 + pts, winScoreLimit);
+            }
+            
+            document.getElementById('score1').innerText = s1; 
+            document.getElementById('score2').innerText = s2;
+            
+            // 勝利判定（2+モード時は2点に達したら勝利だがカウントは継続表示）
+            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
+            if (s1 >= actualWinLimit || s2 >= actualWinLimit) { 
+                isFinished = true; 
+                setTimeout(() => finishGame(p), 2500); 
+            }
+            else { 
+                setTimeout(() => { 
+                    battleCount++; 
+                    updateBattleCounterDisplay(); 
+                    let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
+                    let nextText = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+                    showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); 
+                }, 2500); 
+            }
         }
 
         function resetGame() { 
@@ -469,13 +572,33 @@
             updateBattleCounterDisplay(); 
             document.getElementById('win-display').classList.remove('show-win'); 
             document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); 
+            clearBeybladeDisplay(); // ★NEW: ベイブレード表示をクリア
             if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") { try { mediaRecorder.stop(); } catch(e){} setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50); }
         }
 
-        function updateBattleCounterDisplay() { let suffix = ["st","nd","rd"][battleCount-1] || "th"; let text = ((s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; document.getElementById('battle-ordinal').innerText = text; }
+        function updateBattleCounterDisplay() { 
+            let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
+            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
+            let text = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+            document.getElementById('battle-ordinal').innerText = text; 
+        }
         function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
         function toggleSafeMode() { blurFocus(); document.body.classList.toggle('safe-mode'); document.getElementById('btn-safe').classList.toggle('active'); }
-        function toggleWinPoint() { blurFocus(); winScoreLimit = (winScoreLimit === 4 ? 2 : 4); document.getElementById('btn-winpoint').innerText = winScoreLimit; updateBattleCounterDisplay(); }
+        function toggleWinPoint() { 
+            blurFocus(); 
+            if (winPointMode === '4') {
+                winPointMode = '2';
+                winScoreLimit = 2;
+            } else if (winPointMode === '2') {
+                winPointMode = '2+';
+                winScoreLimit = 99; // 実質無制限だが2点で勝利判定
+            } else {
+                winPointMode = '4';
+                winScoreLimit = 4;
+            }
+            document.getElementById('btn-winpoint').innerText = winPointMode;
+            updateBattleCounterDisplay();
+        }
         function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
         function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
         
@@ -610,14 +733,27 @@
                         overlay.classList.add('hidden');
                         overlay.innerHTML = '';
                     }
+                    else if (data.type === 'SHOW_PREVIEW') {
+                        // 新しい次戦予告表示（ロゴ対応）
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo);
+                    }
+                    else if (data.type === 'HIDE_PREVIEW') {
+                        // 次戦予告非表示
+                        hideNextBattle();
+                    }
                     else if (data.type === 'NEXT_BATTLE_CALL') {
-                        showNextBattle(data.p1, data.p2, data.stage, data.round);
+                        // 旧形式との互換性維持
+                        showNextBattle(data.p1, data.p2, data.stage, data.round, data.showLogo);
                     }
                     else if (data.type === 'SCROLL_OVERLAY') {
                         const overlayScroll = document.getElementById('remote-content-overlay');
                         if (!overlayScroll.classList.contains('hidden')) {
                             overlayScroll.scrollBy({ top: data.offset, behavior: 'smooth' });
                         }
+                    }
+                    else if (data.type === 'SET_BEYBLADE') {
+                        // ★NEW: ベイブレード名受信処理
+                        handleBeybladeSelection(data.data);
                     }
                     else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;
@@ -667,9 +803,27 @@
         }
         initPeer();
 
-        function showNextBattle(p1, p2, stage, round) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false) {
             const overlay = document.getElementById('next-battle-overlay');
-            const stageText = [stage, round].filter(Boolean).join('  /  ');
+            const logo = document.getElementById('next-battle-logo');
+            
+            // ロゴ表示設定
+            if (showLogo) {
+                logo.style.display = 'block';
+            } else {
+                logo.style.display = 'none';
+            }
+            
+            // ラベルテキスト生成（新形式と旧形式の両方に対応）
+            let stageText = '';
+            if (round) {
+                // 旧形式: stage と round が別々
+                stageText = [stageOrLabel, round].filter(Boolean).join('  /  ');
+            } else {
+                // 新形式: label に全て含まれている
+                stageText = stageOrLabel || '';
+            }
+            
             document.getElementById('nb-stage-round').textContent = stageText;
             document.getElementById('nb-p1').textContent = p1;
             document.getElementById('nb-p2').textContent = p2;
@@ -678,6 +832,145 @@
         function hideNextBattle() {
             document.getElementById('next-battle-overlay').classList.add('hidden');
         }
+
+        // ==========================================
+        // ベイブレード名受信・表示処理
+        // ==========================================
+        let beybladeP1 = '';
+        let beybladeP2 = '';
+
+        /**
+         * ベイブレード選択データを受信して表示
+         * @param {Object} data - { player: 'P1'|'P2', beyblade: 'ベイブレード名', timestamp: number }
+         */
+        function handleBeybladeSelection(data) {
+            console.log('📥 ベイブレード受信:', data);
+            
+            if (!data || !data.player || !data.beyblade) {
+                console.warn('⚠️ 無効なベイブレードデータ:', data);
+                return;
+            }
+
+            const player = data.player.toUpperCase();
+            const beybladeName = data.beyblade;
+
+            // プレイヤーごとに保存
+            if (player === 'P1') {
+                beybladeP1 = beybladeName;
+                updateBeybladeDisplay(1, beybladeName);
+                updateBeybladeBar(1, beybladeName);
+            } else if (player === 'P2') {
+                beybladeP2 = beybladeName;
+                updateBeybladeDisplay(2, beybladeName);
+                updateBeybladeBar(2, beybladeName);
+            } else {
+                console.warn('⚠️ 不明なプレイヤー:', player);
+            }
+        }
+
+        /**
+         * ベイブレード名を画面に表示（プレイヤー名の下に追加）
+         * @param {number} playerNum - 1 or 2
+         * @param {string} beybladeName - ベイブレード名
+         */
+        function updateBeybladeDisplay(playerNum, beybladeName) {
+            const wrapperId = `p${playerNum}-wrapper`;
+            const wrapper = document.getElementById(wrapperId);
+            
+            if (!wrapper) {
+                console.warn(`⚠️ ${wrapperId} が見つかりません`);
+                return;
+            }
+
+            // 既存のベイブレード名表示要素を探す
+            let beybladeEl = wrapper.querySelector('.beyblade-name');
+            
+            // なければ新規作成
+            if (!beybladeEl) {
+                beybladeEl = document.createElement('div');
+                beybladeEl.className = 'beyblade-name';
+                beybladeEl.style.cssText = `
+                    font-family: 'Chakra Petch', sans-serif;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--bx-orange);
+                    text-shadow: 1px 1px 0px black;
+                    background: rgba(0,0,0,0.5);
+                    border: 1px solid rgba(255,170,0,0.5);
+                    border-radius: 4px;
+                    padding: 2px 8px;
+                    max-width: 200px;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    margin-top: 3px;
+                `;
+                
+                // プレイヤー名の後に挿入
+                const nameInput = wrapper.querySelector('.name-input');
+                if (nameInput && nameInput.nextSibling) {
+                    wrapper.insertBefore(beybladeEl, nameInput.nextSibling);
+                } else {
+                    wrapper.appendChild(beybladeEl);
+                }
+            }
+
+            // テキスト更新
+            beybladeEl.textContent = beybladeName;
+            
+            // アニメーション効果
+            beybladeEl.style.transform = 'scale(1.1)';
+            beybladeEl.style.boxShadow = '0 0 10px var(--bx-orange)';
+            setTimeout(() => {
+                beybladeEl.style.transform = 'scale(1)';
+                beybladeEl.style.boxShadow = '0 0 5px rgba(255,170,0,0.3)';
+            }, 300);
+
+            console.log(`✅ P${playerNum}のベイブレード表示更新: ${beybladeName}`);
+        }
+
+        /**
+         * 下部ベイブレード表示バーを更新
+         * @param {number} playerNum - 1 or 2
+         * @param {string} beybladeName - ベイブレード名
+         */
+        function updateBeybladeBar(playerNum, beybladeName) {
+            const displayEl = document.getElementById(`beyblade-display-p${playerNum}`);
+            
+            if (!displayEl) {
+                console.warn(`⚠️ beyblade-display-p${playerNum} が見つかりません`);
+                return;
+            }
+
+            // テキスト更新
+            displayEl.textContent = beybladeName || '-';
+            
+            // 文字数に応じてサイズ調整
+            const length = beybladeName.length;
+            if (length > 15) {
+                displayEl.setAttribute('data-length', 'verylong');
+            } else if (length > 10) {
+                displayEl.setAttribute('data-length', 'long');
+            } else {
+                displayEl.removeAttribute('data-length');
+            }
+            
+            console.log(`✅ P${playerNum}の下部バー更新: ${beybladeName}`);
+        }
+
+        /**
+         * ベイブレード名をクリア
+         */
+        function clearBeybladeDisplay() {
+            beybladeP1 = '';
+            beybladeP2 = '';
+            document.querySelectorAll('.beyblade-name').forEach(el => el.remove());
+            
+            // 下部バーもクリア
+            updateBeybladeBar(1, '');
+            updateBeybladeBar(2, '');
+        }
+
     </script>
 </body>
 </html>

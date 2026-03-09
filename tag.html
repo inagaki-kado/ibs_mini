@@ -246,24 +246,24 @@
   <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
     <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
       <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
-      <div class="flex items-center justify-center gap-3 mb-8">
+      <div class="flex items-center justify-center gap-3 mb-4 md:mb-6">
         <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#ec4899]" title="モニター出力">📺</button>
         <span id="tv-scroll-btns-results" class="hidden flex items-center gap-1">
           <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-pink hover:text-white transition-colors" title="スクロールUP">🔼</button>
           <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-pink text-cyber-pink bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-pink hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
         </span>
-        <h2 class="text-2xl text-cyber-pink font-sf" id="resultLeagueName"></h2>
+        <h2 class="text-xl md:text-2xl text-cyber-pink font-sf" id="resultLeagueName"></h2>
       </div>
-      <h1 class="text-5xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
-      <p class="text-4xl font-bold mb-10 text-white" id="res1"></p>
-      <h2 class="text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
-      <p class="text-2xl font-bold mb-8 text-white" id="res2"></p>
-      <div class="flex justify-around mt-4 border-t border-cyber-table-border pt-6">
-        <div><h3 class="text-xl text-orange-400 font-sf mb-2">🥉 3RD PLACE</h3><p class="text-xl font-bold text-white" id="res3"></p></div>
-        <div><h3 class="text-xl text-cyber-text font-sf mb-2 opacity-70">4TH PLACE</h3><p class="text-xl font-bold text-gray-400" id="res4"></p></div>
+      <h1 class="text-3xl md:text-4xl text-yellow-400 font-sf mb-2 drop-shadow-[0_0_10px_#facc15]">🏆 CHAMPION 🏆</h1>
+      <p class="text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-white" id="res1"></p>
+      <h2 class="text-xl md:text-2xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+      <p class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-white" id="res2"></p>
+      <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-3 md:pt-4">
+        <div><h3 class="text-base md:text-lg text-orange-400 font-sf mb-1">🥉 3RD PLACE</h3><p class="text-lg md:text-xl font-bold text-white" id="res3"></p></div>
+        <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
       </div>
       
-      <div class="flex justify-center gap-4 mt-6 md:mt-10">
+      <div class="flex justify-center gap-4 mt-4 md:mt-6">
         <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
         <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
       </div>
@@ -544,6 +544,10 @@
     let currentBTL_Index = null; // リモコンで操作中のバトル番号（0/1/2）
 
     function openRemoteModalFromBTL(p1, p2, btlIndex) {
+        // リモコン画面を開く際、score.htmlの次戦予告を閉じる
+        if (conn && conn.open) {
+            conn.send({ type: 'HIDE_PREVIEW' });
+        }
         currentBTL_P1 = p1;
         currentBTL_P2 = p2;
         currentBTL_Index = (btlIndex !== undefined) ? btlIndex : null;
@@ -944,6 +948,27 @@
 
     function startTournament() {
       if(teams.length < 4) return alert("最低4チーム必要です。");
+      
+      // ▼ 8チーム以下の場合は直接決勝トーナメントへ
+      if (teams.length <= 8) {
+        if(!confirm(`参加チームは${teams.length}チームです。\n予選を行わず、直接決勝トーナメント（QF）を開始しますか？`)) return;
+        
+        isTournamentStarted = true;
+        tournamentName = document.getElementById('tournamentNameInput').value || 'CYBER BEY-TAG-LEAGUE';
+        
+        // タブを表示
+        document.getElementById('tab-setup').classList.add('hidden');
+        document.getElementById('tab-finals').classList.remove('hidden');
+        
+        // 決勝トーナメントを直接作成
+        generateFinalsDirectly();
+        switchTab('finals');
+        saveState();
+        return;
+      }
+      // ▲ 8チーム以下の場合の処理ここまで
+      
+      // 9チーム以上の場合は予選を実施
       if(!confirm("予選（スイスドロー3回戦）を開始しますか？")) return;
       isTournamentStarted = true;
       tournamentName = document.getElementById('tournamentNameInput').value || 'CYBER BEY-TAG-LEAGUE';
@@ -1037,8 +1062,58 @@
       wPairs.forEach(([t1,t2]) => r2Matches.push(createMatchObj(`R2-${matchId++}`, t1, t2)));
 
       document.getElementById('r2-container').classList.remove('hidden');
+      
+      // ▼ R2終了後の自動判定をセットアップ
+      // （この時点ではまだR2は未完了なので、何もしない）
+      // 実際の判定はR2の試合が全て完了した時に checkR2CompletionAndAdvance() で行う
+      // ▲
+      
       renderQualifiers();
     }
+
+    // ▼ R2完了時に2-0が8チームなら自動的に決勝トーナメントへ進む判定関数
+    function checkR2CompletionAndAdvance() {
+      // R2が全て完了しているか確認
+      if (r2Matches.length === 0 || !r2Matches.every(m => m.winnerTeam !== null)) {
+        return; // R2未完了なので何もしない
+      }
+      
+      // R3がすでに生成されている場合はスキップ
+      if (r3Matches.length > 0) {
+        return;
+      }
+      
+      // 2勝0敗のチームを抽出
+      const getRecord = (team, rounds) => {
+        let w = 0, l = 0;
+        rounds.forEach(m => {
+          if(m.winnerTeam === null) return;
+          if(m.team1.id === team.id) { m.winnerTeam===1 ? w++ : l++; }
+          if(m.team2.id === team.id) { m.winnerTeam===2 ? w++ : l++; }
+        });
+        return { w, l };
+      };
+      
+      const prev = [...r1Matches, ...r2Matches];
+      let twoWinTeams = teams.filter(t => {
+        const rec = getRecord(t, prev);
+        return rec.w === 2 && rec.l === 0;
+      });
+      
+      // 2-0が丁度8チームの場合
+      if (twoWinTeams.length === 8) {
+        if(confirm(`R2終了時点で2勝0敗のチームがちょうど8チームです。\nR3を行わず、この8チームで決勝トーナメントへ進みますか？`)) {
+          // R3をスキップして決勝トーナメント生成
+          generateFinalsFrom8Teams(twoWinTeams);
+          
+          // タブを切り替え
+          document.getElementById('tab-finals').classList.remove('hidden');
+          switchTab('finals');
+          saveState();
+        }
+      }
+    }
+    // ▲ R2完了時の自動判定関数ここまで
 
     function generateRound3() {
       if(!r2Matches.every(m => m.winnerTeam !== null)) return alert("Round 2 の全試合結果を入力してください。");
@@ -1140,9 +1215,14 @@
         const btn = document.getElementById('tv-btn-qual');
         const scrollBtns = document.getElementById('tv-scroll-btns-qual');
         if (isTvMode_qual) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-qual').innerHTML });
+          const container = document.getElementById('view-qual');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-qual');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorPink;
-          if (scrollBtns) scrollBtns.classList.remove('hidden');
+          // TVモード時はスクロールボタンを非表示
+          if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
           btn.style.cssText = '';
@@ -1153,9 +1233,14 @@
         const btn = document.getElementById('tv-btn-rank');
         const scrollBtns = document.getElementById('tv-scroll-btns-rank');
         if (isTvMode_rank) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-rank').innerHTML });
+          const container = document.getElementById('view-rank');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-rank');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorPink;
-          if (scrollBtns) scrollBtns.classList.remove('hidden');
+          // TVモード時はスクロールボタンを非表示
+          if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
           btn.style.cssText = '';
@@ -1167,10 +1252,15 @@
         const showBtn = document.getElementById('tag-show-results-btn');
         const scrollBtns = document.getElementById('tv-scroll-btns-finals');
         if (isTvMode_finals) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('view-finals').innerHTML });
+          const container = document.getElementById('view-finals');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-finals');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorPink;
           if (showBtn) showBtn.classList.add('hidden');
-          if (scrollBtns) scrollBtns.classList.remove('hidden');
+          // TVモード時はスクロールボタンを非表示
+          if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
           btn.style.cssText = '';
@@ -1183,10 +1273,15 @@
         const csvBtn = document.getElementById('results-export-csv-btn');
         const scrollBtns = document.getElementById('tv-scroll-btns-results');
         if (isTvMode_results) {
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('resultsModal').innerHTML });
+          const container = document.getElementById('resultsModal');
+          const clone = container.cloneNode(true);
+          const tvBtn = clone.querySelector('#tv-btn-results');
+          if (tvBtn) tvBtn.style.display = 'none';
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
           btn.style.cssText = colorPink;
           if (csvBtn) csvBtn.classList.add('hidden');
-          if (scrollBtns) scrollBtns.classList.remove('hidden');
+          // TVモード時はスクロールボタンを非表示
+          if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
           btn.style.cssText = '';
@@ -1208,6 +1303,15 @@
       const r1Done = r1Matches.length > 0 && r1Matches.every(m => m.winnerTeam !== null);
       const r2Done = r2Matches.length > 0 && r2Matches.every(m => m.winnerTeam !== null);
       const r3Done = r3Matches.length > 0 && r3Matches.every(m => m.winnerTeam !== null);
+
+      // ▼ R2完了時に自動判定を実行
+      if (r2Done && r3Matches.length === 0) {
+        // 少し遅延させて自動判定を実行（UIが更新されてから）
+        setTimeout(() => {
+          checkR2CompletionAndAdvance();
+        }, 500);
+      }
+      // ▲
 
       document.getElementById('btn-gen-r2').classList.toggle('hidden', !(r1Done && r2Matches.length === 0));
       // 12チーム以下はRound3をスキップしてRound2終了後に直接ランキング確認へ
@@ -1419,6 +1523,169 @@
     }
 
     // --- 5. 決勝トーナメント ---
+    
+    // ▼ 8チーム以下の場合に直接決勝トーナメントを生成する関数
+    function generateFinalsDirectly() {
+      // チームをシャッフル
+      let shuffled = [...teams].sort(() => Math.random() - 0.5);
+      
+      const mt = (id, t1, t2) => ({
+        id, team1: t1, team2: t2,
+        battles: [
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null},
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null},
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null}
+        ],
+        winnerTeam: null, t1Pts: 0, t2Pts: 0
+      });
+      
+      if (shuffled.length === 4) {
+        // 4チーム: SF2試合 + FINAL + 3RD
+        finalsType = 'QF'; // QFなしのSF直接
+        finalsMatches.qf1 = null;
+        finalsMatches.qf2 = null;
+        finalsMatches.qf3 = null;
+        finalsMatches.qf4 = null;
+        finalsMatches.sf1 = mt('SF-1', shuffled[0], shuffled[1]);
+        finalsMatches.sf2 = mt('SF-2', shuffled[2], shuffled[3]);
+        finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+        finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      } else if (shuffled.length === 5) {
+        // 5チーム: QF1試合（4位vs5位） + SF2試合（1位シード、2位vs3位、QF勝者vsシード） + FINAL + 3RD
+        finalsType = 'QF';
+        finalsMatches.qf1 = mt('QF-1', shuffled[3], shuffled[4]);
+        finalsMatches.qf2 = null;
+        finalsMatches.qf3 = null;
+        finalsMatches.qf4 = null;
+        finalsMatches.sf1 = mt('SF-1', shuffled[0], {id:'TBD', name:'W(QF1)', p1:{}, p2:{}});
+        finalsMatches.sf2 = mt('SF-2', shuffled[1], shuffled[2]);
+        finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+        finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      } else if (shuffled.length === 6) {
+        // 6チーム: QF2試合（3vs6, 4vs5） + SF2試合（1位vs2位シード、QF勝者同士） + FINAL + 3RD
+        finalsType = 'QF';
+        finalsMatches.qf1 = mt('QF-1', shuffled[2], shuffled[5]);
+        finalsMatches.qf2 = mt('QF-2', shuffled[3], shuffled[4]);
+        finalsMatches.qf3 = null;
+        finalsMatches.qf4 = null;
+        finalsMatches.sf1 = mt('SF-1', shuffled[0], shuffled[1]);
+        finalsMatches.sf2 = mt('SF-2', {id:'TBD', name:'W(QF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF2)', p1:{}, p2:{}});
+        finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+        finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      } else if (shuffled.length === 7) {
+        // 7チーム: QF3試合 + SF2試合（1位シード） + FINAL + 3RD
+        finalsType = 'QF7';
+        finalsMatches.qf1 = mt('QF-1', shuffled[3], shuffled[4]);
+        finalsMatches.qf2 = mt('QF-2', shuffled[1], shuffled[6]);
+        finalsMatches.qf3 = mt('QF-3', shuffled[2], shuffled[5]);
+        finalsMatches.qf4 = null;
+        finalsMatches.sf1 = mt('SF-1', shuffled[0], {id:'TBD', name:'W(QF1)', p1:{}, p2:{}});
+        finalsMatches.sf2 = mt('SF-2', {id:'TBD', name:'W(QF2)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF3)', p1:{}, p2:{}});
+        finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+        finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      } else if (shuffled.length === 8) {
+        // 8チーム: QF4試合 + SF2試合 + FINAL + 3RD
+        finalsType = 'QF';
+        finalsMatches.qf1 = mt('QF-1', shuffled[0], shuffled[7]);
+        finalsMatches.qf2 = mt('QF-2', shuffled[1], shuffled[6]);
+        finalsMatches.qf3 = mt('QF-3', shuffled[2], shuffled[5]);
+        finalsMatches.qf4 = mt('QF-4', shuffled[3], shuffled[4]);
+        finalsMatches.sf1 = mt('SF-1', {id:'TBD', name:'W(QF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF2)', p1:{}, p2:{}});
+        finalsMatches.sf2 = mt('SF-2', {id:'TBD', name:'W(QF3)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF4)', p1:{}, p2:{}});
+        finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+        finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      }
+    }
+    
+    // ▼ R2終了後の8チームで決勝トーナメントを生成する関数
+    function generateFinalsFrom8Teams(eightTeams) {
+      // ▼ 予選順位に基づいてソート
+      // 既存のcalcStandings()のロジックを使用して正確な順位を計算
+      let stMap = {};
+      eightTeams.forEach(t => stMap[t.id] = {
+        team: t, id: t.id, name: t.name,
+        wins: 0, indivW: 0, pts: 0, lost: 0, diff: 0, opp: 0,
+        tieBreaker: t.tieBreaker || 0
+      });
+      
+      // R1とR2の試合から成績を計算
+      let allM = [...r1Matches, ...r2Matches];
+      allM.forEach(m => {
+        if(m.winnerTeam) {
+          let st1 = stMap[m.team1.id], st2 = stMap[m.team2.id];
+          if(st1) st1.wins += (m.winnerTeam === 1 ? 1 : 0);
+          if(st2) st2.wins += (m.winnerTeam === 2 ? 1 : 0);
+          if(m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && st1 && st2) {
+            let w1=0, w2=0;
+            m.battles.forEach(b => { if(b.winner===1) w1++; if(b.winner===2) w2++; });
+            st1.indivW += w1; st2.indivW += w2;
+            st1.pts += m.t1Pts; st1.lost += m.t2Pts; st1.diff = st1.pts - st1.lost;
+            st2.pts += m.t2Pts; st2.lost += m.t1Pts; st2.diff = st2.pts - st2.lost;
+          }
+        }
+      });
+      
+      // オポネント計算
+      eightTeams.forEach(t => {
+        let st = stMap[t.id];
+        if (!st) return;
+        allM.forEach(m => {
+          if(m.winnerTeam) {
+            if(m.team1.id === t.id && m.team2.id !== 'BYE' && stMap[m.team2.id]) {
+              st.opp += (stMap[m.team2.id].indivW * 100 + stMap[m.team2.id].diff);
+            }
+            if(m.team2.id === t.id && m.team1.id !== 'BYE' && stMap[m.team1.id]) {
+              st.opp += (stMap[m.team1.id].indivW * 100 + stMap[m.team1.id].diff);
+            }
+          }
+        });
+      });
+      
+      // 順位順にソート（calcStandingsと同じロジック）
+      let sorted = Object.values(stMap).sort((a, b) => {
+        // 1. チーム勝利数
+        if(b.wins !== a.wins) return b.wins - a.wins;
+        // 2. 個人勝利数
+        if(b.indivW !== a.indivW) return b.indivW - a.indivW;
+        // 3. 得失点差
+        if(b.diff !== a.diff) return b.diff - a.diff;
+        // 4. 直接対決
+        let h2h = allM.find(m => (m.team1.id===a.id && m.team2.id===b.id) || (m.team1.id===b.id && m.team2.id===a.id));
+        if(h2h && h2h.winnerTeam) return (h2h.team1.id===a.id && h2h.winnerTeam===1) ? -1 : 1;
+        // 5. オポネント
+        if(b.opp !== a.opp) return b.opp - a.opp;
+        return b.tieBreaker - a.tieBreaker;
+      }).map(st => st.team);
+      // ▲ 予選順位ソート完了
+      
+      const mt = (id, t1, t2) => ({
+        id, team1: t1, team2: t2,
+        battles: [
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null},
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null},
+          {p1Id: null, p2Id: null, s1: null, s2: null, winner: null}
+        ],
+        winnerTeam: null, t1Pts: 0, t2Pts: 0
+      });
+      
+      // ▼ 指定された組み合わせで8チームQFを生成
+      // QF-1: 1位 vs 8位
+      // QF-2: 4位 vs 5位
+      // QF-3: 3位 vs 6位
+      // QF-4: 2位 vs 7位
+      finalsType = 'QF';
+      finalsMatches.qf1 = mt('QF-1', sorted[0], sorted[7]);  // 1位 vs 8位
+      finalsMatches.qf2 = mt('QF-2', sorted[3], sorted[4]);  // 4位 vs 5位
+      finalsMatches.qf3 = mt('QF-3', sorted[2], sorted[5]);  // 3位 vs 6位
+      finalsMatches.qf4 = mt('QF-4', sorted[1], sorted[6]);  // 2位 vs 7位
+      finalsMatches.sf1 = mt('SF-1', {id:'TBD', name:'W(QF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF2)', p1:{}, p2:{}});
+      finalsMatches.sf2 = mt('SF-2', {id:'TBD', name:'W(QF3)', p1:{}, p2:{}}, {id:'TBD', name:'W(QF4)', p1:{}, p2:{}});
+      finalsMatches.f = mt('FINAL', {id:'TBD', name:'W(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'W(SF2)', p1:{}, p2:{}});
+      finalsMatches.third = mt('3RD', {id:'TBD', name:'L(SF1)', p1:{}, p2:{}}, {id:'TBD', name:'L(SF2)', p1:{}, p2:{}});
+      // ▲ 指定組み合わせのQF生成完了
+    }
+    // ▲ 8チーム決勝トーナメント生成関数ここまで
+    
     function generateFinals() {
       if(!confirm("決勝トーナメントを作成しますか？")) return;
       calcStandings();
@@ -1535,7 +1802,14 @@
       if(finalsMatches.third && finalsMatches.third.winnerTeam){ document.getElementById('res3').innerText = finalsMatches.third.winnerTeam===1?finalsMatches.third.team1.name:finalsMatches.third.team2.name; document.getElementById('res4').innerText = finalsMatches.third.winnerTeam===1?finalsMatches.third.team2.name:finalsMatches.third.team1.name; }
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
     }
-    function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+    function closeResults() {
+      // TVモードがONの場合、自動的に終了
+      if (isTvMode_results) {
+        toggleTvMode('results');
+      }
+      document.getElementById('resultsModal').classList.add('hidden');
+      document.getElementById('resultsModal').classList.remove('flex');
+    }
 
     function openExportModal() {
       let exportText = "";

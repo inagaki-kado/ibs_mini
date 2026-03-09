@@ -89,12 +89,18 @@
     
     <div id="view-participants" class="h-full flex flex-col max-w-5xl mx-auto">
       <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0 bg-cyber-dark p-4 rounded-lg border border-cyber-table-border">
-        <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📋 テキスト貼付</button>
-        <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors">📦 画像DL(ZIP)</button>
-        <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs md:text-sm transition-colors" title="データを削除して最初から">🗑 リセット</button>
+        <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+        <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+        
+        <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
         
         <div class="flex-grow"></div>
-        <button onclick="addParticipant()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 py-2 rounded font-bold shadow text-xs md:text-sm transition-transform active:scale-95">＋ 手動追加</button>
+        
+        <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
+          <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
+          <span>🖼️ ロゴ表示</span>
+        </label>
+        <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
       </div>
       
 
@@ -145,16 +151,16 @@
     </div>
 
     <div id="view-ranking" class="hidden h-full flex-col max-w-5xl mx-auto">
-      <div class="flex justify-between items-center mb-4 shrink-0">
+      <div class="flex justify-between items-center mb-3 shrink-0">
         <div class="flex items-center gap-2">
           <button id="tv-btn-ranking" onclick="toggleTvMode('view-ranking')" class="w-9 h-9 rounded-full border-2 border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#f97316]" title="モニター出力">📺</button>
           <span id="tv-scroll-btns-ranking" class="hidden flex items-center gap-1">
             <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールUP">🔼</button>
             <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-orange text-cyber-orange bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-orange hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
           </span>
-          <h2 class="text-xl md:text-2xl font-sf text-cyber-orange border-l-4 border-cyber-orange pl-4">CURRENT RANKING</h2>
+          <h2 class="text-lg md:text-xl font-sf text-cyber-orange border-l-4 border-cyber-orange pl-3">CURRENT RANKING</h2>
         </div>
-        <button id="export-csv-btn" onclick="openExportModal()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-4 md:px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#f97316] transition-transform active:scale-95 text-sm md:text-base">📋 EXPORT CSV</button>
+        <button id="export-csv-btn" onclick="openExportModal()" class="bg-cyber-orange hover:bg-cyber-orange/80 text-white px-3 md:px-5 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#f97316] transition-transform active:scale-95 text-xs md:text-sm">📋 EXPORT CSV</button>
       </div>
 
       <div class="bg-cyber-dark border border-cyber-orange rounded-lg overflow-hidden flex-1 flex flex-col min-h-0 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
@@ -162,13 +168,13 @@
           <table class="w-full text-center border-collapse text-xs md:text-sm">
             <thead class="sticky top-0 bg-[#111827] z-10 text-cyber-orange font-sf text-[10px] md:text-xs border-b border-cyber-table-border shadow-md">
               <tr>
-                <th class="p-2 md:p-3">RANK</th>
-                <th class="p-2 md:p-3 text-left">NAME</th>
-                <th class="p-2 md:p-3 text-cyber-blue" title="現在のベイパワー">BP</th>
-                <th class="p-2 md:p-3">GAME</th>
-                <th class="p-2 md:p-3 text-cyber-green">WIN</th>
-                <th class="p-2 md:p-3 text-cyber-pink">LOSE</th>
-                <th class="p-2 md:p-3 text-yellow-400">WIN RATE</th>
+                <th class="p-2">RANK</th>
+                <th class="p-2 text-left">NAME</th>
+                <th class="p-2 text-cyber-blue" title="現在のベイパワー">BP</th>
+                <th class="p-2">GAME</th>
+                <th class="p-2 text-cyber-green">WIN</th>
+                <th class="p-2 text-cyber-pink">LOSE</th>
+                <th class="p-2 text-yellow-400">WIN RATE</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -372,6 +378,7 @@
     let conn = null;
     let isTvMode = false;
     let activeNextBattleId = null;
+    let logoDisplayEnabled = true;
 
     function initPeer() {
       if (peer) { peer.destroy(); }
@@ -453,6 +460,10 @@
     function openRemoteModal(matchId) {
         const match = matches.find(m => m.id === matchId);
         if(!match) return;
+        // リモコン画面を開く際、score.htmlの次戦予告を閉じる
+        if (conn && conn.open) {
+            conn.send({ type: 'HIDE_PREVIEW' });
+        }
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
         
@@ -914,12 +925,17 @@
     // ==========================================
     function sendNextBattle(matchId, p1, p2, stage, round) {
         if (activeNextBattleId === matchId) {
-            if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+            if (conn) conn.send({ type: 'HIDE_PREVIEW' });
             activeNextBattleId = null;
         } else {
-            if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+            const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
+            if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled });
             activeNextBattleId = matchId;
         }
+    }
+
+    function toggleLogoDisplay() {
+      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
     }
 
     function scrollRemote(amount) {
@@ -932,11 +948,16 @@
         const csvBtn = document.getElementById('export-csv-btn');
         const scrollBtns = document.getElementById('tv-scroll-btns-ranking');
         if (isTvMode) {
-            const content = document.getElementById(viewId).innerHTML;
-            if (conn) conn.send({ type: 'SHOW_OVERLAY', html: content });
+            // TVモード送信前にHTMLからTVボタンを一時削除
+            const container = document.getElementById(viewId);
+            const clone = container.cloneNode(true);
+            const tvBtn = clone.querySelector('#tv-btn-ranking');
+            if (tvBtn) tvBtn.style.display = 'none';
+            if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
             btn.style.cssText = 'background:#f97316;color:#fff;box-shadow:0 0 16px #f97316,0 0 32px #f97316;border-color:#f97316;';
             if (csvBtn) csvBtn.classList.add('hidden');
-            if (scrollBtns) scrollBtns.classList.remove('hidden');
+            // TVモード時はスクロールボタンを非表示
+            if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
             if (conn) conn.send({ type: 'HIDE_OVERLAY' });
             btn.style.cssText = '';
