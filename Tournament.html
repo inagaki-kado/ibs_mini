@@ -142,7 +142,8 @@
                     <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-t">🔽</span></th>
                     <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
                     <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')" ontouchend="handleTouch(event,()=>toggleParticipantSort('lottery'))">LOTTERY <span id="sort-icon-lottery-t"></span></th>
-                    <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
+                    <th class="p-3 text-sm text-center font-sf w-20">🗳️</th>
+                    <th class="p-3 text-sm text-center font-sf w-20">📷</th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                   </tr>
                 </thead>
@@ -903,7 +904,7 @@
         const beyCount = (p.beyblades || []).length;
         const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🎯${beyBadge}</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="handleBayCheck(${p.id})" class="bg-transparent text-cyber-pink border border-cyber-pink hover:bg-cyber-pink/20 w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック撮影" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1069,6 +1070,10 @@
     // ==========================================
     // カメラ撮影 ＆ ZIP保存
     // ==========================================
+    function handleBayCheck(id) {
+        openCamera(id);
+    }
+    
     function openCamera(id) {
         currentCheckId = id;
         const p = participants.find(x => x.id === id);
@@ -1088,13 +1093,21 @@
         const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
         const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
         ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white';
-        ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.lineWidth = fontSize / 20; ctx.textBaseline = 'top';
         const tName = tournamentName || '大会'; const pName = p.name;
-        const x = canvas.width - 20; const y1 = 20; const y2 = 20 + fontSize * 1.2;
-        ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
-        ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
         
-        // 使用ベイ名を描画（参加者名の下に、1行目左揃え/2行目中央/3行目右揃え）
+        // 大会名（中央揃え）
+        ctx.textAlign = 'center';
+        const y1 = 20;
+        ctx.strokeText(tName, canvas.width / 2, y1);
+        ctx.fillText(tName, canvas.width / 2, y1);
+        
+        // 参加者名（中央揃え）
+        const y2 = y1 + fontSize * 1.2;
+        ctx.strokeText(pName, canvas.width / 2, y2);
+        ctx.fillText(pName, canvas.width / 2, y2);
+        
+        // 使用ベイ名を描画（参加者名の下に）
         if (p.beyblades && p.beyblades.length > 0) {
           const beyFontSize = Math.max(img.width / 20, 24);
           ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
@@ -1954,7 +1967,15 @@ UX,ワイバーンホバー,ワイバーンホバー,1`;
      * 特定のパーツIDでフィルタリング
      */
     function getPartsByCategory(categoryId) {
-      return partsData.filter(p => p.id === categoryId);
+      // RC2はRAで始まるパーツ（ラチェット）、BTはBTで始まるパーツ（ビット）
+      if (categoryId === 'RC2') {
+        return partsData.filter(p => p.id.startsWith('RA'));
+      } else if (categoryId === 'BT') {
+        return partsData.filter(p => p.id.startsWith('BT'));
+      } else {
+        // それ以外はパーツIDと一致するもの
+        return partsData.filter(p => p.id.startsWith(categoryId));
+      }
     }
 
     // ==========================================
