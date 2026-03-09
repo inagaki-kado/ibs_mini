@@ -211,58 +211,12 @@
         .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
         
-        /* 使用ベイブレード表示欄 */
-        #beyblade-display-bar { 
-            position: fixed; 
-            bottom: 80px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            z-index: 75; 
-            display: flex; 
-            gap: clamp(15px, 3vw, 40px); 
-            background: rgba(0, 0, 0, 0.75); 
-            padding: 8px 20px; 
-            border-radius: 10px; 
-            border: 2px solid #0ea5e9; 
-            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
-            transition: bottom 0.3s, opacity 0.3s;
-        }
-        body.pro-mode #beyblade-display-bar { 
-            bottom: 15px; 
-        }
-        .beyblade-info { 
-            display: flex; 
-            align-items: baseline; 
-            gap: 8px; 
-        }
-        .beyblade-label { 
-            font-family: 'Orbitron', sans-serif; 
-            font-size: clamp(12px, 1.8vw, 18px); 
-            font-weight: 900; 
-            color: #0ea5e9; 
-            text-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
-        }
-        .beyblade-text { 
-            font-family: 'Chakra Petch', sans-serif; 
-            font-size: clamp(14px, 2.2vw, 22px); 
-            font-weight: 700; 
-            font-style: italic; 
-            color: #fff; 
-            text-shadow: 1px 1px 2px #000;
-            max-width: 30vw;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* 文字数に応じた自動縮小 */
-        .beyblade-text[data-length="long"] { font-size: clamp(11px, 1.8vw, 18px); }
-        .beyblade-text[data-length="verylong"] { font-size: clamp(9px, 1.5vw, 15px); }
         
-        /* ベイブレード名の個別表示枠（大会名の上、左右端） */
+        /* ベイブレード名の個別表示枠（画面最下部、左右端） */
         .beyblade-box {
             position: fixed;
-            top: 8px;
-            z-index: 76;
+            bottom: 15px;  /* 最下部に配置 */
+            z-index: 85;   /* 大会名(z-index:70)より上に表示 */
             background: rgba(0, 0, 0, 0.8);
             padding: 6px 12px;
             border-radius: 8px;
@@ -380,15 +334,6 @@
     <div id="win-display"></div>
 
     <!-- 使用ベイブレード表示欄 -->
-    <div id="beyblade-display-bar">
-        <div class="beyblade-info">
-            <span class="beyblade-text" id="beyblade-display-p1">-</span>
-        </div>
-        <div class="beyblade-info">
-            <span class="beyblade-text" id="beyblade-display-p2">-</span>
-        </div>
-    </div>
-
     <div class="system-btn btn-reset" onclick="executeCommand('SYS_RESET')">R</div>
     <div class="system-btn btn-reload" onclick="location.reload()">RL</div>
     <div class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</div>
@@ -487,19 +432,10 @@
 
         function toggleStatsDisplay() {
             blurFocus();
-            // 戦績ブロックの表示切替
+            // 戦績ブロックの表示切替のみ
             document.querySelectorAll('.player-stats-block').forEach(block => {
                 block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
             });
-            // 使用ベイ名の表示切替
-            document.querySelectorAll('.beyblade-name').forEach(el => {
-                el.style.display = (el.style.display === 'none') ? 'block' : 'none';
-            });
-            // 下部バーの表示切替
-            const beyBar = document.getElementById('beyblade-display-bar');
-            if (beyBar) {
-                beyBar.style.display = (beyBar.style.display === 'none') ? 'flex' : 'none';
-            }
         }
 
         function startCall() {
@@ -931,14 +867,12 @@
             const player = data.player.toUpperCase();
             const beybladeName = data.beyblade;
 
-            // プレイヤーごとに保存
+            // プレイヤーごとに保存して個別枠に表示
             if (player === 'P1') {
                 beybladeP1 = beybladeName;
-                updateBeybladeDisplay(1, beybladeName);
                 updateBeybladeBar(1, beybladeName);
             } else if (player === 'P2') {
                 beybladeP2 = beybladeName;
-                updateBeybladeDisplay(2, beybladeName);
                 updateBeybladeBar(2, beybladeName);
             } else {
                 console.warn('⚠️ 不明なプレイヤー:', player);
@@ -946,93 +880,12 @@
         }
 
         /**
-         * ベイブレード名を画面に表示（プレイヤー名の下に追加）
-         * @param {number} playerNum - 1 or 2
-         * @param {string} beybladeName - ベイブレード名
-         */
-        function updateBeybladeDisplay(playerNum, beybladeName) {
-            const wrapperId = `p${playerNum}-wrapper`;
-            const wrapper = document.getElementById(wrapperId);
-            
-            if (!wrapper) {
-                console.warn(`⚠️ ${wrapperId} が見つかりません`);
-                return;
-            }
-
-            // 既存のベイブレード名表示要素を探す
-            let beybladeEl = wrapper.querySelector('.beyblade-name');
-            
-            // なければ新規作成
-            if (!beybladeEl) {
-                beybladeEl = document.createElement('div');
-                beybladeEl.className = 'beyblade-name';
-                beybladeEl.style.cssText = `
-                    font-family: 'Chakra Petch', sans-serif;
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: var(--bx-orange);
-                    text-shadow: 1px 1px 0px black;
-                    background: rgba(0,0,0,0.5);
-                    border: 1px solid rgba(255,170,0,0.5);
-                    border-radius: 4px;
-                    padding: 2px 8px;
-                    max-width: 200px;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    margin-top: 3px;
-                `;
-                
-                // プレイヤー名の後に挿入
-                const nameInput = wrapper.querySelector('.name-input');
-                if (nameInput && nameInput.nextSibling) {
-                    wrapper.insertBefore(beybladeEl, nameInput.nextSibling);
-                } else {
-                    wrapper.appendChild(beybladeEl);
-                }
-            }
-
-            // テキスト更新
-            beybladeEl.textContent = beybladeName;
-            
-            // アニメーション効果
-            beybladeEl.style.transform = 'scale(1.1)';
-            beybladeEl.style.boxShadow = '0 0 10px var(--bx-orange)';
-            setTimeout(() => {
-                beybladeEl.style.transform = 'scale(1)';
-                beybladeEl.style.boxShadow = '0 0 5px rgba(255,170,0,0.3)';
-            }, 300);
-
-            console.log(`✅ P${playerNum}のベイブレード表示更新: ${beybladeName}`);
-        }
-
-        /**
-         * 下部ベイブレード表示バーを更新
+         * 下部ベイブレード表示バーを更新（個別枠のみ）
          * @param {number} playerNum - 1 or 2
          * @param {string} beybladeName - ベイブレード名
          */
         function updateBeybladeBar(playerNum, beybladeName) {
-            const displayEl = document.getElementById(`beyblade-display-p${playerNum}`);
             const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
-            const beyBar = document.getElementById('beyblade-display-bar');
-            
-            if (!displayEl) {
-                console.warn(`⚠️ beyblade-display-p${playerNum} が見つかりません`);
-                return;
-            }
-
-            // テキスト更新（下部バー）
-            displayEl.textContent = beybladeName || '-';
-            
-            // 文字数に応じてサイズ調整
-            const length = beybladeName.length;
-            if (length > 15) {
-                displayEl.setAttribute('data-length', 'verylong');
-            } else if (length > 10) {
-                displayEl.setAttribute('data-length', 'long');
-            } else {
-                displayEl.removeAttribute('data-length');
-            }
             
             // 個別枠の更新
             if (boxEl) {
@@ -1045,17 +898,6 @@
                 }
             }
             
-            // 下部バーの表示/非表示制御（両方とも未登録なら非表示）
-            if (beyBar) {
-                const p1Text = document.getElementById('beyblade-display-p1').textContent;
-                const p2Text = document.getElementById('beyblade-display-p2').textContent;
-                if (p1Text === '-' && p2Text === '-') {
-                    beyBar.style.display = 'none';
-                } else {
-                    beyBar.style.display = 'flex';
-                }
-            }
-            
             console.log(`✅ P${playerNum}のベイ名更新: ${beybladeName}`);
         }
 
@@ -1065,9 +907,8 @@
         function clearBeybladeDisplay() {
             beybladeP1 = '';
             beybladeP2 = '';
-            document.querySelectorAll('.beyblade-name').forEach(el => el.remove());
             
-            // 下部バーと個別枠をクリア
+            // 個別枠をクリア
             updateBeybladeBar(1, '');
             updateBeybladeBar(2, '');
         }
