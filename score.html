@@ -45,6 +45,8 @@
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
+        .btn-visibility { bottom: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #a78bfa; border-color: #a78bfa; font-size: 20px; box-shadow: 0 0 10px rgba(167,139,250,0.3); }
+        .btn-visibility.active { background: rgba(167,139,250,0.2); box-shadow: 0 0 15px rgba(167,139,250,0.5); }
         body.pro-mode .system-btn { display: none !important; }
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
@@ -175,7 +177,7 @@
             overflow-y: auto; 
             overflow-x: hidden; 
             -webkit-overflow-scrolling: touch; 
-            padding: 1rem; 
+            padding: 0; 
             font-size: clamp(14px, 3.5vw, 18px);
             box-sizing: border-box;
         }
@@ -210,7 +212,14 @@
         @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
-        #xtreme-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; opacity: 0; }
+        #xtreme-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; opacity: 0; border-radius: 0; }
+        @keyframes xtreme-glow {
+            0%   { opacity: 0; box-shadow: inset 0 0 0px transparent; }
+            15%  { opacity: 1; box-shadow: inset 0 0 120px 60px rgba(255,215,0,0.7), inset 0 0 300px 100px rgba(255,0,85,0.4); }
+            50%  { opacity: 0.8; box-shadow: inset 0 0 180px 80px rgba(255,0,85,0.6), inset 0 0 400px 150px rgba(255,215,0,0.3); }
+            100% { opacity: 0; box-shadow: inset 0 0 0px transparent; }
+        }
+        #xtreme-flash.active { animation: xtreme-glow 1.2s ease-out forwards; }
         .nb-vs-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 3vw, 40px); margin: 2rem 0; }
         .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(26px, 6vw, 90px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
         .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
@@ -251,7 +260,7 @@
             box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
         }
         body.pro-mode .beyblade-box {
-            display: block; /* プロモードでのみ表示 */
+            /* 表示はtoggleVisibility()で制御 */
         }
     </style>
 </head>
@@ -350,6 +359,7 @@
     <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
     <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
     <div class="system-btn btn-safe" onclick="toggleSafeMode()" id="btn-safe">SA</div>
+<div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">👁️</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 
     <script>
@@ -365,6 +375,7 @@
         let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
 
         let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null, readySetReq = null;
+        let isStatsVisible = true; // 戦績・ベイブレード名の表示状態（初期：表示あり）
 
         const camVideo = document.getElementById('camera-bg');
         const replayVideo = document.getElementById('replay-video');
@@ -450,6 +461,21 @@
             });
         }
 
+        function toggleVisibility() {
+            blurFocus();
+            isStatsVisible = !isStatsVisible;
+            // 戦績ブロック（RANK / BP / WR）
+            document.querySelectorAll('.player-stats-block').forEach(b => {
+                b.style.display = isStatsVisible ? 'flex' : 'none';
+            });
+            // ベイブレード名ボックス（データがある場合のみ表示）
+            document.querySelectorAll('.beyblade-box').forEach(b => {
+                b.style.display = (isStatsVisible && b.textContent.trim()) ? 'block' : 'none';
+            });
+            const btn = document.getElementById('btn-visibility');
+            if (btn) btn.classList.toggle('active', isStatsVisible);
+        }
+
         function startCall() {
             if (isCountingDown || isReplayMode) return;
             isCalling = true; blurFocus();
@@ -528,20 +554,12 @@
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
             if (t === 'XTREME') {
-                // XTREME FINISH専用の派手なエフェクト（オーバーレイdivで点滅：背景・HUDに影響なし）
+                // XTREME FINISH専用演出：放射状グロウ（点滅なし・安全）
                 const flashEl = document.getElementById('xtreme-flash');
-                const flashColors = ['rgba(255,215,0,0.55)', 'rgba(255,0,85,0.55)'];
-                for (let i = 0; i < 7; i++) {
-                    setTimeout(() => {
-                        flashEl.style.background = flashColors[i % 2];
-                        flashEl.style.opacity = '1';
-                    }, i * 80);
-                }
-                setTimeout(() => {
-                    flashEl.style.transition = 'opacity 0.5s';
-                    flashEl.style.opacity = '0';
-                    setTimeout(() => { flashEl.style.transition = ''; }, 600);
-                }, 560);
+                flashEl.classList.remove('active');
+                void flashEl.offsetWidth; // reflow でアニメーションリセット
+                flashEl.classList.add('active');
+                setTimeout(() => { flashEl.classList.remove('active'); }, 1200);
 
                 // 画面シェイク効果
                 const mainHud = document.getElementById('main-hud');
@@ -750,7 +768,7 @@
                     }
                     else if (data.type === 'SHOW_OVERLAY') {
                         const overlay = document.getElementById('remote-content-overlay');
-                        overlay.innerHTML = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"><style>*{pointer-events:none!important;cursor:default!important;}</style>' + data.html;
+                        overlay.innerHTML = '<style>*{pointer-events:none!important;cursor:default!important;}</style>' + data.html;
                         overlay.classList.remove('hidden');
                     }
                     else if (data.type === 'HIDE_OVERLAY') {
@@ -903,7 +921,7 @@
             if (boxEl) {
                 if (beybladeName) {
                     boxEl.textContent = beybladeName;
-                    boxEl.style.display = 'block';
+                    boxEl.style.display = isStatsVisible ? 'block' : 'none';
                 } else {
                     boxEl.textContent = '';
                     boxEl.style.display = 'none';

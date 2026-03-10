@@ -42,7 +42,7 @@
     </div>
 
     <h1 class="text-2xl font-sf text-cyber-pink drop-shadow-[0_0_8px_rgba(236,72,153,0.8)] ml-24 md:ml-0">ITABASHI BEY-TAG-LEAGUE</h1>
-    <p class="text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">QUALIFYING & ELIMINATION SYSTEM</p>
+    <p class="text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">QUALIFYING & ELIMINATION SYSTEM <span class="text-cyber-pink opacity-90">v1.1</span></p>
     
     <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
       <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
@@ -270,11 +270,12 @@
     </div>
   </div>
 
-  <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+  <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
+    <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
     <h2 class="text-xl font-sf text-cyber-pink mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
     <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
     <div class="flex gap-4 w-full max-w-sm">
-      <button onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
+      <button id="reTakeBtn" onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
       <button onclick="closeCameraModal()" class="flex-1 bg-cyber-pink text-white px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] active:scale-95 transition-transform">OK</button>
     </div>
   </div>
@@ -867,47 +868,18 @@
         document.getElementById('cameraInput').click(); 
     }
 
-    document.getElementById('cameraInput').addEventListener('change', function(e) {
-      const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
-      reader.onload = function(event) { img.onload = function() {
-        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-        
-        let tName = document.getElementById('tournamentNameInput').value || 'タッグ杯';
-        let pName = "";
-        let t = null;
-
-        if(currentCheckTarget.type === 'team') { 
-            t = teams.find(x => x.id === currentCheckTarget.id); 
-            pName = t.name;
-        }
-
-        const fontSize = Math.max(img.width / 15, 30); 
-        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#ec4899'; ctx.strokeStyle = 'white'; ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        
-        const x = canvas.width - 20; 
-        const y1 = 20;
-        const y2 = 20 + fontSize * 1.2;
-
-        ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
-        ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        if(t) {
-            t.bayImage = dataUrl;
-            t.bayChecked = true;
-            renderTeams();
-        }
-        
-        document.getElementById('resultImage').src = dataUrl; 
-        document.getElementById('cameraModal').classList.remove('hidden'); 
-        document.getElementById('cameraModal').classList.add('flex'); 
-      }; img.src = event.target.result; }; reader.readAsDataURL(file);
-    });
-
     function closeCameraModal() { 
         document.getElementById('cameraModal').classList.add('hidden'); 
         document.getElementById('cameraModal').classList.remove('flex'); 
-        document.getElementById('cameraInput').value = ''; 
+        document.getElementById('cameraInput').value = '';
+        document.getElementById('cancelCameraBtn').classList.add('hidden');
+    }
+
+    function cancelCameraAndBack() {
+        document.getElementById('cameraModal').classList.add('hidden');
+        document.getElementById('cameraModal').classList.remove('flex');
+        document.getElementById('cameraInput').value = '';
+        document.getElementById('cancelCameraBtn').classList.add('hidden');
     }
 
     async function downloadAllTeamImagesZip() {
@@ -1944,6 +1916,51 @@
 
         // 初期化実行
     initApp();
+
+    window.addEventListener('DOMContentLoaded', function() {
+      const camInput = document.getElementById('cameraInput');
+      if (!camInput) return;
+      const newInput = camInput.cloneNode(true);
+      camInput.parentNode.replaceChild(newInput, camInput);
+      newInput.addEventListener('change', function(e) {
+        const file = e.target.files[0]; if (!file) return;
+        const img = new Image(); const reader = new FileReader();
+        reader.onload = function(event) {
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+            let tName = (document.getElementById('tournamentNameInput') && document.getElementById('tournamentNameInput').value) || 'タッグ杯';
+            let pName = '';
+            let t = null;
+            if (currentCheckTarget && currentCheckTarget.type === 'team') {
+              t = teams.find(x => x.id === currentCheckTarget.id);
+              if (t) pName = t.name;
+            }
+            const fontSize = Math.max(img.width / 15, 30);
+            const margin = 20;
+            ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
+            ctx.fillStyle = '#ec4899';
+            ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+            ctx.lineWidth = fontSize / 12;
+            ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+            ctx.strokeText(tName, canvas.width - margin, margin);
+            ctx.fillText(tName, canvas.width - margin, margin);
+            ctx.strokeText(pName, canvas.width - margin, margin + fontSize * 1.2);
+            ctx.fillText(pName, canvas.width - margin, margin + fontSize * 1.2);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            if (t) { t.bayImage = dataUrl; t.bayChecked = true; renderTeams(); }
+            document.getElementById('resultImage').src = dataUrl;
+            document.getElementById('reTakeBtn').classList.remove('hidden');
+            document.getElementById('cancelCameraBtn').classList.remove('hidden');
+            document.getElementById('cameraModal').classList.remove('hidden');
+            document.getElementById('cameraModal').classList.add('flex');
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    });
   </script>
 </body>
 </html>

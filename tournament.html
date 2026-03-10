@@ -1139,30 +1139,28 @@
 
         let yOffset = y2 + fontSize * 1.5;
 
-        // ベイ1: 左揃え
+        ctx.textAlign = 'left';
+        const beyLabels = ['①', '②', '③'];
+
+        // ベイ1〜3: すべて左揃え＋①②③
         if (p.beyblades[0]) {
-          ctx.textAlign = 'left';
-          const bey1Name = p.beyblades[0].name || 'ー';
+          const bey1Name = beyLabels[0] + (p.beyblades[0].name || 'ー');
           ctx.strokeText(bey1Name, margin, yOffset);
           ctx.fillText(bey1Name, margin, yOffset);
           yOffset += beyFontSize * 1.4;
         }
 
-        // ベイ2: 中央揃え
         if (p.beyblades[1]) {
-          ctx.textAlign = 'center';
-          const bey2Name = p.beyblades[1].name || 'ー';
-          ctx.strokeText(bey2Name, w / 2, yOffset);
-          ctx.fillText(bey2Name, w / 2, yOffset);
+          const bey2Name = beyLabels[1] + (p.beyblades[1].name || 'ー');
+          ctx.strokeText(bey2Name, margin, yOffset);
+          ctx.fillText(bey2Name, margin, yOffset);
           yOffset += beyFontSize * 1.4;
         }
 
-        // ベイ3: 右揃え
         if (p.beyblades[2]) {
-          ctx.textAlign = 'right';
-          const bey3Name = p.beyblades[2].name || 'ー';
-          ctx.strokeText(bey3Name, w - margin, yOffset);
-          ctx.fillText(bey3Name, w - margin, yOffset);
+          const bey3Name = beyLabels[2] + (p.beyblades[2].name || 'ー');
+          ctx.strokeText(bey3Name, margin, yOffset);
+          ctx.fillText(bey3Name, margin, yOffset);
         }
       }
     }
