@@ -502,11 +502,44 @@
     let activeNextBattleId = null;
     let logoDisplayEnabled = true;
 
+    let _retryCount = 0;
+    let _retryTarget = null;
+    let _retryTimer = null;
+
     function initPeer() {
       if (peer) peer.destroy();
       peer = new Peer();
-      peer.on('error', (err) => { console.error(err); resetLinkUI(); alert("通信エラーが発生しました: " + err.type); });
+      peer.on('error', (err) => {
+        console.error(err);
+        if (err.type === 'peer-unavailable' && _retryTarget && _retryCount < 5) {
+          _retryCount++;
+          const btn = document.getElementById('btn-connect');
+          btn.innerText = 'RETRY ' + _retryCount + '/5...';
+          console.log('🔄 接続リトライ ' + _retryCount + '/5 (3秒後)');
+          _retryTimer = setTimeout(() => {
+            if (conn) conn.close();
+            conn = peer.connect('itabashi-link-' + _retryTarget, { reliable: true });
+            _attachConnHandlers(conn);
+          }, 3000);
+        } else {
+          _retryCount = 0; _retryTarget = null;
+          resetLinkUI();
+          if (err.type !== 'peer-unavailable') alert('通信エラーが発生しました: ' + err.type);
+          else alert('接続できませんでした。\nスコアアプリが起動しているか確認し、\n再度コードを入力してください。');
+        }
+      });
       peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
+    }
+
+    function _attachConnHandlers(c) {
+      const btn = document.getElementById('btn-connect');
+      c.on('open', () => {
+        _retryCount = 0; _retryTarget = null;
+        btn.innerText = 'DISCONN'; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+        const dot = document.getElementById('link-status-dot');
+        dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
+      });
+      c.on('close', () => resetLinkUI());
     }
 
     function forceResetLink() { if (conn) { conn.close(); conn = null; } initPeer(); resetLinkUI(); }
@@ -526,13 +559,10 @@
       const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
       if (!peer || peer.destroyed) initPeer();
       if (conn) conn.close();
+      if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
+      _retryCount = 0; _retryTarget = code;
       conn = peer.connect('itabashi-link-' + code, { reliable: true });
-      conn.on('open', () => {
-        btn.innerText = "DISCONN"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
-        const dot = document.getElementById('link-status-dot');
-        dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
-      });
-      conn.on('close', () => resetLinkUI());
+      _attachConnHandlers(conn);
     }
 
     function sendRemoteCmd(cmd) {
