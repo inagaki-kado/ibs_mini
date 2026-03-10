@@ -524,8 +524,8 @@
         } else {
           _retryCount = 0; _retryTarget = null;
           resetLinkUI();
-          if (err.type !== 'peer-unavailable') alert('通信エラーが発生しました: ' + err.type);
-          else alert('接続できませんでした。\nスコアアプリが起動しているか確認し、\n再度コードを入力してください。');
+          if (err.type !== 'peer-unavailable') showAlert('通信エラーが発生しました: ' + err.type);
+          else showAlert('接続できませんでした。\nスコアアプリが起動しているか確認し、\n再度コードを入力してください。');
         }
       });
       peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
@@ -555,7 +555,7 @@
     function connectLink() {
       if (conn && conn.open) { conn.close(); resetLinkUI(); return; }
       const code = document.getElementById('linkCodeInput').value;
-      if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力してください");
+      if(!code || code.length !== 4) return showAlert("iPhoneのLINK CODEを入力してください");
       const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
       if (!peer || peer.destroyed) initPeer();
       if (conn) conn.close();
@@ -567,7 +567,7 @@
 
     function sendRemoteCmd(cmd) {
         if(!conn || !conn.open) {
-            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return alert("⚠️ HUD（スコアアプリ）がリンクされていません。");
+            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
@@ -615,7 +615,7 @@
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
             });
-        } else { alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
+        } else { showAlert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
         currentRemoteMode = 'score'; switchRemoteTab('score');
         document.getElementById('remoteModal').classList.remove('hidden'); document.getElementById('remoteModal').classList.add('flex');
     }
@@ -773,7 +773,7 @@
     }
 
     let startDebounce = false;
-    function handleStartTournament(e) {
+    async function handleStartTournament(e) {
       if (e) e.preventDefault();
       if (startDebounce) return; startDebounce = true; setTimeout(() => { startDebounce = false; }, 500);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
@@ -832,11 +832,11 @@
     // ==========================================
     // 参加者管理
     // ==========================================
-    function openPasteModal() { if(isTournamentStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
+    function openPasteModal() { if(isTournamentStarted) return showAlert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
     function processPasteData() {
-      const text = document.getElementById('pasteArea').value; if(!text.trim()) return alert("テキストが入力されていません");
+      const text = document.getElementById('pasteArea').value; if(!text.trim()) return showAlert("テキストが入力されていません");
       const lines = text.split(/\r\n|\n/); let count = 0;
       lines.forEach(line => {
         if(!line.trim()) return; const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
@@ -849,11 +849,11 @@
             bayChecked: false, bayImage: null, beyblades: [], color: null, position: null }); count++;
         }
       });
-      renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！`);
+      renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
     }
 
     function addParticipant(name = '', memo1 = '') {
-      if(isTournamentStarted) return alert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
+      if(isTournamentStarted) return showAlert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
@@ -861,8 +861,8 @@
       renderParticipants();
     }
     
-    function removeParticipant(id) {
-      if(isTournamentStarted) return alert("開始後は削除できません"); if(!confirm("削除しますか？")) return;
+    async function removeParticipant(id) {
+      if(isTournamentStarted) return showAlert("開始後は削除できません"); if(!await showConfirm("削除しますか？")) return;
       const p = participants.find(x => x.id === id); if(p && p.color) blockData[p.color][p.position] = null;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
@@ -1003,14 +1003,14 @@
             if(blockData[selectedColor][idx] === null) emptyPositions.push(idx);
         });
 
-        if(emptyPositions.length === 0) return alert("満員です");
+        if(emptyPositions.length === 0) return showAlert("満員です");
         const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
         const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
 
         // 演出OFFの場合：即座に結果をalertで表示して終了
         if (!isEffectOn) {
             p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
-            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
+            showAlert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
             closeLotteryModal();
             renderParticipants();
             return;
@@ -1103,9 +1103,9 @@
         wrapper.style.transform = '';
     }
 
-    function reLottery(id) {
+    async function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
-      if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
+      if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
 
     // ==========================================
@@ -1224,9 +1224,9 @@
     }
 
     async function downloadAllImagesZip() {
-        if (typeof JSZip === 'undefined') return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
+        if (typeof JSZip === 'undefined') return showAlert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
         const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
-        if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
+        if (checkedParticipants.length === 0) return showAlert("保存するベイチェック画像がありません。");
         const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
         const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
         
@@ -1268,7 +1268,7 @@
 
     function exportParticipantsCSV() {
         if (participants.length === 0) {
-            alert("参加者がいません。");
+            showAlert("参加者がいません。");
             return;
         }
         
@@ -1296,7 +1296,7 @@
         // クリップボードにコピーを試みる
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(csvContent).then(() => {
-                alert("📋 CSVテキストをクリップボードにコピーしました！");
+                showAlert("📋 CSVテキストをクリップボードにコピーしました！");
             }).catch(err => {
                 // コピー失敗時はテキストエリアに表示
                 showCSVModal(csvContent);
@@ -1330,7 +1330,7 @@
         copyBtn.onclick = () => {
             textarea.select();
             document.execCommand('copy');
-            alert('コピーしました！');
+            showAlert('コピーしました！');
         };
         
         const closeBtn = document.createElement('button');
@@ -1354,7 +1354,7 @@
     // ==========================================
     // トーナメント進行
     // ==========================================
-    function startTournament() {
+    async function startTournament() {
       // ▼ オート抽選機能: 未抽選の参加者を自動配置
       const unlotteryParticipants = participants.filter(p => p.color === null);
       if (unlotteryParticipants.length > 0) {
@@ -1369,7 +1369,7 @@
         });
 
         if (allEmptySlots.length < unlotteryParticipants.length) {
-          alert(`空き枠が不足しています。\n未抽選: ${unlotteryParticipants.length}名\n空き枠: ${allEmptySlots.length}枠`);
+          showAlert(`空き枠が不足しています。\n未抽選: ${unlotteryParticipants.length}名\n空き枠: ${allEmptySlots.length}枠`);
           return;
         }
 
@@ -1387,12 +1387,12 @@
           blockData[slot.color][slot.position] = p;
         });
 
-        alert(`オート抽選完了！\n${unlotteryParticipants.length}名を自動配置しました。`);
+        showAlert(`オート抽選完了！\n${unlotteryParticipants.length}名を自動配置しました。`);
         renderParticipants();
       }
       // ▲ オート抽選機能ここまで
 
-      if(!confirm("トーナメントを開始しますか？")) return;
+      if(!await showConfirm("トーナメントを開始しますか？")) return;
       isSetupSwapMode = false; setupSwapPending = null;
       if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
       isTournamentStarted = true;
@@ -1821,8 +1821,8 @@
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
 
-    function clearSave() {
-      if (!confirm("セーブデータを削除して最初からやり直しますか？\n※この操作は元に戻せません")) return;
+    async function clearSave() {
+      if (!await showConfirm("セーブデータを削除して最初からやり直しますか？\n※この操作は元に戻せません")) return;
       localStorage.removeItem(SAVE_KEY);
       location.reload();
     }
@@ -1873,7 +1873,7 @@
         return partsData;
       } catch (error) {
         console.error('❌ parts.csv読み込みエラー:', error);
-        alert('parts.csvの読み込みに失敗しました。\nparts.csvがtournament.htmlと同じフォルダにあるか確認してください。');
+        showAlert('parts.csvの読み込みに失敗しました。\nparts.csvがtournament.htmlと同じフォルダにあるか確認してください。');
         return [];
       }
     }
@@ -2072,8 +2072,8 @@
     /**
      * ベイブレードを削除
      */
-    function deleteBeyblade(index) {
-      if (!confirm('このベイブレードを削除しますか?')) return;
+    async function deleteBeyblade(index) {
+      if (!await showConfirm('このベイブレードを削除しますか?')) return;
       
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       participant.beyblades.splice(index, 1);
@@ -2403,5 +2403,22 @@
 
     initApp();
   </script>
+
+<!-- ===== カスタム alert / confirm モーダル ===== -->
+<div id="custom-alert-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl shadow-[0_0_30px_rgba(14,165,233,0.3)] p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-alert-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <button id="custom-alert-ok" class="py-2 bg-cyber-blue text-cyber-bg font-bold font-sf rounded hover:brightness-110 transition">OK</button>
+  </div>
+</div>
+<div id="custom-confirm-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl shadow-[0_0_30px_rgba(14,165,233,0.3)] p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-confirm-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="custom-confirm-cancel" class="flex-1 py-2 bg-transparent border border-gray-500 text-gray-300 font-bold font-sf rounded hover:bg-gray-700 transition">キャンセル</button>
+      <button id="custom-confirm-ok" class="flex-1 py-2 bg-cyber-pink text-white font-bold font-sf rounded hover:brightness-110 transition">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
