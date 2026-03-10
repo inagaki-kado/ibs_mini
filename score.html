@@ -64,7 +64,7 @@
         body.safe-mode #p1-wrapper { left: max(30px, calc(var(--safe-left) + 30px)); }
         body.safe-mode #p2-wrapper { right: max(30px, calc(var(--safe-right) + 30px)); }
         
-        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 24px; font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: 224px; text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
+        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: clamp(15px, 2.8vw, 24px); font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: clamp(200px, 30vw, 340px); text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
         #name2 { text-align: right; }
         .score { font-family: 'DSEG7 Classic', monospace !important; font-weight: bold !important; font-style: italic !important; font-size: 85px !important; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         
@@ -238,12 +238,12 @@
             border: 2px solid;
             box-shadow: 0 0 12px;
             font-family: 'Chakra Petch', sans-serif;
-            font-size: clamp(14px, 2vw, 20px);
+            font-size: clamp(11px, 1.8vw, 18px);
             font-weight: 700;
             font-style: italic;
             color: #fff;
             text-shadow: 1px 1px 2px #000;
-            max-width: 35vw;
+            max-width: 48vw;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;

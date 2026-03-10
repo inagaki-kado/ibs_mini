@@ -1540,7 +1540,8 @@
           .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; flex:1; }
           .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; flex:1; }
           .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; flex:1; }
-          .tv-p.lose { color:#475569; text-decoration:line-through; flex:1; }
+          .tv-p.lose-left { text-align:right; color:#475569; text-decoration:line-through; flex:1; }
+          .tv-p.lose-right { text-align:left; color:#475569; text-decoration:line-through; flex:1; }
           .tv-vs { font-family:'Orbitron',sans-serif; font-size:10px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
           .tv-score { font-family:'Orbitron',sans-serif; font-size:11px; color:${C.orange}; flex-shrink:0; white-space:nowrap; }
           .tv-tbd { color:#334155; font-style:italic; }
@@ -1555,8 +1556,8 @@
         const p1Name = p1.id === 'BYE' ? 'BYE' : p1.name;
         const p2Name = p2.id === 'BYE' ? 'BYE' : p2.name;
         let p1cls = 'tv-p left', p2cls = 'tv-p right';
-        if (match.winner === 1) { p1cls = 'tv-p win-left'; p2cls = 'tv-p lose'; }
-        if (match.winner === 2) { p1cls = 'tv-p lose'; p2cls = 'tv-p win-right'; }
+        if (match.winner === 1) { p1cls = 'tv-p win-left'; p2cls = 'tv-p lose-right'; }
+        if (match.winner === 2) { p1cls = 'tv-p lose-left'; p2cls = 'tv-p win-right'; }
         const mid = match.score
           ? `<span class="tv-score">${match.score}</span>`
           : `<span class="tv-vs">VS</span>`;
