@@ -715,6 +715,53 @@
     opacity: 1;
     transform: translateY(0);
   }
+
+  /* ─── Capacity Badge ─── */
+  .capacity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .capacity-badge.open {
+    color: var(--neon-green);
+    border-color: rgba(0,255,136,0.4);
+    background: rgba(0,255,136,0.07);
+  }
+  .capacity-badge.few {
+    color: var(--neon-yellow);
+    border-color: rgba(250,204,21,0.4);
+    background: rgba(250,204,21,0.07);
+    animation: badgePulse 1.4s ease-in-out infinite;
+  }
+  .capacity-badge.full {
+    color: #ff4d4d;
+    border-color: rgba(255,77,77,0.4);
+    background: rgba(255,77,77,0.07);
+  }
+  .capacity-badge.info {
+    color: #cbd5e1;
+    border-color: rgba(203,213,225,0.3);
+    background: rgba(203,213,225,0.05);
+  }
+  @keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+
+  .event-name-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
 </style>
 </head>
 <body>
@@ -726,8 +773,8 @@
   <a class="nav-logo" href="#hero">板橋ベイブレード会</a>
   <ul class="nav-links">
     <li><a href="#about">ABOUT</a></li>
-    <li><a href="#rules">RULES</a></li>
     <li><a href="#events">EVENTS</a></li>
+    <li><a href="#rules">PRECAUTION</a></li>
   </ul>
 </nav>
 
@@ -746,7 +793,7 @@
     aria-hidden="true"
     style="
       position: absolute;
-      width: min(520px, 80vw);
+      width: min(1040px, 95vw);
       height: auto;
       top: 50%;
       left: 50%;
@@ -785,9 +832,11 @@
         <h2 class="section-title" style="font-size:1.2rem; margin-bottom:1rem;">イメージ動画</h2>
         <div class="video-wrap">
           <iframe
-            src="https://www.youtube.com/embed/I_RO4i45jII"
-            title="板橋ベイブレード会 プロモーション動画"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            src="https://www.youtube.com/embed/I_RO4i45jII?si=-IaCVJs0IrivHLSx"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen
           ></iframe>
         </div>
@@ -851,7 +900,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">板橋ベイブレード会</div>
-  <div class="footer-sub">MEETUP OF ITABASHI — Powered by Inagaki Yammy</div>
+  <div class="footer-sub">MEETUP OF ITABASHI — Powered by Inagaki"INASSY"Yammy</div>
   <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
     <a class="footer-x-link" href="https://x.com/yamizaki" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -885,6 +934,7 @@ const COL = {
   venueSub:  12, // 会場補足
   mapUrl:    13, // GoogleマップURL
   tonamel:   14, // トナメルURL
+  capacity:  15, // 定員状況（受付中／残りわずか／満員）
 };
 
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土'];
@@ -962,6 +1012,20 @@ function renderCard(row) {
   const venueSub  = (row[COL.venueSub]  || '').trim();
   const mapUrl    = (row[COL.mapUrl]    || '').trim();
   const tonamel   = (row[COL.tonamel]   || '').trim();
+  const capacity  = (row[COL.capacity]  || '').trim();
+
+  // 定員バッジ生成
+  let capacityBadge = '';
+  if (capacity === '受付中') {
+    capacityBadge = `<span class="capacity-badge open">✅ 受付中</span>`;
+  } else if (capacity === '残りわずか') {
+    capacityBadge = `<span class="capacity-badge few">⚡ 残りわずか</span>`;
+  } else if (capacity === '満員') {
+    capacityBadge = `<span class="capacity-badge full">🔴 定員埋まりました</span>`;
+  } else if (capacity) {
+    // 上記以外の自由テキストはそのまま表示
+    capacityBadge = `<span class="capacity-badge info">📢 ${capacity}</span>`;
+  }
 
   // 大会時間を結合（開始〜終了）
   const timeStr = startTime && endTime ? `${startTime}〜${endTime}`
@@ -994,7 +1058,10 @@ function renderCard(row) {
       <div class="event-date-dow">${dateDisplay.dow}曜</div>
     </div>
     <div class="event-body">
-      <div class="event-name">${name}</div>
+      <div class="event-name-row">
+        <div class="event-name">${name}</div>
+        ${capacityBadge}
+      </div>
 
       <div class="event-meta-row">
         ${format   ? `<span class="event-tag blue">${format}</span>` : ''}
@@ -1076,8 +1143,15 @@ function observeReveal() {
         io.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.08 });
+  }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.reveal:not(.visible)').forEach(el => io.observe(el));
 }
 
-// ─── INIT ───────────────────────────────────�
+// ─── INIT ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  observeReveal();
+  loadEvents();
+});
+</script>
+</body>
+</html>
