@@ -406,13 +406,13 @@
 
     // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
     let _tDebounce = false;
-    function handleTouch(e, fn) {
+    async function handleTouch(e, fn) {
       e.preventDefault();
       if (_tDebounce) return;
       _tDebounce = true;
       setTimeout(() => { _tDebounce = false; }, 400);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
-      fn();
+      await fn();
     }
 
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
