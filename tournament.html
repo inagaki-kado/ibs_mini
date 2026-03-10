@@ -634,8 +634,10 @@
         // 左側のプレイヤー（スワップ考慮）
         const leftPlayer = isRemoteSwapped ? m.p2 : m.p1;
         const rightPlayer = isRemoteSwapped ? m.p1 : m.p2;
-        const leftPlayerName = isRemoteSwapped ? 'P2' : 'P1';
-        const rightPlayerName = isRemoteSwapped ? 'P1' : 'P2';
+        // score.html側はSWAPコマンドでP1↔P2を入れ替え済みなので
+        // リモコン側は画面上の左=P1・右=P2で固定送信する
+        const leftPlayerName = 'P1';
+        const rightPlayerName = 'P2';
         
         // 左側のベイボタン
         if (leftPlayer.beyblades && leftPlayer.beyblades.length > 0) {
