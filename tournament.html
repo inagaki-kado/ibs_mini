@@ -1532,13 +1532,13 @@
           .tv-block { flex:1; min-width:220px; max-width:340px; border:1px solid ${C.blue}; border-radius:8px; overflow:hidden; background:${C.card}; }
           .tv-block-title { background:rgba(14,165,233,0.15); border-bottom:1px solid ${C.blue}; text-align:center; padding:8px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.8vw,16px); font-weight:900; color:${C.blue}; letter-spacing:3px; text-shadow:0 0 8px ${C.blue}; }
           .tv-round-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; padding:8px 12px 4px; }
-          .tv-match { display:flex; align-items:center; justify-content:center; gap:8px; padding:5px 10px; margin:3px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border:1px solid ${C.border}; }
-          .tv-p { font-style:italic; font-weight:700; font-size:clamp(13px,2vw,17px); flex:1; text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-          .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; }
-          .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; }
-          .tv-p.win-left { color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; }
-          .tv-p.win-right { color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; }
-          .tv-p.lose { color:#475569; text-decoration:line-through; }
+          .tv-match { display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:5px 10px; margin:3px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border:1px solid ${C.border}; }
+          .tv-p { font-style:italic; font-weight:700; font-size:clamp(13px,2vw,17px); text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; flex:1; }
+          .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; flex:1; }
+          .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; flex:1; }
+          .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; flex:1; }
+          .tv-p.lose { color:#475569; text-decoration:line-through; flex:1; }
           .tv-vs { font-family:'Orbitron',sans-serif; font-size:10px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
           .tv-score { font-family:'Orbitron',sans-serif; font-size:11px; color:${C.orange}; flex-shrink:0; white-space:nowrap; }
           .tv-tbd { color:#334155; font-style:italic; }
@@ -1601,17 +1601,16 @@
       return `
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
-          .tv-res-outer { background:#0a0e17; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:16px; }
+          .tv-res-outer { background:#0a0e17; width:100vw; min-height:100vh; display:flex; align-items:flex-start; justify-content:center; box-sizing:border-box; padding:24px 16px; }
           .tv-res-card {
             width:100%; max-width:640px;
             background:#0d131f;
             border:3px solid #facc15;
             border-radius:12px;
             box-shadow:0 0 30px rgba(250,204,21,0.5), 0 0 60px rgba(250,204,21,0.2), inset 0 0 20px rgba(250,204,21,0.05);
-            padding:28px 24px 24px;
+            padding:28px 24px 28px;
             box-sizing:border-box;
             position:relative;
-            overflow:visible;
           }
           .tv-res-topbar { position:absolute; top:0; left:0; width:100%; height:4px; background:linear-gradient(90deg,#854d0e,#fef08a,#854d0e); border-radius:12px 12px 0 0; }
           .tv-res-tname { font-family:'Orbitron',sans-serif; font-size:clamp(12px,2vw,16px); color:#0ea5e9; text-align:center; letter-spacing:3px; margin-bottom:16px; text-shadow:0 0 8px #0ea5e9; }

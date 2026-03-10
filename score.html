@@ -444,10 +444,18 @@
                 isReplayMode = true; const blob = new Blob(chunks, { type: 'video/mp4' });
                 replayVideo.src = URL.createObjectURL(blob);
                 replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block'; hud.style.display = 'none';
+                // リプレイ中はベイブレード名を非表示
+                document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
                 updateStatusMsg("▶ 1.0"); replayVideo.load();
                 replayVideo.oncanplay = () => { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); };
             } else {
                 isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none'; hud.style.display = 'block';
+                // リプレイ終了後、👁️ONかつベイ名があれば再表示
+                if (isStatsVisible) {
+                    document.querySelectorAll('.beyblade-box').forEach(b => {
+                        if (b.textContent.trim()) b.style.display = 'block';
+                    });
+                }
             }
         }
 
