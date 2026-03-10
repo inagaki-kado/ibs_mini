@@ -246,7 +246,8 @@
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
 
-    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
+      <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" ontouchend="handleTouch(event, cancelCameraAndBack)" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
       <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
       <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
       <div class="flex gap-4 w-full max-w-sm">
@@ -1174,11 +1175,22 @@
         document.getElementById('cameraModal').classList.add('hidden');
         document.getElementById('cameraModal').classList.remove('flex');
         document.getElementById('cameraInput').value = '';
+        document.getElementById('cancelCameraBtn').classList.add('hidden');
         if (wasBeyblade) {
           // 撮影後OKでベイブレードモーダルも閉じて参加者一覧へ
           closeBeybladeModal();
         }
         // wasView の場合はベイブレードモーダルはそのまま（戻るだけ）
+    }
+
+    function cancelCameraAndBack() {
+        // 撮影をキャンセルしてベイブレード登録画面に戻る（画像・ベイ名は変更しない）
+        _cameraContext = null;
+        document.getElementById('cameraModal').classList.add('hidden');
+        document.getElementById('cameraModal').classList.remove('flex');
+        document.getElementById('cameraInput').value = '';
+        document.getElementById('cancelCameraBtn').classList.add('hidden');
+        // beybladeModalはそのまま表示（閉じない）
     }
 
     async function downloadAllImagesZip() {
@@ -1510,6 +1522,134 @@
       if (conn) conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
     }
 
+    // ── TV表示用HTML生成：トーナメント表 ──────────────────────
+    function buildTvTournamentHtml() {
+      const C = { bg: '#0a0e17', card: '#0d131f', border: '#1e293b', blue: '#0ea5e9', pink: '#ec4899', green: '#22c55e', yellow: '#facc15', orange: '#f97316', text: '#e2e8f0', muted: '#64748b' };
+      const S = `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
+          .tv-wrap { background:${C.bg}; min-height:100vh; padding:20px; box-sizing:border-box; font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+          .tv-title { font-family:'Orbitron',sans-serif; font-size:clamp(13px,2vw,18px); color:${C.blue}; text-align:center; letter-spacing:4px; margin-bottom:16px; text-shadow:0 0 10px ${C.blue}; }
+          .tv-blocks { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+          .tv-block { flex:1; min-width:220px; max-width:340px; border:1px solid ${C.blue}; border-radius:8px; overflow:hidden; background:${C.card}; }
+          .tv-block-title { background:rgba(14,165,233,0.15); border-bottom:1px solid ${C.blue}; text-align:center; padding:8px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.8vw,16px); font-weight:900; color:${C.blue}; letter-spacing:3px; text-shadow:0 0 8px ${C.blue}; }
+          .tv-round-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; padding:8px 12px 4px; }
+          .tv-match { display:flex; align-items:center; justify-content:center; gap:8px; padding:5px 10px; margin:3px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border:1px solid ${C.border}; }
+          .tv-p { font-style:italic; font-weight:700; font-size:clamp(13px,2vw,17px); flex:1; text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; }
+          .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; }
+          .tv-p.win-left { color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; }
+          .tv-p.win-right { color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; }
+          .tv-p.lose { color:#475569; text-decoration:line-through; }
+          .tv-vs { font-family:'Orbitron',sans-serif; font-size:10px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
+          .tv-score { font-family:'Orbitron',sans-serif; font-size:11px; color:${C.orange}; flex-shrink:0; white-space:nowrap; }
+          .tv-tbd { color:#334155; font-style:italic; }
+          .tv-finals { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:14px; }
+          .tv-finals-block { flex:1; min-width:220px; max-width:480px; border:1px solid ${C.pink}; border-radius:8px; overflow:hidden; background:${C.card}; box-shadow:0 0 12px rgba(236,72,153,0.2); }
+          .tv-finals-title { background:rgba(236,72,153,0.15); border-bottom:1px solid ${C.pink}; text-align:center; padding:8px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.8vw,16px); font-weight:900; color:${C.yellow}; letter-spacing:3px; text-shadow:0 0 8px ${C.yellow}; }
+        </style>`;
+
+      const renderTvMatch = (match, isFinale) => {
+        if (!match || !match.p1 || !match.p2) return '';
+        const p1 = match.p1, p2 = match.p2;
+        const p1Name = p1.id === 'BYE' ? 'BYE' : p1.name;
+        const p2Name = p2.id === 'BYE' ? 'BYE' : p2.name;
+        let p1cls = 'tv-p left', p2cls = 'tv-p right';
+        if (match.winner === 1) { p1cls = 'tv-p win-left'; p2cls = 'tv-p lose'; }
+        if (match.winner === 2) { p1cls = 'tv-p lose'; p2cls = 'tv-p win-right'; }
+        const mid = match.score
+          ? `<span class="tv-score">${match.score}</span>`
+          : `<span class="tv-vs">VS</span>`;
+        return `<div class="tv-match"><span class="${p1cls}">${p1Name}</span>${mid}<span class="${p2cls}">${p2Name}</span></div>`;
+      };
+
+      // ブロック表
+      let blocksHtml = '';
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        const rounds = blockMatches[bName];
+        if (!rounds || rounds.length === 0) return;
+        let inner = '';
+        rounds.forEach((round, i) => {
+          const label = (i === rounds.length - 1) ? 'BLOCK FINAL' : `ROUND ${i + 1}`;
+          const col = (i === rounds.length - 1) ? C.pink : C.green;
+          inner += `<div class="tv-round-title" style="color:${col}">${label}</div>`;
+          round.forEach(m => { inner += renderTvMatch(m, false); });
+        });
+        blocksHtml += `<div class="tv-block"><div class="tv-block-title">${bName} BLOCK</div>${inner}<div style="height:8px"></div></div>`;
+      });
+
+      // ファイナルズ表
+      let finalsHtml = '';
+      if (finals && finals.sf) {
+        let sfInner = '';
+        sfInner += `<div class="tv-round-title" style="color:${C.muted}">SEMIFINALS</div>`;
+        finals.sf.forEach(m => { sfInner += renderTvMatch(m, true); });
+        sfInner += `<div class="tv-round-title" style="color:${C.yellow};margin-top:8px">GRAND FINAL</div>`;
+        if (finals.f) sfInner += renderTvMatch(finals.f, true);
+        sfInner += `<div class="tv-round-title" style="color:${C.orange};margin-top:8px">3RD PLACE MATCH</div>`;
+        if (finals.third) sfInner += renderTvMatch(finals.third, true);
+        finalsHtml = `<div class="tv-finals"><div class="tv-finals-block"><div class="tv-finals-title">FINAL STAGE</div>${sfInner}<div style="height:8px"></div></div></div>`;
+      }
+
+      const tName = tournamentName || '大会';
+      return `${S}<div class="tv-wrap"><div class="tv-title">${tName}</div><div class="tv-blocks">${blocksHtml}</div>${finalsHtml}</div>`;
+    }
+
+    // ── TV表示用HTML生成：結果画面 ──────────────────────────
+    function buildTvResultsHtml() {
+      const w1 = getW(finals.f), w2 = getL(finals.f), w3 = getW(finals.third), w4 = getL(finals.third);
+      const n1 = w1 ? w1.name : '---', n2 = w2 ? w2.name : '---', n3 = w3 ? w3.name : '---', n4 = w4 ? w4.name : '---';
+      const tName = tournamentName || '大会';
+      return `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
+          .tv-res-outer { background:#0a0e17; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:16px; }
+          .tv-res-card {
+            width:100%; max-width:640px;
+            background:#0d131f;
+            border:3px solid #facc15;
+            border-radius:12px;
+            box-shadow:0 0 30px rgba(250,204,21,0.5), 0 0 60px rgba(250,204,21,0.2), inset 0 0 20px rgba(250,204,21,0.05);
+            padding:28px 24px 24px;
+            box-sizing:border-box;
+            position:relative;
+            overflow:visible;
+          }
+          .tv-res-topbar { position:absolute; top:0; left:0; width:100%; height:4px; background:linear-gradient(90deg,#854d0e,#fef08a,#854d0e); border-radius:12px 12px 0 0; }
+          .tv-res-tname { font-family:'Orbitron',sans-serif; font-size:clamp(12px,2vw,16px); color:#0ea5e9; text-align:center; letter-spacing:3px; margin-bottom:16px; text-shadow:0 0 8px #0ea5e9; }
+          .tv-res-winner-label { font-family:'Orbitron',sans-serif; font-size:clamp(20px,4vw,36px); color:#facc15; text-align:center; text-shadow:0 0 20px #facc15; margin-bottom:6px; }
+          .tv-res-name1 { font-family:'Chakra Petch',sans-serif; font-style:italic; font-weight:700; font-size:clamp(28px,6vw,52px); color:#fff; text-align:center; text-shadow:0 0 20px rgba(255,255,255,0.5); margin-bottom:18px; }
+          .tv-res-2nd-label { font-family:'Orbitron',sans-serif; font-size:clamp(13px,2vw,18px); color:#94a3b8; text-align:center; margin-bottom:4px; }
+          .tv-res-name2 { font-family:'Chakra Petch',sans-serif; font-style:italic; font-weight:700; font-size:clamp(20px,4vw,34px); color:#e2e8f0; text-align:center; margin-bottom:18px; }
+          .tv-res-divider { border:none; border-top:1px solid #1e293b; margin:4px 0 16px; }
+          .tv-res-lower { display:flex; justify-content:space-around; }
+          .tv-res-lower-item { text-align:center; }
+          .tv-res-lower-label { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.8vw,14px); margin-bottom:4px; }
+          .tv-res-lower-name { font-family:'Chakra Petch',sans-serif; font-style:italic; font-weight:700; font-size:clamp(16px,3vw,24px); }
+        </style>
+        <div class="tv-res-outer">
+          <div class="tv-res-card">
+            <div class="tv-res-topbar"></div>
+            <div class="tv-res-tname">${tName}</div>
+            <div class="tv-res-winner-label">🏆 WINNER 🏆</div>
+            <div class="tv-res-name1">${n1}</div>
+            <div class="tv-res-2nd-label">🥈 2ND PLACE</div>
+            <div class="tv-res-name2">${n2}</div>
+            <hr class="tv-res-divider">
+            <div class="tv-res-lower">
+              <div class="tv-res-lower-item">
+                <div class="tv-res-lower-label" style="color:#f97316">🥉 3RD PLACE</div>
+                <div class="tv-res-lower-name" style="color:#fff">${n3}</div>
+              </div>
+              <div class="tv-res-lower-item">
+                <div class="tv-res-lower-label" style="color:#64748b">4TH PLACE</div>
+                <div class="tv-res-lower-name" style="color:#94a3b8">${n4}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
     function toggleTvMode(mode) {
       const colorBlue = 'background:#0ea5e9;color:#fff;box-shadow:0 0 16px #0ea5e9,0 0 32px #0ea5e9;border-color:#0ea5e9;';
       if (mode === 'active') {
@@ -1518,12 +1658,7 @@
         const showBtn = document.getElementById('showResultsBtn');
         const scrollBtns = document.getElementById('tv-scroll-btns-active');
         if (isTvMode_active) {
-          // TVモード送信前にHTMLからTVボタンを一時削除
-          const container = document.getElementById('tournamentActive');
-          const clone = container.cloneNode(true);
-          const tvBtn = clone.querySelector('#tv-btn-active');
-          if (tvBtn) tvBtn.style.display = 'none';
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: buildTvTournamentHtml() });
           btn.style.cssText = colorBlue;
           if (showBtn) showBtn.classList.add('hidden');
           if (scrollBtns) scrollBtns.classList.remove('hidden');
@@ -1539,15 +1674,9 @@
         const csvBtn = document.getElementById('results-export-csv-btn');
         const scrollBtns = document.getElementById('tv-scroll-btns-results');
         if (isTvMode_results) {
-          // TVモード送信前にHTMLからTVボタンを一時削除
-          const container = document.getElementById('resultsModal');
-          const clone = container.cloneNode(true);
-          const tvBtn = clone.querySelector('#tv-btn-results');
-          if (tvBtn) tvBtn.style.display = 'none';
-          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: clone.innerHTML });
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: buildTvResultsHtml() });
           btn.style.cssText = colorBlue;
           if (csvBtn) csvBtn.classList.add('hidden');
-          // TVモード時はスクロールボタンを非表示
           if (scrollBtns) scrollBtns.classList.add('hidden');
         } else {
           if (conn) conn.send({ type: 'HIDE_OVERLAY' });
@@ -1577,7 +1706,7 @@
       });
       document.getElementById('finalsContainer').innerHTML = `<div class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg"><h3 class="text-center font-bold text-lg mb-4 text-cyber-blue font-sf">SEMIFINALS</h3>${renderMatchCard(finals.sf[0], 'finals', 'sf', 0, 'A代表', 'B代表')}<div class="my-4"></div>${renderMatchCard(finals.sf[1], 'finals', 'sf', 1, 'C代表', 'D代表')}</div><div class="border border-cyber-pink bg-[#0d131f] p-4 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.3)]"><h3 class="text-center font-bold text-lg mb-2 text-yellow-400 font-sf">GRAND FINAL</h3>${renderMatchCard(finals.f, 'finals', 'f', 0, 'W1', 'W2')}<h3 class="text-center font-bold text-sm mb-2 mt-6 text-orange-400 font-sf">3RD PLACE MATCH</h3>${renderMatchCard(finals.third, 'finals', 'third', 0, 'L1', 'L2')}</div>`;
       if (isTvMode_active) {
-        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: buildTvTournamentHtml() });
       }
     }
 
@@ -2206,6 +2335,7 @@
                 }
                 document.getElementById('resultImage').src = dataUrl;
                 document.getElementById('reTakeBtn').classList.remove('hidden');
+                document.getElementById('cancelCameraBtn').classList.remove('hidden');
                 document.getElementById('cameraModal').classList.remove('hidden');
                 document.getElementById('cameraModal').classList.add('flex');
               };
@@ -2229,6 +2359,7 @@
               if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
               document.getElementById('resultImage').src = dataUrl;
               document.getElementById('reTakeBtn').classList.remove('hidden');
+              document.getElementById('cancelCameraBtn').classList.remove('hidden');
               document.getElementById('cameraModal').classList.remove('hidden');
               document.getElementById('cameraModal').classList.add('flex');
               renderParticipants();
