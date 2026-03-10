@@ -1163,60 +1163,6 @@
       }
     }
 
-    document.getElementById('cameraInput').addEventListener('change', function(e) {
-      // ベイブレード登録からのカメラ起動の場合は専用処理（文字追加→プレビュー→正式保存）
-      if (_cameraContext === 'beyblade') {
-        _cameraContext = 'beyblade_confirm';
-        const file = e.target.files[0];
-        if (!file) { _cameraContext = null; return; }
-        const img = new Image();
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            // ベイブレード登録モーダルで開いている参加者の情報を使って文字を描画
-            const p = participants.find(x => x.id === currentBeybladeParticipantId);
-            drawBeyCheckOverlay(ctx, canvas, p);
-
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-            // 正式なベイチェック画像として即時保存
-            if (p) {
-              p.bayImage = dataUrl;
-              p.bayChecked = true;
-              renderParticipants();
-              saveState();
-            }
-
-            document.getElementById('resultImage').src = dataUrl;
-            document.getElementById('cameraModal').classList.remove('hidden');
-            document.getElementById('cameraModal').classList.add('flex');
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
-        return;
-      }
-
-      // 参加者一覧からの通常ベイチェック撮影（既存の参加者管理画面からは削除済みだが念のため残す）
-      const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
-      reader.onload = function(event) { img.onload = function() {
-        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-        const p = participants.find(x => x.id === currentCheckId);
-        drawBeyCheckOverlay(ctx, canvas, p);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
-        document.getElementById('resultImage').src = dataUrl;
-        document.getElementById('cameraModal').classList.remove('hidden');
-        document.getElementById('cameraModal').classList.add('flex');
-        renderParticipants();
-      }; img.src = event.target.result; }; reader.readAsDataURL(file);
-    });
 
     function closeCameraModal() {
         const wasBeyblade = (_cameraContext === 'beyblade_confirm');
@@ -2200,13 +2146,70 @@
      */
 
     // ==========================================
-    // アプリ初期化時にCSVを読み込む
+    // アプリ初期化時にCSVを読み込む & カメライベント登録
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
       await loadPartsCSV();
-      // 読み込み結果をコンソールで確認
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
+
+      // カメラ入力のイベントリスナーをここで確実に登録
+      const camInput = document.getElementById('cameraInput');
+      if (camInput) {
+        camInput.addEventListener('change', function(e) {
+          if (_cameraContext === 'beyblade') {
+            _cameraContext = 'beyblade_confirm';
+            const file = e.target.files[0];
+            if (!file) { _cameraContext = null; return; }
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+              img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const p = participants.find(x => x.id === currentBeybladeParticipantId);
+                drawBeyCheckOverlay(ctx, canvas, p);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                if (p) {
+                  p.bayImage = dataUrl;
+                  p.bayChecked = true;
+                  renderParticipants();
+                  saveState();
+                }
+                document.getElementById('resultImage').src = dataUrl;
+                document.getElementById('cameraModal').classList.remove('hidden');
+                document.getElementById('cameraModal').classList.add('flex');
+              };
+              img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+            return;
+          }
+
+          // 通常ベイチェック撮影
+          const file = e.target.files[0]; if (!file) return;
+          const img = new Image(); const reader = new FileReader();
+          reader.onload = function(event) {
+            img.onload = function() {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width; canvas.height = img.height;
+              const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+              const p = participants.find(x => x.id === currentCheckId);
+              drawBeyCheckOverlay(ctx, canvas, p);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
+              document.getElementById('resultImage').src = dataUrl;
+              document.getElementById('cameraModal').classList.remove('hidden');
+              document.getElementById('cameraModal').classList.add('flex');
+              renderParticipants();
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
     });
 
     initApp();
