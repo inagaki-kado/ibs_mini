@@ -80,8 +80,8 @@
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
         <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
         <input type="text" id="linkCodeInput" placeholder="CODE" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
-        <button onclick="connectLink()" ontouchend="handleTouch(event,connectLink)" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
-        <button onclick="forceResetLink()" ontouchend="handleTouch(event,forceResetLink)" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+        <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
+        <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
         <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
       </div>
     </header>
@@ -98,8 +98,8 @@
           <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
           <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
           <div class="flex gap-3">
-            <button onclick="resumeFromSave()" ontouchend="handleTouch(event,resumeFromSave)" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
-            <button onclick="execClearSave()" ontouchend="handleTouch(event,execClearSave)" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+            <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+            <button onclick="execClearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
           </div>
         </div>
 
@@ -113,16 +113,16 @@
             <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
             <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
           </div>
-          <button id="btn-confirm-setup" onclick="handleConfirmSetup(event)" ontouchend="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
+          <button id="btn-confirm-setup" onclick="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
         </div>
 
         <div id="mainManagementSection" class="hidden flex-col h-full">
           <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
-            <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
-            <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+            <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+            <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
-            <button onclick="exportParticipantsCSV()" ontouchend="handleTouch(event,exportParticipantsCSV)" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
-            <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
+            <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
+            <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
 
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
@@ -132,7 +132,7 @@
               <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
               <span>🖼️ ロゴ表示</span>
             </label>
-            <button onclick="toggleEffectMode()" ontouchend="handleTouch(event,toggleEffectMode)" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -141,9 +141,9 @@
               <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-[#111827] z-10">
                   <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
-                    <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-t">🔽</span></th>
-                    <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
-                    <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')" ontouchend="handleTouch(event,()=>toggleParticipantSort('lottery'))">LOTTERY <span id="sort-icon-lottery-t"></span></th>
+                    <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')">NO. <span id="sort-icon-id-t">🔽</span></th>
+                    <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')">NAME / STATS <span id="sort-icon-name-t"></span></th>
+                    <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')">LOTTERY <span id="sort-icon-lottery-t"></span></th>
                     <th class="p-3 text-sm text-center font-sf w-20">🗳️</th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                   </tr>
@@ -154,7 +154,7 @@
           </div>
           
           <div class="text-center pt-4 shrink-0">
-            <button id="btn-start-tournament" onclick="handleStartTournament(event)" ontouchend="handleStartTournament(event)" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
+            <button id="btn-start-tournament" onclick="handleStartTournament(event)" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
             </div>
-            <button id="showResultsBtn" onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
+            <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
           
           <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
@@ -237,8 +237,8 @@
           <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
         </div>
         <div class="flex justify-center gap-4 mt-4 md:mt-6">
-          <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-          <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+          <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button onclick="closeResults()" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
         </div>
       </div>
     </div>
@@ -249,7 +249,7 @@
     </div>
 
     <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
-      <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" ontouchend="handleTouch(event, cancelCameraAndBack)" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
+      <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
       <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
       <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
       <div class="flex gap-4 w-full max-w-sm">
@@ -276,10 +276,10 @@
           <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
             ＋ ベイブレードを追加
           </button>
-          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" ontouchend="handleTouch(event, triggerBeybladePhoto)" title="写真を撮影" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
+          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" title="写真を撮影" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
             📷
           </button>
-          <button id="viewBeyImageBtn" onclick="openBeyImagePreview()" ontouchend="handleTouch(event, openBeyImagePreview)" title="ベイチェック画像を確認" class="hidden w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-orange text-cyber-orange rounded-full font-bold text-xl shadow-[0_0_10px_rgba(255,170,0,0.5)] hover:bg-cyber-orange hover:text-white transition-colors active:scale-95 shrink-0">
+          <button id="viewBeyImageBtn" onclick="openBeyImagePreview()" title="ベイチェック画像を確認" class="hidden w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-orange text-cyber-orange rounded-full font-bold text-xl shadow-[0_0_10px_rgba(255,170,0,0.5)] hover:bg-cyber-orange hover:text-white transition-colors active:scale-95 shrink-0">
             🖼️
           </button>
         </div>
@@ -407,14 +407,6 @@
   <script>
 
     // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
-    let _tDebounce = false;
-    async function handleTouch(e, fn) {
-      if (_tDebounce) return;
-      _tDebounce = true;
-      setTimeout(() => { _tDebounce = false; }, 400);
-      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
-      await fn();
-    }
 
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
     const colors = ['赤', '青', '黄', '緑']; const colorCodes = { '赤': 'bg-cyber-pink', '青': 'bg-cyber-blue', '黄': 'bg-yellow-400 text-black', '緑': 'bg-cyber-green' };
@@ -444,17 +436,17 @@
     function toggleEffectMode() {
         isEffectOn = !isEffectOn;
         const btn = document.getElementById('btn-toggle-effect');
+        if (!btn) return;
         if (isEffectOn) {
-            btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink');
-            btn.classList.replace('text-cyber-pink', 'text-white');
-            btn.classList.add('shadow-[0_0_8px_#ec4899]');
+            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
+            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
             btn.innerText = "✨ 演出: ON";
         } else {
-            btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark');
-            btn.classList.replace('text-white', 'text-cyber-pink');
-            btn.classList.remove('shadow-[0_0_8px_#ec4899]');
+            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
             btn.innerText = "✨ 演出: OFF";
         }
+        saveState();
     }
 
     function calculateRate(wins, matches) {
