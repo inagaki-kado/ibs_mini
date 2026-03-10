@@ -414,9 +414,16 @@
   #events { background: var(--bg2); }
 
   #events-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    #events-container {
+      grid-template-columns: 1fr;
+    }
   }
 
   .loading-state {
@@ -578,13 +585,13 @@
     border-left: 3px solid var(--neon-yellow);
     padding: 0.7rem 0.9rem;
     font-size: 0.83rem;
-    color: var(--text-dim);
-    font-style: italic;
+    color: #fff;
+    font-style: normal;
   }
 
   .event-map {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     height: auto;
     border: 1px solid rgba(0,255,136,0.1);
     filter: grayscale(40%) invert(5%);
