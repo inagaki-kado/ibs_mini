@@ -143,7 +143,6 @@
                     <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
                     <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')" ontouchend="handleTouch(event,()=>toggleParticipantSort('lottery'))">LOTTERY <span id="sort-icon-lottery-t"></span></th>
                     <th class="p-3 text-sm text-center font-sf w-20">🗳️</th>
-                    <th class="p-3 text-sm text-center font-sf w-20">📷</th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                   </tr>
                 </thead>
@@ -910,7 +909,7 @@
         const beyCount = (p.beyblades || []).length;
         const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="handleBayCheck(${p.id})" class="bg-transparent text-cyber-pink border border-cyber-pink hover:bg-cyber-pink/20 w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック撮影" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1095,81 +1094,123 @@
       document.getElementById('cameraInput').click();
     }
 
+    /**
+     * Canvas に文字情報を描画する共通関数
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {HTMLCanvasElement} canvas
+     * @param {object} p - 参加者オブジェクト
+     */
+    function drawBeyCheckOverlay(ctx, canvas, p) {
+      const w = canvas.width;
+      const fontSize = Math.max(w / 15, 30);
+      ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
+      ctx.fillStyle = '#0ea5e9';
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.lineWidth = fontSize / 12;
+      ctx.textBaseline = 'top';
+
+      const tName = tournamentName || '大会';
+      const pName = p ? p.name : '';
+      const margin = 20;
+
+      // 大会名（右揃え）
+      ctx.textAlign = 'right';
+      const y1 = margin;
+      ctx.strokeText(tName, w - margin, y1);
+      ctx.fillText(tName, w - margin, y1);
+
+      // プレイヤー名（右揃え）
+      const y2 = y1 + fontSize * 1.2;
+      ctx.strokeText(pName, w - margin, y2);
+      ctx.fillText(pName, w - margin, y2);
+
+      // 使用ベイ名（参加者名の下に）
+      if (p && p.beyblades && p.beyblades.length > 0) {
+        const beyFontSize = Math.max(w / 20, 24);
+        ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
+        ctx.fillStyle = '#22c55e';
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.lineWidth = beyFontSize / 12;
+        ctx.textBaseline = 'top';
+
+        let yOffset = y2 + fontSize * 1.5;
+
+        // ベイ1: 左揃え
+        if (p.beyblades[0]) {
+          ctx.textAlign = 'left';
+          const bey1Name = p.beyblades[0].name || 'ー';
+          ctx.strokeText(bey1Name, margin, yOffset);
+          ctx.fillText(bey1Name, margin, yOffset);
+          yOffset += beyFontSize * 1.4;
+        }
+
+        // ベイ2: 中央揃え
+        if (p.beyblades[1]) {
+          ctx.textAlign = 'center';
+          const bey2Name = p.beyblades[1].name || 'ー';
+          ctx.strokeText(bey2Name, w / 2, yOffset);
+          ctx.fillText(bey2Name, w / 2, yOffset);
+          yOffset += beyFontSize * 1.4;
+        }
+
+        // ベイ3: 右揃え
+        if (p.beyblades[2]) {
+          ctx.textAlign = 'right';
+          const bey3Name = p.beyblades[2].name || 'ー';
+          ctx.strokeText(bey3Name, w - margin, yOffset);
+          ctx.fillText(bey3Name, w - margin, yOffset);
+        }
+      }
+    }
+
     document.getElementById('cameraInput').addEventListener('change', function(e) {
-      // ベイブレード登録からのカメラ起動の場合は専用処理
+      // ベイブレード登録からのカメラ起動の場合は専用処理（文字追加→プレビュー→正式保存）
       if (_cameraContext === 'beyblade') {
         _cameraContext = 'beyblade_confirm';
         const file = e.target.files[0];
         if (!file) { _cameraContext = null; return; }
+        const img = new Image();
         const reader = new FileReader();
         reader.onload = function(ev) {
-          document.getElementById('resultImage').src = ev.target.result;
-          document.getElementById('cameraModal').classList.remove('hidden');
-          document.getElementById('cameraModal').classList.add('flex');
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            // ベイブレード登録モーダルで開いている参加者の情報を使って文字を描画
+            const p = participants.find(x => x.id === currentBeybladeParticipantId);
+            drawBeyCheckOverlay(ctx, canvas, p);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            // 正式なベイチェック画像として即時保存
+            if (p) {
+              p.bayImage = dataUrl;
+              p.bayChecked = true;
+              renderParticipants();
+              saveState();
+            }
+
+            document.getElementById('resultImage').src = dataUrl;
+            document.getElementById('cameraModal').classList.remove('hidden');
+            document.getElementById('cameraModal').classList.add('flex');
+          };
+          img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
         return;
       }
+
+      // 参加者一覧からの通常ベイチェック撮影（既存の参加者管理画面からは削除済みだが念のため残す）
       const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
       reader.onload = function(event) { img.onload = function() {
         const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-        const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
-        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white';
-        ctx.lineWidth = fontSize / 20; ctx.textBaseline = 'top';
-        const tName = tournamentName || '大会'; const pName = p.name;
-        
-        // 大会名（中央揃え）
-        ctx.textAlign = 'center';
-        const y1 = 20;
-        ctx.strokeText(tName, canvas.width / 2, y1);
-        ctx.fillText(tName, canvas.width / 2, y1);
-        
-        // 参加者名（中央揃え）
-        const y2 = y1 + fontSize * 1.2;
-        ctx.strokeText(pName, canvas.width / 2, y2);
-        ctx.fillText(pName, canvas.width / 2, y2);
-        
-        // 使用ベイ名を描画（参加者名の下に）
-        if (p.beyblades && p.beyblades.length > 0) {
-          const beyFontSize = Math.max(img.width / 20, 24);
-          ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
-          ctx.fillStyle = '#22c55e'; // 緑色
-          ctx.strokeStyle = 'white';
-          ctx.lineWidth = beyFontSize / 20;
-          ctx.textBaseline = 'top';
-          
-          let yOffset = y2 + fontSize * 1.5; // 参加者名の下から開始
-          
-          // ベイ1: 左揃え
-          if (p.beyblades[0]) {
-            ctx.textAlign = 'left';
-            const bey1Name = p.beyblades[0].name || 'ー';
-            ctx.strokeText(bey1Name, 20, yOffset);
-            ctx.fillText(bey1Name, 20, yOffset);
-            yOffset += beyFontSize * 1.2;
-          }
-          
-          // ベイ2: 中央揃え
-          if (p.beyblades[1]) {
-            ctx.textAlign = 'center';
-            const bey2Name = p.beyblades[1].name || 'ー';
-            ctx.strokeText(bey2Name, canvas.width / 2, yOffset);
-            ctx.fillText(bey2Name, canvas.width / 2, yOffset);
-            yOffset += beyFontSize * 1.2;
-          }
-          
-          // ベイ3: 右揃え
-          if (p.beyblades[2]) {
-            ctx.textAlign = 'right';
-            const bey3Name = p.beyblades[2].name || 'ー';
-            ctx.strokeText(bey3Name, canvas.width - 20, yOffset);
-            ctx.fillText(bey3Name, canvas.width - 20, yOffset);
-          }
-        }
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        p.bayImage = dataUrl; p.bayChecked = true;
+        const p = participants.find(x => x.id === currentCheckId);
+        drawBeyCheckOverlay(ctx, canvas, p);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
         document.getElementById('resultImage').src = dataUrl;
         document.getElementById('cameraModal').classList.remove('hidden');
         document.getElementById('cameraModal').classList.add('flex');
@@ -1178,17 +1219,15 @@
     });
 
     function closeCameraModal() {
-        if (_cameraContext === 'beyblade_confirm') {
-          const participant = participants.find(p => p.id === currentBeybladeParticipantId);
-          if (participant) {
-            const imgEl = document.getElementById('resultImage');
-            if (imgEl && imgEl.src) participant._pendingBeyPhoto = imgEl.src;
-          }
-          _cameraContext = null;
-        }
+        const wasBeyblade = (_cameraContext === 'beyblade_confirm');
+        _cameraContext = null;
         document.getElementById('cameraModal').classList.add('hidden');
         document.getElementById('cameraModal').classList.remove('flex');
         document.getElementById('cameraInput').value = '';
+        // ベイブレード登録モーダルから来た場合は、OKで参加者一覧に戻る（ベイブレードモーダルを閉じる）
+        if (wasBeyblade) {
+          closeBeybladeModal();
+        }
     }
 
     async function downloadAllImagesZip() {
