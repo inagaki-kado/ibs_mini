@@ -73,7 +73,7 @@
       </div>
 
       <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">ITABASHI BEY-ROULETTE</h1>
-      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">TOURNAMENT SYSTEM <span class="text-cyber-pink opacity-90">v1.1</span></p>
+      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">TOURNAMENT SYSTEM <span class="text-cyber-pink opacity-90">v1.2</span></p>
       
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
         <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
@@ -250,7 +250,7 @@
       <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
       <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
       <div class="flex gap-4 w-full max-w-sm">
-        <button onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
+        <button id="reTakeBtn" onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
         <button onclick="closeCameraModal()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 transition-transform">OK</button>
       </div>
     </div>
@@ -273,8 +273,11 @@
           <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
             ＋ ベイブレードを追加
           </button>
-          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" ontouchend="handleTouch(event, triggerBeybladePhoto)" title="写真を撮影して登録" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
+          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" ontouchend="handleTouch(event, triggerBeybladePhoto)" title="写真を撮影" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
             📷
+          </button>
+          <button id="viewBeyImageBtn" onclick="openBeyImagePreview()" ontouchend="handleTouch(event, openBeyImagePreview)" title="ベイチェック画像を確認" class="hidden w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-orange text-cyber-orange rounded-full font-bold text-xl shadow-[0_0_10px_rgba(255,170,0,0.5)] hover:bg-cyber-orange hover:text-white transition-colors active:scale-95 shrink-0">
+            🖼️
           </button>
         </div>
       </div>
@@ -1166,14 +1169,16 @@
 
     function closeCameraModal() {
         const wasBeyblade = (_cameraContext === 'beyblade_confirm');
+        const wasView = (_cameraContext === 'beyblade_view');
         _cameraContext = null;
         document.getElementById('cameraModal').classList.add('hidden');
         document.getElementById('cameraModal').classList.remove('flex');
         document.getElementById('cameraInput').value = '';
-        // ベイブレード登録モーダルから来た場合は、OKで参加者一覧に戻る（ベイブレードモーダルを閉じる）
         if (wasBeyblade) {
+          // 撮影後OKでベイブレードモーダルも閉じて参加者一覧へ
           closeBeybladeModal();
         }
+        // wasView の場合はベイブレードモーダルはそのまま（戻るだけ）
     }
 
     async function downloadAllImagesZip() {
@@ -1795,9 +1800,30 @@
       }
       
       renderBeybladeList();
+
+      // 🖼️ボタン：bayImageがある場合のみ表示
+      const viewBtn = document.getElementById('viewBeyImageBtn');
+      if (participant.bayImage) {
+        viewBtn.classList.remove('hidden');
+      } else {
+        viewBtn.classList.add('hidden');
+      }
       
       document.getElementById('beybladeModal').classList.remove('hidden');
       document.getElementById('beybladeModal').classList.add('flex');
+    }
+
+    /**
+     * ベイチェック画像をプレビューで開く（ベイブレード登録モーダルから）
+     */
+    function openBeyImagePreview() {
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      if (!participant || !participant.bayImage) return;
+      _cameraContext = 'beyblade_view';
+      document.getElementById('resultImage').src = participant.bayImage;
+      document.getElementById('reTakeBtn').classList.add('hidden');
+      document.getElementById('cameraModal').classList.remove('hidden');
+      document.getElementById('cameraModal').classList.add('flex');
     }
 
     /**
@@ -2179,6 +2205,7 @@
                   saveState();
                 }
                 document.getElementById('resultImage').src = dataUrl;
+                document.getElementById('reTakeBtn').classList.remove('hidden');
                 document.getElementById('cameraModal').classList.remove('hidden');
                 document.getElementById('cameraModal').classList.add('flex');
               };
@@ -2201,6 +2228,7 @@
               const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
               if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
               document.getElementById('resultImage').src = dataUrl;
+              document.getElementById('reTakeBtn').classList.remove('hidden');
               document.getElementById('cameraModal').classList.remove('hidden');
               document.getElementById('cameraModal').classList.add('flex');
               renderParticipants();
