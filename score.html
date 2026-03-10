@@ -39,8 +39,6 @@
         .btn-reload { top: 20px; left: max(75px, calc(var(--safe-left) + 75px)); color: #ec4899; border-color: #ec4899; box-shadow: 0 0 10px rgba(236,72,153,0.3); }
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
-        .btn-safe { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: #aaa; }
-        .btn-safe.active { color: #22c55e; border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.5); }
 
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
@@ -59,10 +57,8 @@
 
         .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
         body.pro-mode .player-wrapper { top: 15px; }
-        #p1-wrapper { left: 5px; align-items: flex-start; }
-        #p2-wrapper { right: 5px; align-items: flex-end; }
-        body.safe-mode #p1-wrapper { left: max(30px, calc(var(--safe-left) + 30px)); }
-        body.safe-mode #p2-wrapper { right: max(30px, calc(var(--safe-right) + 30px)); }
+        #p1-wrapper { left: max(11px, calc(var(--safe-left) + 11px)); align-items: flex-start; }
+        #p2-wrapper { right: max(11px, calc(var(--safe-right) + 11px)); align-items: flex-end; }
         
         .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: clamp(15px, 2.8vw, 24px); font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: clamp(200px, 30vw, 340px); text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
         #name2 { text-align: right; }
@@ -358,7 +354,6 @@
     <div class="system-btn btn-timer" onclick="executeCommand('TIMER')">T</div>
     <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
     <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
-    <div class="system-btn btn-safe" onclick="toggleSafeMode()" id="btn-safe">SA</div>
 <div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">👁️</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 
@@ -630,7 +625,6 @@
             document.getElementById('battle-ordinal').innerText = text; 
         }
         function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
-        function toggleSafeMode() { blurFocus(); document.body.classList.toggle('safe-mode'); document.getElementById('btn-safe').classList.toggle('active'); }
         function toggleWinPoint() { 
             blurFocus(); 
             if (winPointMode === '4') {
