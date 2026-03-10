@@ -1484,7 +1484,7 @@
         vsArea = `<div class="flex flex-col items-center justify-center mx-1 min-w-[60px]"><span class="text-cyber-orange font-sf font-bold text-sm whitespace-nowrap">${match.score}</span></div>`;
       } else if (canSendToScore) {
         // 試合前の場合はREMOTEボタン
-        vsArea = `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`;
+        vsArea = `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-base font-sf px-1 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">🛜</button></div>`;
       } else {
         // それ以外はVS表示
         vsArea = `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
