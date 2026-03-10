@@ -48,8 +48,9 @@
     .neon-yellow { box-shadow: 0 0 20px #facc15; }
     .text-neon-yellow { text-shadow: 0 0 10px #facc15; }
 
-    .tournament-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-    .bracket { border: 2px solid #374151; border-radius: 0.5rem; padding: 1rem; background: #111827; }
+    .tournament-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 768px) { .tournament-grid { grid-template-columns: repeat(2, 1fr); } }
+    .bracket { border: 2px solid #374151; border-radius: 0.5rem; padding: 1.5rem 1.25rem; background: #111827; min-width: 400px; }
     .hidden { display: none !important; }
 
     .memo-badge {
@@ -176,7 +177,7 @@
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
           
-          <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
+          <div id="tournamentContainer" class="tournament-grid mb-4 pb-2 shrink-0"></div>
           
           <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
             <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
@@ -1715,7 +1716,7 @@
       const container = document.getElementById('tournamentContainer'); container.innerHTML = '';
       ['A', 'B', 'C', 'D'].forEach(blockName => {
         const rounds = blockMatches[blockName];
-        let html = `<div class="bracket min-w-[280px] border border-cyber-blue shadow-lg"><h3 class="text-center font-bold text-xl mb-4 border-b-2 border-cyber-blue text-cyber-blue font-sf pb-2">${blockName} BLOCK</h3>`;
+        let html = `<div class="bracket min-w-[400px] border border-cyber-blue shadow-lg"><h3 class="text-center font-bold text-xl mb-4 border-b-2 border-cyber-blue text-cyber-blue font-sf pb-2">${blockName} BLOCK</h3>`;
         for (let i = 0; i < rounds.length; i++) {
           let roundTitle = (i === rounds.length - 1) ? `<h4 class="text-xs font-sf text-cyber-pink mb-1 mt-4">BLOCK FINAL</h4>` : `<h4 class="text-xs font-sf text-cyber-green mb-1 mt-4">ROUND ${i+1}</h4>`;
           if (i === 0) roundTitle = roundTitle.replace('mt-4', 'mt-2');
