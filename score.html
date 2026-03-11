@@ -89,6 +89,26 @@
         .s-label { font-family: 'Orbitron', sans-serif; font-size: clamp(5px, 0.8vw, 8px); color: rgba(0, 234, 255, 0.7); font-weight: 900; letter-spacing: 0.4px; }
         .s-val { font-family: 'Orbitron', sans-serif; font-size: clamp(10px, 1.6vw, 15px); color: white; font-weight: 900; text-shadow: 0 0 8px var(--bx-blue), 0 0 16px rgba(0, 234, 255, 0.4), 1px 1px 0px black; }
 
+        /* ── ランク表示 ── */
+        .rank-num { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(10px, 1.6vw, 15px); }
+        .rank-f   { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(8px, 1.2vw, 12px); color: #FFFFFF; text-shadow: 0 0 8px rgba(255,255,255,0.8), 1px 1px 0px black; }
+        /* 01F～39F：ピュアホワイト */
+        .rank-white .rank-num { color: #FFFFFF; text-shadow: 0 0 6px rgba(255,255,255,0.6), 1px 1px 0px black; }
+        /* 40F～59F：サイバーブルー */
+        .rank-blue .rank-num  { color: #0EA5E9; text-shadow: 0 0 8px #0EA5E9, 0 0 18px rgba(14,165,233,0.7), 1px 1px 0px black; }
+        /* 60F～79F：マトリックスグリーン */
+        .rank-green .rank-num { color: #00FF41; text-shadow: 0 0 8px #00FF41, 0 0 20px rgba(0,255,65,0.6), 0 0 35px rgba(16,185,129,0.4), 1px 1px 0px black; }
+        /* 80F～89F：ネオンパープル */
+        .rank-purple .rank-num{ color: #A855F7; text-shadow: 0 0 8px #A855F7, 0 0 20px rgba(168,85,247,0.7), 0 0 35px rgba(168,85,247,0.4), 1px 1px 0px black; }
+        /* 90F～99F：クリムゾンレッド */
+        .rank-red .rank-num   { color: #EF4444; text-shadow: 0 0 8px #EF4444, 0 0 20px rgba(239,68,68,0.7), 0 0 35px rgba(239,68,68,0.4), 1px 1px 0px black; }
+        /* XF：シャイニングゴールド */
+        .rank-gold .rank-num  { color: #F59E0B; text-shadow: 0 0 6px #fff, 0 0 12px #FCD34D, 0 0 25px #F59E0B, 0 0 45px #D97706, 0 0 70px rgba(217,119,6,0.5), 2px 2px 0px #000; filter: drop-shadow(0 0 4px #FCD34D); animation: gold-pulse 1.2s infinite alternate ease-in-out; }
+        @keyframes gold-pulse {
+          0%   { text-shadow: 0 0 6px #fff, 0 0 12px #FCD34D, 0 0 25px #F59E0B, 0 0 45px #D97706, 0 0 70px rgba(217,119,6,0.5), 2px 2px 0px #000; }
+          100% { text-shadow: 0 0 10px #fff, 0 0 20px #FCD34D, 0 0 40px #F59E0B, 0 0 70px #D97706, 0 0 100px rgba(217,119,6,0.6), 2px 2px 0px #000; }
+        }
+
         #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
         .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
@@ -662,6 +682,22 @@
             return rateStr.replace(/(\.\d+)/, '<span style="font-size: 11px;">$1</span>');
         }
 
+        function formatRank(rank) {
+            if (!rank || rank === "--" || rank === "-") return "<span class=\"rank-num\" style=\"color:#fff;text-shadow:0 0 8px var(--bx-blue),1px 1px 0 black\">--</span>";
+            if (/^XF$/i.test(rank)) return "<span class=\"rank-gold\"><span class=\"rank-num\">X</span></span> <span class=\"rank-f\">F</span>";
+            const m = rank.match(/^(\d+)F$/i);
+            if (m) {
+                const n = parseInt(m[1], 10);
+                let cls = "rank-white";
+                if      (n >= 90) cls = "rank-red";
+                else if (n >= 80) cls = "rank-purple";
+                else if (n >= 60) cls = "rank-green";
+                else if (n >= 40) cls = "rank-blue";
+                return "<span class=\"" + cls + "\"><span class=\"rank-num\">" + m[1] + "</span></span> <span class=\"rank-f\">F</span>";
+            }
+            return "<span class=\"rank-num\" style=\"color:#fff\">" + rank + "</span>";
+        }
+
         function executeCommand(cmd) {
             // ★修正：タッグ戦アプリからの "reset" コマンドも許容するように変更
             if (cmd === 'SYS_RESET' || cmd === 'reset') { resetGame(); return; }
@@ -683,11 +719,11 @@
                     const tempName = n1.value; n1.value = n2.value; n2.value = tempName;
                     const tempScore = s1; s1 = s2; s2 = tempScore;
                     document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
-                    const r1 = document.getElementById('p1-val-rank').innerText, bp1 = document.getElementById('p1-val-bp').innerText, wr1 = document.getElementById('p1-val-wr').innerHTML;
-                    document.getElementById('p1-val-rank').innerText = document.getElementById('p2-val-rank').innerText;
+                    const r1 = document.getElementById('p1-val-rank').innerHTML, bp1 = document.getElementById('p1-val-bp').innerText, wr1 = document.getElementById('p1-val-wr').innerHTML;
+                    document.getElementById('p1-val-rank').innerHTML = document.getElementById('p2-val-rank').innerHTML;
                     document.getElementById('p1-val-bp').innerText = document.getElementById('p2-val-bp').innerText;
                     document.getElementById('p1-val-wr').innerHTML = document.getElementById('p2-val-wr').innerHTML;
-                    document.getElementById('p2-val-rank').innerText = r1; document.getElementById('p2-val-bp').innerText = bp1; document.getElementById('p2-val-wr').innerHTML = wr1;
+                    document.getElementById('p2-val-rank').innerHTML = r1; document.getElementById('p2-val-bp').innerText = bp1; document.getElementById('p2-val-wr').innerHTML = wr1;
                     // ベイブレード名も入れ替え
                     const tempBey = beybladeP1; beybladeP1 = beybladeP2; beybladeP2 = tempBey;
                     updateBeybladeBar(1, beybladeP1);
@@ -815,21 +851,21 @@
                         }
 
                         if (data.p1Stats) {
-                            document.getElementById('p1-val-rank').innerText = data.p1Stats.rank;
+                            document.getElementById('p1-val-rank').innerHTML = formatRank(data.p1Stats.rank);
                             document.getElementById('p1-val-bp').innerText = data.p1Stats.power;
                             document.getElementById('p1-val-wr').innerHTML = formatRate(data.p1Stats.rate);
                         } else {
-                            document.getElementById('p1-val-rank').innerText = '--';
+                            document.getElementById('p1-val-rank').innerHTML = formatRank('--');
                             document.getElementById('p1-val-bp').innerText = '----';
                             document.getElementById('p1-val-wr').innerHTML = formatRate('--%');
                         }
 
                         if (data.p2Stats) {
-                            document.getElementById('p2-val-rank').innerText = data.p2Stats.rank;
+                            document.getElementById('p2-val-rank').innerHTML = formatRank(data.p2Stats.rank);
                             document.getElementById('p2-val-bp').innerText = data.p2Stats.power;
                             document.getElementById('p2-val-wr').innerHTML = formatRate(data.p2Stats.rate);
                         } else {
-                            document.getElementById('p2-val-rank').innerText = '--';
+                            document.getElementById('p2-val-rank').innerHTML = formatRank('--');
                             document.getElementById('p2-val-bp').innerText = '----';
                             document.getElementById('p2-val-wr').innerHTML = formatRate('--%');
                         }
