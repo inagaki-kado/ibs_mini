@@ -1406,7 +1406,7 @@ function renderCard(row) {
         ${venue     ? `<div class="event-info-item"><span class="event-info-label">会場</span><span class="event-info-value">${venue}${venueSub ? `<br><small style="color:var(--text-dim);font-size:0.8em">${venueSub}</small>` : ''}</span></div>` : ''}
       </div>
 
-      ${comment ? `<div class="event-comment">💬 ${comment}</div>` : ''}
+      ${comment ? `<div class="event-comment">${comment}</div>` : ''}
 
       ${embedUrl ? `<iframe class="event-map" src="${embedUrl}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : ''}
 
