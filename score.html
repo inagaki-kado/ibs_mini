@@ -66,7 +66,8 @@
         
         .stats-row { display: flex; align-items: flex-start; gap: 20px; }
         #p1-wrapper .stats-row { flex-direction: row-reverse; }
-        .buttons-col { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+        .buttons-col { display: flex; flex-direction: column; gap: 5px; }
+        .buttons-stats-col { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
         
         .hud-btn { font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; user-select: none; }
         .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
@@ -83,10 +84,10 @@
         .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
 
         .score-container { display: flex; flex-direction: column; align-items: center; }
-        .player-stats-block { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; width: 100%; min-width: 120px; max-width: 150px; }
-        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-bottom: 2px solid var(--bx-blue); border-radius: 4px; }
-        .s-label { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--bx-blue); font-weight: 900; letter-spacing: 0.5px; }
-        .s-val { font-family: 'Orbitron', sans-serif; font-size: 18px; color: white; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.6), 1px 1px 0px black; }
+        .player-stats-block { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; width: clamp(50px, 8vw, 90px); }
+        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.4); padding: 1px 4px; border-bottom: 2px solid var(--bx-blue); border-radius: 4px; }
+        .s-label { font-family: 'Orbitron', sans-serif; font-size: clamp(5px, 0.75vw, 7px); color: var(--bx-blue); font-weight: 900; letter-spacing: 0.3px; }
+        .s-val { font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 1.3vw, 12px); color: white; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.6), 1px 1px 0px black; }
 
         #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
@@ -309,17 +310,19 @@
             <div class="stats-row">
                 <div class="score-container">
                     <div id="score1" class="score">0</div>
+                </div>
+                <div class="buttons-stats-col">
+                    <div class="buttons-col">
+                        <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P1_X')">X</div>
+                        <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P1_B')">B</div>
+                        <div id="p1-btn-over" class="hud-btn btn-over" onclick="executeCommand('P1_O')">O</div>
+                        <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P1_S')">S</div>
+                    </div>
                     <div class="player-stats-block p1-stats-block">
                         <div class="stat-item"><span class="s-label">RANK</span><span id="p1-val-rank" class="s-val">--</span></div>
                         <div class="stat-item"><span class="s-label">BP</span><span id="p1-val-bp" class="s-val">----</span></div>
                         <div class="stat-item"><span class="s-label">WR</span><span id="p1-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
                     </div>
-                </div>
-                <div class="buttons-col">
-                    <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P1_X')">X</div>
-                    <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P1_B')">B</div>
-                    <div id="p1-btn-over" class="hud-btn btn-over" onclick="executeCommand('P1_O')">O</div>
-                    <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P1_S')">S</div>
                 </div>
             </div>
         </div>
@@ -327,19 +330,21 @@
         <div id="p2-wrapper" class="player-wrapper">
             <input type="text" id="name2" class="name-input" value="BLADER 2">
             <div class="stats-row">
-                <div class="score-container">
-                    <div id="score2" class="score">0</div>
+                <div class="buttons-stats-col">
+                    <div class="buttons-col">
+                        <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P2_X')">X</div>
+                        <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P2_B')">B</div>
+                        <div id="p2-btn-over" class="hud-btn btn-over" onclick="executeCommand('P2_O')">O</div>
+                        <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P2_S')">S</div>
+                    </div>
                     <div class="player-stats-block p2-stats-block">
                         <div class="stat-item"><span class="s-label">RANK</span><span id="p2-val-rank" class="s-val">--</span></div>
                         <div class="stat-item"><span class="s-label">BP</span><span id="p2-val-bp" class="s-val">----</span></div>
                         <div class="stat-item"><span class="s-label">WR</span><span id="p2-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
                     </div>
                 </div>
-                <div class="buttons-col">
-                    <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P2_X')">X</div>
-                    <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P2_B')">B</div>
-                    <div id="p2-btn-over" class="hud-btn btn-over" onclick="executeCommand('P2_O')">O</div>
-                    <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P2_S')">S</div>
+                <div class="score-container">
+                    <div id="score2" class="score">0</div>
                 </div>
             </div>
         </div>
