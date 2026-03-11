@@ -84,10 +84,10 @@
         .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
 
         .score-container { display: flex; flex-direction: column; align-items: center; }
-        .player-stats-block { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; width: clamp(50px, 8vw, 90px); }
-        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.4); padding: 1px 4px; border-bottom: 2px solid var(--bx-blue); border-radius: 4px; }
-        .s-label { font-family: 'Orbitron', sans-serif; font-size: clamp(5px, 0.75vw, 7px); color: var(--bx-blue); font-weight: 900; letter-spacing: 0.3px; }
-        .s-val { font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 1.3vw, 12px); color: white; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.6), 1px 1px 0px black; }
+        .player-stats-block { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; width: clamp(65px, 10vw, 110px); }
+        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.5); padding: 1px 5px; border-bottom: 1px solid rgba(0, 234, 255, 0.3); border-radius: 3px; }
+        .s-label { font-family: 'Orbitron', sans-serif; font-size: clamp(5px, 0.8vw, 8px); color: rgba(0, 234, 255, 0.7); font-weight: 900; letter-spacing: 0.4px; }
+        .s-val { font-family: 'Orbitron', sans-serif; font-size: clamp(10px, 1.6vw, 15px); color: white; font-weight: 900; text-shadow: 0 0 8px var(--bx-blue), 0 0 16px rgba(0, 234, 255, 0.4), 1px 1px 0px black; }
 
         #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
@@ -330,6 +330,9 @@
         <div id="p2-wrapper" class="player-wrapper">
             <input type="text" id="name2" class="name-input" value="BLADER 2">
             <div class="stats-row">
+                <div class="score-container">
+                    <div id="score2" class="score">0</div>
+                </div>
                 <div class="buttons-stats-col">
                     <div class="buttons-col">
                         <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P2_X')">X</div>
@@ -342,9 +345,6 @@
                         <div class="stat-item"><span class="s-label">BP</span><span id="p2-val-bp" class="s-val">----</span></div>
                         <div class="stat-item"><span class="s-label">WR</span><span id="p2-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
                     </div>
-                </div>
-                <div class="score-container">
-                    <div id="score2" class="score">0</div>
                 </div>
             </div>
         </div>
