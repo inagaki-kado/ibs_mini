@@ -1335,7 +1335,7 @@ function renderCard(row) {
   const fee       = (row[COL.fee]       || '').trim();
   const stadium   = (row[COL.stadium]   || '').trim();
   const format    = (row[COL.format]    || '').trim();
-  const comment   = (row[COL.comment]   || '').trim();
+  const comment   = (row[COL.comment]   || '').trim().replace(/\r?\n/g, '<br>');
   const venue     = (row[COL.venue]     || '').trim();
   const venueSub  = (row[COL.venueSub]  || '').trim();
   const mapUrl    = (row[COL.mapUrl]    || '').trim();
@@ -1535,7 +1535,7 @@ function renderHistoryCard(row) {
   const rank2        = (row[HCOL.rank2]        || '').trim();
   const rank3        = (row[HCOL.rank3]        || '').trim();
   const rank4        = (row[HCOL.rank4]        || '').trim();
-  const comment      = (row[HCOL.comment]      || '').trim();
+  const comment      = (row[HCOL.comment]      || '').trim().replace(/\r?\n/g, '<br>');
 
   let dateDisplay = { year: '', month: '---', day: '--', dow: '-' };
   if (dateStr) {
