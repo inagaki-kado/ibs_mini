@@ -814,6 +814,245 @@
     flex-wrap: wrap;
     gap: 0.6rem;
   }
+
+  /* ─── HISTORY ─── */
+  #history { background: var(--bg); }
+
+  .history-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.9rem 1.2rem;
+    background: rgba(236,72,153,0.05);
+    border: 1px solid rgba(236,72,153,0.2);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .history-toggle:hover {
+    background: rgba(236,72,153,0.1);
+    border-color: rgba(236,72,153,0.4);
+  }
+  .history-toggle-icon {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    color: var(--neon-pink);
+    transition: transform 0.3s;
+    display: inline-block;
+    line-height: 1;
+  }
+  .history-toggle.open .history-toggle-icon {
+    transform: rotate(90deg);
+  }
+  .history-toggle-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .history-toggle-count {
+    margin-left: auto;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-pink);
+    opacity: 0.7;
+  }
+
+  #history-container {
+    display: none;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-top: 0.6rem;
+  }
+  #history-container.open { display: flex; }
+
+  .history-card {
+    background: var(--bg3);
+    border: 1px solid rgba(236,72,153,0.12);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    position: relative;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .history-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue), transparent);
+  }
+  .history-card:hover {
+    border-color: rgba(236,72,153,0.3);
+    box-shadow: 0 4px 20px rgba(236,72,153,0.06);
+  }
+
+  .history-date-block {
+    background: rgba(236,72,153,0.05);
+    border-right: 1px solid rgba(236,72,153,0.12);
+    padding: 1.2rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+  }
+  .history-date-year {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 400;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 0.05rem;
+    letter-spacing: 0.05em;
+  }
+  .history-date-month {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--neon-pink);
+    margin-bottom: 0.1rem;
+  }
+  .history-date-day {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 1.8rem;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 0.15rem;
+  }
+  .history-date-dow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  .history-date-time {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--neon-pink);
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+    opacity: 0.85;
+  }
+
+  .history-body {
+    padding: 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .history-kind {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+  }
+  .history-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+  }
+  .history-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .history-tag {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+  .history-tag.blue  { color: var(--neon-blue);  border-color: rgba(14,165,233,0.3);  background: rgba(14,165,233,0.05); }
+  .history-tag.green { color: var(--neon-green); border-color: rgba(0,255,136,0.3);   background: rgba(0,255,136,0.05); }
+  .history-tag.pink  { color: var(--neon-pink);  border-color: rgba(236,72,153,0.3);  background: rgba(236,72,153,0.05); }
+
+  .history-results {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+  .history-result-item {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.2);
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid;
+  }
+  .history-result-item.rank-1 { border-color: var(--neon-yellow); }
+  .history-result-item.rank-2 { border-color: #b0bec5; }
+  .history-result-item.rank-3 { border-color: #cd7f32; }
+  .history-result-item.rank-4 { border-color: rgba(255,255,255,0.2); }
+
+  .history-result-rank {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.1rem;
+  }
+  .rank-1 .history-result-rank { color: var(--neon-yellow); }
+  .rank-2 .history-result-rank { color: #b0bec5; }
+  .rank-3 .history-result-rank { color: #cd7f32; }
+  .rank-4 .history-result-rank { color: rgba(255,255,255,0.3); }
+
+  .history-result-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .history-comment {
+    background: rgba(250,204,21,0.04);
+    border-left: 3px solid var(--neon-yellow);
+    padding: 0.5rem 0.8rem;
+    font-size: 0.78rem;
+    color: #fff;
+  }
+
+  .history-empty {
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed rgba(236,72,153,0.2);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .history-loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 600px) {
+    .history-card { grid-template-columns: 1fr; }
+    .history-date-block {
+      border-right: none;
+      border-bottom: 1px solid rgba(236,72,153,0.12);
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.8rem;
+      align-items: center;
+      padding: 0.8rem 1rem;
+    }
+    .history-results { grid-template-columns: repeat(2, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -828,6 +1067,7 @@
     <li><a href="#information">INFO</a></li>
     <li><a href="#events">EVENTS</a></li>
     <li><a href="#rules">PRECAUTION</a></li>
+    <li><a href="#history">HISTORY</a></li>
   </ul>
 </nav>
 
@@ -967,6 +1207,23 @@
           <li>参加者間でのベイの売買・トレード・貸し借りは禁止</li>
         </ul>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section id="history">
+  <div class="section-inner">
+    <p class="section-label reveal">// PAST EVENTS</p>
+    <h2 class="section-title reveal">開催履歴</h2>
+    <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-pink), transparent);"></div>
+    <div class="history-toggle reveal" id="history-toggle" onclick="toggleHistory()">
+      <span class="history-toggle-icon">▶</span>
+      <span class="history-toggle-label">過去のイベント結果を見る</span>
+      <span class="history-toggle-count" id="history-count">読み込み中...</span>
+    </div>
+    <div id="history-container">
+      <div class="history-loading" id="history-loading">読み込み中...</div>
     </div>
   </div>
 </section>
@@ -1248,11 +1505,140 @@ async function loadInformation() {
   }
 }
 
+// ─── HISTORY ──────────────────────────────────────────
+const HISTORY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=347993454&single=true&output=csv';
+
+const HCOL = {
+  name:         0,
+  date:         1,
+  startTime:    2,
+  stadium:      3,
+  format:       4,
+  kind:         5,
+  participants: 6,
+  rank1:        7,
+  rank2:        8,
+  rank3:        9,
+  rank4:        10,
+  comment:      11,
+};
+
+function renderHistoryCard(row) {
+  const name         = (row[HCOL.name]         || '').trim();
+  const dateStr      = (row[HCOL.date]         || '').trim();
+  const startTime    = (row[HCOL.startTime]    || '').trim();
+  const stadium      = (row[HCOL.stadium]      || '').trim();
+  const format       = (row[HCOL.format]       || '').trim();
+  const kind         = (row[HCOL.kind]         || '').trim();
+  const participants = (row[HCOL.participants] || '').trim();
+  const rank1        = (row[HCOL.rank1]        || '').trim();
+  const rank2        = (row[HCOL.rank2]        || '').trim();
+  const rank3        = (row[HCOL.rank3]        || '').trim();
+  const rank4        = (row[HCOL.rank4]        || '').trim();
+  const comment      = (row[HCOL.comment]      || '').trim();
+
+  let dateDisplay = { year: '', month: '---', day: '--', dow: '-' };
+  if (dateStr) {
+    const d = new Date(dateStr.replace(/\//g, '-'));
+    if (!isNaN(d)) {
+      dateDisplay = {
+        year:  d.getFullYear(),
+        month: MONTH_EN[d.getMonth()],
+        day:   String(d.getDate()).padStart(2, '0'),
+        dow:   DOW_JA[d.getDay()]
+      };
+    }
+  }
+
+  const ranks = [
+    { cls: 'rank-1', label: '🥇 1ST', name: rank1 },
+    { cls: 'rank-2', label: '🥈 2ND', name: rank2 },
+    { cls: 'rank-3', label: '🥉 3RD', name: rank3 },
+    { cls: 'rank-4', label: '4TH',   name: rank4 },
+  ].filter(r => r.name);
+
+  const card = document.createElement('div');
+  card.className = 'history-card reveal';
+  card.innerHTML = `
+    <div class="history-date-block">
+      ${dateDisplay.year ? `<div class="history-date-year">${dateDisplay.year}年</div>` : ''}
+      <div class="history-date-month">${dateDisplay.month}</div>
+      <div class="history-date-day">${dateDisplay.day}</div>
+      <div class="history-date-dow">${dateDisplay.dow}曜</div>
+      ${startTime ? `<div class="history-date-time">${startTime}〜</div>` : ''}
+    </div>
+    <div class="history-body">
+      ${kind ? `<div class="history-kind">${kind}</div>` : ''}
+      <div class="history-name">${name}</div>
+      <div class="history-meta-row">
+        ${format       ? `<span class="history-tag blue">${format}</span>` : ''}
+        ${stadium      ? `<span class="history-tag green">${stadium}</span>` : ''}
+        ${participants ? `<span class="history-tag pink">参加者数：${participants}名</span>` : ''}
+      </div>
+      ${ranks.length > 0 ? `
+        <div class="history-results">
+          ${ranks.map(r => `
+            <div class="history-result-item ${r.cls}">
+              <div class="history-result-rank">${r.label}</div>
+              <div class="history-result-name">${r.name}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${comment ? `<div class="history-comment">${comment}</div>` : ''}
+    </div>
+  `;
+  return card;
+}
+
+function toggleHistory() {
+  const toggle = document.getElementById('history-toggle');
+  const container = document.getElementById('history-container');
+  const isOpen = toggle.classList.contains('open');
+  toggle.classList.toggle('open', !isOpen);
+  container.classList.toggle('open', !isOpen);
+  if (!isOpen) observeReveal();
+}
+
+async function loadHistory() {
+  const container = document.getElementById('history-container');
+  const countEl = document.getElementById('history-count');
+  try {
+    const res = await fetch(HISTORY_CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const rows = parseCSV(text).slice(1).filter(r => r.some(c => c.trim()));
+
+    rows.sort((a, b) => {
+      const da = new Date((a[HCOL.date] || '').replace(/\//g, '-'));
+      const db = new Date((b[HCOL.date] || '').replace(/\//g, '-'));
+      return db - da;
+    });
+
+    const loading = document.getElementById('history-loading');
+    if (loading) loading.remove();
+
+    if (rows.length === 0) {
+      container.innerHTML = '<div class="history-empty">📭 開催履歴はありません。</div>';
+      countEl.textContent = '0 件';
+      return;
+    }
+    countEl.textContent = `${rows.length} 件`;
+    rows.forEach(row => container.appendChild(renderHistoryCard(row)));
+  } catch(e) {
+    console.error(e);
+    const loading = document.getElementById('history-loading');
+    if (loading) loading.textContent = '⚠️ 履歴の取得に失敗しました。';
+    countEl.textContent = '';
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   observeReveal();
   loadEvents();
   loadInformation();
+  loadHistory();
 });
 </script>
 </body>
