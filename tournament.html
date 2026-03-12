@@ -462,9 +462,14 @@
         if (!s1 || !s2) return;
         let winnerStats = (match.winner === 1) ? s1 : s2; let loserStats = (match.winner === 1) ? s2 : s1;
         let rWin = winnerStats.power; let rLose = loserStats.power;
-        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
-        let change = Math.round(32 * (1 - eWin));
-        winnerStats.power += change; loserStats.power -= change;
+        // 勝者の期待勝率と獲得BP（最低保証200）
+        const calcEP_winner = 1 / (1 + Math.pow(10, (rLose - rWin) / 10000));
+        const winnerGain = Math.max(200, Math.round(2000 * (1 - calcEP_winner)));
+        // 敗者の期待勝率と減少BP（最大減少-150、BP下限10000）
+        const calcEP_loser = 1 / (1 + Math.pow(10, (rWin - rLose) / 10000));
+        const loserLoss = Math.min(-150, Math.round(-1600 * calcEP_loser));
+        winnerStats.power = Math.max(10000, winnerStats.power + winnerGain);
+        loserStats.power = Math.max(10000, loserStats.power + loserLoss);
         s1.matches += 1; s2.matches += 1;
         if (match.winner === 1) { s1.wins += 1; s2.loses += 1; } else { s2.wins += 1; s1.loses += 1; }
         s1.rate = calculateRate(s1.wins, s1.matches); s2.rate = calculateRate(s2.wins, s2.matches);
@@ -849,8 +854,8 @@
     function addParticipant(name = '', memo1 = '') {
       if(isTournamentStarted) return showAlert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
-          initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
-          currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
+          currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
           bayChecked: false, bayImage: null, beyblades: [], color: null, position: null });
       renderParticipants();
     }
