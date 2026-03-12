@@ -444,12 +444,16 @@ nav {
   border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Orbitron', monospace; font-weight: 900;
-  font-size: 1.1rem; letter-spacing: 0.04em;
+  letter-spacing: 0.04em;
   flex-shrink: 0;
   position: relative;
   clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
   border: 2px solid currentColor;
 }
+/* 数字+F を下揃えで中央配置 */
+.rank-text { display: flex; align-items: flex-end; line-height: 1; gap: 1px; }
+.rank-text .rank-num { font-size: 1.1rem; }
+.rank-text .rank-f   { font-size: 0.9rem; }
 .player-rank-icon::after {
   content: '';
   position: absolute; inset: -4px;
@@ -606,10 +610,18 @@ nav {
   margin-bottom: 0.5rem;
   display: flex; align-items: center; gap: 0.4rem;
 }
+.rival-name-row {
+  display: flex; align-items: baseline; gap: 0.3rem;
+  margin-bottom: 0.25rem;
+}
+.rival-label {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.78rem;
+  font-weight: 600; letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
 .rival-name {
   font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
   font-size: 1.15rem; color: #fff;
-  margin-bottom: 0.2rem;
 }
 .rival-record {
   font-family: 'Rajdhani', sans-serif; font-size: 0.92rem;
@@ -621,9 +633,25 @@ nav {
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--neon-yellow); margin-bottom: 0.6rem;
 }
-.awards-row {
+.awards-badges-row {
   display: flex; gap: 0.6rem; flex-wrap: wrap;
+  margin-bottom: 0.75rem;
 }
+/* 入賞履歴ログ — スクロール可能テキストエリア */
+.awards-log {
+  background: rgba(4,7,15,0.7);
+  border: 1px solid rgba(250,204,21,0.15);
+  border-left: 3px solid rgba(250,204,21,0.5);
+  padding: 0.75rem 1rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.82rem; font-weight: 400;
+  color: var(--text-dim);
+  line-height: 1.8;
+  max-height: 200px;
+  overflow-y: auto;
+  clip-path: polygon(4px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
+}
+.awards-log br + br { display: block; margin: 0.3rem 0; content: ''; }
 .award-badge {
   display: flex; align-items: center; gap: 6px;
   padding: 0.4rem 0.8rem;
@@ -683,6 +711,53 @@ nav {
   .rank-badge { font-size: 1.5rem; }
   .stats-panel { padding: 1rem; }
   .card-body { padding: 1rem; }
+}
+
+/* ─── ABOUT アコーディオン ─── */
+.about-accordion {
+  background: rgba(8,13,26,0.7);
+  border: 1px solid rgba(0,255,136,0.15);
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+.about-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.2rem; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--neon-green);
+  user-select: none; transition: background 0.15s;
+}
+.about-header:hover { background: rgba(0,255,136,0.05); }
+.about-arrow {
+  font-size: 0.6rem; transition: transform 0.25s ease;
+  color: var(--neon-green);
+}
+.about-arrow.open { transform: rotate(180deg); }
+.about-body {
+  display: none;
+  padding: 0 1.4rem 1.2rem;
+  border-top: 1px solid rgba(0,255,136,0.08);
+}
+.about-body.open { display: block; }
+.about-intro {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem;
+  line-height: 1.85; color: var(--text-dim);
+  margin-top: 1rem; margin-bottom: 0.5rem;
+}
+.about-item { margin-top: 1rem; }
+.about-item-title {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 0.82rem;
+  font-weight: 700; color: var(--text); margin-bottom: 0.3rem;
+}
+.about-item-body {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 0.78rem;
+  line-height: 1.85; color: var(--text-dim);
+}
+.about-note {
+  font-size: 0.74rem; color: var(--text-dim);
+  border-left: 2px solid rgba(0,255,136,0.3);
+  padding: 0.4rem 0.8rem; margin-top: 0.5rem;
+  background: rgba(0,255,136,0.03);
 }
 
 /* Scrollbar */
@@ -787,7 +862,50 @@ nav {
       </div>
     </div>
 
-    <!-- States -->
+    <!-- ABOUT PLAYER STATS アコーディオン -->
+    <div class="about-accordion">
+      <div class="about-header" onclick="toggleAbout()">
+        <span>// About Player Stats</span>
+        <span class="about-arrow" id="aboutArrow">▼</span>
+      </div>
+      <div class="about-body" id="aboutBody">
+        <p class="about-intro">このページでは過去に開催された「板橋ベイブレード会」の「大会」および「練習会の中で開催されたミニ大会」の戦績を集計したデータを掲載しています。<br>各ステータスの算出基準は以下の通りです。</p>
+
+        <div class="about-item">
+          <div class="about-item-title">⚡ BP（板橋ベイパワー）</div>
+          <div class="about-item-body">「板橋ベイブレード会」におけるあなたのベイブレード力（べいぶれーどりょく）の指標です。新規エントリー時は「10,000」からスタートし、主に対戦での勝敗で増減します。自分よりBPが高い相手に勝利するほど、多くのBPを獲得できます。また、大会（練習会のミニ大会は除く）に上位入賞することで大きく上昇するほか、大会参加でもわずかに上昇します。
+            <div class="about-note">【注意】BPはあくまで「板橋ベイブレード会」の中の指標であり、「ベイブレード自体の強さ・うまさ」そのものを表す数字ではありませんのでご注意ください。</div>
+          </div>
+        </div>
+
+        <div class="about-item">
+          <div class="about-item-title">🏢 ランク（階層）</div>
+          <div class="about-item-body">「ITABASHIX-TOWER」であなたがどの階層にいるかを表しています。BPが高いほど上層階に行けますが、特定の階層からは入賞経験がないと到達できません。なお、頂上であるX階（100階）に至る扉は現在封鎖されています。
+            <div class="about-note">◆「ITABASHIX-TOWER」とは<br>バーチャル板橋区の中央にそびえるＩ字型の塔。板橋ベイブレード会のバーチャル総本部。</div>
+          </div>
+        </div>
+
+        <div class="about-item">
+          <div class="about-item-title">🚩 大会参加数</div>
+          <div class="about-item-body">これまであなたが参戦した大会の総数です。練習会およびその中で開催されたミニ大会はカウントされません。</div>
+        </div>
+
+        <div class="about-item">
+          <div class="about-item-title">📊 勝率（総合 / スタジアム別）</div>
+          <div class="about-item-body">大会・ミニ大会含む全試合の勝率と、「エクストリームスタジアム」「インフィニティスタジアム」それぞれの勝率です。</div>
+        </div>
+
+        <div class="about-item">
+          <div class="about-item-title">🔥 ライバル</div>
+          <div class="about-item-body">これまでに「3戦以上」直接対決した全プレイヤーの中から、「最も勝率が50％（五分五分）に近い相手」があなたの宿命のライバルとして自動的に選出・表示されます。</div>
+        </div>
+
+        <div class="about-item">
+          <div class="about-item-title">🏆 入賞回数 / 入賞履歴</div>
+          <div class="about-item-body">大会において「優勝・準優勝・3位・4位」に輝いた回数および入賞した大会の情報です。</div>
+        </div>
+      </div>
+    </div>
     <div class="state-msg hidden" id="stateLoading">
       <div class="spinner"></div>
       <span>データを取得中...</span>
@@ -815,7 +933,7 @@ nav {
 // ─── CONFIG ───────────────────────────────────────────────
 const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:J');
+const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:L');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1043,20 +1161,29 @@ function renderResults(players) {
   area.innerHTML = '';
 
   players.forEach((row, i) => {
-    const name     = (row[0] || '').trim();
-    const matches  = (row[1] || '--').trim();
-    const rankStr  = (row[2] || '--').trim();
-    const bp       = (row[3] || '--').trim();
-    const wr       = row[4];
-    const wrEx     = row[5];
-    const wrInf    = row[6];
-    const rival    = (row[7] || '').trim();
-    const rivalWr  = (row[8] || '').trim();
-    const awards   = parseAwards((row[9] || '').trim());
+    const name        = (row[0]  || '').trim();
+    const tournaments = (row[1]  || '--').trim();   // [1] 大会参加数
+    const rankStr     = (row[2]  || '--').trim();
+    const bp          = (row[3]  || '--').trim();
+    const wr          = row[4];
+    const wrEx        = row[5];
+    const wrInf       = row[6];
+    const rival       = (row[7]  || '').trim();     // [7] ライバル名
+    const rivalRecord = (row[8]  || '').trim();     // [8] ライバル戦績 "3戦1勝2敗"
+    const rivalWrRaw  = (row[9]  || '').trim();     // [9] ライバル勝率 "33.3%"
+    const awardsCount = (row[10] || '').trim();     // [10] 入賞回数
+    const awardsLog   = (row[11] || '').trim();     // [11] 入賞履歴テキスト
 
     const rankNum   = getRankNum(rankStr);
     const rankClass = getRankClass(rankNum);
-    const displayRank = rankNum === 100 ? 'XF' : rankStr;
+    // 数字+F を下揃えスパン分割、XFも X+F に分割
+    let displayRankHtml;
+    if (rankNum === 100) {
+      displayRankHtml = `<div class="rank-text"><span class="rank-num">X</span><span class="rank-f">F</span></div>`;
+    } else {
+      const numPart = rankStr.replace(/F$/i, '');
+      displayRankHtml = `<div class="rank-text"><span class="rank-num">${numPart}</span><span class="rank-f">F</span></div>`;
+    }
 
     const wrPct    = pctNum(wr);
     const wrExPct  = pctNum(wrEx);
@@ -1066,58 +1193,72 @@ function renderResults(players) {
     card.className = 'player-card';
     card.style.animationDelay = (i * 0.08) + 's';
 
-    // Awards HTML
-    let awardsHtml = '';
+    // ── Rival HTML ──
+    let rivalHtml = '';
+    const rivalEmpty = !rival || rival === '－' || rival === '-';
+    if (!rivalEmpty) {
+      // "3戦1勝2敗（勝率：33.3%）" を組み立て
+      let recordStr = rivalRecord || '';
+      if (rivalWrRaw && rivalWrRaw !== '－' && rivalWrRaw !== '-') {
+        const wrFormatted = rivalWrRaw.endsWith('%') ? rivalWrRaw : rivalWrRaw + '%';
+        recordStr = recordStr
+          ? `${recordStr}（勝率：${wrFormatted}）`
+          : `勝率：${wrFormatted}`;
+      }
+      rivalHtml = `
+        <div class="rival-block">
+          <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
+          <div class="rival-name-row">
+            <span class="rival-label">ライバル：</span><span class="rival-name">${rival}</span>
+          </div>
+          ${recordStr ? `<div class="rival-record">${recordStr}</div>` : ''}
+        </div>`;
+    }
+
+    // ── Awards badge HTML (from [10]) ──
+    const awards = parseAwards(awardsCount);
+    let awardsBadgeHtml = '';
     const awardData = [
       { cls:'award-1st', icon:'🥇', label:'1ST', val: awards.p1 },
       { cls:'award-2nd', icon:'🥈', label:'2ND', val: awards.p2 },
       { cls:'award-3rd', icon:'🥉', label:'3RD', val: awards.p3 },
       { cls:'award-4th', icon:'',   label:'4TH', val: awards.p4 },
     ].filter(a => a.val > 0);
-
     if (awardData.length > 0) {
-      awardsHtml = `
-        <div class="awards-block">
-          <div class="awards-header"><i class="fa fa-trophy"></i> 入賞履歴</div>
-          <div class="awards-row">
-            ${awardData.map(a => `
-              <div class="award-badge ${a.cls}">${a.icon} ${a.label} × ${a.val}</div>
-            `).join('')}
-          </div>
+      awardsBadgeHtml = `
+        <div class="awards-badges-row">
+          ${awardData.map(a => `<div class="award-badge ${a.cls}">${a.icon} ${a.label} × ${a.val}</div>`).join('')}
         </div>`;
     }
 
-    // Rival HTML
-    let rivalHtml = '';
-    if (rival) {
-      // rivalWr を「○戦○勝○敗（勝率：○○%）」形式に整形
-      // スプレッドシートの文字列をそのまま使いつつ、勝率だけ別行に分離
-      let rivalRecordLine = '';
-      if (rivalWr) {
-        const pctVal = pct(rivalWr); // 数値のみの場合は勝率として表示
-        // rivalWr が既に "3戦2勝1敗（66.7%）" のような文字列ならそのまま
-        // 数値のみ（"66.7" や "66.7%"）なら「勝率：XX%」として表示
-        if (/^\d/.test(rivalWr) && !rivalWr.includes('戦')) {
-          rivalRecordLine = `勝率：${pctVal}`;
-        } else {
-          // 括弧内に "勝率：" を補完（なければそのまま）
-          rivalRecordLine = rivalWr.replace(/（([\d.]+%?)）/, '（勝率：$1）');
-        }
-      }
-      rivalHtml = `
-        <div class="rival-block">
-          <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
-          <div class="rival-name">${rival}</div>
-          ${rivalRecordLine ? `<div class="rival-record">${rivalRecordLine}</div>` : ''}
+    // ── Awards log HTML (from [11]) ──
+    let awardsLogHtml = '';
+    const logEmpty = !awardsLog || awardsLog === '－' || awardsLog === '-';
+    if (!logEmpty) {
+      const logFormatted = awardsLog
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      awardsLogHtml = `
+        <div class="awards-block">
+          <div class="awards-header"><i class="fa fa-trophy"></i> 入賞履歴</div>
+          ${awardsBadgeHtml}
+          <div class="awards-log">${logFormatted}</div>
+        </div>`;
+    } else if (awardsBadgeHtml) {
+      // バッジはあるがログなし
+      awardsLogHtml = `
+        <div class="awards-block">
+          <div class="awards-header"><i class="fa fa-trophy"></i> 入賞履歴</div>
+          ${awardsBadgeHtml}
         </div>`;
     }
 
     card.innerHTML = `
       <div class="card-header">
-        <div class="player-rank-icon ${rankClass}">${displayRank}</div>
+        <div class="player-rank-icon ${rankClass}">${displayRankHtml}</div>
         <div class="player-info">
           <div class="player-name">${name}</div>
-          <div class="player-matches">${matches} 試合</div>
+          <div class="player-matches"><i class="fa fa-calendar-check" style="margin-right:4px;opacity:.6"></i>${tournaments} 大会参加</div>
         </div>
       </div>
       <div class="card-body">
@@ -1177,7 +1318,7 @@ function renderResults(players) {
         </div>
 
         ${rivalHtml}
-        ${awardsHtml}
+        ${awardsLogHtml}
 
       </div>
     `;
@@ -1192,6 +1333,14 @@ function renderResults(players) {
       });
     });
   });
+}
+
+// ─── ABOUT ACCORDION ─────────────────────────────────────
+function toggleAbout() {
+  const body  = document.getElementById('aboutBody');
+  const arrow = document.getElementById('aboutArrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
 }
 
 // ─── KEYBOARD ────────────────────────────────────────────
