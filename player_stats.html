@@ -296,10 +296,10 @@ nav {
 .tower-indicator.show { opacity: 1; }
 .tower-indicator-arrow {
   width: 0; height: 0;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  border-right: 12px solid currentColor;
-  filter: drop-shadow(0 0 4px currentColor);
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 14px solid currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
 }
 .tower-indicator-label {
   font-family: 'Orbitron', monospace;
@@ -942,7 +942,7 @@ function highlightTower(rankNum) {
   const label     = document.getElementById('towerIndicatorLabel');
   const color     = getIndicatorColor(rankNum);
   indicator.style.color = color;
-  label.textContent      = rankNum === 100 ? 'XF' : rankNum + 'F';
+  label.textContent      = ''; // 階数表示なし・矢印のみ
   indicator.classList.add('show');
 
   // Position indicator vertically relative to segment
@@ -1090,13 +1090,25 @@ function renderResults(players) {
     // Rival HTML
     let rivalHtml = '';
     if (rival) {
-      // rivalWr の解析: "3戦2勝1敗（66.7%）" のような文字列をそのまま使う
-      // または数値だけの場合は勝率として表示
+      // rivalWr を「○戦○勝○敗（勝率：○○%）」形式に整形
+      // スプレッドシートの文字列をそのまま使いつつ、勝率だけ別行に分離
+      let rivalRecordLine = '';
+      if (rivalWr) {
+        const pctVal = pct(rivalWr); // 数値のみの場合は勝率として表示
+        // rivalWr が既に "3戦2勝1敗（66.7%）" のような文字列ならそのまま
+        // 数値のみ（"66.7" や "66.7%"）なら「勝率：XX%」として表示
+        if (/^\d/.test(rivalWr) && !rivalWr.includes('戦')) {
+          rivalRecordLine = `勝率：${pctVal}`;
+        } else {
+          // 括弧内に "勝率：" を補完（なければそのまま）
+          rivalRecordLine = rivalWr.replace(/（([\d.]+%?)）/, '（勝率：$1）');
+        }
+      }
       rivalHtml = `
         <div class="rival-block">
           <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
           <div class="rival-name">${rival}</div>
-          ${rivalWr ? `<div class="rival-record">${rivalWr}</div>` : ''}
+          ${rivalRecordLine ? `<div class="rival-record">${rivalRecordLine}</div>` : ''}
         </div>`;
     }
 
