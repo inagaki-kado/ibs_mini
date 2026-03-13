@@ -1011,6 +1011,9 @@
     font-size: 0.82rem;
     font-weight: 700;
     color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .history-comment {
@@ -1065,6 +1068,7 @@
     <li><a href="#events">EVENTS</a></li>
     <li><a href="#rules">PRECAUTION</a></li>
     <li><a href="#history">HISTORY</a></li>
+    <li><a href="player_stats.html" style="color:var(--neon-blue);text-shadow:var(--glow-blue);">PLAYERS</a></li>
   </ul>
 </nav>
 
@@ -1113,7 +1117,7 @@
         <p class="section-label">// ABOUT US</p>
         <h2 class="section-title">板橋ベイブレード会<br>とは？</h2>
         <div class="section-line"></div>
-        <p>「<strong>板橋ベイブレード会</strong>」とは、<a href="https://www.takaratomy.co.jp/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">株式会社タカラトミー</a><strong>公認のイベントアンバサダー</strong>である<a href="https://x.com/yamizaki" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">イナッシー</a>（稲垣ヤミー）が主に東京都板橋区で主催する<a href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;text-shadow:var(--glow-green);">BEYBLADE X</a>のイベントです。</p>
+        <p>「<strong>板橋ベイブレード会</strong>」とは、<a href="https://www.takaratomy.co.jp/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">株式会社タカラトミー</a>公認のイベントアンバサダーである<a href="https://x.com/yamizaki" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">イナッシー</a>（稲垣ヤミー）が主に東京都板橋区で主催する<a href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;text-shadow:var(--glow-green);">BEYBLADE X</a>のイベントです。</p>
         <p>気軽な練習会から、公式ルールに準じた本格的なアンバサダー大会まで、幅広いスタイルで定期開催しています。初心者から上級者まで大歓迎！</p>
       </div>
 
@@ -1191,8 +1195,8 @@
       <div class="rule-card reveal">
         <div class="rule-title">飲食について</div>
         <ul>
-          <li>飲み物はペットボトルなど蓋付きの飲料のみ持ち込み可</li>
-          <li>食事はパンやおにぎりといった軽食類のみ可</li>
+          <li>ペットボトルなど蓋付きの飲み物のみ持ち込み可</li>
+          <li>パンやおにぎりといった軽食は可（匂いの強いものは禁止）</li>
           <li>弁当・汁物・麺類等は持ち込み禁止</li>
         </ul>
       </div>
@@ -1200,9 +1204,8 @@
         <div class="rule-title">マナー・禁止事項</div>
         <ul>
           <li>会場は公共施設のため過度な騒音は厳禁です</li>
-          <li>会場内での喫煙不可ですのでご協力をお願いします</li>
-          <li>トラブル防止のため、参加者間でのベイの売買・トレード・貸し借りは禁止とさせていただきます</li>
-          <li>荷物のお取り間違えなどないよう、ご自身の荷物管理には十分ご注意ください</li>
+          <li>会場内での喫煙不可</li>
+          <li>参加者間でのベイの売買・トレード・貸し借りは禁止</li>
         </ul>
       </div>
     </div>
@@ -1215,6 +1218,30 @@
     <p class="section-label reveal">// PAST EVENTS</p>
     <h2 class="section-title reveal">開催履歴</h2>
     <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-pink), transparent);"></div>
+
+    <!-- PLAYER STATS リンクボタン -->
+    <a href="player_stats.html" class="reveal" style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.1rem 1.6rem;
+      background: rgba(14,165,233,0.06);
+      border: 1px solid rgba(14,165,233,0.35);
+      text-decoration: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    "
+    onmouseover="this.style.borderColor='rgba(14,165,233,0.7)';this.style.boxShadow='0 0 24px rgba(14,165,233,0.2)'"
+    onmouseout="this.style.borderColor='rgba(14,165,233,0.35)';this.style.boxShadow='none'"
+    >
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:0.95rem;color:var(--neon-blue);text-shadow:var(--glow-blue);letter-spacing:0.06em;margin-bottom:0.25rem;">📊 PLAYER STATS</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);">プレイヤー戦績・BP・ライバルを検索</div>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:0.15em;color:var(--neon-blue);white-space:nowrap;">VIEW →</div>
+    </a>
     <div class="history-toggle reveal" id="history-toggle" onclick="toggleHistory()">
       <span class="history-toggle-icon">▶</span>
       <span class="history-toggle-label">過去のイベント結果を見る</span>
@@ -1333,7 +1360,7 @@ function renderCard(row) {
   const fee       = (row[COL.fee]       || '').trim();
   const stadium   = (row[COL.stadium]   || '').trim();
   const format    = (row[COL.format]    || '').trim();
-  const comment   = (row[COL.comment]   || '').trim().replace(/\r?\n/g, '<br>');
+  const comment   = (row[COL.comment]   || '').trim();
   const venue     = (row[COL.venue]     || '').trim();
   const venueSub  = (row[COL.venueSub]  || '').trim();
   const mapUrl    = (row[COL.mapUrl]    || '').trim();
@@ -1404,13 +1431,13 @@ function renderCard(row) {
         ${venue     ? `<div class="event-info-item"><span class="event-info-label">会場</span><span class="event-info-value">${venue}${venueSub ? `<br><small style="color:var(--text-dim);font-size:0.8em">${venueSub}</small>` : ''}</span></div>` : ''}
       </div>
 
-      ${comment ? `<div class="event-comment">${comment}</div>` : ''}
+      ${comment ? `<div class="event-comment">💬 ${comment}</div>` : ''}
 
       ${embedUrl ? `<iframe class="event-map" src="${embedUrl}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : ''}
 
       <div class="event-footer">
         ${tonamel
-          ? `<a class="btn-tonamel" href="${tonamel}" target="_blank" rel="noopener">詳細やお申し込みはこちら！</a>`
+          ? `<a class="btn-tonamel" href="${tonamel}" target="_blank" rel="noopener">🏆 詳細やお申し込みはこちら！</a>`
           : `<div style="text-align:center;font-size:0.8rem;color:var(--text-dim);padding:0.5rem">申し込みリンクは準備中です</div>`
         }
       </div>
@@ -1529,11 +1556,11 @@ function renderHistoryCard(row) {
   const format       = (row[HCOL.format]       || '').trim();
   const kind         = (row[HCOL.kind]         || '').trim();
   const participants = (row[HCOL.participants] || '').trim();
-  const rank1        = (row[HCOL.rank1]        || '').trim().replace(/\r?\n/g, '<br>');
-  const rank2        = (row[HCOL.rank2]        || '').trim().replace(/\r?\n/g, '<br>');
-  const rank3        = (row[HCOL.rank3]        || '').trim().replace(/\r?\n/g, '<br>');
-  const rank4        = (row[HCOL.rank4]        || '').trim().replace(/\r?\n/g, '<br>');
-  const comment      = (row[HCOL.comment]      || '').trim().replace(/\r?\n/g, '<br>');
+  const rank1        = (row[HCOL.rank1]        || '').trim();
+  const rank2        = (row[HCOL.rank2]        || '').trim();
+  const rank3        = (row[HCOL.rank3]        || '').trim();
+  const rank4        = (row[HCOL.rank4]        || '').trim();
+  const comment      = (row[HCOL.comment]      || '').trim();
 
   let dateDisplay = { year: '', month: '---', day: '--', dow: '-' };
   if (dateStr) {
