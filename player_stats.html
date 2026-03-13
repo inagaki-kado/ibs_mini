@@ -382,6 +382,14 @@ nav {
 }
 .search-btn:active { transform: translateY(0); }
 
+@media (max-width: 540px) {
+  .search-wrap { flex-direction: column; gap: 0.5rem; }
+  .search-btn {
+    width: 100%; padding: 0.85rem;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+}
+
 /* Loading / Error / Empty */
 .state-msg {
   display: flex; flex-direction: column; align-items: center;
@@ -685,25 +693,40 @@ nav {
     grid-template-rows: auto auto auto;
   }
   .page-header { grid-column: 1; }
+
+  /* スマホ：タワーを最後尾に（order で並び替え） */
+  .stats-panel  { order: 1; padding: 1.5rem; }
+  .tower-panel  { order: 2; }
+
   .tower-panel {
     position: static;
     height: auto;
-    max-height: 400px;
     border-right: none;
-    border-bottom: 1px solid rgba(0,255,136,0.12);
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 1.5rem;
-    gap: 1.2rem;
+    border-top: 1px solid rgba(0,255,136,0.12);
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1.5rem;
+    gap: 1rem;
   }
+  /* タワーを縦長に・高さを画面に応じて確保 */
   .tower-container {
-    flex: none;
-    width: 140px;
-    height: 280px;
-    flex-shrink: 0;
+    width: 100%;
+    max-width: 260px;
+    height: 500px;
   }
-  .zone-legend { flex-direction: column; }
-  .stats-panel { padding: 1.5rem; }
+  .tower-svg-wrap {
+    max-width: 200px;
+    max-height: 500px;
+    height: 100%;
+  }
+  /* 凡例を横並び折り返し */
+  .zone-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 14px;
+  }
+  .zone-legend-item { font-size: 0.68rem; }
 }
 
 @media (max-width: 540px) {
@@ -711,6 +734,8 @@ nav {
   .rank-badge { font-size: 1.5rem; }
   .stats-panel { padding: 1rem; }
   .card-body { padding: 1rem; }
+  .tower-container { height: 420px; }
+  .tower-svg-wrap   { max-height: 420px; }
 }
 
 /* ─── ABOUT アコーディオン ─── */
@@ -1031,18 +1056,15 @@ function buildTower() {
 }
 
 function highlightTower(rankNum) {
-  // Remove existing active
   document.querySelectorAll('.floor-seg.active-floor').forEach(el => {
     el.classList.remove('active-floor');
   });
 
   if (!rankNum) return;
 
-  // Find segment
   const seg = document.querySelector(`.floor-seg[data-floor="${rankNum}"]`);
   if (!seg) return;
 
-  // Highlight a small range around the rank for visibility
   const range = rankNum === 100 ? 3 : 2;
   for (let d = -range; d <= range; d++) {
     const f = rankNum + d;
@@ -1052,26 +1074,30 @@ function highlightTower(rankNum) {
     }
   }
 
-  // Scroll segment into view within tower
   seg.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
-  // Position indicator
-  const indicator = document.getElementById('towerIndicator');
-  const label     = document.getElementById('towerIndicatorLabel');
-  const color     = getIndicatorColor(rankNum);
+  // インジケーター位置：PC=縦タワー(top基準) / スマホ=横タワー(left基準)
+  const indicator  = document.getElementById('towerIndicator');
+  const label      = document.getElementById('towerIndicatorLabel');
+  const color      = getIndicatorColor(rankNum);
+  const floorsEl   = document.getElementById('towerFloors');
+  const isMobile   = window.innerWidth <= 900;
+
   indicator.style.color = color;
-  label.textContent      = ''; // 階数表示なし・矢印のみ
+  label.textContent = '';
   indicator.classList.add('show');
 
-  // Position indicator vertically relative to segment
-  const floorsEl = document.getElementById('towerFloors');
-  const floorH   = floorsEl.offsetHeight;
-  const segTop   = seg.offsetTop; // from bottom due to column-reverse? test needed
-  // Use getBoundingClientRect relative to parent
   const parentRect = floorsEl.parentElement.getBoundingClientRect();
   const segRect    = seg.getBoundingClientRect();
-  const relTop     = segRect.top - parentRect.top + segRect.height / 2;
-  indicator.style.top = relTop + 'px';
+
+  if (isMobile) {
+    // スマホでも縦タワーなのでPC同様に位置計算
+    const relTop = segRect.top - parentRect.top + segRect.height / 2;
+    indicator.style.top = relTop + 'px';
+  } else {
+    const relTop = segRect.top - parentRect.top + segRect.height / 2;
+    indicator.style.top = relTop + 'px';
+  }
 }
 
 // ─── DATA FETCH ──────────────────────────────────────────
