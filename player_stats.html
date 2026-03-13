@@ -635,7 +635,26 @@ nav {
   font-family: 'Rajdhani', sans-serif; font-size: 0.92rem;
   font-weight: 600; color: var(--text-dim); letter-spacing: 0.05em;
 }
-.awards-block {}
+/* 参加履歴ログ */
+.history-block { margin-top: 1rem; }
+.history-header {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--neon-blue); margin-bottom: 0.6rem;
+}
+.history-log {
+  background: rgba(4,7,15,0.7);
+  border: 1px solid rgba(14,165,233,0.15);
+  border-left: 3px solid rgba(14,165,233,0.5);
+  padding: 0.75rem 1rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.82rem; font-weight: 400;
+  color: var(--text-dim);
+  line-height: 1.8;
+  max-height: 200px;
+  overflow-y: auto;
+  clip-path: polygon(4px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
+}
 .awards-header {
   font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
@@ -966,7 +985,7 @@ nav {
 // ─── CONFIG ───────────────────────────────────────────────
 const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:L');
+const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:M');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1210,6 +1229,7 @@ function renderResults(players) {
     const rivalWrRaw  = (row[9]  || '').trim();     // [9] ライバル勝率 "33.3%"
     const awardsCount = (row[10] || '').trim();     // [10] 入賞回数
     const awardsLog   = (row[11] || '').trim();     // [11] 入賞履歴テキスト
+    const historyLog  = (row[12] || '').trim();     // [12] 参加履歴テキスト
 
     const rankNum   = getRankNum(rankStr);
     const rankClass = getRankClass(rankNum);
@@ -1290,6 +1310,20 @@ function renderResults(players) {
         </div>`;
     }
 
+    // ── History log HTML (from [12]) ──
+    let historyLogHtml = '';
+    const histEmpty = !historyLog || historyLog === '－' || historyLog === '-';
+    if (!histEmpty) {
+      const histFormatted = historyLog
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      historyLogHtml = `
+        <div class="history-block">
+          <div class="history-header"><i class="fa fa-calendar-alt"></i> 参加履歴</div>
+          <div class="history-log">${histFormatted}</div>
+        </div>`;
+    }
+
     card.innerHTML = `
       <div class="card-header">
         <div class="player-rank-icon ${rankClass}">${displayRankHtml}</div>
@@ -1356,6 +1390,7 @@ function renderResults(players) {
 
         ${rivalHtml}
         ${awardsLogHtml}
+        ${historyLogHtml}
 
       </div>
     `;
