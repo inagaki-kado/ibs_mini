@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>板橋ベイブレード会 | SYSTEM SHOWCASE</title>
+<link rel="icon" href="BEYX_logo_amb.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:        #04070f;
+  --bg2:       #080d1a;
+  --bg3:       #0c1220;
+  --neon-green: #00ff88;
+  --neon-blue:  #0ea5e9;
+  --neon-pink:  #ec4899;
+  --neon-yellow:#facc15;
+  --neon-purple:#a855f7;
+  --text:      #e2e8f0;
+  --text-dim:  #94a3b8;
+  --border-g:  rgba(0,255,136,0.2);
+  --border-b:  rgba(14,165,233,0.2);
+  --glow-green: 0 0 20px rgba(0,255,136,0.5), 0 0 50px rgba(0,255,136,0.2);
+  --glow-blue:  0 0 20px rgba(14,165,233,0.5), 0 0 50px rgba(14,165,233,0.2);
+  --glow-pink:  0 0 20px rgba(236,72,153,0.5), 0 0 50px rgba(236,72,153,0.2);
+  --glow-yellow:0 0 20px rgba(250,204,21,0.5),  0 0 50px rgba(250,204,21,0.2);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+
+body::before {
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+.grid-bg {
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
+  background-size:50px 50px;
+  pointer-events:none;z-index:0;
+}
+
+/* ═══════════════════════════════
+   HERO
+═══════════════════════════════ */
+#hero {
+  position:relative;min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:5rem 1.5rem 5rem;overflow:hidden;
+}
+
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;animation:orbPulse 6s ease-in-out infinite;}
+.orb-1{width:420px;height:420px;top:-80px;left:-120px;background:rgba(0,255,136,0.08);animation-delay:0s;}
+.orb-2{width:360px;height:360px;bottom:-80px;right:-80px;background:rgba(14,165,233,0.08);animation-delay:2s;}
+.orb-3{width:280px;height:280px;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(236,72,153,0.06);animation-delay:4s;}
+@keyframes orbPulse{0%,100%{opacity:0.6;}50%{opacity:1;}}
+
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(0,255,136,0.07);animation:spinRing 22s linear infinite;pointer-events:none;}
+.ring::before{content:'';position:absolute;width:10px;height:10px;background:var(--neon-green);border-radius:50%;top:-5px;left:50%;box-shadow:var(--glow-green);}
+.ring-1{width:560px;height:560px;}
+.ring-2{width:380px;height:380px;border-color:rgba(14,165,233,0.07);animation-duration:16s;animation-direction:reverse;}
+.ring-2::before{background:var(--neon-blue);box-shadow:var(--glow-blue);}
+.ring-3{width:220px;height:220px;border-color:rgba(236,72,153,0.07);animation-duration:11s;}
+.ring-3::before{background:var(--neon-pink);box-shadow:var(--glow-pink);}
+@keyframes spinRing{to{transform:rotate(360deg);}}
+
+.hero-logo{
+  width:80px;height:80px;border-radius:50%;object-fit:contain;
+  background:rgba(0,255,136,0.06);border:2px solid var(--neon-green);box-shadow:var(--glow-green);
+  margin-bottom:1.5rem;position:relative;z-index:2;animation:fadeUp 0.7s ease both;
+}
+.hero-badge{
+  display:inline-block;font-family:'Rajdhani',sans-serif;
+  font-size:0.7rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;
+  color:var(--neon-green);border:1px solid var(--neon-green);
+  padding:0.25rem 1rem;margin-bottom:1.2rem;
+  position:relative;z-index:2;animation:fadeUp 0.7s 0.1s ease both;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+}
+.hero-title{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(1.6rem,6vw,3.2rem);line-height:1.1;color:#fff;
+  position:relative;z-index:2;animation:fadeUp 0.7s 0.15s ease both;margin-bottom:0.6rem;
+}
+.hero-title .g{color:var(--neon-green);text-shadow:var(--glow-green);}
+.hero-title .b{color:var(--neon-blue);text-shadow:var(--glow-blue);}
+
+.hero-sub{
+  font-size:0.82rem;color:var(--neon-yellow);
+  font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:0.05em;
+  position:relative;z-index:2;animation:fadeUp 0.7s 0.2s ease both;margin-bottom:2rem;
+}
+.hero-lead{
+  max-width:600px;font-size:0.88rem;color:var(--text-dim);line-height:1.85;
+  position:relative;z-index:2;animation:fadeUp 0.7s 0.25s ease both;
+  background:rgba(4,7,15,0.6);border:1px solid var(--border-g);
+  padding:1.2rem 1.5rem;text-align:left;margin-bottom:1.4rem;
+}
+.hero-lead .highlight{color:var(--neon-green);font-weight:700;}
+
+.btn-site{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  font-family:'Orbitron',monospace;font-size:0.68rem;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;text-decoration:none;
+  color:var(--neon-green);border:1px solid var(--neon-green);
+  padding:0.7rem 1.5rem;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+  transition:background 0.2s,box-shadow 0.2s;
+  position:relative;z-index:2;animation:fadeUp 0.7s 0.32s ease both;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-site:active{background:rgba(0,255,136,0.1);box-shadow:var(--glow-green);}
+
+.hero-scroll{
+  position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0.4rem;
+  color:var(--text-dim);font-family:'Rajdhani',sans-serif;
+  font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;
+  animation:fadeIn 1s 1s ease both;z-index:2;
+}
+.scroll-line{width:1px;height:32px;background:linear-gradient(var(--neon-green),transparent);animation:scrollBlink 2s ease-in-out infinite;}
+@keyframes scrollBlink{0%,100%{opacity:0.4;}50%{opacity:1;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ═══════════════════════════════
+   PROPOSAL
+═══════════════════════════════ */
+#proposal{
+  position:relative;z-index:1;background:var(--bg2);
+  border-top:1px solid var(--border-b);border-bottom:1px solid var(--border-b);
+}
+.sec-inner{max-width:680px;margin:0 auto;padding:3.5rem 1.5rem;}
+
+.sec-label{
+  font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;
+  letter-spacing:0.35em;text-transform:uppercase;color:var(--neon-blue);margin-bottom:0.4rem;
+}
+.sec-title{
+  font-family:'Orbitron',monospace;font-weight:700;
+  font-size:clamp(1.1rem,3.8vw,1.75rem);color:#fff;margin-bottom:0.3rem;
+}
+.sec-sub{
+  font-family:'Noto Sans JP',sans-serif;font-size:0.82rem;
+  color:var(--text-dim);margin-bottom:0.7rem;
+}
+.sec-title .b{color:var(--neon-blue);text-shadow:var(--glow-blue);}
+.sec-title .p{color:var(--neon-pink);text-shadow:var(--glow-pink);}
+.sec-title .g{color:var(--neon-green);text-shadow:var(--glow-green);}
+.sec-line{width:50px;height:3px;background:linear-gradient(90deg,var(--neon-blue),transparent);margin-bottom:1.5rem;}
+
+.proposal-box{
+  background:rgba(14,165,233,0.04);border:1px solid var(--border-b);
+  border-left:3px solid var(--neon-blue);padding:1.2rem 1.4rem;
+  font-size:0.88rem;color:var(--text-dim);line-height:1.9;
+}
+.proposal-box strong{color:var(--neon-blue);}
+
+/* ═══════════════════════════════
+   LAUNCHER
+═══════════════════════════════ */
+#launcher{position:relative;z-index:1;background:var(--bg);padding-bottom:3rem;}
+
+.sec-header-wrap{max-width:680px;margin:0 auto;padding:3rem 1rem 0;}
+
+.main-tools{max-width:680px;margin:0 auto;padding:2.5rem 1rem 0;display:flex;flex-direction:column;gap:1.5rem;}
+
+/* ── ツールカード ── */
+.tool-card{
+  background:var(--bg3);border:1px solid rgba(255,255,255,0.06);
+  position:relative;overflow:hidden;
+}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.tool-card.card-green::before{background:linear-gradient(90deg,var(--neon-green),transparent);}
+.tool-card.card-blue::before {background:linear-gradient(90deg,var(--neon-blue),transparent);}
+.tool-card.card-yellow::before{background:linear-gradient(90deg,var(--neon-yellow),transparent);}
+
+/* ヘッダー：絵文字アイコン ＋ タイトル ＋ LAUNCHボタン を横並び */
+.card-header{
+  display:flex;align-items:center;gap:0.8rem;
+  padding:1rem 1rem 0.9rem;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.card-icon{font-size:1.55rem;flex-shrink:0;line-height:1;width:2rem;text-align:center;}
+.card-heading{flex:1;min-width:0;}
+.card-tag{
+  font-family:'Rajdhani',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:0.25em;text-transform:uppercase;margin-bottom:0.1rem;
+}
+.card-green .card-tag{color:var(--neon-green);}
+.card-blue  .card-tag{color:var(--neon-blue);}
+.card-yellow .card-tag{color:var(--neon-yellow);}
+.card-title{
+  font-family:'Orbitron',monospace;font-weight:700;
+  font-size:clamp(0.75rem,2.6vw,0.95rem);color:#fff;line-height:1.25;
+}
+
+/* LAUNCH ボタン（ヘッダー内右端） */
+.btn-launch{
+  display:inline-flex;align-items:center;justify-content:center;gap:0.3rem;
+  font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;
+  letter-spacing:0.07em;text-transform:uppercase;text-decoration:none;
+  padding:0.5rem 0.9rem;flex-shrink:0;
+  clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
+  transition:transform 0.15s,box-shadow 0.2s;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap;
+}
+.btn-launch:active{transform:scale(0.92);}
+.card-green .btn-launch{color:var(--bg);background:var(--neon-green);}
+.card-green .btn-launch:active{box-shadow:var(--glow-green);}
+.card-blue  .btn-launch{color:var(--bg);background:var(--neon-blue);}
+.card-blue  .btn-launch:active{box-shadow:var(--glow-blue);}
+.card-yellow .btn-launch{color:var(--bg);background:var(--neon-yellow);}
+.card-yellow .btn-launch:active{box-shadow:var(--glow-yellow);}
+
+.card-body{padding:0.85rem 1rem 1rem;font-size:0.8rem;color:var(--text-dim);line-height:1.75;}
+.card-body .note{font-size:0.71rem;color:rgba(148,163,184,0.5);margin-bottom:0.28rem;}
+.card-body h4{
+  font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;
+  letter-spacing:0.15em;text-transform:uppercase;margin:0.65rem 0 0.3rem;
+}
+.card-green .card-body h4{color:var(--neon-green);}
+.card-blue  .card-body h4{color:var(--neon-blue);}
+.card-yellow .card-body h4{color:var(--neon-yellow);}
+
+.feat-list{list-style:none;display:flex;flex-direction:column;gap:0.28rem;}
+.feat-list li{display:flex;align-items:flex-start;gap:0.45rem;font-size:0.8rem;}
+.feat-list li::before{content:'▸';flex-shrink:0;margin-top:0.05em;}
+.card-green .feat-list li::before{color:var(--neon-green);}
+.card-blue  .feat-list li::before{color:var(--neon-blue);}
+.card-yellow .feat-list li::before{color:var(--neon-yellow);}
+
+.sub-box{margin-top:0.75rem;padding:0.75rem 0.9rem;border-left:2px solid;font-size:0.78rem;line-height:1.7;}
+.card-blue .sub-box{border-color:var(--neon-blue);background:rgba(14,165,233,0.05);}
+.sub-box h5{font-family:'Rajdhani',sans-serif;font-size:0.63rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.35rem;}
+.card-blue .sub-box h5{color:var(--neon-blue);}
+
+/* corner accents */
+.corner-tl,.corner-br{position:absolute;width:11px;height:11px;pointer-events:none;}
+.corner-tl{top:7px;left:7px;border-top:2px solid;border-left:2px solid;}
+.corner-br{bottom:7px;right:7px;border-bottom:2px solid;border-right:2px solid;}
+.card-green .corner-tl,.card-green .corner-br{border-color:rgba(0,255,136,0.35);}
+.card-blue  .corner-tl,.card-blue  .corner-br{border-color:rgba(14,165,233,0.35);}
+.card-yellow .corner-tl,.card-yellow .corner-br{border-color:rgba(250,204,21,0.35);}
+
+/* ── cyber divider ── */
+.cyber-divider{
+  max-width:680px;margin:2.2rem auto 0;padding:0 1rem;
+  display:flex;align-items:center;gap:0.6rem;
+  color:var(--text-dim);font-family:'Rajdhani',sans-serif;
+  font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;
+}
+.cyber-divider::before,.cyber-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06);}
+
+/* ── 兄弟システム ── */
+.sibling-section{max-width:680px;margin:1rem auto 0;padding:0 1rem;}
+.sibling-label{
+  font-family:'Rajdhani',sans-serif;font-size:0.63rem;font-weight:700;
+  letter-spacing:0.3em;text-transform:uppercase;color:var(--neon-purple);
+  margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;
+}
+.sibling-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(168,85,247,0.3),transparent);}
+
+/* アコーディオントリガー */
+.sibling-toggle{
+  width:100%;background:rgba(168,85,247,0.05);
+  border:1px solid rgba(168,85,247,0.2);border-left:3px solid var(--neon-purple);
+  padding:0.95rem 1.1rem;
+  display:flex;align-items:center;justify-content:space-between;gap:0.8rem;
+  cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
+  transition:background 0.2s;
+}
+.sibling-toggle:active{background:rgba(168,85,247,0.1);}
+.sibling-toggle-text{font-size:0.8rem;color:var(--text-dim);line-height:1.6;}
+.sibling-toggle-text strong{
+  display:block;font-family:'Orbitron',monospace;font-size:0.7rem;
+  color:rgba(168,85,247,0.9);margin-bottom:0.2rem;
+}
+.sibling-toggle-arrow{font-size:0.8rem;color:var(--neon-purple);flex-shrink:0;transition:transform 0.3s;}
+.sibling-toggle.open .sibling-toggle-arrow{transform:rotate(180deg);}
+
+.sibling-content{overflow:hidden;max-height:0;transition:max-height 0.4s ease;}
+.sibling-content.open{max-height:500px;}
+
+.sibling-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;padding:0.8rem 0 0;}
+.sib-card{
+  background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);
+  padding:0.8rem 0.9rem;text-decoration:none;
+  display:flex;flex-direction:column;gap:0.3rem;
+  transition:background 0.2s;-webkit-tap-highlight-color:transparent;
+  position:relative;overflow:hidden;
+}
+.sib-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,rgba(168,85,247,0.5),transparent);}
+.sib-card:active{background:rgba(168,85,247,0.09);}
+.sib-name{font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;color:rgba(168,85,247,0.9);line-height:1.3;}
+.sib-desc{font-size:0.7rem;color:var(--text-dim);line-height:1.5;}
+.sib-arrow{font-size:0.6rem;color:rgba(168,85,247,0.6);align-self:flex-end;margin-top:0.15rem;}
+
+/* ── ご相談カード（大カードと同格） ── */
+.consult-wrap{max-width:680px;margin:1.5rem auto 0;padding:0 1rem;}
+
+.consult-card{
+  background:var(--bg3);border:1px solid rgba(255,255,255,0.06);
+  position:relative;overflow:hidden;
+}
+.consult-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--neon-pink),transparent);
+}
+
+.consult-header{
+  display:flex;align-items:center;gap:0.8rem;
+  padding:1rem 1rem 0.9rem;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.consult-icon{font-size:1.55rem;flex-shrink:0;line-height:1;width:2rem;text-align:center;}
+.consult-heading{flex:1;}
+.consult-heading .c-tag{
+  font-family:'Rajdhani',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:0.25em;text-transform:uppercase;color:var(--neon-pink);margin-bottom:0.1rem;
+}
+.consult-heading .c-title{
+  font-family:'Orbitron',monospace;font-weight:700;
+  font-size:clamp(0.75rem,2.6vw,0.95rem);color:#fff;line-height:1.25;
+}
+.consult-corner-tl{position:absolute;top:7px;left:7px;width:11px;height:11px;border-top:2px solid rgba(236,72,153,0.35);border-left:2px solid rgba(236,72,153,0.35);}
+.consult-corner-br{position:absolute;bottom:7px;right:7px;width:11px;height:11px;border-bottom:2px solid rgba(236,72,153,0.35);border-right:2px solid rgba(236,72,153,0.35);}
+
+.consult-body{padding:0.9rem 1rem 1.1rem;font-size:0.82rem;color:var(--text-dim);line-height:1.85;}
+
+/* ═══════════════════════════════
+   FOOTER
+═══════════════════════════════ */
+footer{
+  position:relative;z-index:1;background:var(--bg2);
+  border-top:1px solid var(--border-g);text-align:center;padding:2.5rem 1.5rem;margin-top:3rem;
+}
+.footer-logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;color:var(--neon-green);text-shadow:var(--glow-green);letter-spacing:0.1em;margin-bottom:0.5rem;}
+.footer-sub{font-family:'Rajdhani',sans-serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.3rem;}
+.footer-copy{font-size:0.68rem;color:rgba(148,163,184,0.4);}
+
+/* ── Scroll reveal ── */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 0.6s ease,transform 0.6s ease;}
+.reveal.visible{opacity:1;transform:none;}
+.reveal-d1{transition-delay:0.06s;}
+.reveal-d2{transition-delay:0.12s;}
+.reveal-d3{transition-delay:0.18s;}
+
+/* ── Neon pulse ── */
+@keyframes neonPulse{0%,100%{text-shadow:0 0 8px rgba(0,255,136,0.6),0 0 20px rgba(0,255,136,0.3);}50%{text-shadow:0 0 16px rgba(0,255,136,1),0 0 40px rgba(0,255,136,0.5),0 0 80px rgba(0,255,136,0.2);}}
+.pulse-g{animation:neonPulse 3s ease-in-out infinite;}
+@keyframes neonPulseB{0%,100%{text-shadow:0 0 8px rgba(14,165,233,0.6),0 0 20px rgba(14,165,233,0.3);}50%{text-shadow:0 0 16px rgba(14,165,233,1),0 0 40px rgba(14,165,233,0.5),0 0 80px rgba(14,165,233,0.2);}}
+.pulse-b{animation:neonPulseB 3s 1s ease-in-out infinite;}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- ═══════════════════════════════
+     HERO
+═══════════════════════════════ -->
+<section id="hero">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="ring ring-1"></div>
+  <div class="ring ring-2"></div>
+  <div class="ring ring-3"></div>
+
+  <img src="BEYX_logo_amb.png" alt="板橋ベイブレード会" class="hero-logo" onerror="this.style.display='none'">
+  <div class="hero-badge">ITABASHI BEYBLADE KAI — SYSTEM SHOWCASE</div>
+
+  <h1 class="hero-title">
+    <span class="g pulse-g">板橋</span>ベイブレード会<br>
+    <span style="font-size:0.65em;" class="b pulse-b">のご紹介</span>
+  </h1>
+  <p class="hero-sub">（自称）次世代のベイブレード体験を東京の片隅から発信！</p>
+
+  <div class="hero-lead">
+    板橋ベイブレード会は昨年10月より発足したベイブレードサークルです。主催は<span class="highlight">公認アンバサダー資格</span>を持つイナッシー（稲垣ヤミー）で、サークル発足前から交流のある友人たちが大会の常連です。<br><br>
+    会の特徴は独自開発した、<span class="highlight">クラウド連動型の大会運営・レーティングシステム群</span>です。公式放送に近い「HUDスコアボード」とそれに連動する大会進行アプリ群、プレイヤー戦績＆レーティングサイトがオンラインで同期。それらを使った大会は質の高い対戦経験が楽しめるイベントになっていると自負しています。
+  </div>
+
+  <a href="./index.html" class="btn-site">
+    <i class="fa-solid fa-house"></i>&nbsp;板橋ベイブレード会 公式サイトはこちら
+  </a>
+
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    SCROLL
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     PROPOSAL
+═══════════════════════════════ -->
+<section id="proposal">
+  <div class="sec-inner">
+    <p class="sec-label reveal">PROPOSAL</p>
+    <h2 class="sec-title reveal reveal-d1">
+      For <span class="b">Connect</span> <span class="p">Battle</span> <span class="g">League</span>, For All Blader
+    </h2>
+    <p class="sec-sub reveal reveal-d2">対戦会のためのツールのご説明とご提案</p>
+    <div class="sec-line reveal reveal-d3"></div>
+    <div class="proposal-box reveal" style="transition-delay:0.22s;">
+      今回の団体交流戦（<strong>ホーム＆アウェイ形式・10ポイント先取制</strong>など）のスコア管理や、特別レーティングの算出にも、このシステムをフル活用・カスタマイズ提供することが可能です。<br><br>
+      下記から各ツールにアクセスできますので、よかったら実際に触って使用感を確かめてください。
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     LAUNCHER
+═══════════════════════════════ -->
+<section id="launcher">
+
+  <div class="sec-header-wrap">
+    <p class="sec-label reveal">SYSTEM LAUNCHER</p>
+    <h2 class="sec-title reveal reveal-d1" style="color:#fff;">ツール一覧</h2>
+    <div class="sec-line reveal reveal-d2" style="background:linear-gradient(90deg,var(--neon-green),transparent);"></div>
+  </div>
+
+  <div class="main-tools">
+
+    <!-- ── TOOL 1: HUDスコアボード ── -->
+    <div class="tool-card card-green reveal">
+      <div class="corner-tl"></div><div class="corner-br"></div>
+      <div class="card-header">
+        <div class="card-icon">📱</div>
+        <div class="card-heading">
+          <div class="card-tag">TOOL 01 — SCORE DISPLAY</div>
+          <div class="card-title">HUDスコアボードアプリ</div>
+        </div>
+        <a href="./score.html" class="btn-launch">
+          <i class="fa-solid fa-rocket"></i>&nbsp;LAUNCH
+        </a>
+      </div>
+      <div class="card-body">
+        <p class="note">※ スマホカメラの使用を前提とした対戦画面表示システムです。</p>
+        <p class="note">※ グリーンバック機能あり。PCでの配信にも対応。</p>
+        <p class="note">※ 現在はiPhone 17 / 17 Pro の使用を前提としたデザインです。</p>
+        <h4><i class="fa-solid fa-star" style="font-size:0.6rem;margin-right:0.3rem;"></i>主な機能</h4>
+        <ul class="feat-list">
+          <li><span><strong>決まり手ボタン</strong>：決まり手に応じた演出とスコア加算。2p/4p勝者判定機能あり。Bluetoothテンキーや大会管理アプリと繋いで無線操作も可能。</span></li>
+          <li><span><strong>ブレーダー名／ベイ名／戦績表示</strong>：大会管理アプリ連携で、登録済みブレーダー情報を瞬時に画面反映。</span></li>
+          <li><span><strong>便利機能</strong>：演出付きカウントダウン表示、インフィニティスタジアム用10カウント／3カウント機能も搭載。</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── TOOL 2: トーナメント管理 ── -->
+    <div class="tool-card card-blue reveal reveal-d1">
+      <div class="corner-tl"></div><div class="corner-br"></div>
+      <div class="card-header">
+        <div class="card-icon">📝</div>
+        <div class="card-heading">
+          <div class="card-tag">TOOL 02 — TOURNAMENT</div>
+          <div class="card-title">トーナメント大会進行アプリ</div>
+        </div>
+        <a href="./tournament.html" class="btn-launch">
+          <i class="fa-solid fa-rocket"></i>&nbsp;LAUNCH
+        </a>
+      </div>
+      <div class="card-body">
+        <p class="note">※ タブレット（iPad）の使用を前提とした大会管理アプリです。</p>
+        <h4><i class="fa-solid fa-star" style="font-size:0.6rem;margin-right:0.3rem;"></i>主な機能</h4>
+        <ul class="feat-list">
+          <li><span><strong>参加者読込機能</strong>：指定フォーマットのテキストを貼り付けるだけで受付リストを瞬時に生成。</span></li>
+          <li><span><strong>受付・ベイチェック機能</strong>：演出付きの抽選や、使用ベイの登録・写真撮影機能を搭載。</span></li>
+        </ul>
+        <div class="sub-box">
+          <h5><i class="fa-solid fa-link" style="font-size:0.6rem;margin-right:0.25rem;"></i>スコアアプリとの連携機能</h5>
+          <ul class="feat-list">
+            <li><span>スコア操作・ブレーダー／使用ベイ／戦績の画面反映</span></li>
+            <li><span>次戦組み合わせ／トーナメント表／大会結果をスコア画面へアナウンス表示</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TOOL 3: 戦績サイト ── -->
+    <div class="tool-card card-yellow reveal reveal-d2">
+      <div class="corner-tl"></div><div class="corner-br"></div>
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <div class="card-heading">
+          <div class="card-tag" style="color:var(--neon-yellow);">TOOL 03 — RATING SITE</div>
+          <div class="card-title">プレイヤー戦績＆レーティングサイト</div>
+        </div>
+        <a href="./player_stats.html" class="btn-launch" style="color:var(--bg);background:var(--neon-yellow);">
+          <i class="fa-solid fa-rocket"></i>&nbsp;LAUNCH
+        </a>
+      </div>
+      <div class="card-body">
+        <p class="note" style="color:rgba(250,204,21,0.6);">※ まず大会常連の「すが」「しょうやん」などを検索してみてください</p>
+        <p style="margin-bottom:0.55rem;">専用Googleスプレッドシートに対戦結果を入力するだけで瞬時に情報を更新可能。プレイヤーごとに以下を自動算出します。</p>
+        <ul class="feat-list">
+          <li><span><strong style="color:var(--neon-yellow);">ランク</strong>：Xタワーの階層（フロア）で表現した独自ランクシステム</span></li>
+          <li><span><strong style="color:var(--neon-yellow);">ベイパワー（レート）</strong>：対戦結果から算出するレーティング</span></li>
+          <li><span><strong style="color:var(--neon-yellow);">スタジアム別勝率</strong>・<strong style="color:var(--neon-yellow);">ライバル</strong>・<strong style="color:var(--neon-yellow);">過去の実績</strong></span></li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /main-tools -->
+
+  <!-- ── 兄弟システム（アコーディオン） ── -->
+  <div class="cyber-divider reveal">
+    <span>兄弟システム（開発中）</span>
+  </div>
+
+  <div class="sibling-section reveal reveal-d1">
+    <div class="sibling-label">BROTHER SYSTEMS — IN DEVELOPMENT</div>
+    <button class="sibling-toggle" id="sibToggle" aria-expanded="false">
+      <div class="sibling-toggle-text">
+        <strong>兄弟システムを見る（タップで展開）</strong>
+        様々な大会形式に対応できるよう現在開発中のシステム群です（タップすると開発中の各ツールをご覧いただけます）。もちろん独自システムの構築も可能です。
+      </div>
+      <span class="sibling-toggle-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+    </button>
+    <div class="sibling-content" id="sibContent">
+      <div class="sibling-grid">
+        <a href="./tag.html" class="sib-card">
+          <div class="sib-name"><i class="fa-solid fa-users" style="margin-right:0.3rem;"></i>タッグ戦管理</div>
+          <div class="sib-desc">タッグ組み合わせ＋予選スイスドロー＋決勝トーナメントに対応</div>
+          <div class="sib-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+        <a href="./souatari.html" class="sib-card">
+          <div class="sib-name"><i class="fa-solid fa-table" style="margin-right:0.3rem;"></i>総当たり戦管理</div>
+          <div class="sib-desc">最大12名までの総当たり戦を管理できるアプリ</div>
+          <div class="sib-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+        <a href="./freebattle.html" class="sib-card" style="grid-column:1/-1;">
+          <div class="sib-name"><i class="fa-solid fa-shuffle" style="margin-right:0.3rem;"></i>フリー対戦用管理</div>
+          <div class="sib-desc">自由な組み合わせで対戦を行うフリー対戦用の管理アプリ</div>
+          <div class="sib-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ご相談（大カード） ── -->
+  <div class="cyber-divider reveal" style="margin-top:2rem;">
+    <span>ご相談</span>
+  </div>
+
+  <div class="consult-wrap reveal reveal-d1">
+    <div class="consult-card">
+      <div class="consult-corner-tl"></div>
+      <div class="consult-corner-br"></div>
+      <div class="consult-header">
+        <div class="consult-icon">💭</div>
+        <div class="consult-heading">
+          <div class="c-tag">INQUIRY</div>
+          <div class="c-title">ご相談</div>
+        </div>
+      </div>
+      <div class="consult-body">
+        皆様が主催・運営されているイベント・大会結果も、この戦績サイトに登録させていただいてもよろしいでしょうか？<br><br>
+        これらのシステムを使うことで、一段上のベイブレードバトルを観客にお見せできるのではと考えております。<br><br>
+        <span style="display:block;margin-top:0.8rem;font-family:'Orbitron',monospace;font-size:clamp(1rem,4vw,1.4rem);font-weight:700;color:var(--neon-yellow);text-shadow:0 0 16px rgba(250,204,21,0.6),0 0 40px rgba(250,204,21,0.3);line-height:1.4;">ご興味がありましたら、<br>ぜひご相談ください。<br>よろしくお願いいたします！</span>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════
+     FOOTER
+═══════════════════════════════ -->
+<footer>
+  <div class="footer-logo">ITABASHI BEYBLADE KAI</div>
+  <div class="footer-sub">板橋ベイブレード会 — Powered by Inassy</div>
+  <div class="footer-copy">© 2025 板橋ベイブレード会. All rights reserved.</div>
+</footer>
+
+<script>
+// ── Scroll reveal ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── 兄弟システム アコーディオン ──
+const toggle = document.getElementById('sibToggle');
+const content = document.getElementById('sibContent');
+toggle.addEventListener('click', () => {
+  const isOpen = content.classList.contains('open');
+  content.classList.toggle('open');
+  toggle.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', String(!isOpen));
+});
+
+// ── iOS touch ──
+document.querySelectorAll('.btn-launch, .btn-site, .sib-card, .sibling-toggle').forEach(el => {
+  el.addEventListener('touchstart', () => {}, { passive: true });
+});
+</script>
+</body>
+</html>
