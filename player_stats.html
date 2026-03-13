@@ -707,16 +707,18 @@ nav {
     align-items: center;
     padding: 2rem 1.5rem;
     gap: 1rem;
+    overflow: visible;
   }
-  /* タワーを縦長に・高さを画面に応じて確保 */
+  /* タワーを縦長に・タイトルと被らないよう高さ明示 */
   .tower-container {
     width: 100%;
     max-width: 260px;
-    height: 500px;
+    height: 460px;
+    flex: none;
   }
   .tower-svg-wrap {
     max-width: 200px;
-    max-height: 500px;
+    max-height: 460px;
     height: 100%;
   }
   /* 凡例を横並び折り返し */
@@ -734,8 +736,8 @@ nav {
   .rank-badge { font-size: 1.5rem; }
   .stats-panel { padding: 1rem; }
   .card-body { padding: 1rem; }
-  .tower-container { height: 420px; }
-  .tower-svg-wrap   { max-height: 420px; }
+  .tower-container { height: 380px; flex: none; }
+  .tower-svg-wrap   { max-height: 380px; }
 }
 
 /* ─── ABOUT アコーディオン ─── */
@@ -1074,7 +1076,10 @@ function highlightTower(rankNum) {
     }
   }
 
-  seg.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  // PCのみスクロール（スマホはページジャンプするため無効）
+  if (window.innerWidth > 900) {
+    seg.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
 
   // インジケーター位置：PC=縦タワー(top基準) / スマホ=横タワー(left基準)
   const indicator  = document.getElementById('towerIndicator');
