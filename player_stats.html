@@ -603,12 +603,36 @@ nav {
   font-weight: 700; width: 44px; text-align: right; flex-shrink: 0;
 }
 
+/* ─── TOP 3 BEYBLADE ─── */
+.beys-block { margin-top: 1rem; }
+.beys-header {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--neon-green); margin-bottom: 0.6rem;
+}
+.beys-badges-row {
+  display: flex; gap: 0.6rem; flex-wrap: wrap;
+}
+.bey-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.4rem 0.8rem;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 0.75rem; font-weight: 700;
+  border: 1px solid currentColor;
+  background: rgba(4,7,15,0.6);
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+}
+.bey-rank-num { font-family: 'Orbitron', monospace; font-size: 0.65rem; opacity: 0.9; }
+.bey-badge-1 { color: var(--neon-yellow); border-color: rgba(250,204,21,0.5); box-shadow: inset 0 0 12px rgba(250,204,21,0.15); }
+.bey-badge-2 { color: var(--neon-white); border-color: rgba(226,232,240,0.5); box-shadow: inset 0 0 12px rgba(226,232,240,0.15); }
+.bey-badge-3 { color: var(--neon-orange); border-color: rgba(249,115,22,0.5); box-shadow: inset 0 0 12px rgba(249,115,22,0.15); }
+
 /* Rival block */
 .rival-block {
   background: rgba(236,72,153,0.05);
   border: 1px solid rgba(236,72,153,0.2);
   padding: 1rem 1.4rem;
   clip-path: polygon(8px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  margin-top: 0.5rem;
 }
 /* "RIVAL" タイトル — 勝率数値くらい大きく */
 .rival-title {
@@ -825,7 +849,6 @@ nav {
 <body>
 <div class="grid-bg"></div>
 
-<!-- NAV -->
 <nav>
   <a href="index.html" class="nav-logo">板橋ベイブレード会</a>
   <ul class="nav-links">
@@ -835,16 +858,13 @@ nav {
   </ul>
 </nav>
 
-<!-- PAGE WRAP -->
 <div class="page-wrap">
 
-  <!-- PAGE HEADER -->
   <div class="page-header">
     <div class="page-header-label">// DATABASE //</div>
     <h1 class="page-header-title">BLADER <span>STATS</span></h1>
   </div>
 
-  <!-- LEFT: X TOWER -->
   <aside class="tower-panel" id="towerPanel">
     <div style="text-align:center">
       <div class="tower-title">ITABASHIX-TOWER</div>
@@ -853,11 +873,8 @@ nav {
 
     <div class="tower-container">
       <div class="tower-svg-wrap">
-        <!-- 左：軸ラベル列（JSで生成） -->
         <div class="tower-axis" id="towerAxis"></div>
-        <!-- 右：バー列（JSで生成） -->
         <div class="tower-floors" id="towerFloors"></div>
-        <!-- indicator -->
         <div class="tower-indicator" id="towerIndicator">
           <div class="tower-indicator-arrow"></div>
           <div class="tower-indicator-label" id="towerIndicatorLabel"></div>
@@ -893,10 +910,8 @@ nav {
     </div>
   </aside>
 
-  <!-- RIGHT: SEARCH + STATS -->
   <main class="stats-panel" id="statsPanel">
 
-    <!-- Search -->
     <div class="search-section">
       <div class="search-label">// BLADER SEARCH</div>
       <div class="search-wrap">
@@ -914,7 +929,6 @@ nav {
       </div>
     </div>
 
-    <!-- ABOUT  BLADER STATS アコーディオン -->
     <div class="about-accordion">
       <div class="about-header" onclick="toggleAbout()">
         <span>// About Blader Stats</span>
@@ -975,7 +989,6 @@ nav {
       <span id="stateErrorMsg">データの取得に失敗しました。</span>
     </div>
 
-    <!-- Results -->
     <div class="results-area" id="resultsArea"></div>
 
   </main>
@@ -985,7 +998,8 @@ nav {
 // ─── CONFIG ───────────────────────────────────────────────
 const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:M');
+// 範囲をA2:MからA2:Pに拡張しました
+const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:P');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1231,6 +1245,11 @@ function renderResults(players) {
     const awardsLog   = (row[11] || '').trim();     // [11] 入賞履歴テキスト
     const historyLog  = (row[12] || '').trim();     // [12] 参加履歴テキスト
 
+    // 新たに追加された相棒ベイブレードのデータ [13] [14] [15]
+    const bey1        = (row[13] || '').trim();
+    const bey2        = (row[14] || '').trim();
+    const bey3        = (row[15] || '').trim();
+
     const rankNum   = getRankNum(rankStr);
     const rankClass = getRankClass(rankNum);
     // 数字+F を下揃えスパン分割、XFも X+F に分割
@@ -1249,6 +1268,24 @@ function renderResults(players) {
     const card = document.createElement('div');
     card.className = 'player-card';
     card.style.animationDelay = (i * 0.08) + 's';
+
+    // ── Top 3 Beys HTML ──
+    let topBeysHtml = '';
+    const isValidBey = (b) => b && b !== '－' && b !== '-';
+    const validBeys = [];
+    if (isValidBey(bey1)) validBeys.push({ name: bey1, cls: 'bey-badge-1', rank: '1ST' });
+    if (isValidBey(bey2)) validBeys.push({ name: bey2, cls: 'bey-badge-2', rank: '2ND' });
+    if (isValidBey(bey3)) validBeys.push({ name: bey3, cls: 'bey-badge-3', rank: '3RD' });
+
+    if (validBeys.length > 0) {
+      topBeysHtml = `
+        <div class="beys-block">
+          <div class="beys-header"><i class="fa fa-compact-disc"></i> TOP 3 BEYBLADE</div>
+          <div class="beys-badges-row">
+            ${validBeys.map(b => `<div class="bey-badge ${b.cls}"><span class="bey-rank-num">${b.rank}</span> ${b.name}</div>`).join('')}
+          </div>
+        </div>`;
+    }
 
     // ── Rival HTML ──
     let rivalHtml = '';
@@ -1387,6 +1424,8 @@ function renderResults(players) {
             </div>
           </div>
         </div>
+
+        ${topBeysHtml}
 
         ${rivalHtml}
         ${awardsLogHtml}
