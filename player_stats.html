@@ -625,6 +625,8 @@ nav {
 .bey-badge-1 { color: var(--neon-yellow); border-color: rgba(250,204,21,0.5); box-shadow: inset 0 0 12px rgba(250,204,21,0.15); }
 .bey-badge-2 { color: var(--neon-white); border-color: rgba(226,232,240,0.5); box-shadow: inset 0 0 12px rgba(226,232,240,0.15); }
 .bey-badge-3 { color: var(--neon-orange); border-color: rgba(249,115,22,0.5); box-shadow: inset 0 0 12px rgba(249,115,22,0.15); }
+.bey-badge-4 { color: var(--neon-blue);   border-color: rgba(14,165,233,0.5);  box-shadow: inset 0 0 12px rgba(14,165,233,0.15); }
+.bey-badge-5 { color: var(--neon-green);  border-color: rgba(0,255,136,0.5);   box-shadow: inset 0 0 12px rgba(0,255,136,0.15); }
 
 /* Rival block */
 .rival-block {
@@ -1018,12 +1020,12 @@ const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
 const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:M');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-// ベイ集計シート（相棒ベイTOP3取得用）
-const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:D');
+// ベイ集計シート（相棒ベイTOP5取得用）
+const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
-let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3] }
+let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1187,6 +1189,8 @@ async function fetchPlayers() {
         (r[1] || '').trim() || '－',
         (r[2] || '').trim() || '－',
         (r[3] || '').trim() || '－',
+        (r[4] || '').trim() || '－',
+        (r[5] || '').trim() || '－',
       ];
     }
   });
@@ -1298,6 +1302,8 @@ function renderResults(players) {
     const bey1 = beys[0] || '－';
     const bey2 = beys[1] || '－';
     const bey3 = beys[2] || '－';
+    const bey4 = beys[3] || '－';
+    const bey5 = beys[4] || '－';
 
     const rankNum   = getRankNum(rankStr);
     const rankClass = getRankClass(rankNum);
@@ -1325,13 +1331,21 @@ function renderResults(players) {
     if (isValidBey(bey1)) validBeys.push({ name: bey1, cls: 'bey-badge-1', rank: '1ST' });
     if (isValidBey(bey2)) validBeys.push({ name: bey2, cls: 'bey-badge-2', rank: '2ND' });
     if (isValidBey(bey3)) validBeys.push({ name: bey3, cls: 'bey-badge-3', rank: '3RD' });
+    if (isValidBey(bey4)) validBeys.push({ name: bey4, cls: 'bey-badge-4', rank: '4TH' });
+    if (isValidBey(bey5)) validBeys.push({ name: bey5, cls: 'bey-badge-5', rank: '5TH' });
 
     if (validBeys.length > 0) {
+      // ランダムシャッフル（Fisher-Yates）
+      const shuffled = [...validBeys];
+      for (let si = shuffled.length - 1; si > 0; si--) {
+        const sj = Math.floor(Math.random() * (si + 1));
+        [shuffled[si], shuffled[sj]] = [shuffled[sj], shuffled[si]];
+      }
       topBeysHtml = `
         <div class="beys-block">
-          <div class="beys-header"><i class="fa fa-compact-disc"></i> TOP 3 BEYBLADE</div>
+          <div class="beys-header"><i class="fa fa-compact-disc"></i> FAVORITE BEYBLADE</div>
           <div class="beys-badges-row">
-            ${validBeys.map(b => `<div class="bey-badge ${b.cls}"><span class="bey-rank-num">${b.rank}</span> ${b.name}</div>`).join('')}
+            ${shuffled.map(b => `<div class="bey-badge ${b.cls}">${b.name}</div>`).join('')}
           </div>
         </div>`;
     }
