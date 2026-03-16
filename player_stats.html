@@ -654,6 +654,24 @@ nav {
 .rival-name {
   font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
   font-size: 1.15rem; color: #fff;
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(236,72,153,0.4);
+  transition: color 0.2s, text-shadow 0.2s, border-color 0.2s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.rival-name:hover {
+  color: var(--neon-pink);
+  text-shadow: var(--glow-pink);
+  border-bottom-color: var(--neon-pink);
+}
+.rival-name .rival-jump-badge {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--neon-pink);
+  border: 1px solid rgba(236,72,153,0.4);
+  padding: 1px 5px;
+  clip-path: polygon(4px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%);
+  opacity: 0.8;
+  transition: opacity 0.2s;
 }
 .rival-record {
   font-family: 'Rajdhani', sans-serif; font-size: 0.92rem;
@@ -1154,6 +1172,14 @@ async function fetchPlayers() {
   return allPlayers;
 }
 
+// ─── RIVAL JUMP ──────────────────────────────────────────
+function jumpToRival(name) {
+  const input = document.getElementById('searchInput');
+  input.value = name;
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => doSearch(), 300);
+}
+
 // ─── SEARCH ──────────────────────────────────────────────
 async function doSearch() {
   const query = document.getElementById('searchInput').value.trim();
@@ -1303,7 +1329,7 @@ function renderResults(players) {
         <div class="rival-block">
           <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
           <div class="rival-name-row">
-            <span class="rival-label">ライバル：</span><span class="rival-name">${rival}</span>
+            <span class="rival-label">ライバル：</span><span class="rival-name" onclick="jumpToRival('${rival.replace(/'/g, "\\'")}')" title="${rival}を検索">${rival}<span class="rival-jump-badge">SEARCH↗</span></span>
           </div>
           ${recordStr ? `<div class="rival-record">${recordStr}</div>` : ''}
         </div>`;
