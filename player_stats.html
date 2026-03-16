@@ -654,24 +654,6 @@ nav {
 .rival-name {
   font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
   font-size: 1.15rem; color: #fff;
-  cursor: pointer;
-  border-bottom: 1px dashed rgba(236,72,153,0.4);
-  transition: color 0.2s, text-shadow 0.2s, border-color 0.2s;
-  display: inline-flex; align-items: center; gap: 5px;
-}
-.rival-name:hover {
-  color: var(--neon-pink);
-  text-shadow: var(--glow-pink);
-  border-bottom-color: var(--neon-pink);
-}
-.rival-name .rival-jump-badge {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.6rem; font-weight: 700;
-  letter-spacing: 0.06em; color: var(--neon-pink);
-  border: 1px solid rgba(236,72,153,0.4);
-  padding: 1px 5px;
-  clip-path: polygon(4px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%);
-  opacity: 0.8;
-  transition: opacity 0.2s;
 }
 .rival-record {
   font-family: 'Rajdhani', sans-serif; font-size: 0.92rem;
@@ -1016,11 +998,14 @@ nav {
 // ─── CONFIG ───────────────────────────────────────────────
 const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-// 範囲をA2:MからA2:Pに拡張しました
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:P');
+const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:M');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+// ベイ集計シート（相棒ベイTOP3取得用）
+const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:D');
+const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
+let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3] }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1165,19 +1150,30 @@ function highlightTower(rankNum) {
 // ─── DATA FETCH ──────────────────────────────────────────
 async function fetchPlayers() {
   if (allPlayers) return allPlayers;
-  const res = await fetch(API_URL);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  allPlayers = (json.values || []).filter(r => r[0] && r[0].trim() !== '');
-  return allPlayers;
-}
 
-// ─── RIVAL JUMP ──────────────────────────────────────────
-function jumpToRival(name) {
-  const input = document.getElementById('searchInput');
-  input.value = name;
-  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => doSearch(), 300);
+  // Webデータ出力 と ベイ集計 を並列フェッチ
+  const [res1, res2] = await Promise.all([fetch(API_URL), fetch(BEY_URL)]);
+  if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
+  if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
+
+  const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
+
+  allPlayers = (json1.values || []).filter(r => r[0] && r[0].trim() !== '');
+
+  // ベイ集計: A=選手名, B=1位ベイ, C=2位ベイ, D=3位ベイ
+  beyMap = {};
+  (json2.values || []).forEach(r => {
+    const name = (r[0] || '').trim();
+    if (name) {
+      beyMap[name] = [
+        (r[1] || '').trim() || '－',
+        (r[2] || '').trim() || '－',
+        (r[3] || '').trim() || '－',
+      ];
+    }
+  });
+
+  return allPlayers;
 }
 
 // ─── SEARCH ──────────────────────────────────────────────
@@ -1271,10 +1267,11 @@ function renderResults(players) {
     const awardsLog   = (row[11] || '').trim();     // [11] 入賞履歴テキスト
     const historyLog  = (row[12] || '').trim();     // [12] 参加履歴テキスト
 
-    // 新たに追加された相棒ベイブレードのデータ [13] [14] [15]
-    const bey1        = (row[13] || '').trim();
-    const bey2        = (row[14] || '').trim();
-    const bey3        = (row[15] || '').trim();
+    // 相棒ベイブレードのデータ：🌀ベイ集計シートからbeyMapで取得
+    const beys = (beyMap && beyMap[name]) || [];
+    const bey1 = beys[0] || '－';
+    const bey2 = beys[1] || '－';
+    const bey3 = beys[2] || '－';
 
     const rankNum   = getRankNum(rankStr);
     const rankClass = getRankClass(rankNum);
@@ -1329,7 +1326,7 @@ function renderResults(players) {
         <div class="rival-block">
           <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
           <div class="rival-name-row">
-            <span class="rival-label">ライバル：</span><span class="rival-name" onclick="jumpToRival('${rival.replace(/'/g, "\\'")}')" title="${rival}を検索">${rival}<span class="rival-jump-badge">SEARCH↗</span></span>
+            <span class="rival-label">ライバル：</span><span class="rival-name">${rival}</span>
           </div>
           ${recordStr ? `<div class="rival-record">${recordStr}</div>` : ''}
         </div>`;
