@@ -1116,6 +1116,7 @@
     <li><a href="#events">EVENTS</a></li>
     <li><a href="#rules">PRECAUTION</a></li>
     <li><a href="#history">HISTORY</a></li>
+    <li><a href="player_stats.html" style="color:var(--neon-blue);text-shadow:var(--glow-blue);">BLADERS</a></li>
   </ul>
 </nav>
 
@@ -1286,6 +1287,30 @@
     <p class="section-label reveal">// PAST EVENTS</p>
     <h2 class="section-title reveal">開催履歴</h2>
     <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-pink), transparent);"></div>
+
+    <!-- BLADER STATS リンクボタン -->
+    <a href="player_stats.html" class="reveal" style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.1rem 1.6rem;
+      background: rgba(14,165,233,0.06);
+      border: 1px solid rgba(14,165,233,0.35);
+      text-decoration: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    "
+    onmouseover="this.style.borderColor='rgba(14,165,233,0.7)';this.style.boxShadow='0 0 24px rgba(14,165,233,0.2)'"
+    onmouseout="this.style.borderColor='rgba(14,165,233,0.35)';this.style.boxShadow='none'"
+    >
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:0.95rem;color:var(--neon-blue);text-shadow:var(--glow-blue);letter-spacing:0.06em;margin-bottom:0.25rem;">📊 BLADER STATS</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);">ブレーダー戦績・BP・ライバルを検索</div>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:0.15em;color:var(--neon-blue);white-space:nowrap;">VIEW →</div>
+    </a>
     <div class="history-toggle reveal" id="history-toggle" onclick="toggleHistory()">
       <span class="history-toggle-icon">▶</span>
       <span class="history-toggle-label">過去のイベント結果を見る</span>
