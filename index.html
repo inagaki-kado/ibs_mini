@@ -128,6 +128,54 @@
     overflow: hidden;
   }
 
+  /* ─── HERO VIDEO BG ─── */
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .hero-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.45;
+  }
+
+  /* ドットグリッドオーバーレイ（参考サイトのメッシュ質感） */
+  .hero-dot-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image: radial-gradient(circle, rgba(180,180,255,0.10) 1px, transparent 1px);
+    background-size: 18px 18px;
+    pointer-events: none;
+  }
+
+  /* ビネット（四隅暗め） */
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%,
+      transparent 30%,
+      rgba(4,7,15,0.55) 70%,
+      rgba(4,7,15,0.88) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* 下部フェードアウト（次セクションへの接続） */
+  .hero-bottom-fade {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 35%;
+    z-index: 3;
+    background: linear-gradient(to bottom, transparent, rgba(4,7,15,0.92));
+    pointer-events: none;
+  }
+
   .hero-orb {
     position: absolute;
     border-radius: 50%;
@@ -1068,19 +1116,38 @@
     <li><a href="#events">EVENTS</a></li>
     <li><a href="#rules">PRECAUTION</a></li>
     <li><a href="#history">HISTORY</a></li>
-    <li><a href="player_stats.html" style="color:var(--neon-blue);text-shadow:var(--glow-blue);">BLADERS</a></li>
   </ul>
 </nav>
 
 <!-- HERO -->
 <section id="hero">
-  <div class="spin-ring"></div>
-  <div class="spin-ring spin-ring-2"></div>
-  <div class="hero-orb hero-orb-1"></div>
-  <div class="hero-orb hero-orb-2"></div>
-  <div class="hero-orb hero-orb-3"></div>
 
-  <!-- Ambassador logo background -->
+  <!-- 動画背景 z:0 -->
+  <div class="hero-video">
+    <video autoplay muted loop playsinline>
+      <source src="movie.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- ドットグリッドオーバーレイ z:1 -->
+  <div class="hero-dot-overlay"></div>
+
+  <!-- ビネット z:2 -->
+  <div class="hero-vignette"></div>
+
+  <!-- 下部フェードアウト z:3 -->
+  <div class="hero-bottom-fade"></div>
+
+  <!-- スピンリング z:4 -->
+  <div class="spin-ring" style="position:absolute;z-index:4;"></div>
+  <div class="spin-ring spin-ring-2" style="position:absolute;z-index:4;"></div>
+
+  <!-- hero-orb z:5 -->
+  <div class="hero-orb hero-orb-1" style="z-index:5;"></div>
+  <div class="hero-orb hero-orb-2" style="z-index:5;"></div>
+  <div class="hero-orb hero-orb-3" style="z-index:5;"></div>
+
+  <!-- Ambassador logo background z:8（動画より上・テキストより下） -->
   <img
     src="BEYX_logo_amb.png"
     alt=""
@@ -1095,18 +1162,19 @@
       opacity: 0.18;
       mix-blend-mode: screen;
       pointer-events: none;
-      z-index: 0;
+      z-index: 8;
       user-select: none;
     "
   >
 
-  <p class="hero-badge" style="position:relative;z-index:1;">BEYBLADE X EVENT AMBASSADOR PRESENTS</p>
-  <h1 class="hero-title" style="position:relative;z-index:1;">
+  <!-- テキスト z:10 -->
+  <p class="hero-badge" style="position:relative;z-index:10;">BEYBLADE X EVENT AMBASSADOR PRESENTS</p>
+  <h1 class="hero-title" style="position:relative;z-index:10;">
     <span class="accent-green">板橋</span><br>
     <span class="accent-blue">ベイブレード会</span>
   </h1>
-  <p class="hero-sub" style="position:relative;z-index:1;">MEETUP OF ITABASHI</p>
-  <a class="hero-cta" href="#events" style="position:relative;z-index:1;">▶ イベントを確認する</a>
+  <p class="hero-sub" style="position:relative;z-index:10;">MEETUP OF ITABASHI</p>
+  <a class="hero-cta" href="#events" style="position:relative;z-index:10;">▶ イベントを確認する</a>
 </section>
 
 <!-- ABOUT & MOVIE -->
@@ -1218,30 +1286,6 @@
     <p class="section-label reveal">// PAST EVENTS</p>
     <h2 class="section-title reveal">開催履歴</h2>
     <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-pink), transparent);"></div>
-
-    <!-- BLADER STATS リンクボタン -->
-    <a href="player_stats.html" class="reveal" style="
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      padding: 1.1rem 1.6rem;
-      background: rgba(14,165,233,0.06);
-      border: 1px solid rgba(14,165,233,0.35);
-      text-decoration: none;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
-    "
-    onmouseover="this.style.borderColor='rgba(14,165,233,0.7)';this.style.boxShadow='0 0 24px rgba(14,165,233,0.2)'"
-    onmouseout="this.style.borderColor='rgba(14,165,233,0.35)';this.style.boxShadow='none'"
-    >
-      <div>
-        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:0.95rem;color:var(--neon-blue);text-shadow:var(--glow-blue);letter-spacing:0.06em;margin-bottom:0.25rem;">📊 BLADER STATS</div>
-        <div style="font-size:0.78rem;color:var(--text-dim);">ブレーダー戦績・BP・ライバルを検索</div>
-      </div>
-      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:0.15em;color:var(--neon-blue);white-space:nowrap;">VIEW →</div>
-    </a>
     <div class="history-toggle reveal" id="history-toggle" onclick="toggleHistory()">
       <span class="history-toggle-icon">▶</span>
       <span class="history-toggle-label">過去のイベント結果を見る</span>
