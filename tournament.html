@@ -123,6 +123,7 @@
             <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
+            <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
 
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
@@ -1306,6 +1307,43 @@
         }
     }
     
+    function exportBladeOnlyText() {
+        if (participants.length === 0) {
+            showAlert("参加者がいません。");
+            return;
+        }
+
+        function getBladeOnly(bey) {
+            const p = bey.parts;
+            if (!p || !p.type) return bey.name || '';
+            if (p.type === 'BX')   return p.BX || '';
+            if (p.type === 'UX')   return p.UX || '';
+            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '') + (p.AB || '');
+            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '') + (p.AB || '');
+            return bey.name || '';
+        }
+
+        let text = '';
+        participants.forEach(p => {
+            const name = p.name || '';
+            const beys = p.beyblades || [];
+            const b1 = beys[0] ? getBladeOnly(beys[0]) : '';
+            const b2 = beys[1] ? getBladeOnly(beys[1]) : '';
+            const b3 = beys[2] ? getBladeOnly(beys[2]) : '';
+            text += `${name}\t${b1}\t${b2}\t${b3}\n`;
+        });
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert("🔩 ブレードデータをクリップボードにコピーしました！");
+            }).catch(() => {
+                showCSVModal(text);
+            });
+        } else {
+            showCSVModal(text);
+        }
+    }
+
     function showCSVModal(csvText) {
         // 簡易モーダルでCSVテキストを表示
         const modal = document.createElement('div');
