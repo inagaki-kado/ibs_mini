@@ -185,24 +185,23 @@
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--neon-blue);
-    background: rgba(14,165,233,0.08);
-    border: 1px solid rgba(14,165,233,0.45);
+    color: var(--bg);
+    background: var(--neon-blue);
+    border: 1px solid var(--neon-blue);
     padding: 0.85rem 2rem;
     text-decoration: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: transform 0.15s, box-shadow 0.15s;
     clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-    text-shadow: 0 0 12px rgba(14,165,233,0.5);
   }
   .hero-stats-btn:hover {
-    border-color: rgba(14,165,233,0.75);
+    transform: translateY(-2px);
     box-shadow: var(--glow-blue);
   }
   .hero-stats-btn .stats-sub {
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 0.62rem;
     font-weight: 400;
-    color: var(--text-dim);
+    color: rgba(4,7,15,0.65);
     letter-spacing: 0.05em;
   }
 
