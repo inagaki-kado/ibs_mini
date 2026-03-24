@@ -1092,12 +1092,16 @@ const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 // BP推移シート（BP推移グラフ用）
-const RANGE_BP  = encodeURIComponent('BP推移!A1:ZZ');
-const BP_URL    = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BP}?key=${API_KEY}`;
+const RANGE_BP     = encodeURIComponent('📈 BP推移!A2:ZZ');
+const BP_URL       = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BP}?key=${API_KEY}`;
+// 大会マスター（大会名→日付の対応テーブル用）
+const RANGE_MASTER = encodeURIComponent('📅 大会マスター!B3:C');
+const MASTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_MASTER}?key=${API_KEY}`;
 
-let allPlayers = null; // cache
-let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
-let bpHistory  = null; // cache: { headers: [大会名,...], data: { 選手名: [bp,...] } }
+let allPlayers    = null; // cache
+let beyMap        = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
+let bpHistory     = null; // cache: { headers: [大会名,...], data: { 選手名: [bp,...] } }
+let masterDateMap = null; // cache: { 大会名 → 'YYYY/MM/DD' }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1243,11 +1247,13 @@ function highlightTower(rankNum) {
 async function fetchPlayers() {
   if (allPlayers) return allPlayers;
 
-  // Webデータ出力・ベイ集計・BP推移 を並列フェッチ
-  const [res1, res2, res3] = await Promise.all([fetch(API_URL), fetch(BEY_URL), fetch(BP_URL)]);
+  // Webデータ出力・ベイ集計・BP推移・大会マスター を並列フェッチ
+  const [res1, res2, res3, res4] = await Promise.all([
+    fetch(API_URL), fetch(BEY_URL), fetch(BP_URL), fetch(MASTER_URL)
+  ]);
   if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
   if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
-  // BP推移は取得失敗してもグラフ非表示で継続
+  // BP推移・大会マスターは取得失敗してもグラフ非表示で継続
 
   const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
 
@@ -1268,7 +1274,20 @@ async function fetchPlayers() {
     }
   });
 
-  // BP推移: 行1=ヘッダー（A=空, B以降=大会名）, 行2以降=選手名とBP値
+  // 大会マスター: B=大会名, C=開催日（YYYY/MM/DD）→ 日付ルックアップマップを作成
+  try {
+    const json4 = await res4.json();
+    masterDateMap = {};
+    (json4.values || []).forEach(r => {
+      const tName = (r[0] || '').trim();
+      const tDate = (r[1] || '').trim();
+      if (tName && tDate) masterDateMap[tName] = tDate;
+    });
+  } catch(e) {
+    masterDateMap = {};
+  }
+
+  // BP推移: 行1=ヘッダー（A=選手名, B以降=大会名）, 行2以降=選手名とBP値
   try {
     const json3 = await res3.json();
     const bpRows = json3.values || [];
@@ -1292,8 +1311,11 @@ async function fetchPlayers() {
 
 // ─── BP推移グラフ ──────────────────────────────────────────
 function parseDateFromName(name) {
+  // ① 大会名の文字列内にYYYY/MM/DD が含まれている場合
   const m = (name || '').match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
   if (m) return `${m[1]}/${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}`;
+  // ② 大会マスターの日付マップから取得
+  if (masterDateMap && masterDateMap[name]) return masterDateMap[name];
   return null;
 }
 
