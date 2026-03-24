@@ -1091,9 +1091,13 @@ const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 // ベイ集計シート（相棒ベイTOP5取得用）
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
+// BP推移シート（BP推移グラフ用）
+const RANGE_BP  = encodeURIComponent('BP推移!A1:ZZ');
+const BP_URL    = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BP}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
 let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
+let bpHistory  = null; // cache: { headers: [大会名,...], data: { 選手名: [bp,...] } }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1239,10 +1243,11 @@ function highlightTower(rankNum) {
 async function fetchPlayers() {
   if (allPlayers) return allPlayers;
 
-  // Webデータ出力 と ベイ集計 を並列フェッチ
-  const [res1, res2] = await Promise.all([fetch(API_URL), fetch(BEY_URL)]);
+  // Webデータ出力・ベイ集計・BP推移 を並列フェッチ
+  const [res1, res2, res3] = await Promise.all([fetch(API_URL), fetch(BEY_URL), fetch(BP_URL)]);
   if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
   if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
+  // BP推移は取得失敗してもグラフ非表示で継続
 
   const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
 
@@ -1263,7 +1268,174 @@ async function fetchPlayers() {
     }
   });
 
+  // BP推移: 行1=ヘッダー（A=空, B以降=大会名）, 行2以降=選手名とBP値
+  try {
+    const json3 = await res3.json();
+    const bpRows = json3.values || [];
+    const bpHeaders = (bpRows[0] || []).slice(1); // B列以降が大会名
+    bpHistory = { headers: bpHeaders, data: {} };
+    bpRows.slice(1).forEach(row => {
+      const name = (row[0] || '').trim();
+      if (name) {
+        bpHistory.data[name] = row.slice(1).map(v => {
+          const n = parseFloat((v || '').toString().replace(/,/g, ''));
+          return isNaN(n) ? null : n;
+        });
+      }
+    });
+  } catch(e) {
+    bpHistory = null; // BP推移取得失敗時はグラフ非表示
+  }
+
   return allPlayers;
+}
+
+// ─── BP推移グラフ ──────────────────────────────────────────
+function parseDateFromName(name) {
+  const m = (name || '').match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return `${m[1]}/${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}`;
+  return null;
+}
+
+function groupBpByDate(headers, bpVals) {
+  // headers[i]・bpVals[i] を日付でグルーピング
+  const grouped = [];
+  const dateMap  = new Map();
+  headers.forEach((h, i) => {
+    const bp = bpVals[i];
+    if (bp === null || bp === undefined) return;
+    const date  = parseDateFromName(h) || h;
+    const label = date; // X軸表示は日付
+    if (!dateMap.has(date)) {
+      const entry = { date: label, bp, names: [h] };
+      dateMap.set(date, entry);
+      grouped.push(entry);
+    } else {
+      const entry = dateMap.get(date);
+      entry.bp    = bp;          // 同日は最後（最新）のBPに更新
+      entry.names.push(h);
+    }
+  });
+  return grouped;
+}
+
+function buildBpGraph(playerName, cardEl) {
+  if (!bpHistory || !bpHistory.data[playerName]) return;
+
+  const headers = bpHistory.headers;
+  const bpVals  = bpHistory.data[playerName];
+  if (!headers.length || !bpVals.length) return;
+
+  // 有効データのみ抽出
+  const validHeaders = [];
+  const validBp      = [];
+  headers.forEach((h, i) => {
+    if (bpVals[i] !== null && bpVals[i] !== undefined) {
+      validHeaders.push(h);
+      validBp.push(bpVals[i]);
+    }
+  });
+  if (validBp.length < 2) return; // データ不足なら非表示
+
+  const grouped     = groupBpByDate(validHeaders, validBp);
+  const allLabels   = grouped.map(g => g.date);
+  const allBpData   = grouped.map(g => g.bp);
+  const allNames    = grouped.map(g => g.names);
+  const pointColors = allBpData.map((v, i) => i === 0 ? '#0ea5e9' : v >= allBpData[i-1] ? '#00ff88' : '#ef4444');
+
+  // Y軸最小値（データ最小値より少し下）
+  const yMin = Math.floor((Math.min(...allBpData) * 0.97) / 1000) * 1000;
+
+  const canvas   = cardEl.querySelector('.bp-chart-canvas');
+  if (!canvas) return;
+  const ctx      = canvas.getContext('2d');
+  const grad     = ctx.createLinearGradient(0, 0, 0, 220);
+  grad.addColorStop(0,   'rgba(0,255,136,0.35)');
+  grad.addColorStop(0.6, 'rgba(0,255,136,0.08)');
+  grad.addColorStop(1,   'rgba(0,255,136,0)');
+
+  const chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [{
+        data: allBpData,
+        borderColor: '#00ff88', borderWidth: 2.5,
+        backgroundColor: grad, fill: true, tension: 0.35,
+        pointBackgroundColor: pointColors,
+        pointBorderColor:     pointColors,
+        pointRadius: 5, pointHoverRadius: 8, pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(8,13,26,0.95)',
+          borderColor: 'rgba(0,255,136,0.4)', borderWidth: 1,
+          titleColor: '#e2e8f0', bodyColor: '#00ff88', footerColor: '#94a3b8',
+          titleFont: { family: 'Orbitron', size: 11, weight: '700' },
+          bodyFont:  { family: 'Orbitron', size: 13, weight: '700' },
+          footerFont:{ family: 'Noto Sans JP', size: 10 },
+          padding: 12,
+          callbacks: {
+            title:  items => items[0].label,
+            label:  item  => {
+              const prev = item.dataIndex > 0 ? allBpData[item.dataIndex-1] : item.raw;
+              const diff = item.raw - prev;
+              return `BEY POWER: ${item.raw.toLocaleString()}  (${diff >= 0 ? '+' : ''}${diff.toLocaleString()})`;
+            },
+            footer: items => {
+              const names = allNames[items[0].dataIndex];
+              if (!names || !names.length) return '';
+              return names.join('\n');
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color:'#475569', font:{ size:9, family:'Orbitron' }, maxRotation:45, maxTicksLimit:10 },
+          grid:  { color:'rgba(255,255,255,0.04)' },
+          border:{ color:'rgba(255,255,255,0.08)' }
+        },
+        y: {
+          ticks: { color:'#475569', font:{ size:10, family:'Orbitron' }, callback: v => (v/1000).toFixed(0)+'k' },
+          grid:  { color:'rgba(255,255,255,0.05)' },
+          border:{ color:'rgba(255,255,255,0.08)' },
+          min: yMin,
+        }
+      }
+    }
+  });
+
+  // トグルボタン
+  cardEl.querySelectorAll('.bp-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cardEl.querySelectorAll('.bp-toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.view;
+      let showData, showLabels, showNames;
+      if (type === 'recent') {
+        const n = Math.min(10, allBpData.length);
+        showData   = allBpData.slice(-n);
+        showLabels = allLabels.slice(-n);
+        showNames  = allNames.slice(-n);
+      } else {
+        showData   = allBpData;
+        showLabels = allLabels;
+        showNames  = allNames;
+      }
+      const newColors = showData.map((v,i) => i===0?'#0ea5e9':v>=showData[i-1]?'#00ff88':'#ef4444');
+      chartInstance.data.labels                        = showLabels;
+      chartInstance.data.datasets[0].data              = showData;
+      chartInstance.data.datasets[0].pointBackgroundColor = newColors;
+      chartInstance.data.datasets[0].pointBorderColor     = newColors;
+      chartInstance.update();
+    });
+  });
 }
 
 // ─── RIVAL JUMP ──────────────────────────────────────────
@@ -1578,6 +1750,19 @@ function renderResults(players) {
         ${awardsLogHtml}
         ${historyLogHtml}
 
+        <div class="bp-chart-section">
+          <div class="bp-chart-title">📈 BP HISTORY</div>
+          <div class="bp-view-toggle">
+            <button class="bp-toggle-btn active" data-view="all">ALL</button>
+            <button class="bp-toggle-btn" data-view="recent">直近10回</button>
+          </div>
+          <div class="bp-chart-wrapper">
+            <div class="bp-chart-container">
+              <canvas class="bp-chart-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
       </div>
     `;
 
@@ -1589,6 +1774,8 @@ function renderResults(players) {
         const p = parseFloat(fill.dataset.pct) || 0;
         setTimeout(() => { fill.style.width = Math.min(p, 100) + '%'; }, 200 + i * 80);
       });
+      // BP推移グラフ描画
+      buildBpGraph(name, card);
     });
   });
 }
