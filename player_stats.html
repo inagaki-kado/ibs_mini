@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <style>
 /* ─── ROOT VARS (index.html と統一) ─── */
@@ -863,6 +864,63 @@ nav {
 
 /* Util */
 .hidden { display: none !important; }
+
+/* ─── BP推移グラフ ─── */
+.bp-chart-section {
+  margin-top: 1.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(0,255,136,0.1);
+}
+.bp-chart-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--neon-blue);
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.bp-chart-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 13px;
+  background: var(--neon-blue);
+  border-radius: 2px;
+}
+.bp-view-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.bp-toggle-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid rgba(14,165,233,0.35);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: all 0.15s;
+}
+.bp-toggle-btn.active {
+  background: var(--neon-blue);
+  color: var(--bg);
+  border-color: var(--neon-blue);
+}
+.bp-chart-wrapper {
+  background: rgba(4,7,15,0.6);
+  border: 1px solid rgba(14,165,233,0.15);
+  border-radius: 8px;
+  padding: 1rem 1rem 0.6rem;
+}
+.bp-chart-container {
+  position: relative;
+  height: 220px;
+}
 </style>
 </head>
 
