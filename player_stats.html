@@ -1091,17 +1091,13 @@ const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 // ベイ集計シート（相棒ベイTOP5取得用）
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
-// BP推移シート（BP推移グラフ用）
-const RANGE_BP     = encodeURIComponent('📈 BP推移!A2:ZZ');
-const BP_URL       = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BP}?key=${API_KEY}`;
-// 大会マスター（大会名→日付の対応テーブル用）
-const RANGE_MASTER = encodeURIComponent('📅 大会マスター!B3:C');
-const MASTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_MASTER}?key=${API_KEY}`;
+// 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
+const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:L');
+const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 
-let allPlayers    = null; // cache
-let beyMap        = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
-let bpHistory     = null; // cache: { headers: [大会名,...], data: { 選手名: [bp,...] } }
-let masterDateMap = null; // cache: { 大会名 → 'YYYY/MM/DD' }
+let allPlayers = null; // cache
+let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
+let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履歴から生成
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1247,13 +1243,13 @@ function highlightTower(rankNum) {
 async function fetchPlayers() {
   if (allPlayers) return allPlayers;
 
-  // Webデータ出力・ベイ集計・BP推移・大会マスター を並列フェッチ
-  const [res1, res2, res3, res4] = await Promise.all([
-    fetch(API_URL), fetch(BEY_URL), fetch(BP_URL), fetch(MASTER_URL)
+  // Webデータ出力・ベイ集計・全対戦履歴 を並列フェッチ
+  const [res1, res2, res3] = await Promise.all([
+    fetch(API_URL), fetch(BEY_URL), fetch(HISTORY_URL)
   ]);
   if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
   if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
-  // BP推移・大会マスターは取得失敗してもグラフ非表示で継続
+  // 全対戦履歴は取得失敗してもグラフ非表示で継続
 
   const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
 
@@ -1274,104 +1270,91 @@ async function fetchPlayers() {
     }
   });
 
-  // 大会マスター: B=大会名, C=開催日（YYYY/MM/DD）→ 日付ルックアップマップを作成
-  try {
-    const json4 = await res4.json();
-    masterDateMap = {};
-    (json4.values || []).forEach(r => {
-      const tName = (r[0] || '').trim();
-      const tDate = (r[1] || '').trim();
-      if (tName && tDate) masterDateMap[tName] = tDate;
-    });
-  } catch(e) {
-    masterDateMap = {};
-  }
-
-  // BP推移: 行1=ヘッダー（A=選手名, B以降=大会名）, 行2以降=選手名とBP値
+  // 全対戦履歴からBP推移データを生成
+  // B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
   try {
     const json3 = await res3.json();
-    const bpRows = json3.values || [];
-    const bpHeaders = (bpRows[0] || []).slice(1); // B列以降が大会名
-    bpHistory = { headers: bpHeaders, data: {} };
-    bpRows.slice(1).forEach(row => {
-      const name = (row[0] || '').trim();
-      if (name) {
-        bpHistory.data[name] = row.slice(1).map(v => {
-          const n = parseFloat((v || '').toString().replace(/,/g, ''));
-          return isNaN(n) ? null : n;
-        });
+    const matchRows = json3.values || [];
+    const playerMap = {}; // { 選手名: { date: {date, names:Set, bp} } }
+
+    matchRows.forEach(row => {
+      if (row.length < 11) return;
+      const p1    = (row[0] || '').trim();
+      const bp1a  = parseFloat((row[6] || '').replace(/,/g, ''));
+      const p2    = (row[2] || '').trim();
+      const bp2a  = parseFloat((row[7] || '').replace(/,/g, ''));
+      const tName = (row[9]  || '').trim();
+      const date  = (row[10] || '').trim();
+      if (!date) return;
+      // キーを date のみにすることで、同日の予選・決勝・ボーナス行を1エントリに統合
+      // スプレッドシートの行順通りに上書きするため、末尾のボーナス行のBPが最終値になる
+      const key = date;
+      if (p1 && !isNaN(bp1a)) {
+        if (!playerMap[p1]) playerMap[p1] = {};
+        if (!playerMap[p1][key]) {
+          playerMap[p1][key] = { date, names: new Set(tName ? [tName] : []), bp: bp1a };
+        } else {
+          playerMap[p1][key].bp = bp1a;
+          if (tName) playerMap[p1][key].names.add(tName);
+        }
+      }
+      if (p2 && !isNaN(bp2a)) {
+        if (!playerMap[p2]) playerMap[p2] = {};
+        if (!playerMap[p2][key]) {
+          playerMap[p2][key] = { date, names: new Set(tName ? [tName] : []), bp: bp2a };
+        } else {
+          playerMap[p2][key].bp = bp2a;
+          if (tName) playerMap[p2][key].names.add(tName);
+        }
       }
     });
+
+    // Map → 日付昇順の配列に変換（names を配列化）
+    bpHistory = {};
+    Object.entries(playerMap).forEach(([name, tournMap]) => {
+      bpHistory[name] = Object.values(tournMap)
+        .map(e => ({ date: e.date, tName: Array.from(e.names).join(' / '), bp: e.bp }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    });
   } catch(e) {
-    bpHistory = null; // BP推移取得失敗時はグラフ非表示
+    bpHistory = {}; // 取得失敗時はグラフ非表示
   }
 
   return allPlayers;
 }
 
-// ─── BP推移グラフ ──────────────────────────────────────────
-function parseDateFromName(name) {
-  // ① 大会名の文字列内にYYYY/MM/DD が含まれている場合
-  const m = (name || '').match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (m) return `${m[1]}/${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}`;
-  // ② 大会マスターの日付マップから取得
-  if (masterDateMap && masterDateMap[name]) return masterDateMap[name];
-  return null;
-}
+// ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
+function buildBpGraph(playerName, cardEl) {
+  const events = bpHistory && bpHistory[playerName];
+  if (!events || events.length < 2) return;
 
-function groupBpByDate(headers, bpVals) {
-  // headers[i]・bpVals[i] を日付でグルーピング
+  // 同日複数大会をグルーピング（同日の最後のBPを使用、大会名は複数保持）
   const grouped = [];
-  const dateMap  = new Map();
-  headers.forEach((h, i) => {
-    const bp = bpVals[i];
-    if (bp === null || bp === undefined) return;
-    const date  = parseDateFromName(h) || h;
-    const label = date; // X軸表示は日付
-    if (!dateMap.has(date)) {
-      const entry = { date: label, bp, names: [h] };
-      dateMap.set(date, entry);
+  const dateMap = new Map();
+  events.forEach(e => {
+    if (!dateMap.has(e.date)) {
+      const entry = { date: e.date, bp: e.bp, names: [e.tName] };
+      dateMap.set(e.date, entry);
       grouped.push(entry);
     } else {
-      const entry = dateMap.get(date);
-      entry.bp    = bp;          // 同日は最後（最新）のBPに更新
-      entry.names.push(h);
+      const entry = dateMap.get(e.date);
+      entry.bp = e.bp;
+      entry.names.push(e.tName);
     }
   });
-  return grouped;
-}
 
-function buildBpGraph(playerName, cardEl) {
-  if (!bpHistory || !bpHistory.data[playerName]) return;
+  if (grouped.length < 2) return;
 
-  const headers = bpHistory.headers;
-  const bpVals  = bpHistory.data[playerName];
-  if (!headers.length || !bpVals.length) return;
-
-  // 有効データのみ抽出
-  const validHeaders = [];
-  const validBp      = [];
-  headers.forEach((h, i) => {
-    if (bpVals[i] !== null && bpVals[i] !== undefined) {
-      validHeaders.push(h);
-      validBp.push(bpVals[i]);
-    }
-  });
-  if (validBp.length < 2) return; // データ不足なら非表示
-
-  const grouped     = groupBpByDate(validHeaders, validBp);
-  const allLabels   = grouped.map(g => g.date);
-  const allBpData   = grouped.map(g => g.bp);
-  const allNames    = grouped.map(g => g.names);
+  const allLabels  = grouped.map(g => g.date);
+  const allBpData  = grouped.map(g => g.bp);
+  const allNames   = grouped.map(g => g.names);
   const pointColors = allBpData.map((v, i) => i === 0 ? '#0ea5e9' : v >= allBpData[i-1] ? '#00ff88' : '#ef4444');
-
-  // Y軸最小値（データ最小値より少し下）
   const yMin = Math.floor((Math.min(...allBpData) * 0.97) / 1000) * 1000;
 
-  const canvas   = cardEl.querySelector('.bp-chart-canvas');
+  const canvas = cardEl.querySelector('.bp-chart-canvas');
   if (!canvas) return;
-  const ctx      = canvas.getContext('2d');
-  const grad     = ctx.createLinearGradient(0, 0, 0, 220);
+  const ctx  = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 220);
   grad.addColorStop(0,   'rgba(0,255,136,0.35)');
   grad.addColorStop(0.6, 'rgba(0,255,136,0.08)');
   grad.addColorStop(1,   'rgba(0,255,136,0)');
@@ -1411,8 +1394,7 @@ function buildBpGraph(playerName, cardEl) {
             },
             footer: items => {
               const names = allNames[items[0].dataIndex];
-              if (!names || !names.length) return '';
-              return names.join('\n');
+              return (names && names.length) ? names.join('\n') : '';
             }
           }
         }
@@ -1451,8 +1433,8 @@ function buildBpGraph(playerName, cardEl) {
         showNames  = allNames;
       }
       const newColors = showData.map((v,i) => i===0?'#0ea5e9':v>=showData[i-1]?'#00ff88':'#ef4444');
-      chartInstance.data.labels                        = showLabels;
-      chartInstance.data.datasets[0].data              = showData;
+      chartInstance.data.labels                           = showLabels;
+      chartInstance.data.datasets[0].data                = showData;
       chartInstance.data.datasets[0].pointBackgroundColor = newColors;
       chartInstance.data.datasets[0].pointBorderColor     = newColors;
       chartInstance.update();
