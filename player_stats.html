@@ -1401,7 +1401,7 @@ function buildBpGraph(playerName, cardEl) {
       },
       scales: {
         x: {
-          ticks: { color:'#475569', font:{ size:9, family:'Orbitron' }, maxRotation:45, maxTicksLimit:10 },
+          ticks: { color:'#475569', font:{ size:9, family:'Orbitron' }, maxRotation:45, maxTicksLimit:10, callback: v => String(v).slice(2) },
           grid:  { color:'rgba(255,255,255,0.04)' },
           border:{ color:'rgba(255,255,255,0.08)' }
         },
