@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BLOCK MANAGER - 子機</title>
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzA3MWQzMyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzIyYzU1ZSI+QjwvdGV4dD4KPC9zdmc+">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        fontFamily: { 'sans': ['Noto Sans JP','sans-serif'], 'orbitron': ['Orbitron','sans-serif'] },
+        colors: { 'cyber-bg':'#0a0e17','cyber-dark':'#111827','cyber-blue':'#0ea5e9','cyber-green':'#22c55e','cyber-pink':'#ec4899','cyber-orange':'#ffaa00','cyber-red':'#ff0055','cyber-text':'#e2e8f0','cyber-table-border':'#1f2937' }
+      }}
+    }
+  </script>
+  <style>
+    body{background:#0a0e17;color:#e2e8f0}
+    .font-sf{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px}
+    .hidden{display:none!important}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:#0a0e17}
+    ::-webkit-scrollbar-thumb{background:#22c55e;border-radius:4px}
+    button{touch-action:manipulation;cursor:pointer}
+    .match-card{display:flex;align-items:center;gap:6px;background:#0d131f;border:1px solid #1f2937;border-radius:8px;padding:6px 8px;margin-bottom:6px}
+    .team-btn{flex:1;padding:8px 10px;border-radius:6px;font-weight:700;font-size:13px;text-align:left;background:#0a0e17;border:1px solid #374151;color:#e2e8f0;transition:all .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .team-btn.winner{background:#0ea5e9;border-color:#0ea5e9;color:#0a0e17;box-shadow:0 0 8px rgba(14,165,233,.6)}
+    .team-btn.loser{background:transparent;border-color:#374151;color:#4b5563}
+    .team-btn.tbd{color:#4b5563;font-style:italic;cursor:default!important}
+    .vs-badge{font-family:'Orbitron',sans-serif;font-size:9px;color:#4b5563;flex-shrink:0;font-weight:900}
+    .round-label{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;padding:4px 8px 2px;margin-top:8px}
+    .score-num{font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;line-height:1}
+    .rcmd{width:52px;height:52px;border-radius:50%;font-family:'Orbitron',sans-serif;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid;transition:all .15s;user-select:none;cursor:pointer}
+    .rcmd:active{transform:scale(.9)}
+    .btn-x{border-color:#ff0055;color:#ff0055;background:transparent}
+    .btn-b{border-color:#ff4500;color:#ff4500;background:transparent}
+    .btn-o{border-color:#ffaa00;color:#ffaa00;background:transparent}
+    .btn-s{border-color:#0ea5e9;color:#0ea5e9;background:transparent}
+    .btn-x:active{background:#ff0055;color:#fff}
+    .btn-b:active{background:#ff4500;color:#fff}
+    .btn-o:active{background:#ffaa00;color:#000}
+    .btn-s:active{background:#0ea5e9;color:#fff}
+  </style>
+</head>
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden">
+
+<header class="bg-cyber-dark shadow-lg border-b-2 border-cyber-green shrink-0">
+  <div class="flex items-center justify-between px-3 py-2 gap-2">
+    <div class="flex items-center gap-1.5 bg-[#0a0e17] px-2 py-1.5 rounded-lg border border-cyber-table-border">
+      <span class="text-[9px] text-cyber-blue font-sf hidden sm:inline">HUD</span>
+      <input type="text" id="hudCodeInput" placeholder="CODE" inputmode="numeric" maxlength="4"
+        class="w-12 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf">
+      <button onclick="connectHud()" id="btn-hud-connect"
+        class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-2 py-1 text-[10px] font-sf font-bold rounded active:scale-95">CONN</button>
+      <button onclick="forceResetHud()" class="text-cyber-pink font-bold text-sm px-1">✖</button>
+      <div id="hud-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+    </div>
+    <div class="text-center flex-1 min-w-0">
+      <div class="flex items-center justify-center gap-2">
+        <span class="font-sf text-cyber-green text-sm" id="header-stadium">STADIUM ?</span>
+        <span class="font-sf text-cyber-text text-xs opacity-60" id="header-part">-部</span>
+      </div>
+      <p class="text-[9px] text-cyber-text opacity-50 font-sf">BLOCK MANAGER <span class="text-cyber-green">v1.0</span></p>
+    </div>
+    <div class="flex items-center gap-1.5 bg-[#0a0e17] px-2 py-1.5 rounded-lg border border-cyber-table-border">
+      <span class="text-[9px] text-cyber-orange font-sf hidden sm:inline">PARENT</span>
+      <input type="text" id="parentCodeInput" placeholder="CODE" inputmode="numeric" maxlength="4"
+        class="w-12 p-1 bg-cyber-bg border border-cyber-orange text-cyber-text text-sm text-center outline-none font-sf">
+      <button onclick="connectParent()" id="btn-parent-connect"
+        class="bg-cyber-dark border border-cyber-orange text-cyber-orange px-2 py-1 text-[10px] font-sf font-bold rounded active:scale-95">CONN</button>
+      <button onclick="forceResetParent()" class="text-cyber-pink font-bold text-sm px-1">✖</button>
+      <div id="parent-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+    </div>
+  </div>
+</header>
+
+<div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0 text-sm">
+  <button onclick="switchTab('setup')" id="tab-setup"
+    class="flex-1 py-2.5 font-bold border-b-4 border-cyber-green text-cyber-green transition-colors">⚙️ 設定</button>
+  <button onclick="switchTab('bracket')" id="tab-bracket"
+    class="flex-1 py-2.5 font-bold border-b-4 border-transparent text-cyber-text transition-colors">🏆 ブロック戦</button>
+  <button onclick="switchTab('semifinal')" id="tab-semifinal"
+    class="flex-1 py-2.5 font-bold border-b-4 border-transparent text-cyber-text transition-colors hidden">⚔️ 代表決定戦</button>
+</div>
+
+<div class="flex-1 overflow-y-auto">
+
+  <!-- SETUP -->
+  <div id="view-setup" class="p-4 flex flex-col gap-4">
+    <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-green rounded-lg text-center">
+      <p class="text-cyber-green font-sf font-bold mb-2">💾 前回のデータがあります</p>
+      <div class="flex gap-3 max-w-xs mx-auto">
+        <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green text-cyber-bg font-bold py-2 rounded font-sf active:scale-95">▶ 再開</button>
+        <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink font-bold py-2 rounded font-sf active:scale-95">🗑 新規</button>
+      </div>
+    </div>
+
+    <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4">
+      <h3 class="font-sf text-cyber-green text-sm mb-3">1. スタジアム・部の設定</h3>
+      <div class="flex gap-3 mb-3">
+        <div class="flex-1">
+          <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">スタジアム</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button onclick="selectStadium('A')" id="stbtn-A" class="stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">A</button>
+            <button onclick="selectStadium('B')" id="stbtn-B" class="stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">B</button>
+            <button onclick="selectStadium('C')" id="stbtn-C" class="stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">C</button>
+            <button onclick="selectStadium('D')" id="stbtn-D" class="stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">D</button>
+          </div>
+        </div>
+        <div class="flex-1">
+          <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">部</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="selectPart(1)" id="ptbtn-1" class="ptbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">第1部</button>
+            <button onclick="selectPart(2)" id="ptbtn-2" class="ptbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95">第2部</button>
+          </div>
+        </div>
+      </div>
+      <input type="text" id="tournament-name-input" placeholder="大会名 (例: トラボカップ2026)"
+        class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text outline-none font-sf text-sm focus:border-cyber-green">
+    </div>
+
+    <div class="bg-cyber-dark border border-cyber-blue rounded-lg p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-sf text-cyber-blue text-sm">2. チーム登録（最大4チーム）</h3>
+        <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green text-cyber-green px-2 py-1 rounded text-xs font-bold active:scale-95">📋 貼付</button>
+      </div>
+      <div id="team-list" class="space-y-2 mb-3"></div>
+      <button onclick="addTeam()" id="btn-add-team"
+        class="w-full bg-cyber-dark border border-cyber-blue text-cyber-blue py-2 rounded font-sf text-sm active:scale-95">＋ チームを追加</button>
+    </div>
+
+    <button onclick="startTournament()" id="btn-start"
+      class="w-full bg-cyber-green text-cyber-bg py-4 rounded-full font-bold font-sf text-lg active:scale-95 transition-all opacity-50 cursor-not-allowed">
+      ▶ トーナメント開始
+    </button>
+  </div>
+
+  <!-- BRACKET -->
+  <div id="view-bracket" class="hidden p-4">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="font-sf text-cyber-green text-lg" id="bracket-title">A BLOCK</h2>
+        <p class="text-xs text-cyber-text opacity-60 font-sf" id="bracket-sub">第1部 予選</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="toggleTvMode()" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base active:scale-95" title="モニター出力">📺</button>
+        <button onclick="openSendParentModal()" id="btn-send-parent"
+          class="hidden bg-cyber-orange text-cyber-bg px-4 py-2 rounded-full font-bold font-sf text-xs shadow-[0_0_8px_#ffaa00] active:scale-95 animate-pulse">
+          📡 親機送信
+        </button>
+      </div>
+    </div>
+    <div id="bracket-area"></div>
+    <div id="rep-banner" class="hidden mt-4 p-4 bg-[#0d131f] border-2 border-cyber-green rounded-lg text-center">
+      <p class="font-sf text-cyber-green text-sm mb-1">🏆 ブロック代表決定</p>
+      <p class="text-xl font-bold text-white" id="rep-team-name"></p>
+      <p class="text-xs text-cyber-text opacity-60 mt-1">「代表決定戦」タブに進むか、親機に送信してください</p>
+      <button onclick="document.getElementById('tab-semifinal').classList.remove('hidden');switchTab('semifinal')"
+        class="mt-3 bg-cyber-green text-cyber-bg px-5 py-2 rounded-full font-bold font-sf text-sm active:scale-95">
+        ⚔️ 代表決定戦へ
+      </button>
+    </div>
+  </div>
+
+  <!-- SEMIFINAL -->
+  <div id="view-semifinal" class="hidden p-4">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="font-sf text-cyber-orange text-lg" id="sf-title">代表決定戦</h2>
+        <p class="text-xs text-cyber-text opacity-60 font-sf" id="sf-sub">各ブロック代表が対決</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="toggleTvMode()" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base active:scale-95" title="モニター出力">📺</button>
+        <button onclick="openSendParentModal()"
+          class="bg-cyber-orange text-cyber-bg px-4 py-2 rounded-full font-bold font-sf text-xs shadow-[0_0_8px_#ffaa00] active:scale-95">
+          📡 親機送信
+        </button>
+      </div>
+    </div>
+    <div id="sf-area"></div>
+    <div id="final-banner" class="hidden mt-4 p-4 bg-[#0d131f] border-2 border-cyber-orange rounded-lg text-center">
+      <p class="font-sf text-cyber-orange text-sm mb-1">🏆 決勝進出チーム決定</p>
+      <p class="text-xl font-bold text-white" id="final-team-name"></p>
+    </div>
+  </div>
+
+</div><!-- /コンテンツ -->
+
+
+<!-- リモコンモーダル（チーム戦対応） -->
+<div id="remoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-50 p-3 overflow-y-auto">
+  <div class="bg-cyber-dark rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue flex flex-col my-auto">
+
+    <!-- ヘッダー -->
+    <div class="flex justify-between items-center px-4 py-3 border-b border-cyber-table-border shrink-0">
+      <div>
+        <h2 class="font-sf text-cyber-blue text-sm tracking-widest">HUD REMOTE — チーム戦</h2>
+        <p class="text-[10px] text-cyber-text opacity-50 font-sf mt-0.5">2P先取・勝ち抜き・3勝先取</p>
+      </div>
+      <button onclick="closeRemoteModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf text-sm">✖ CLOSE</button>
+    </div>
+
+    <!-- チーム名バー -->
+    <div class="flex items-center justify-between px-4 py-2 bg-[#0d131f] border-b border-cyber-table-border shrink-0">
+      <div class="flex-1 text-right overflow-hidden pr-2">
+        <div class="truncate text-cyber-blue font-bold text-base" id="rm-left-name">TEAM 1</div>
+      </div>
+      <button onclick="handleRemoteSwap()" class="text-[10px] bg-[#111827] border border-gray-600 text-gray-300 px-2 py-1 rounded font-sf mx-2 active:bg-gray-700 shrink-0">🔁 SWAP</button>
+      <div class="flex-1 overflow-hidden pl-2">
+        <div class="truncate text-cyber-pink font-bold text-base" id="rm-right-name">TEAM 2</div>
+      </div>
+    </div>
+
+    <!-- ★ チーム勝利数ドット（3勝先取） -->
+    <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
+      <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">TEAM WINS — 3 WIN MATCH</p>
+      <div class="flex items-center justify-center gap-4">
+        <!-- 左チームドット -->
+        <div class="flex gap-1.5" id="rm-dots-left"></div>
+        <div class="font-sf text-xl font-bold text-cyber-text" id="rm-team-score-display">0 - 0</div>
+        <!-- 右チームドット -->
+        <div class="flex gap-1.5" id="rm-dots-right"></div>
+      </div>
+    </div>
+
+    <!-- ★ 現在の1対戦（2P先取）スコア + 選手名 -->
+    <div class="px-4 py-3 bg-[#0d131f] border-b border-cyber-table-border shrink-0">
+      <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">CURRENT BATTLE — 2P FIRST</p>
+      <div class="flex items-center justify-center gap-3">
+        <div class="text-right flex-1 overflow-hidden">
+          <span class="text-cyber-blue text-sm font-bold truncate block" id="rm-member-left">先鋒</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="score-num text-cyber-blue" id="rm-score-left">0</span>
+          <span class="font-sf text-cyber-text opacity-30 text-lg">-</span>
+          <span class="score-num text-cyber-pink" id="rm-score-right">0</span>
+        </div>
+        <div class="text-left flex-1 overflow-hidden">
+          <span class="text-cyber-pink text-sm font-bold truncate block" id="rm-member-right">先鋒</span>
+        </div>
+      </div>
+      <!-- 次の選手予告 -->
+      <p class="text-[10px] font-sf text-center mt-2 opacity-60" id="rm-next-info" style="color:#64748b"></p>
+    </div>
+
+    <!-- スコアボタン -->
+    <div class="flex p-3 gap-3 shrink-0">
+      <div class="flex-1 flex flex-col items-center gap-2">
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="sendScore('left','P1_X',3)" class="rcmd btn-x">X</button>
+          <button onclick="sendScore('left','P1_B',2)" class="rcmd btn-b">B</button>
+          <button onclick="sendScore('left','P1_O',2)" class="rcmd btn-o">O</button>
+          <button onclick="sendScore('left','P1_S',1)" class="rcmd btn-s">S</button>
+        </div>
+        <button onclick="sendScore('left','P1_MINUS',-1)"
+          class="text-xs bg-cyber-dark border border-gray-600 text-gray-300 px-4 py-1.5 rounded font-sf active:bg-gray-800 w-full">－ 取消</button>
+      </div>
+      <div class="flex flex-col items-center justify-center gap-1.5 shrink-0">
+        <button onclick="sendRemoteCmd('CALL')" class="bg-cyber-dark border border-cyber-green text-cyber-green px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-green active:text-cyber-bg">📣 CALL</button>
+        <button onclick="resetCurrentBattle()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-pink active:text-white">⟳ RESET</button>
+        <button onclick="sendRemoteCmd('TIMER')" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-blue active:text-cyber-bg">⏱ TIMER</button>
+      </div>
+      <div class="flex-1 flex flex-col items-center gap-2">
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="sendScore('right','P2_X',3)" class="rcmd btn-x">X</button>
+          <button onclick="sendScore('right','P2_B',2)" class="rcmd btn-b">B</button>
+          <button onclick="sendScore('right','P2_O',2)" class="rcmd btn-o">O</button>
+          <button onclick="sendScore('right','P2_S',1)" class="rcmd btn-s">S</button>
+        </div>
+        <button onclick="sendScore('right','P2_MINUS',-1)"
+          class="text-xs bg-cyber-dark border border-gray-600 text-gray-300 px-4 py-1.5 rounded font-sf active:bg-gray-800 w-full">－ 取消</button>
+      </div>
+    </div>
+
+    <!-- ベイ選択 -->
+    <div class="flex gap-3 px-3 pb-2 shrink-0">
+      <div class="flex-1">
+        <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60">P1 ベイ選択</p>
+        <div id="rm-bey-left" class="flex flex-col gap-1"></div>
+      </div>
+      <div class="flex-1">
+        <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-right">P2 ベイ選択</p>
+        <div id="rm-bey-right" class="flex flex-col gap-1"></div>
+      </div>
+    </div>
+
+    <!-- ★ 1対戦勝者ボタン（手動確定用） -->
+    <div class="flex gap-3 p-3 border-t border-cyber-table-border shrink-0">
+      <button onclick="recordBattleWin('left')" id="rm-win-left"
+        class="flex-1 py-3 bg-cyber-blue text-cyber-bg font-bold font-sf rounded text-xs active:scale-95 shadow-[0_0_8px_#0ea5e9]">LEFT WIN →</button>
+      <button onclick="recordBattleWin('right')" id="rm-win-right"
+        class="flex-1 py-3 bg-cyber-pink text-white font-bold font-sf rounded text-xs active:scale-95 shadow-[0_0_8px_#ec4899]">RIGHT WIN →</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- 貼り付けモーダル -->
+<div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+  <div class="bg-cyber-dark p-5 rounded-lg w-full max-w-lg border border-cyber-green flex flex-col h-[65vh]">
+    <h2 class="text-lg font-sf text-cyber-green mb-2">📋 チーム一括入力</h2>
+    <p class="text-cyber-text text-xs opacity-80 mb-3 leading-relaxed">
+      1行に1チーム。<span class="text-cyber-blue">チーム名, メンバー1, メンバー2, メンバー3</span> の順（メンバーは省略可）
+    </p>
+    <textarea id="pasteArea"
+      class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none resize-none font-sans text-sm mb-4"
+      placeholder="例:&#10;チームA, 田中, 鈴木, 佐藤&#10;チームB, 山田, 伊藤, 加藤"></textarea>
+    <div class="flex gap-3">
+      <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf">CANCEL</button>
+      <button onclick="processPaste()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 font-bold font-sf rounded active:scale-95">IMPORT</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 親機送信モーダル -->
+<div id="sendParentModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+  <div class="bg-cyber-dark p-6 rounded-lg w-full max-w-md border-2 border-cyber-orange">
+    <h2 class="text-lg font-sf text-cyber-orange mb-4 text-center">📡 親機にデータ送信</h2>
+    <div class="bg-[#0d131f] rounded-lg p-4 mb-4 border border-cyber-table-border">
+      <p class="text-xs text-cyber-text opacity-70 font-sf mb-2">送信内容:</p>
+      <p class="text-cyber-green font-bold whitespace-pre-line" id="send-content-preview"></p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeSendParentModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf">CANCEL</button>
+      <button onclick="executeSendToParent()" class="flex-1 bg-cyber-orange text-cyber-bg px-4 py-3 font-bold font-sf rounded shadow-[0_0_10px_#ffaa00] active:scale-95">📡 送信</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Alert / Confirm -->
+<div id="custom-alert-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-alert-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <button id="custom-alert-ok" class="py-2 bg-cyber-blue text-cyber-bg font-bold font-sf rounded active:scale-95">OK</button>
+  </div>
+</div>
+<div id="custom-confirm-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-confirm-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="custom-confirm-cancel" class="flex-1 py-2 bg-transparent border border-gray-500 text-gray-300 font-bold font-sf rounded active:scale-95">キャンセル</button>
+      <button id="custom-confirm-ok" class="flex-1 py-2 bg-cyber-pink text-white font-bold font-sf rounded active:scale-95">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 状態 ──
+let stadium=null,part=null,tournamentName='';
+let teams=[],tidCounter=1;
+let bracketRounds=[];
+let isTournamentStarted=false;
+let sfMatch={t1:null,t2:null,winner:null,score:null};
+let isSfMode=false;
+let currentMatchRef=null;
+let isRemoteSwapped=false,remoteScoreLeft=0,remoteScoreRight=0;
+// チーム戦スコア管理（2p先取・勝ち抜き・3勝先取）
+let teamWinsLeft=0,teamWinsRight=0;       // チーム勝利数
+let currentMemberLeft=0,currentMemberRight=0; // 現在の出場メンバーindex (0=先鋒,1=次鋒,2=大将)
+const MEMBER_LABELS=['先鋒','次鋒','大将'];
+const BATTLE_WIN_SCORE=2;  // 1対戦の先取点
+const TEAM_WIN_COUNT=3;    // チーム勝利数
+let hudPeer=null,hudConn=null,parentPeer=null,parentConn=null;
+let _hudRetry=null,_parentRetry=null;
+const SAVE_KEY='tbh_block_v1';
+
+// ── ダイアログ ──
+function showAlert(msg){return new Promise(r=>{const m=document.getElementById('custom-alert-modal');document.getElementById('custom-alert-msg').innerText=msg;m.classList.remove('hidden');const b=document.getElementById('custom-alert-ok');const h=()=>{m.classList.add('hidden');b.removeEventListener('click',h);r()};b.addEventListener('click',h)});}
+function showConfirm(msg){return new Promise(r=>{const m=document.getElementById('custom-confirm-modal');document.getElementById('custom-confirm-msg').innerText=msg;m.classList.remove('hidden');const ok=document.getElementById('custom-confirm-ok'),ca=document.getElementById('custom-confirm-cancel');const onOk=()=>{m.classList.add('hidden');cleanup();r(true)};const onCa=()=>{m.classList.add('hidden');cleanup();r(false)};const cleanup=()=>{ok.removeEventListener('click',onOk);ca.removeEventListener('click',onCa)};ok.addEventListener('click',onOk);ca.addEventListener('click',onCa)});}
+
+// ── タブ ──
+function switchTab(tab){
+  ['setup','bracket','semifinal'].forEach(t=>{
+    document.getElementById('view-'+t).classList.add('hidden');
+    const el=document.getElementById('tab-'+t);
+    if(!el)return;
+    el.className=el.className.replace(/border-cyber-\w+/,'border-transparent').replace(/text-cyber-green|text-cyber-orange/,'text-cyber-text');
+  });
+  document.getElementById('view-'+tab).classList.remove('hidden');
+  const a=document.getElementById('tab-'+tab);
+  if(a){
+    const col=tab==='semifinal'?'cyber-orange':'cyber-green';
+    a.className=a.className.replace('border-transparent','border-'+col).replace('text-cyber-text','text-'+col);
+  }
+  if(tab==='bracket')renderBracket();
+  if(tab==='semifinal')renderSemiFinal();
+}
+
+// ── 設定 ──
+function selectStadium(s){
+  stadium=s;
+  ['A','B','C','D'].forEach(x=>{
+    const b=document.getElementById('stbtn-'+x);
+    b.className=x===s
+      ?'stbtn py-2 rounded font-sf font-bold text-sm border-2 border-cyber-green text-cyber-green bg-cyber-dark active:scale-95'
+      :'stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95';
+  });
+  document.getElementById('header-stadium').textContent='STADIUM '+s;
+  updateStartBtn();
+}
+function selectPart(p){
+  part=p;
+  [1,2].forEach(x=>{
+    const b=document.getElementById('ptbtn-'+x);
+    b.className=x===p
+      ?'ptbtn py-2 rounded font-sf font-bold text-sm border-2 border-cyber-blue text-cyber-blue bg-cyber-dark active:scale-95'
+      :'ptbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95';
+  });
+  document.getElementById('header-part').textContent='第'+p+'部';
+  updateStartBtn();
+}
+function updateStartBtn(){
+  const b=document.getElementById('btn-start');
+  const ok=stadium&&part&&teams.length>=2;
+  b.classList.toggle('opacity-50',!ok);b.classList.toggle('cursor-not-allowed',!ok);
+  b.classList.toggle('opacity-100',ok);b.classList.toggle('shadow-[0_0_15px_#22c55e]',ok);
+}
+
+// ── チーム管理 ──
+function addTeam(){
+  if(teams.length>=4)return showAlert('最大4チームまでです');
+  teams.push({id:tidCounter++,name:'チーム'+(teams.length+1),members:['','',''],beyblades:[]});
+  renderTeamList();
+}
+function renderTeamList(){
+  const list=document.getElementById('team-list');list.innerHTML='';
+  teams.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.className='bg-[#0d131f] border border-cyber-table-border rounded-lg p-3';
+    div.innerHTML=`<div class="flex items-center gap-2 mb-2">
+      <span class="font-sf text-cyber-blue text-xs w-6">${i+1}.</span>
+      <input type="text" value="${e(t.name)}" oninput="teams[${i}].name=this.value;updateStartBtn()"
+        class="flex-1 bg-cyber-bg border border-cyber-table-border rounded p-1.5 text-cyber-text text-sm outline-none focus:border-cyber-green font-bold" placeholder="チーム名">
+      <button onclick="removeTeam(${i})" class="text-cyber-pink font-bold text-lg px-1 active:scale-90">🗑</button>
+    </div>
+    <div class="grid grid-cols-3 gap-1">
+      ${t.members.map((m,mi)=>`<input type="text" value="${e(m)}" oninput="teams[${i}].members[${mi}]=this.value"
+        class="bg-cyber-bg border border-cyber-table-border rounded p-1 text-cyber-text text-xs outline-none focus:border-cyber-blue" placeholder="メンバー${mi+1}">`).join('')}
+    </div>`;
+    list.appendChild(div);
+  });
+  document.getElementById('btn-add-team').classList.toggle('hidden',teams.length>=4);
+  updateStartBtn();
+}
+function e(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function removeTeam(i){if(!await showConfirm('「'+teams[i].name+'」を削除しますか？'))return;teams.splice(i,1);renderTeamList();}
+
+// ── 貼り付け ──
+function openPasteModal(){document.getElementById('pasteArea').value='';document.getElementById('pasteModal').classList.remove('hidden');document.getElementById('pasteModal').classList.add('flex');setTimeout(()=>document.getElementById('pasteArea').focus(),100);}
+function closePasteModal(){document.getElementById('pasteModal').classList.add('hidden');document.getElementById('pasteModal').classList.remove('flex');}
+function processPaste(){
+  const txt=document.getElementById('pasteArea').value.trim();
+  if(!txt)return closePasteModal();
+  const lines=txt.split('\n').map(l=>l.trim()).filter(Boolean);
+  let added=0;
+  for(const line of lines){
+    if(teams.length>=4)break;
+    const pts=line.split(/[,\t]/).map(s=>s.trim());
+    if(!pts[0])continue;
+    teams.push({id:tidCounter++,name:pts[0],members:[pts[1]||'',pts[2]||'',pts[3]||''],beyblades:[]});
+    added++;
+  }
+  renderTeamList();closePasteModal();
+  if(added>0)showAlert(added+'チームを追加しました');
+}
+
+// ── トーナメント開始 ──
+function startTournament(){
+  if(!stadium||!part)return showAlert('スタジアムと部を選択してください');
+  if(teams.length<2)return showAlert('最低2チーム登録してください');
+  const tms=[...teams];
+  bracketRounds=[];
+  isTournamentStarted=true;
+  if(tms.length===4){
+    bracketRounds=[
+      [{t1:tms[0],t2:tms[3],winner:null,score:null},{t1:tms[1],t2:tms[2],winner:null,score:null}],
+      [{t1:null,t2:null,winner:null,score:null}]
+    ];
+  }else if(tms.length===3){
+    bracketRounds=[
+      [{t1:tms[0],t2:tms[1],winner:null,score:null},{t1:tms[2],t2:null,winner:1,score:'BYE'}],
+      [{t1:null,t2:null,winner:null,score:null}]
+    ];
+    advanceBracket();
+  }else{
+    bracketRounds=[[{t1:tms[0],t2:tms[1],winner:null,score:null}]];
+  }
+  tournamentName=document.getElementById('tournament-name-input').value.trim()||'CYBER BEY-ROULETTE';
+  saveState();
+  document.getElementById('bracket-title').textContent=stadium+' BLOCK';
+  document.getElementById('bracket-sub').textContent='第'+part+'部 予選';
+  document.getElementById('sf-title').textContent=stadium+' BLOCK 代表決定戦';
+  document.getElementById('sf-sub').textContent='第'+part+'部';
+  switchTab('bracket');
+  document.getElementById('tab-bracket').classList.remove('hidden');
+}
+
+// ── ブラケット描画 ──
+function renderBracket(){
+  if(!isTournamentStarted)return;
+  const area=document.getElementById('bracket-area');area.innerHTML='';
+  bracketRounds.forEach((round,ri)=>{
+    const lbl=document.createElement('div');
+    lbl.className='round-label '+(ri===bracketRounds.length-1?'text-cyber-pink':'text-cyber-green');
+    lbl.textContent=ri===0?'ROUND 1':'BLOCK FINAL';
+    area.appendChild(lbl);
+    round.forEach((match,mi)=>area.appendChild(buildMatchCard(match,ri,mi,'bracket')));
+  });
+  const rep=getBlockRep();
+  document.getElementById('rep-banner').classList.toggle('hidden',!rep);
+  document.getElementById('btn-send-parent').classList.toggle('hidden',!rep);
+  if(rep)document.getElementById('rep-team-name').textContent=rep.name;
+}
+
+function buildMatchCard(match,rIdx,mIdx,src){
+  const card=document.createElement('div');card.className='match-card';
+  const isBye=match.t2===null;
+  const canSel=match.t1&&match.t2&&!isBye&&match.winner===null;
+  if(canSel){
+    const nb=document.createElement('button');nb.textContent='📢';nb.title='NEXT BATTLE 予告';nb.className='text-sm shrink-0';
+    nb.onclick=()=>sendNextBattle(match);card.appendChild(nb);
+    const rb=document.createElement('button');rb.textContent='🛜';rb.title='リモコン';rb.className='text-sm shrink-0';
+    rb.onclick=()=>openRemoteModal(match,rIdx,mIdx,src);card.appendChild(rb);
+  }
+  const mkBtn=(team,wv)=>{
+    const b=document.createElement('button');
+    b.className='team-btn'+(!team?' tbd':match.winner===wv?' winner':match.winner!==null?' loser':'');
+    b.textContent=team?team.name:'TBD';
+    if(canSel)b.onclick=()=>doSetWinner(rIdx,mIdx,wv,src);
+    return b;
+  };
+  card.appendChild(mkBtn(match.t1,1));
+  const vs=document.createElement('span');vs.className='vs-badge';
+  vs.textContent=match.score?match.score:(isBye?'BYE':'VS');
+  card.appendChild(vs);
+  card.appendChild(mkBtn(match.t2,2));
+  if(match.winner!==null&&!isBye){
+    const u=document.createElement('button');u.textContent='↩';u.title='取消';u.className='text-xs text-cyber-pink px-1 shrink-0';
+    u.onclick=()=>{match.winner=null;match.score=null;advanceBracket();saveState();src==='bracket'?renderBracket():renderSemiFinal();};
+    card.appendChild(u);
+  }
+  return card;
+}
+
+function doSetWinner(rIdx,mIdx,wv,src){
+  let match=src==='bracket'?bracketRounds[rIdx][mIdx]:sfMatch;
+  if(!match||match.winner!==null)return;
+  match.winner=wv;advanceBracket();saveState();
+  src==='bracket'?renderBracket():renderSemiFinal();
+}
+
+function advanceBracket(){
+  if(bracketRounds.length>=2){
+    const r1=bracketRounds[0],r2=bracketRounds[1][0];
+    if(r1[0].winner!==null)r2.t1=r1[0].winner===1?r1[0].t1:r1[0].t2;
+    if(r1[1]&&r1[1].winner!==null)r2.t2=r1[1].winner===1?r1[1].t1:r1[1].t2;
+  }
+}
+
+function getBlockRep(){
+  const last=bracketRounds[bracketRounds.length-1];
+  if(!last||!last[0])return null;
+  const f=last[0];
+  if(f.winner===null)return null;
+  return f.winner===1?f.t1:f.t2;
+}
+
+// ── 代表決定戦 ──
+function renderSemiFinal(){
+  const area=document.getElementById('sf-area');area.innerHTML='';
+  if(!sfMatch.t1&&!sfMatch.t2){
+    area.innerHTML='<p class="text-center text-cyber-text opacity-50 text-sm py-8 font-sf">代表戦の相手チームが未設定です<br>親機から対戦相手を受信するか、直接入力してください</p>';
+    renderSfTeamInput(area);
+    return;
+  }
+  const lbl=document.createElement('div');lbl.className='round-label text-cyber-orange';lbl.textContent='代表決定戦';
+  area.appendChild(lbl);
+  area.appendChild(buildMatchCard(sfMatch,0,0,'sf'));
+  const finalist=sfMatch.winner!==null?(sfMatch.winner===1?sfMatch.t1:sfMatch.t2):null;
+  document.getElementById('final-banner').classList.toggle('hidden',!finalist);
+  if(finalist)document.getElementById('final-team-name').textContent=finalist.name;
+}
+
+function renderSfTeamInput(area){
+  const rep=getBlockRep();if(!rep)return;
+  const div=document.createElement('div');
+  div.className='bg-[#0d131f] border border-cyber-table-border rounded-lg p-4 mt-3';
+  div.innerHTML=`<p class="font-sf text-cyber-orange text-sm mb-3">対戦相手チームを入力</p>
+    <p class="text-xs text-cyber-text opacity-70 mb-1">自分のブロック代表: <span class="text-cyber-green font-bold">${e(rep.name)}</span></p>
+    <input id="sf-opp-input" type="text" placeholder="相手チーム名" class="w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-text outline-none font-sf text-sm mb-3 focus:border-cyber-green">
+    <button onclick="setSfOpponent()" class="w-full bg-cyber-orange text-cyber-bg py-2 rounded font-bold font-sf text-sm active:scale-95">⚔️ 対戦設定</button>`;
+  area.appendChild(div);
+}
+
+function setSfOpponent(){
+  const inp=document.getElementById('sf-opp-input');if(!inp)return;
+  const name=inp.value.trim();if(!name)return showAlert('チーム名を入力してください');
+  const rep=getBlockRep();if(!rep)return showAlert('先にブロック代表を決定してください');
+  sfMatch={t1:rep,t2:{name,members:[],beyblades:[]},winner:null,score:null};
+  isSfMode=true;saveState();renderSemiFinal();
+}
+
+// ── リモコン（チーム戦：2P先取・勝ち抜き・3勝先取） ──
+function openRemoteModal(match,rIdx,mIdx,src){
+  currentMatchRef={match,rIdx,mIdx,src};
+  isRemoteSwapped=false;
+  remoteScoreLeft=0;remoteScoreRight=0;
+  teamWinsLeft=0;teamWinsRight=0;
+  currentMemberLeft=0;currentMemberRight=0;
+  updateRemoteUI();
+  if(hudConn?.open){
+    const lt=match.t1,rt=match.t2;
+    hudConn.send({type:'SET_MATCH',
+      p1:lt?.name||'?',p2:rt?.name||'?',
+      tName:tournamentName+' '+stadium+'BLOCK 第'+part+'部',
+      p1Stats:null,p2Stats:null});
+  }
+  document.getElementById('remoteModal').classList.remove('hidden');
+  document.getElementById('remoteModal').classList.add('flex');
+}
+function closeRemoteModal(){
+  document.getElementById('remoteModal').classList.add('hidden');
+  document.getElementById('remoteModal').classList.remove('flex');
+  currentMatchRef=null;
+}
+
+function updateRemoteUI(){
+  if(!currentMatchRef)return;
+  const m=currentMatchRef.match;
+  const lt=isRemoteSwapped?m.t2:m.t1;
+  const rt=isRemoteSwapped?m.t1:m.t2;
+
+  // チーム名
+  document.getElementById('rm-left-name').textContent=lt?.name||'?';
+  document.getElementById('rm-right-name').textContent=rt?.name||'?';
+
+  // 現在の1対戦スコア
+  document.getElementById('rm-score-left').textContent=remoteScoreLeft;
+  document.getElementById('rm-score-right').textContent=remoteScoreRight;
+
+  // 現在出場メンバー名
+  const lMember=lt?.members?.[currentMemberLeft]||MEMBER_LABELS[currentMemberLeft];
+  const rMember=rt?.members?.[currentMemberRight]||MEMBER_LABELS[currentMemberRight];
+  document.getElementById('rm-member-left').textContent=MEMBER_LABELS[currentMemberLeft]+'：'+lMember;
+  document.getElementById('rm-member-right').textContent=MEMBER_LABELS[currentMemberRight]+'：'+rMember;
+
+  // チーム勝利数ドット
+  renderWinDots('rm-dots-left', teamWinsLeft, '#0ea5e9');
+  renderWinDots('rm-dots-right', teamWinsRight, '#ec4899');
+  document.getElementById('rm-team-score-display').textContent=teamWinsLeft+' - '+teamWinsRight;
+
+  // 次の選手予告
+  updateNextInfo(lt, rt);
+
+  // WIN ボタンラベル
+  document.getElementById('rm-win-left').textContent=(lMember||'左')+' WIN →';
+  document.getElementById('rm-win-right').textContent=(rMember||'右')+' WIN →';
+
+  // ベイブレードボタン
+  renderBeyBtns(lt,'rm-bey-left','P1','border-cyber-blue text-cyber-blue');
+  renderBeyBtns(rt,'rm-bey-right','P2','border-cyber-pink text-cyber-pink');
+}
+
+function renderWinDots(containerId, wins, color){
+  const c=document.getElementById(containerId);
+  if(!c)return;
+  c.innerHTML='';
+  for(let i=0;i<TEAM_WIN_COUNT;i++){
+    const dot=document.createElement('div');
+    dot.style.cssText=`width:22px;height:22px;border-radius:50%;border:2px solid ${color};`+
+      (i<wins?`background:${color};box-shadow:0 0 6px ${color};`:'background:transparent;');
+    c.appendChild(dot);
+  }
+}
+
+function updateNextInfo(lt, rt){
+  const el=document.getElementById('rm-next-info');
+  if(!el)return;
+  // 次に出てくる選手を計算
+  const nextL=currentMemberLeft+1;
+  const nextR=currentMemberRight+1;
+  if(nextL<3||nextR<3){
+    const nextLName=lt?.members?.[nextL]||MEMBER_LABELS[Math.min(nextL,2)];
+    const nextRName=rt?.members?.[nextR]||MEMBER_LABELS[Math.min(nextR,2)];
+    const nextLabel=nextL<3?MEMBER_LABELS[nextL]:'（終了）';
+    const nextLLabel=nextL<3?(lt?.members?.[nextL]?MEMBER_LABELS[nextL]+'：'+nextLName:MEMBER_LABELS[nextL]):'終了';
+    const nextRLabel=nextR<3?(rt?.members?.[nextR]?MEMBER_LABELS[nextR]+'：'+nextRName:MEMBER_LABELS[nextR]):'終了';
+    el.textContent='次の対戦（勝者が残る）→ '+nextLLabel+' vs '+nextRLabel;
+  }else{
+    el.textContent='最終戦（大将）';
+  }
+}
+
+function renderBeyBtns(team,cid,pk,cls){
+  const c=document.getElementById(cid);c.innerHTML='';
+  if(team?.beyblades?.length>0){
+    team.beyblades.forEach((b,i)=>{
+      if(!b.name)return;
+      const btn=document.createElement('button');
+      btn.textContent=(i+1)+'. '+b.name;
+      btn.className='py-1.5 px-2 bg-[#0a0e17] border '+cls+' font-sf text-xs rounded active:opacity-60 truncate text-left';
+      btn.onclick=()=>{if(hudConn?.open)hudConn.send({type:'SET_BEYBLADE',data:{player:pk,beyblade:b.name,timestamp:Date.now()}});};
+      c.appendChild(btn);
+    });
+  }else{c.innerHTML='<p class="text-gray-600 text-xs font-sf">登録なし</p>';}
+}
+
+function handleRemoteSwap(){
+  isRemoteSwapped=!isRemoteSwapped;
+  // スコアも入れ替え
+  let t=remoteScoreLeft;remoteScoreLeft=remoteScoreRight;remoteScoreRight=t;
+  t=teamWinsLeft;teamWinsLeft=teamWinsRight;teamWinsRight=t;
+  t=currentMemberLeft;currentMemberLeft=currentMemberRight;currentMemberRight=t;
+  updateRemoteUI();sendRemoteCmd('SYS_SWAP');
+}
+
+function sendScore(side,cmd,pts){
+  sendRemoteCmd(cmd);
+  if(pts<0){
+    if(side==='left')remoteScoreLeft=Math.max(0,remoteScoreLeft+pts);
+    else remoteScoreRight=Math.max(0,remoteScoreRight+pts);
+  }else{
+    if(side==='left')remoteScoreLeft=Math.min(9,remoteScoreLeft+pts);
+    else remoteScoreRight=Math.min(9,remoteScoreRight+pts);
+  }
+  // 2p先取判定：自動で1対戦の勝者を記録
+  if(remoteScoreLeft>=BATTLE_WIN_SCORE){
+    recordBattleWin('left');return;
+  }
+  if(remoteScoreRight>=BATTLE_WIN_SCORE){
+    recordBattleWin('right');return;
+  }
+  updateRemoteUI();
+}
+
+function resetCurrentBattle(){
+  // 現在の1対戦スコアをリセット（チーム勝利数はそのまま）
+  remoteScoreLeft=0;remoteScoreRight=0;
+  sendRemoteCmd('SYS_RESET');
+  updateRemoteUI();
+}
+
+// ★ 1対戦の勝者を記録し、次の選手へ進む or チーム勝利確定
+function recordBattleWin(side){
+  if(!currentMatchRef)return;
+  // 実際の勝ち側（SWAP考慮）
+  const actualSide=isRemoteSwapped?(side==='left'?'right':'left'):side;
+
+  if(actualSide==='left'){
+    teamWinsLeft++;
+    // 勝者は残る → 敗者側メンバーが次鋒/大将へ
+    currentMemberRight=Math.min(currentMemberRight+1,2);
+  }else{
+    teamWinsRight++;
+    currentMemberLeft=Math.min(currentMemberLeft+1,2);
+  }
+
+  // 1対戦スコアをリセット
+  remoteScoreLeft=0;remoteScoreRight=0;
+  sendRemoteCmd('SYS_RESET');
+
+  // 3勝先取チェック
+  if(teamWinsLeft>=TEAM_WIN_COUNT||teamWinsRight>=TEAM_WIN_COUNT){
+    // チーム戦確定
+    finalizeTeamMatch();
+    return;
+  }
+
+  // 次の1対戦：HUDに次のメンバーをSET_MATCH送信
+  if(hudConn?.open){
+    const m=currentMatchRef.match;
+    const lt=isRemoteSwapped?m.t2:m.t1;
+    const rt=isRemoteSwapped?m.t1:m.t2;
+    const lMember=lt?.members?.[currentMemberLeft]||MEMBER_LABELS[currentMemberLeft];
+    const rMember=rt?.members?.[currentMemberRight]||MEMBER_LABELS[currentMemberRight];
+    hudConn.send({type:'SET_MATCH',
+      p1:lMember,p2:rMember,
+      tName:(lt?.name||'?')+' vs '+(rt?.name||'?'),
+      p1Stats:null,p2Stats:null});
+  }
+  updateRemoteUI();
+}
+
+// ★ チーム勝利確定 → 試合結果を記録してモーダルを閉じる
+function finalizeTeamMatch(){
+  if(!currentMatchRef)return;
+  const m=currentMatchRef.match;
+  const actualLeft=isRemoteSwapped?m.t2:m.t1;
+  const actualRight=isRemoteSwapped?m.t1:m.t2;
+  // チーム勝者
+  const teamWinnerIsLeft=teamWinsLeft>=TEAM_WIN_COUNT;
+  const wv=(teamWinnerIsLeft)
+    ?(isRemoteSwapped?2:1)
+    :(isRemoteSwapped?1:2);
+  m.winner=wv;
+  m.score=teamWinsLeft+'-'+teamWinsRight;
+  advanceBracket();saveState();
+  const src=currentMatchRef.src;
+  closeRemoteModal();
+  src==='bracket'?renderBracket():renderSemiFinal();
+}
+
+// 旧setRemoteWinner（後方互換のため残す → finalizeTeamMatchに委譲）
+function setRemoteWinner(side){ recordBattleWin(side); }
+function sendNextBattle(match){
+  if(!hudConn?.open)return;
+  hudConn.send({type:'SHOW_PREVIEW',p1:match.t1?.name||'?',p2:match.t2?.name||'?',label:stadium+' BLOCK - 第'+part+'部',showLogo:false});
+}
+function sendRemoteCmd(cmd){if(hudConn?.open)hudConn.send({type:'REMOTE_CMD',cmd});}
+
+// ── TV出力 ──
+function toggleTvMode(){
+  if(!hudConn?.open)return showAlert('HUDとリンクされていません');
+  hudConn.send({type:'SHOW_OVERLAY',html:buildTvHtml()});
+}
+function buildTvHtml(){
+  const C={bg:'#0a0e17',card:'#0d131f',border:'#1e293b',blue:'#0ea5e9',pink:'#ec4899',green:'#22c55e',yellow:'#facc15',text:'#e2e8f0',muted:'#64748b'};
+  const row=m=>{
+    if(!m.t1)return'';
+    const t1n=m.t1?.name||'TBD',t2n=m.t2?.name||'TBD';
+    let c1=C.text,c2=C.text;
+    if(m.winner===1){c1=C.blue;c2=C.muted;}if(m.winner===2){c1=C.muted;c2=C.pink;}
+    const mid=m.score?`<span style="color:${C.yellow};font-size:11px;font-family:Orbitron,sans-serif">${m.score}</span>`:`<span style="color:${C.muted};font-size:9px;font-family:Orbitron,sans-serif">VS</span>`;
+    return`<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin:2px 6px;background:rgba(0,0,0,.3);border-radius:5px;border:1px solid ${C.border}"><span style="flex:1;text-align:right;color:${c1};font-family:'Chakra Petch',sans-serif;font-style:italic;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t1n}</span>${mid}<span style="flex:1;text-align:left;color:${c2};font-family:'Chakra Petch',sans-serif;font-style:italic;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t2n}</span></div>`;
+  };
+  let inner='';
+  bracketRounds.forEach((round,ri)=>{
+    const lbl=ri===bracketRounds.length-1?'BLOCK FINAL':'ROUND '+(ri+1);
+    const col=ri===bracketRounds.length-1?C.pink:C.green;
+    inner+=`<div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;padding:6px 10px 2px;color:${col}">${lbl}</div>`;
+    round.forEach(m=>{inner+=row(m);});
+  });
+  return`<style>@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');*{box-sizing:border-box}</style>
+<div style="background:${C.bg};min-height:100vh;padding:10px;font-family:'Chakra Petch',sans-serif;color:${C.text}">
+  <div style="font-family:Orbitron,sans-serif;font-size:13px;color:${C.blue};text-align:center;letter-spacing:3px;margin-bottom:8px;text-shadow:0 0 8px ${C.blue}">${tournamentName} ${stadium}BLOCK 第${part}部</div>
+  <div style="border:1px solid ${C.blue};border-radius:8px;overflow:hidden;background:${C.card}">
+    <div style="background:rgba(14,165,233,.15);border-bottom:1px solid ${C.blue};text-align:center;padding:6px;font-family:Orbitron,sans-serif;font-size:13px;font-weight:900;color:${C.blue};letter-spacing:3px">${stadium} BLOCK</div>
+    ${inner}<div style="height:6px"></div>
+  </div>
+</div>`;
+}
+
+// ── 親機送信 ──
+function openSendParentModal(){
+  const rep=getBlockRep();
+  const finalist=isSfMode&&sfMatch.winner?(sfMatch.winner===1?sfMatch.t1:sfMatch.t2):null;
+  const team=finalist||rep;
+  if(!team)return showAlert('送信できる代表チームがありません');
+  document.getElementById('send-content-preview').textContent=
+    stadium+'ブロック 第'+part+'部\n代表: '+team.name+'\nメンバー: '+(team.members.filter(Boolean).join(' / ')||'未登録');
+  document.getElementById('sendParentModal').classList.remove('hidden');
+  document.getElementById('sendParentModal').classList.add('flex');
+}
+function closeSendParentModal(){
+  document.getElementById('sendParentModal').classList.add('hidden');
+  document.getElementById('sendParentModal').classList.remove('flex');
+}
+function executeSendToParent(){
+  if(!parentConn?.open){closeSendParentModal();return showAlert('親機とリンクされていません\n右上のPARENT欄でコードを入力して接続してください');}
+  const rep=getBlockRep();
+  const finalist=isSfMode&&sfMatch.winner?(sfMatch.winner===1?sfMatch.t1:sfMatch.t2):null;
+  const team=finalist||rep;
+  if(!team){closeSendParentModal();return showAlert('送信できる代表チームがありません');}
+  const payload={
+    type:'BLOCK_RESULT',stadium,part,tournamentName,
+    representative:{name:team.name,members:team.members,beyblades:team.beyblades},
+    bracketRounds:bracketRounds.map(r=>r.map(m=>({t1:m.t1?.name||null,t2:m.t2?.name||null,winner:m.winner,score:m.score}))),
+    sfResult:sfMatch.winner!==null?{t1:sfMatch.t1?.name||null,t2:sfMatch.t2?.name||null,winner:sfMatch.winner,score:sfMatch.score}:null,
+    timestamp:Date.now()
+  };
+  parentConn.send(payload);
+  closeSendParentModal();
+  showAlert('📡 送信完了!\n'+stadium+'ブロック 第'+part+'部\n代表: '+team.name);
+}
+
+// ── PeerJS HUD ──
+function initHudPeer(){
+  if(hudPeer&&!hudPeer.destroyed){try{hudPeer.destroy();}catch(e){}}
+  if(_hudRetry){clearTimeout(_hudRetry);_hudRetry=null;}
+  hudPeer=new Peer({debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}});
+  hudPeer.on('open',()=>console.log('HUD ready'));
+  hudPeer.on('disconnected',()=>{if(!hudPeer.destroyed)_hudRetry=setTimeout(()=>{try{hudPeer.reconnect();}catch(e){initHudPeer();}},5000);});
+  hudPeer.on('error',err=>{setHudDot(false);if(err.type==='network'||err.type==='server-error')_hudRetry=setTimeout(initHudPeer,5000);});
+}
+function connectHud(){
+  if(hudConn?.open){try{hudConn.close();}catch(e){}setHudDot(false);document.getElementById('btn-hud-connect').innerText='CONN';return;}
+  const code=document.getElementById('hudCodeInput').value.trim();
+  if(!code||code.length!==4)return showAlert('score_pc.htmlのLINK CODEを入力してください（4桁）');
+  document.getElementById('btn-hud-connect').innerText='WAIT...';
+  if(!hudPeer||hudPeer.destroyed)initHudPeer();
+  if(hudConn){try{hudConn.close();}catch(e){}}
+  hudConn=hudPeer.connect('itabashi-link-'+code,{reliable:true,serialization:'json'});
+  hudConn.on('open',()=>{setHudDot(true);document.getElementById('btn-hud-connect').innerText='DISCONN';});
+  hudConn.on('close',()=>{setHudDot(false);hudConn=null;document.getElementById('btn-hud-connect').innerText='CONN';});
+  hudConn.on('error',()=>{setHudDot(false);hudConn=null;document.getElementById('btn-hud-connect').innerText='CONN';});
+}
+function forceResetHud(){if(hudConn){try{hudConn.close();}catch(e){}hudConn=null;}setHudDot(false);document.getElementById('btn-hud-connect').innerText='CONN';}
+function setHudDot(ok){document.getElementById('hud-dot').className=ok?'w-2.5 h-2.5 rounded-full bg-cyber-green shadow-[0_0_6px_#22c55e]':'w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]';}
+
+// ── PeerJS 親機 ──
+function initParentPeer(){
+  if(parentPeer&&!parentPeer.destroyed){try{parentPeer.destroy();}catch(e){}}
+  if(_parentRetry){clearTimeout(_parentRetry);_parentRetry=null;}
+  parentPeer=new Peer({debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}});
+  parentPeer.on('open',()=>console.log('Parent peer ready'));
+  parentPeer.on('disconnected',()=>{if(!parentPeer.destroyed)_parentRetry=setTimeout(()=>{try{parentPeer.reconnect();}catch(e){initParentPeer();}},5000);});
+  parentPeer.on('error',err=>{setParentDot(false);if(err.type==='network'||err.type==='server-error')_parentRetry=setTimeout(initParentPeer,5000);});
+}
+function connectParent(){
+  if(parentConn?.open){try{parentConn.close();}catch(e){}setParentDot(false);document.getElementById('btn-parent-connect').innerText='CONN';return;}
+  const code=document.getElementById('parentCodeInput').value.trim();
+  if(!code||code.length!==4)return showAlert('親機（tournament.html）のコードを入力してください（4桁）');
+  document.getElementById('btn-parent-connect').innerText='WAIT...';
+  if(!parentPeer||parentPeer.destroyed)initParentPeer();
+  if(parentConn){try{parentConn.close();}catch(e){}}
+  parentConn=parentPeer.connect('itabashi-parent-'+code,{reliable:true,serialization:'json'});
+  parentConn.on('open',()=>{setParentDot(true);document.getElementById('btn-parent-connect').innerText='DISCONN';});
+  parentConn.on('data',data=>handleParentData(data));
+  parentConn.on('close',()=>{setParentDot(false);parentConn=null;document.getElementById('btn-parent-connect').innerText='CONN';});
+  parentConn.on('error',()=>{setParentDot(false);parentConn=null;document.getElementById('btn-parent-connect').innerText='CONN';});
+}
+function forceResetParent(){if(parentConn){try{parentConn.close();}catch(e){}parentConn=null;}setParentDot(false);document.getElementById('btn-parent-connect').innerText='CONN';}
+function setParentDot(ok){document.getElementById('parent-dot').className=ok?'w-2.5 h-2.5 rounded-full bg-cyber-orange shadow-[0_0_6px_#ffaa00]':'w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]';}
+
+function handleParentData(data){
+  if(!data||!data.type)return;
+
+  // ── パターンA: 大会開始前に親機が一括送信 ──
+  // スタジアム設定 + チーム登録 + トーナメント開始を自動実行
+  if(data.type==='BLOCK_INIT'){
+    if(data.stadium&&data.part){
+      // スタジアム・部・大会名を自動セット
+      selectStadium(data.stadium);
+      selectPart(data.part);
+      if(data.tournamentName){
+        tournamentName=data.tournamentName;
+        document.getElementById('tournament-name-input').value=tournamentName;
+      }
+      // チーム登録
+      if(Array.isArray(data.teams)&&data.teams.length>=2){
+        teams=(data.teams).map((t,i)=>({
+          id:tidCounter++,
+          name:t.name||'チーム'+(i+1),
+          members:t.members||['','',''],
+          beyblades:t.beyblades||[]
+        }));
+        renderTeamList();
+        // 設定タブに表示してからトーナメント自動開始
+        switchTab('setup');
+        showAlert('📥 親機からデータを受信しました\n\nスタジアム：'+data.stadium+' 第'+data.part+'部\nチーム数：'+teams.length+'\n\n▶ トーナメント開始ボタンを押してください')
+          .then(()=>{
+            // 確認後にトーナメントを自動開始
+            startTournamentSilent();
+          });
+      }else{
+        showAlert('📥 BLOCK_INITを受信しましたが\nチームデータが不足しています');
+      }
+    }
+    return;
+  }
+
+  // ── 旧PUSH_TEAMS（後方互換） ──
+  if(data.type==='PUSH_TEAMS'){
+    if(data.stadium!==stadium||data.part!==part)return;
+    teams=(data.teams||[]).map((t,i)=>({id:tidCounter++,name:t.name||'チーム'+(i+1),members:t.members||['','',''],beyblades:t.beyblades||[]}));
+    renderTeamList();showAlert('📥 親機からチームリストを受信\n'+teams.length+'チーム');
+  }
+  if(data.type==='SET_SF_OPPONENT'){
+    if(data.stadium!==stadium||data.part!==part)return;
+    const rep=getBlockRep();if(!rep)return showAlert('先にブロック代表を決定してください');
+    sfMatch={t1:rep,t2:{name:data.opponent,members:data.members||[],beyblades:data.beyblades||[]},winner:null,score:null};
+    isSfMode=true;saveState();
+    document.getElementById('tab-semifinal').classList.remove('hidden');
+    showAlert('📥 代表戦の相手: '+data.opponent+'\n「代表決定戦」タブへ進んでください');
+  }
+  if(data.type==='PATCH_MATCH'){
+    if(data.stadium!==stadium||data.part!==part)return;
+    const{rIdx,mIdx,winner,score}=data;
+    if(bracketRounds[rIdx]&&bracketRounds[rIdx][mIdx]){
+      bracketRounds[rIdx][mIdx].winner=winner;bracketRounds[rIdx][mIdx].score=score;
+      advanceBracket();saveState();
+      if(!document.getElementById('view-bracket').classList.contains('hidden'))renderBracket();
+    }
+  }
+}
+
+// BLOCK_INITで呼ばれるサイレント起動版（確認ダイアログを出さない）
+function startTournamentSilent(){
+  if(!stadium||!part)return;
+  if(teams.length<2)return;
+  const tms=[...teams];
+  bracketRounds=[];
+  isTournamentStarted=true;
+  if(tms.length===4){
+    bracketRounds=[
+      [{t1:tms[0],t2:tms[3],winner:null,score:null},{t1:tms[1],t2:tms[2],winner:null,score:null}],
+      [{t1:null,t2:null,winner:null,score:null}]
+    ];
+  }else if(tms.length===3){
+    bracketRounds=[
+      [{t1:tms[0],t2:tms[1],winner:null,score:null},{t1:tms[2],t2:null,winner:1,score:'BYE'}],
+      [{t1:null,t2:null,winner:null,score:null}]
+    ];
+    advanceBracket();
+  }else if(tms.length===2){
+    bracketRounds=[[{t1:tms[0],t2:tms[1],winner:null,score:null}]];
+  }else{
+    // 8チーム等
+    bracketRounds=[[
+      {t1:tms[0],t2:tms[7]||null,winner:null,score:null},
+      {t1:tms[1],t2:tms[6]||null,winner:null,score:null},
+      {t1:tms[2],t2:tms[5]||null,winner:null,score:null},
+      {t1:tms[3],t2:tms[4]||null,winner:null,score:null}
+    ],[
+      {t1:null,t2:null,winner:null,score:null},
+      {t1:null,t2:null,winner:null,score:null}
+    ],[
+      {t1:null,t2:null,winner:null,score:null}
+    ]];
+  }
+  saveState();
+  document.getElementById('bracket-title').textContent=stadium+' BLOCK';
+  document.getElementById('bracket-sub').textContent='第'+part+'部 予選';
+  document.getElementById('sf-title').textContent=stadium+' BLOCK 代表決定戦';
+  document.getElementById('sf-sub').textContent='第'+part+'部';
+  switchTab('bracket');
+  document.getElementById('tab-bracket').classList.remove('hidden');
+}
+
+// ── Save / Load ──
+function saveState(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({stadium,part,tournamentName,teams,tidCounter,bracketRounds,isTournamentStarted,sfMatch,isSfMode}));}
+  catch(e){console.warn('save error',e);}
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
+    const s=JSON.parse(raw);if(!s.isTournamentStarted)return false;
+    stadium=s.stadium;part=s.part;tournamentName=s.tournamentName||'';
+    teams=s.teams||[];tidCounter=s.tidCounter||1;
+    bracketRounds=s.bracketRounds||[];isTournamentStarted=s.isTournamentStarted;
+    sfMatch=s.sfMatch||{t1:null,t2:null,winner:null,score:null};isSfMode=s.isSfMode||false;
+    return true;
+  }catch(e){return false;}
+}
+function resumeFromSave(){
+  document.getElementById('resume-banner').classList.add('hidden');
+  if(stadium)selectStadium(stadium);if(part)selectPart(part);
+  if(tournamentName)document.getElementById('tournament-name-input').value=tournamentName;
+  renderTeamList();
+  document.getElementById('bracket-title').textContent=stadium+' BLOCK';
+  document.getElementById('bracket-sub').textContent='第'+part+'部 予選';
+  document.getElementById('sf-title').textContent=stadium+' BLOCK 代表決定戦';
+  document.getElementById('sf-sub').textContent='第'+part+'部';
+  switchTab('bracket');document.getElementById('tab-bracket').classList.remove('hidden');
+  if(isSfMode)document.getElementById('tab-semifinal').classList.remove('hidden');
+}
+async function clearSave(){
+  if(!await showConfirm('データを全て消去して新規開始しますか？'))return;
+  localStorage.removeItem(SAVE_KEY);
+  stadium=null;part=null;tournamentName='';teams=[];tidCounter=1;bracketRounds=[];
+  isTournamentStarted=false;sfMatch={t1:null,t2:null,winner:null,score:null};isSfMode=false;
+  ['A','B','C','D'].forEach(s=>{document.getElementById('stbtn-'+s).className='stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95';});
+  [1,2].forEach(p=>{document.getElementById('ptbtn-'+p).className='ptbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95';});
+  document.getElementById('tournament-name-input').value='';
+  document.getElementById('header-stadium').textContent='STADIUM ?';
+  document.getElementById('header-part').textContent='-部';
+  renderTeamList();
+  document.getElementById('tab-bracket').classList.add('hidden');
+  document.getElementById('tab-semifinal').classList.add('hidden');
+  switchTab('setup');
+}
+
+// ── 初期化 ──
+window.addEventListener('DOMContentLoaded',()=>{
+  initHudPeer();initParentPeer();
+  if(loadState()){
+    document.getElementById('resume-banner').classList.remove('hidden');
+    if(stadium)selectStadium(stadium);if(part)selectPart(part);
+    if(tournamentName)document.getElementById('tournament-name-input').value=tournamentName;
+    renderTeamList();
+  }else{renderTeamList();}
+});
+</script>
+</body>
+</html>
