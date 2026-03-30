@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BLOCK MANAGER - 子機</title>
+  <title>トラボCUP — BLOCK 子機</title>
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzA3MWQzMyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzIyYzU1ZSI+QjwvdGV4dD4KPC9zdmc+">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
         <span class="font-sf text-cyber-green text-sm" id="header-stadium">STADIUM ?</span>
         <span class="font-sf text-cyber-text text-xs opacity-60" id="header-part">-部</span>
       </div>
-      <p class="text-[9px] text-cyber-text opacity-50 font-sf">BLOCK MANAGER <span class="text-cyber-green">v1.0</span></p>
+      <p class="text-[9px] text-cyber-text opacity-50 font-sf">トラボCUP BLOCK <span class="text-cyber-green">子機</span></p>
     </div>
     <div class="flex items-center gap-1.5 bg-[#0a0e17] px-2 py-1.5 rounded-lg border border-cyber-table-border">
       <span class="text-[9px] text-cyber-orange font-sf hidden sm:inline">PARENT</span>
@@ -97,6 +97,14 @@
       </div>
     </div>
 
+    <div id="block-master-banner" class="hidden p-4 bg-cyber-dark border-2 border-cyber-orange rounded-lg">
+      <p class="text-cyber-orange font-sf font-bold text-sm mb-1">📡 親機 — BLOCK_MASTER_INIT</p>
+      <p class="text-xs text-cyber-text opacity-80 mb-1" id="block-master-banner-meta"></p>
+      <p class="text-[11px] text-cyber-text mb-3 leading-snug">担当するスタジアム（A〜D）を選んでください。2チーム未満のブロックは選択できません。第1部・第2部は親機が都度送信します。</p>
+      <div class="grid grid-cols-2 gap-2" id="block-master-choices"></div>
+      <button type="button" onclick="dismissBlockMasterPending()" class="mt-3 w-full text-[11px] text-cyber-text opacity-60 border border-cyber-table-border rounded py-2 font-sf active:scale-95">手動設定のみ使う（受信データを破棄）</button>
+    </div>
+
     <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4">
       <h3 class="font-sf text-cyber-green text-sm mb-3">1. スタジアム・部の設定</h3>
       <div class="flex gap-3 mb-3">
@@ -117,7 +125,7 @@
           </div>
         </div>
       </div>
-      <input type="text" id="tournament-name-input" placeholder="大会名 (例: トラボカップ2026)"
+      <input type="text" id="tournament-name-input" placeholder="大会名 (例: トラボCUP@RedBullGamingSphereTokyo)"
         class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text outline-none font-sf text-sm focus:border-cyber-green">
     </div>
 
@@ -368,6 +376,8 @@ const TEAM_WIN_COUNT=3;    // チーム勝利数
 let hudPeer=null,hudConn=null,parentPeer=null,parentConn=null;
 let _hudRetry=null,_parentRetry=null;
 const SAVE_KEY='tbh_block_v1';
+/** @type {null|{type:string,tournamentName?:string,part:number,blocks:Record<string,{teams:any[]}>,parentLocalStadium?:string}} */
+let pendingBlockMaster=null;
 
 // ── ダイアログ ──
 function showAlert(msg){return new Promise(r=>{const m=document.getElementById('custom-alert-modal');document.getElementById('custom-alert-msg').innerText=msg;m.classList.remove('hidden');const b=document.getElementById('custom-alert-ok');const h=()=>{m.classList.add('hidden');b.removeEventListener('click',h);r()};b.addEventListener('click',h)});}
@@ -419,6 +429,73 @@ function updateStartBtn(){
   const ok=stadium&&part&&teams.length>=2;
   b.classList.toggle('opacity-50',!ok);b.classList.toggle('cursor-not-allowed',!ok);
   b.classList.toggle('opacity-100',ok);b.classList.toggle('shadow-[0_0_15px_#22c55e]',ok);
+}
+
+function normalizeMembers3(m){
+  const a=Array.isArray(m)?m:[];
+  return [String(a[0]||''),String(a[1]||''),String(a[2]||'')];
+}
+function renderBlockMasterBanner(){
+  const wrap=document.getElementById('block-master-banner');
+  const meta=document.getElementById('block-master-banner-meta');
+  const host=document.getElementById('block-master-choices');
+  if(!wrap||!meta||!host)return;
+  if(!pendingBlockMaster||!pendingBlockMaster.blocks){
+    wrap.classList.add('hidden');host.innerHTML='';meta.textContent='';return;
+  }
+  wrap.classList.remove('hidden');
+  const tn=(pendingBlockMaster.tournamentName||'').trim()||'（大会名なし）';
+  const pr=pendingBlockMaster.part;
+  meta.textContent=tn+' · 第'+(pr===1||pr===2?pr:'?')+'部';
+  host.innerHTML='';
+  ['A','B','C','D'].forEach((st)=>{
+    const blk=pendingBlockMaster.blocks[st];
+    const arr=(blk&&Array.isArray(blk.teams))?blk.teams:[];
+    const n=arr.length;
+    const ok=n>=2;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='py-3 rounded-lg font-sf font-bold text-sm border active:scale-95 '+
+      (ok?'border-cyber-orange text-cyber-orange bg-cyber-dark hover:bg-cyber-orange/10':'border-cyber-table-border text-gray-500 opacity-50 cursor-not-allowed');
+    btn.textContent='BLOCK '+st+'（'+n+'チーム）';
+    if(ok)btn.onclick=()=>applyBlockMasterStadium(st);
+    host.appendChild(btn);
+  });
+}
+function dismissBlockMasterPending(){
+  pendingBlockMaster=null;
+  renderBlockMasterBanner();
+}
+async function applyBlockMasterStadium(st){
+  if(!pendingBlockMaster||!pendingBlockMaster.blocks)return;
+  const blk=pendingBlockMaster.blocks[st];
+  const raw=blk&&Array.isArray(blk.teams)?blk.teams:[];
+  if(raw.length<2)return showAlert('このブロックは2チーム未満です。\n別のブロックを選ぶか、親機の割当を確認してください。');
+  if(isTournamentStarted){
+    const ok=await showConfirm('進行中のトーナメント・代表戦データを破棄し、\n親の「BLOCK '+st+' · 第'+pendingBlockMaster.part+'部」で上書きしますか？');
+    if(!ok)return;
+  }
+  bracketRounds=[];
+  sfMatch={t1:null,t2:null,winner:null,score:null};
+  isSfMode=false;
+  isTournamentStarted=false;
+  document.getElementById('tab-semifinal').classList.add('hidden');
+  const p=pendingBlockMaster.part;
+  tournamentName=String(pendingBlockMaster.tournamentName||'').trim();
+  document.getElementById('tournament-name-input').value=tournamentName;
+  selectStadium(st);
+  selectPart(p===1||p===2?p:1);
+  teams=raw.map((t,i)=>({
+    id:tidCounter++,
+    name:t&&t.name?String(t.name):'チーム'+(i+1),
+    members:normalizeMembers3(t&&t.members),
+    beyblades:Array.isArray(t&&t.beyblades)?t.beyblades:[]
+  }));
+  pendingBlockMaster=null;
+  renderBlockMasterBanner();
+  renderTeamList();
+  startTournamentSilent();
+  showAlert('BLOCK '+st+' · 第'+part+'部 でトーナメントを開始しました。\n'+teams.length+'チーム');
 }
 
 // ── チーム管理 ──
@@ -914,7 +991,7 @@ function initParentPeer(){
 function connectParent(){
   if(parentConn?.open){try{parentConn.close();}catch(e){}setParentDot(false);document.getElementById('btn-parent-connect').innerText='CONN';return;}
   const code=document.getElementById('parentCodeInput').value.trim();
-  if(!code||code.length!==4)return showAlert('親機（tournament.html）のコードを入力してください（4桁）');
+  if(!code||code.length!==4)return showAlert('親機（tournament_main.html）のコードを入力してください（4桁）');
   document.getElementById('btn-parent-connect').innerText='WAIT...';
   if(!parentPeer||parentPeer.destroyed)initParentPeer();
   if(parentConn){try{parentConn.close();}catch(e){}}
@@ -929,6 +1006,22 @@ function setParentDot(ok){document.getElementById('parent-dot').className=ok?'w-
 
 function handleParentData(data){
   if(!data||!data.type)return;
+
+  if(data.type==='BLOCK_MASTER_INIT'){
+    if(!data.blocks||typeof data.blocks!=='object'){
+      return showAlert('BLOCK_MASTER_INIT の形式が不正です');
+    }
+    pendingBlockMaster={
+      type:'BLOCK_MASTER_INIT',
+      tournamentName:data.tournamentName,
+      part:parseInt(data.part,10)||1,
+      blocks:data.blocks,
+      parentLocalStadium:data.parentLocalStadium
+    };
+    renderBlockMasterBanner();
+    switchTab('setup');
+    return;
+  }
 
   // ── パターンA: 大会開始前に親機が一括送信 ──
   // スタジアム設定 + チーム登録 + トーナメント開始を自動実行
@@ -1063,6 +1156,7 @@ function resumeFromSave(){
 async function clearSave(){
   if(!await showConfirm('データを全て消去して新規開始しますか？'))return;
   localStorage.removeItem(SAVE_KEY);
+  pendingBlockMaster=null;renderBlockMasterBanner();
   stadium=null;part=null;tournamentName='';teams=[];tidCounter=1;bracketRounds=[];
   isTournamentStarted=false;sfMatch={t1:null,t2:null,winner:null,score:null};isSfMode=false;
   ['A','B','C','D'].forEach(s=>{document.getElementById('stbtn-'+s).className='stbtn py-2 rounded font-sf font-bold text-sm border border-cyber-table-border text-cyber-text bg-cyber-dark active:scale-95';});

@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ITABASHI BEYBLADE HUD - Ver.34</title>
+    
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBhMGUxNyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmYWEwMCI+44OZPC90ZXh0Pgo8L3N2Zz4=">
+
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <style>
+        @font-face { font-family: 'DSEG7 Classic'; src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
+
+        :root {
+            --bx-green: #b6ff00; --bx-blue: #00eaff; --bx-orange: #ffaa00;
+            --bx-red-orange: #ff4500; --bx-red: #ff0055;
+            --bx-yellow: #fff000;
+            --safe-left: env(safe-area-inset-left); --safe-right: env(safe-area-inset-right);
+        }
+
+        body { margin: 0; padding: 0; background: #0a0e17; font-family: 'Chakra Petch', sans-serif; overflow: hidden; color: white; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s; touch-action: none; }
+        input, div, .score { font-family: inherit; }
+        
+        body.green-mode { background-color: #00ff00 !important; }
+        body.green-mode #video-container { display: none !important; }
+        
+        #video-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; }
+        #camera-bg, #replay-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
+        #replay-video { z-index: 10; display: none; background: #0a0e17; }
+        .scan-line { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 3px); pointer-events: none; }
+
+        .system-btn { position: fixed; z-index: 80; background: rgba(10,14,23,0.85); color: #0ea5e9; border: 2px solid #0ea5e9; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; cursor: pointer; border-radius: 8px; transition: 0.3s; font-family: 'Orbitron', sans-serif !important; user-select: none; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .system-btn:hover { color: #22c55e; border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.5); }
+        .system-btn:active { background: rgba(14,165,233,0.2); transform: scale(0.95); }
+
+        .btn-reset { top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
+        .btn-reload { top: 20px; left: max(75px, calc(var(--safe-left) + 75px)); color: #ec4899; border-color: #ec4899; box-shadow: 0 0 10px rgba(236,72,153,0.3); }
+        .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
+        .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+
+        .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
+        .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
+        .btn-visibility { bottom: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #a78bfa; border-color: #a78bfa; font-size: 20px; box-shadow: 0 0 10px rgba(167,139,250,0.3); }
+        .btn-visibility.active { background: rgba(167,139,250,0.2); box-shadow: 0 0 15px rgba(167,139,250,0.5); }
+        body.pro-mode .system-btn { display: none !important; }
+
+        #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
+        body.pro-mode #battle-counter-area { top: 15px; }
+        .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 15px rgba(255, 242, 0, 0.6), 2px 2px 0 black; margin-right: 5px; }
+        .battle-label { font-size: 20px; font-weight: 900; color: white; text-shadow: 1px 1px 0 black; }
+        
+        #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 60%; transition: 0.3s; pointer-events: none; }
+        .tournament-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 18px; font-weight: 700; font-style: italic; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 2px black; background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
+
+        .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
+        body.pro-mode .player-wrapper { top: 15px; }
+        #p1-wrapper { left: max(11px, calc(var(--safe-left) + 11px)); align-items: flex-start; }
+        #p2-wrapper { right: max(11px, calc(var(--safe-right) + 11px)); align-items: flex-end; }
+        
+        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: clamp(15px, 2.8vw, 24px); font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: clamp(200px, 30vw, 340px); text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
+        #name2 { text-align: right; }
+        .score { font-family: 'DSEG7 Classic', monospace !important; font-weight: bold !important; font-style: italic !important; font-size: 85px !important; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
+        
+        .stats-row { display: flex; align-items: flex-start; gap: 20px; }
+        #p1-wrapper .stats-row { flex-direction: row-reverse; }
+        .buttons-col { display: flex; flex-direction: column; gap: 5px; }
+        .buttons-stats-col { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
+        
+        .hud-btn { font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-size: 18px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; user-select: none; }
+        .hud-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+        
+        .btn-xtreme { border-color: var(--bx-red); color: var(--bx-red); }
+        .btn-burst { border-color: var(--bx-red-orange); color: var(--bx-red-orange); }
+        .btn-over { border-color: var(--bx-orange); color: var(--bx-orange); }
+        .btn-spin { border-color: var(--bx-blue); color: var(--bx-blue); }
+
+        .active-history { color: black !important; border-color: white !important; text-shadow: none !important; box-shadow: 0 0 15px currentColor; }
+        .btn-xtreme.active-history { background: var(--bx-red) !important; box-shadow: 0 0 15px var(--bx-red); }
+        .btn-burst.active-history { background: var(--bx-red-orange) !important; box-shadow: 0 0 15px var(--bx-red-orange); }
+        .btn-over.active-history { background: var(--bx-orange) !important; box-shadow: 0 0 15px var(--bx-orange); }
+        .btn-spin.active-history { background: var(--bx-blue) !important; box-shadow: 0 0 15px var(--bx-blue); }
+
+        .score-container { display: flex; flex-direction: column; align-items: center; }
+        .player-stats-block { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; width: clamp(65px, 10vw, 110px); }
+        .stat-item { display: flex; align-items: baseline; justify-content: space-between; background: rgba(0, 0, 0, 0.5); padding: 1px 5px; border-bottom: 1px solid rgba(0, 234, 255, 0.3); border-radius: 3px; }
+        .s-label { font-family: 'Orbitron', sans-serif; font-size: clamp(5px, 0.8vw, 8px); color: rgba(0, 234, 255, 0.7); font-weight: 900; letter-spacing: 0.4px; }
+        .s-val { font-family: 'Orbitron', sans-serif; font-size: clamp(10px, 1.6vw, 15px); color: white; font-weight: 900; text-shadow: 0 0 8px var(--bx-blue), 0 0 16px rgba(0, 234, 255, 0.4), 1px 1px 0px black; }
+
+        /* ── ランク表示 ── */
+        .rank-num { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(10px, 1.6vw, 15px); }
+        .rank-f   { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(8px, 1.2vw, 12px); color: #FFFFFF; text-shadow: 0 0 8px rgba(255,255,255,0.8), 1px 1px 0px black; }
+        /* 01F～39F：ピュアホワイト */
+        .rank-white .rank-num { color: #FFFFFF; text-shadow: 0 0 6px rgba(255,255,255,0.6), 1px 1px 0px black; }
+        /* 40F～59F：サイバーブルー */
+        .rank-blue .rank-num  { color: #0EA5E9; text-shadow: 0 0 8px #0EA5E9, 0 0 18px rgba(14,165,233,0.7), 1px 1px 0px black; }
+        /* 60F～79F：マトリックスグリーン */
+        .rank-green .rank-num { color: #00FF41; text-shadow: 0 0 8px #00FF41, 0 0 20px rgba(0,255,65,0.6), 0 0 35px rgba(16,185,129,0.4), 1px 1px 0px black; }
+        /* 80F～89F：ネオンパープル */
+        .rank-purple .rank-num{ color: #A855F7; text-shadow: 0 0 8px #A855F7, 0 0 20px rgba(168,85,247,0.7), 0 0 35px rgba(168,85,247,0.4), 1px 1px 0px black; }
+        /* 90F～99F：クリムゾンレッド */
+        .rank-red .rank-num   { color: #EF4444; text-shadow: 0 0 8px #EF4444, 0 0 20px rgba(239,68,68,0.7), 0 0 35px rgba(239,68,68,0.4), 1px 1px 0px black; }
+        /* XF：シャイニングゴールド */
+        .rank-gold .rank-num  { color: #F59E0B; text-shadow: 0 0 6px #fff, 0 0 12px #FCD34D, 0 0 25px #F59E0B, 0 0 45px #D97706, 0 0 70px rgba(217,119,6,0.5), 2px 2px 0px #000; filter: drop-shadow(0 0 4px #FCD34D); animation: gold-pulse 1.2s infinite alternate ease-in-out; }
+        @keyframes gold-pulse {
+          0%   { text-shadow: 0 0 6px #fff, 0 0 12px #FCD34D, 0 0 25px #F59E0B, 0 0 45px #D97706, 0 0 70px rgba(217,119,6,0.5), 2px 2px 0px #000; }
+          100% { text-shadow: 0 0 10px #fff, 0 0 20px #FCD34D, 0 0 40px #F59E0B, 0 0 70px #D97706, 0 0 100px rgba(217,119,6,0.6), 2px 2px 0px #000; }
+        }
+
+        #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
+        @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
+        .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
+        .win-name { font-size: 15vmin; display: block; line-height: 1; }
+        .win-label { font-size: 15vmin; display: block; margin-top: 0.25em; color: white; text-shadow: 0 0 30px white; line-height: 1; }
+
+        #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
+        #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 100%; text-align: center; opacity: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .effect-finish-style { font-family: 'Orbitron', sans-serif !important; font-size: 18vmin !important; line-height: 1.0; transform: scale(1.1); white-space: pre-wrap; }
+
+        @keyframes xtreme-in {
+            0%   { transform: scale(3.5) rotate(-12deg); opacity: 0; filter: brightness(3) saturate(2); }
+            40%  { transform: scale(0.88) rotate(4deg);  opacity: 1; filter: brightness(1.8) saturate(1.5); }
+            65%  { transform: scale(1.12) rotate(-2deg); }
+            100% { transform: scale(1.05) rotate(0deg);  filter: brightness(1) saturate(1); }
+        }
+        @keyframes xtreme-pulse {
+            0%   { text-shadow: 0 0 10px rgba(255,0,85,0.9), 0 0 30px rgba(255,0,85,0.6), 4px 4px 0 #000; }
+            50%  { text-shadow: 0 0 18px rgba(255,0,85,1), 0 0 50px rgba(255,0,85,0.8), 0 0 80px rgba(255,60,120,0.4), 4px 4px 0 #000; }
+            100% { text-shadow: 0 0 10px rgba(255,0,85,0.9), 0 0 30px rgba(255,0,85,0.6), 4px 4px 0 #000; }
+        }
+        .ef-xtreme {
+            color: #ff2266 !important;
+            text-shadow: 0 0 10px rgba(255,0,85,0.9), 0 0 30px rgba(255,0,85,0.6), 4px 4px 0 #000 !important;
+            animation: xtreme-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, xtreme-pulse 1.2s ease-in-out 0.4s infinite !important;
+        }
+        @keyframes burst-in {
+            0%   { transform: scale(0.1); opacity: 0; filter: brightness(2); }
+            60%  { transform: scale(1.25); opacity: 1; filter: brightness(1.3); }
+            80%  { transform: scale(0.95); }
+            100% { transform: scale(1.1); opacity: 1; filter: brightness(1); }
+        }
+        .ef-burst {
+            color: #ffd700 !important;
+            text-shadow: 0 0 8px rgba(255,215,0,0.8), 0 0 20px rgba(255,170,0,0.4), 4px 4px 0 #000 !important;
+            animation: burst-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+        }
+        @keyframes over-in {
+            0%   { transform: translateX(-40vw) skewX(-15deg) scale(0.8); opacity: 0; }
+            65%  { transform: translateX(3vw) skewX(5deg) scale(1.05); opacity: 1; }
+            100% { transform: translateX(0) skewX(0) scale(1); opacity: 1; }
+        }
+        .ef-over {
+            color: #f97316 !important;
+            text-shadow: 0 0 8px rgba(249,115,22,0.8), 0 0 20px rgba(249,115,22,0.4), 4px 4px 0 #000 !important;
+            animation: over-in 0.3s ease-out forwards !important;
+        }
+        @keyframes spin-in {
+            0%   { transform: scale(0.4) rotate(-180deg); opacity: 0; filter: brightness(1.5); }
+            70%  { transform: scale(1.15) rotate(8deg); opacity: 1; }
+            100% { transform: scale(1.05) rotate(0deg); opacity: 1; filter: brightness(1); }
+        }
+        .ef-spin {
+            color: #0ea5e9 !important;
+            text-shadow: 0 0 8px rgba(14,165,233,0.8), 0 0 20px rgba(14,165,233,0.4), 4px 4px 0 #000 !important;
+            animation: spin-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+        }
+
+        .timer-style { font-family: 'DSEG7 Classic', sans-serif !important; font-size: 40vmin !important; }
+        .interstitial-style { font-family: 'Orbitron', sans-serif !important; font-size: 14vmin !important; line-height: 1.2; color: white !important; text-shadow: 0 0 20px rgba(255,255,255,0.5), 4px 4px 0 black !important; }
+        
+        .ready-set-style { font-family: 'Orbitron', sans-serif !important; font-size: 15vmin !important; font-style: italic; font-weight: 900; color: var(--bx-blue); text-shadow: 0 0 30px var(--bx-blue), 4px 4px 0 black; line-height: 1.2; }
+
+        @keyframes zoomInBounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1); opacity: 1; filter: brightness(1); } }
+        @keyframes slideCutIn { 0% { transform: translateX(-30vw) scale(0.8) skewX(-15deg); opacity: 0; } 70% { transform: translateX(5vw) scale(1.1) skewX(5deg); opacity: 1; } 100% { transform: translateX(0) scale(1) skewX(0); opacity: 1; } }
+        @keyframes explodeShoot { 0% { transform: scale(3) rotate(-5deg); opacity: 0; filter: brightness(2); } 50% { transform: scale(0.9) rotate(2deg); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); } }
+
+        .call-number-style { font-family: 'Orbitron', sans-serif !important; font-size: 55vmin !important; font-style: italic; font-weight: 900; color: white; text-shadow: 0 0 30px var(--bx-blue), 0 0 60px var(--bx-blue), 8px 8px 0 black; line-height: 1; animation: zoomInBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .call-text-go-style { font-family: 'Orbitron', sans-serif !important; font-size: 40vmin !important; font-style: italic; font-weight: 900; color: var(--bx-yellow); text-shadow: 0 0 40px var(--bx-orange), 0 0 80px var(--bx-orange), 8px 8px 0 black; line-height: 1; animation: slideCutIn 0.2s ease-out forwards; }
+        .call-text-shoot-style { font-family: 'Orbitron', sans-serif !important; font-size: 28vmin !important; font-style: italic; font-weight: 900; color: white; text-shadow: 0 0 40px var(--bx-red), 0 0 80px var(--bx-red), 8px 8px 0 black; line-height: 1; white-space: nowrap; animation: explodeShoot 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        #replay-indicator { position: fixed; top: 20px; left: max(20px, calc(var(--safe-left) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 40px; color: var(--bx-red); text-shadow: 0 0 20px var(--bx-red); font-weight: 900; font-style: italic; display: none; letter-spacing: 5px; animation: blink 1s infinite; pointer-events: none; }
+
+        #remote-content-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 999; 
+            background: #0a0e17; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            -webkit-overflow-scrolling: touch; 
+            padding: 0; 
+            font-size: clamp(14px, 3.5vw, 18px);
+            box-sizing: border-box;
+        }
+        #remote-content-overlay.hidden { display: none !important; }
+        #remote-content-overlay * { 
+            pointer-events: none !important; 
+            cursor: default !important; 
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        /* オーバーレイ内のボタンとボーダーを非表示 */
+        #remote-content-overlay button,
+        #remote-content-overlay [onclick],
+        #remote-content-overlay input { 
+            pointer-events: none !important; 
+            cursor: default !important; 
+            display: none !important;
+        }
+        #replay-status { position: fixed; top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); z-index: 100; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--bx-red); color: white; display: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); letter-spacing: 2px; pointer-events: none; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        #link-code-display { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 90; font-family: 'Orbitron', sans-serif; font-size: 14px; color: var(--bx-blue); text-shadow: 0 0 10px var(--bx-blue); font-weight: 900; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--bx-blue); display: flex; align-items: center; gap: 5px; transition: 0.3s; }
+        body.pro-mode #link-code-display { opacity: 0; pointer-events: none; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
+        .status-dot.connected { background-color: var(--bx-green); box-shadow: 0 0 8px var(--bx-green); }
+
+        /* NEXT BATTLE overlay */
+        #next-battle-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 95; background: #0a0e17; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        #next-battle-overlay.hidden { display: none !important; }
+        #next-battle-logo { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; opacity: 0.18; pointer-events: none; z-index: 0; }
+        #next-battle-content { position: relative; z-index: 1; width: 100%; }
+        @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
+        .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
+        #xtreme-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; opacity: 0; border-radius: 0; }
+        @keyframes xtreme-glow {
+            0%   { opacity: 0; box-shadow: inset 0 0 0px transparent; }
+            15%  { opacity: 1; box-shadow: inset 0 0 120px 60px rgba(255,215,0,0.7), inset 0 0 300px 100px rgba(255,0,85,0.4); }
+            50%  { opacity: 0.8; box-shadow: inset 0 0 180px 80px rgba(255,0,85,0.6), inset 0 0 400px 150px rgba(255,215,0,0.3); }
+            100% { opacity: 0; box-shadow: inset 0 0 0px transparent; }
+        }
+        #xtreme-flash.active { animation: xtreme-glow 1.2s ease-out forwards; }
+        .nb-vs-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 3vw, 40px); margin: 2rem 0; }
+        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(26px, 6vw, 90px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
+        .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
+        .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
+        .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
+        
+        
+        /* ベイブレード名の個別表示枠（画面最下部、左右端） */
+        .beyblade-box {
+            position: fixed;
+            bottom: 15px;  /* 最下部に配置 */
+            z-index: 85;   /* 大会名(z-index:70)より上に表示 */
+            background: rgba(0, 0, 0, 0.8);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid;
+            box-shadow: 0 0 12px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: clamp(11px, 1.8vw, 18px);
+            font-weight: 700;
+            font-style: italic;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            max-width: 35vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: none; /* デフォルトは非表示 */
+        }
+        .beyblade-box.p1 {
+            left: max(11px, calc(var(--safe-left) + 11px));
+            border-color: #0ea5e9;
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+        }
+        .beyblade-box.p2 {
+            right: max(11px, calc(var(--safe-right) + 11px));
+            border-color: #ec4899;
+            box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+        }
+        body.pro-mode .beyblade-box {
+            /* 表示はtoggleVisibility()で制御 */
+        }
+    </style>
+</head>
+<body>
+    <!-- XTREME FINISH フラッシュオーバーレイ -->
+    <div id="xtreme-flash"></div>
+
+    <!-- ベイブレード名の個別表示枠 -->
+    <div id="beyblade-box-p1" class="beyblade-box p1"></div>
+    <div id="beyblade-box-p2" class="beyblade-box p2"></div>
+    
+    <!-- Monitor overlay: receives HTML from admin apps via PeerJS -->
+    <div id="remote-content-overlay" class="hidden"></div>
+
+    <!-- NEXT BATTLE announcement overlay -->
+    <div id="next-battle-overlay" class="hidden" onclick="hideNextBattle()">
+        <img id="next-battle-logo" src="BEYX_logo_amb.png" alt="Logo" style="display:none;">
+        <div id="next-battle-content">
+            <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vw,80px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.25em;text-align:center;margin-bottom:0.5rem;">NEXT BATTLE</div>
+            <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(11px,1.6vw,20px);color:#94a3b8;letter-spacing:0.3em;text-align:center;margin-bottom:2rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div class="nb-vs-container">
+                <div id="nb-p1" class="nb-player nb-p1"></div>
+                <div class="nb-vs">VS</div>
+                <div id="nb-p2" class="nb-player nb-p2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="video-container">
+        <video id="camera-bg" autoplay playsinline muted></video>
+        <video id="replay-video" playsinline muted preload="auto"></video>
+    </div>
+    
+    <div class="scan-line"></div>
+    <div id="effect-overlay"><div id="effect-text"></div></div>
+    <div id="replay-indicator">● REPLAY</div>
+    <div id="replay-status">▶ 1.0</div>
+    
+    <div id="link-code-display">
+        <div class="status-dot" id="link-dot"></div>
+        <span id="link-text">CONNECTING...</span>
+    </div>
+
+    <div id="main-hud">
+        <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
+        <div id="tournament-title-area"><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
+
+        <div id="p1-wrapper" class="player-wrapper">
+            <input type="text" id="name1" class="name-input" value="BLADER 1">
+            <div class="stats-row">
+                <div class="score-container">
+                    <div id="score1" class="score">0</div>
+                </div>
+                <div class="buttons-stats-col">
+                    <div class="buttons-col">
+                        <div id="p1-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P1_X')">X</div>
+                        <div id="p1-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P1_B')">B</div>
+                        <div id="p1-btn-over" class="hud-btn btn-over" onclick="executeCommand('P1_O')">O</div>
+                        <div id="p1-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P1_S')">S</div>
+                    </div>
+                    <div class="player-stats-block p1-stats-block">
+                        <div class="stat-item"><span class="s-label">RANK</span><span id="p1-val-rank" class="s-val">--</span></div>
+                        <div class="stat-item"><span class="s-label">BP</span><span id="p1-val-bp" class="s-val">----</span></div>
+                        <div class="stat-item"><span class="s-label">WR</span><span id="p1-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="p2-wrapper" class="player-wrapper">
+            <input type="text" id="name2" class="name-input" value="BLADER 2">
+            <div class="stats-row">
+                <div class="score-container">
+                    <div id="score2" class="score">0</div>
+                </div>
+                <div class="buttons-stats-col">
+                    <div class="buttons-col">
+                        <div id="p2-btn-xtreme" class="hud-btn btn-xtreme" onclick="executeCommand('P2_X')">X</div>
+                        <div id="p2-btn-burst" class="hud-btn btn-burst" onclick="executeCommand('P2_B')">B</div>
+                        <div id="p2-btn-over" class="hud-btn btn-over" onclick="executeCommand('P2_O')">O</div>
+                        <div id="p2-btn-spin" class="hud-btn btn-spin" onclick="executeCommand('P2_S')">S</div>
+                    </div>
+                    <div class="player-stats-block p2-stats-block">
+                        <div class="stat-item"><span class="s-label">RANK</span><span id="p2-val-rank" class="s-val">--</span></div>
+                        <div class="stat-item"><span class="s-label">BP</span><span id="p2-val-bp" class="s-val">----</span></div>
+                        <div class="stat-item"><span class="s-label">WR</span><span id="p2-val-wr" class="s-val">--<span style="font-size: 11px;">%</span></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-display"></div>
+
+    <!-- 使用ベイブレード表示欄 -->
+    <div class="system-btn btn-reset" onclick="executeCommand('SYS_RESET')">R</div>
+    <div class="system-btn btn-reload" onclick="location.reload()">RL</div>
+    <div class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</div>
+    <div class="system-btn btn-timer" onclick="executeCommand('TIMER')">T</div>
+    <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
+    <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
+<div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">📝</div>
+<div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
+
+    <script>
+        let s1 = 0, s2 = 0, winScoreLimit = 4, winPointMode = '4', battleCount = 1, timerDuration = 10;
+        let isFinished = false, isCountingDown = false, timerInterval = null;
+        let isReplayMode = false, currentStream = null, mediaRecorder = null;
+        let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
+        
+        let currentScale = parseFloat(localStorage.getItem('tbh_cam_scale')) || 1;
+        let currentTranslateX = parseFloat(localStorage.getItem('tbh_cam_tx')) || 0;
+        let currentTranslateY = parseFloat(localStorage.getItem('tbh_cam_ty')) || 0;
+        let currentRotation = parseInt(localStorage.getItem('tbh_cam_rot')) || 0;
+        let startDist = 0, initialScale = 1, startX = 0, startY = 0, initialTX = 0, initialTY = 0;
+
+        let zeroCount = 0, zeroTimeout = null, isCalling = false, callTimeout = null, readySetReq = null;
+        let isStatsVisible = true; // 戦績・ベイブレード名の表示状態（初期：表示あり）
+
+        const camVideo = document.getElementById('camera-bg');
+        const replayVideo = document.getElementById('replay-video');
+        const replayLabel = document.getElementById('replay-indicator');
+        const replayStatus = document.getElementById('replay-status');
+        const hud = document.getElementById('main-hud');
+
+        const tName1 = document.getElementById('tournament-name-1');
+        // v2キーを使用して古いlocalStorageデータを無効化
+        if (localStorage.getItem('tbh_t1_v2')) {
+            tName1.value = localStorage.getItem('tbh_t1_v2');
+        }
+        tName1.addEventListener('input', () => localStorage.setItem('tbh_t1_v2', tName1.value));
+
+        function applyTransforms() {
+            const transformStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+            camVideo.style.transform = transformStr; replayVideo.style.transform = transformStr;
+            localStorage.setItem('tbh_cam_scale', currentScale); localStorage.setItem('tbh_cam_tx', currentTranslateX);
+            localStorage.setItem('tbh_cam_ty', currentTranslateY); localStorage.setItem('tbh_cam_rot', currentRotation);
+        }
+        applyTransforms();
+
+        document.body.addEventListener('touchstart', e => {
+            if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
+            if (e.touches.length === 2) { startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = currentScale; }
+            else if (e.touches.length === 1) { startX = e.touches[0].pageX; startY = e.touches[0].pageY; initialTX = currentTranslateX; initialTY = currentTranslateY; }
+        }, { passive: false });
+
+        document.body.addEventListener('touchmove', e => {
+            if (e.target.closest('.system-btn') || e.target.closest('.hud-btn') || e.target.tagName === 'INPUT') return;
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                currentScale = Math.min(Math.max(initialScale * (Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY) / startDist), 1), 5);
+                applyTransforms();
+            } else if (e.touches.length === 1 && currentScale > 1) {
+                currentTranslateX = initialTX + (e.touches[0].pageX - startX) / currentScale;
+                currentTranslateY = initialTY + (e.touches[0].pageY - startY) / currentScale;
+                applyTransforms();
+            }
+        }, { passive: false });
+
+        async function initMedia(withMic = false) {
+            if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }, audio: withMic });
+                camVideo.srcObject = currentStream; camVideo.muted = !withMic; startBuffering(currentStream);
+            } catch (err) { console.error(err); }
+        }
+
+        function startBuffering(stream) {
+            if (mediaRecorder) try { mediaRecorder.stop(); } catch(e){}
+            const mime = MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' : 'video/mp4';
+            mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+            mediaRecorder.start(1000); 
+            setInterval(() => { if (!isReplayMode && chunks.length > 20) { mediaRecorder.stop(); setTimeout(() => { chunks = []; mediaRecorder.start(1000); }, 10); } }, 20000);
+        }
+
+        function updateStatusMsg(msg, duration = 0) {
+            clearTimeout(statusMsgTimeout); replayStatus.innerText = msg; replayStatus.style.display = 'block';
+            if (duration > 0) statusMsgTimeout = setTimeout(() => { replayStatus.innerText = replayVideo.paused ? "‖ STOP" : "▶ " + replayVideo.playbackRate.toFixed(1); }, duration);
+        }
+
+        async function toggleReplayMode() {
+            if (!isReplayMode) {
+                isReplayMode = true; const blob = new Blob(chunks, { type: 'video/mp4' });
+                replayVideo.src = URL.createObjectURL(blob);
+                replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block'; hud.style.display = 'none';
+                // リプレイ中はベイブレード名を非表示
+                document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
+                updateStatusMsg("▶ 1.0"); replayVideo.load();
+                replayVideo.oncanplay = () => { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); };
+            } else {
+                isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none'; hud.style.display = 'block';
+                // リプレイ終了後、👁️ONかつベイ名があれば再表示
+                if (isStatsVisible) {
+                    document.querySelectorAll('.beyblade-box').forEach(b => {
+                        if (b.textContent.trim()) b.style.display = 'block';
+                    });
+                }
+            }
+        }
+
+        function rotateCamera() { blurFocus(); currentRotation = (currentRotation === 0) ? 180 : 0; applyTransforms(); }
+
+        function toggleStatsDisplay() {
+            blurFocus();
+            // 戦績ブロックの表示切替のみ
+            document.querySelectorAll('.player-stats-block').forEach(block => {
+                block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
+            });
+        }
+
+        function toggleVisibility() {
+            blurFocus();
+            isStatsVisible = !isStatsVisible;
+            // 戦績ブロック（RANK / BP / WR）
+            document.querySelectorAll('.player-stats-block').forEach(b => {
+                b.style.display = isStatsVisible ? 'flex' : 'none';
+            });
+            // ベイブレード名ボックス（データがある場合のみ表示）
+            document.querySelectorAll('.beyblade-box').forEach(b => {
+                b.style.display = (isStatsVisible && b.textContent.trim()) ? 'block' : 'none';
+            });
+            const btn = document.getElementById('btn-visibility');
+            if (btn) btn.classList.toggle('active', isStatsVisible);
+        }
+
+        function startCall() {
+            if (isCountingDown || isReplayMode) return;
+            isCalling = true; blurFocus();
+            
+            const o = document.getElementById('effect-overlay');
+            const t = document.getElementById('effect-text'); 
+            
+            t.className = 'ready-set-style';
+            o.style.display = 'flex';
+            
+            let startTime = performance.now();
+            let duration = 2000; 
+            
+            function updateReadySet(now) {
+                let elapsed = now - startTime;
+                let remain = duration - elapsed;
+                if (remain < 0) remain = 0;
+                
+                let widthPct = (remain / duration) * 100;
+                
+                t.innerHTML = `READY SET
+                <div style="width: 80vw; max-width: 800px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid var(--bx-blue); margin: 30px auto 0; border-radius: 10px; overflow: hidden; box-shadow: 0 0 15px rgba(0, 234, 255, 0.3); display: flex; justify-content: flex-end;">
+                    <div style="width: ${widthPct}%; height: 100%; background: var(--bx-blue); box-shadow: 0 0 15px var(--bx-blue);"></div>
+                </div>`;
+                
+                if (remain > 0) {
+                    readySetReq = requestAnimationFrame(updateReadySet);
+                } else {
+                    readySetReq = null;
+                    startMainCall();
+                }
+            }
+            readySetReq = requestAnimationFrame(updateReadySet);
+        }
+
+        function startMainCall() {
+            const sequence = [ 
+                { text: "3", delay: 1000, style: "call-number-style" }, 
+                { text: "2", delay: 1000, style: "call-number-style" }, 
+                { text: "1", delay: 1000, style: "call-number-style" }, 
+                { text: "GO", delay: 600, style: "call-text-go-style" }, 
+                { text: "SHOOT!!", delay: 1000, style: "call-text-shoot-style" } 
+            ];
+            
+            let step = 0;
+            function nextStep() {
+                if (step < sequence.length) {
+                    const current = sequence[step]; 
+                    showOverlayText(current.text, current.style, current.delay);
+                    if (current.text === "SHOOT!!") isCalling = false;
+                    step++; 
+                    callTimeout = setTimeout(nextStep, current.delay);
+                }
+            }
+            nextStep();
+        }
+
+        function cancelCall() {
+            if (readySetReq) { cancelAnimationFrame(readySetReq); readySetReq = null; }
+            if (callTimeout) clearTimeout(callTimeout); 
+            if (effectTimeout) clearTimeout(effectTimeout);
+            callTimeout = null; 
+            isCalling = false; 
+            document.getElementById('effect-overlay').style.display = 'none';
+        }
+
+        function showOverlayText(h, s, d) { 
+            const o = document.getElementById('effect-overlay'), t = document.getElementById('effect-text'); 
+            t.className = ''; void t.offsetWidth; t.className = s; t.innerHTML = h; o.style.display = 'flex'; 
+            if (effectTimeout) clearTimeout(effectTimeout);
+            if (d > 0) effectTimeout = setTimeout(() => o.style.display = 'none', d); 
+        }
+
+        function addScore(p, pts, t) {
+            blurFocus(); if (isFinished || isReplayMode) return;
+            let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
+            showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
+            if (t === 'XTREME') {
+                // XTREME FINISH専用演出：放射状グロウ（点滅なし・安全）
+                const flashEl = document.getElementById('xtreme-flash');
+                flashEl.classList.remove('active');
+                void flashEl.offsetWidth; // reflow でアニメーションリセット
+                flashEl.classList.add('active');
+                setTimeout(() => { flashEl.classList.remove('active'); }, 1200);
+
+                // 画面シェイク効果
+                const mainHud = document.getElementById('main-hud');
+                if (mainHud) {
+                    mainHud.style.animation = 'shake 0.5s ease-in-out';
+                    setTimeout(() => { mainHud.style.animation = ''; }, 500);
+                }
+            }
+            document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
+            
+            // スコア加算（2+モード時は上限なし）
+            if (winPointMode === '2+') {
+                if (p === 1) s1 += pts; 
+                else s2 += pts;
+            } else {
+                if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); 
+                else s2 = Math.min(s2 + pts, winScoreLimit);
+            }
+            
+            document.getElementById('score1').innerText = s1; 
+            document.getElementById('score2').innerText = s2;
+            
+            // 勝利判定（2+モード時は2点に達したら勝利だがカウントは継続表示）
+            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
+            if (s1 >= actualWinLimit || s2 >= actualWinLimit) { 
+                isFinished = true; 
+                setTimeout(() => finishGame(p), 2500); 
+            }
+            else { 
+                setTimeout(() => { 
+                    battleCount++; 
+                    updateBattleCounterDisplay(); 
+                    let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
+                    let nextText = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+                    showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); 
+                }, 2500); 
+            }
+        }
+
+        function resetGame() { 
+            if (isCalling) cancelCall();
+            blurFocus(); 
+            s1 = 0; 
+            s2 = 0; 
+            battleCount = 1; 
+            isFinished = false; 
+            document.getElementById('score1').innerText = 0; 
+            document.getElementById('score2').innerText = 0; 
+            updateBattleCounterDisplay(); 
+            document.getElementById('win-display').classList.remove('show-win'); 
+            document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history')); 
+            clearBeybladeDisplay(); // ★NEW: ベイブレード表示をクリア
+            if (!isReplayMode && mediaRecorder && mediaRecorder.state === "recording") { try { mediaRecorder.stop(); } catch(e){} setTimeout(() => { chunks = []; try { mediaRecorder.start(1000); } catch(e){} }, 50); }
+        }
+
+        function updateBattleCounterDisplay() { 
+            let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
+            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
+            let text = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+            document.getElementById('battle-ordinal').innerText = text; 
+        }
+        function finishGame(p) { const winLabel = document.getElementById('win-display'); const name = document.getElementById('name' + p).value; winLabel.innerHTML = `<span class="win-name">${name}</span><span class="win-label">WIN</span>`; winLabel.classList.add('show-win'); }
+        function toggleWinPoint() { 
+            blurFocus(); 
+            if (winPointMode === '4') {
+                winPointMode = '2';
+                winScoreLimit = 2;
+            } else if (winPointMode === '2') {
+                winPointMode = '2+';
+                winScoreLimit = 99; // 実質無制限だが2点で勝利判定
+            } else {
+                winPointMode = '4';
+                winScoreLimit = 4;
+            }
+            document.getElementById('btn-winpoint').innerText = winPointMode;
+            updateBattleCounterDisplay();
+        }
+        function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
+        function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
+        
+        function toggleTimer() { 
+            blurFocus(); if (isCalling) return; 
+            if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } 
+            else startTimer(); 
+        }
+
+        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; effectTimeout = setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
+        function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
+
+        function formatRate(rateStr) {
+            if (!rateStr) return '--%';
+            return rateStr.replace(/(\.\d+)/, '<span style="font-size: 11px;">$1</span>');
+        }
+
+        function formatRank(rank) {
+            if (!rank || rank === "--" || rank === "-") return "<span class=\"rank-num\" style=\"color:#fff;text-shadow:0 0 8px var(--bx-blue),1px 1px 0 black\">--</span>";
+            if (/^XF$/i.test(rank)) return "<span class=\"rank-gold\"><span class=\"rank-num\">X</span></span> <span class=\"rank-f\">F</span>";
+            const m = rank.match(/^(\d+)F$/i);
+            if (m) {
+                const n = parseInt(m[1], 10);
+                let cls = "rank-white";
+                if      (n >= 90) cls = "rank-red";
+                else if (n >= 80) cls = "rank-purple";
+                else if (n >= 60) cls = "rank-green";
+                else if (n >= 40) cls = "rank-blue";
+                return "<span class=\"" + cls + "\"><span class=\"rank-num\">" + m[1] + "</span></span> <span class=\"rank-f\">F</span>";
+            }
+            return "<span class=\"rank-num\" style=\"color:#fff\">" + rank + "</span>";
+        }
+
+        function executeCommand(cmd) {
+            // ★修正：タッグ戦アプリからの "reset" コマンドも許容するように変更
+            if (cmd === 'SYS_RESET' || cmd === 'reset') { resetGame(); return; }
+            if (cmd === 'REPLAY_TOGGLE') { toggleReplayMode(); return; }
+            
+            if (isReplayMode) {
+                if (cmd === 'REPLAY_PLAY') { if (replayVideo.paused) { replayVideo.playbackRate = 1.0; replayVideo.play().then(() => { replayVideo.playbackRate = 1.0; updateStatusMsg("▶ 1.0"); }); } else { replayVideo.pause(); updateStatusMsg("‖ STOP"); } }
+                if (cmd === 'REPLAY_SLOW') { replayVideo.playbackRate = 0.1; replayVideo.play(); updateStatusMsg("▶ 0.1"); }
+                if (cmd === 'REPLAY_REV') { replayVideo.currentTime = Math.max(0, replayVideo.currentTime - 5); replayVideo.play().then(() => updateStatusMsg("◀ REVERSE", 1000)); }
+                if (cmd === 'REPLAY_LATEST') { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play().then(() => updateStatusMsg("▶ 1.0")); }
+            } else {
+                if (cmd === 'SYS_PRO') document.body.classList.toggle('pro-mode');
+                if (cmd === 'SYS_CAM') rotateCamera();
+                if (cmd === 'SYS_STATS') toggleStatsDisplay();
+                if (cmd === 'CALL') { if (isCalling) cancelCall(); else startCall(); }
+                if (cmd === 'TIMER') toggleTimer();
+                if (cmd === 'SYS_SWAP') {
+                    const n1 = document.getElementById('name1'), n2 = document.getElementById('name2');
+                    const tempName = n1.value; n1.value = n2.value; n2.value = tempName;
+                    const tempScore = s1; s1 = s2; s2 = tempScore;
+                    document.getElementById('score1').innerText = s1; document.getElementById('score2').innerText = s2;
+                    const r1 = document.getElementById('p1-val-rank').innerHTML, bp1 = document.getElementById('p1-val-bp').innerText, wr1 = document.getElementById('p1-val-wr').innerHTML;
+                    document.getElementById('p1-val-rank').innerHTML = document.getElementById('p2-val-rank').innerHTML;
+                    document.getElementById('p1-val-bp').innerText = document.getElementById('p2-val-bp').innerText;
+                    document.getElementById('p1-val-wr').innerHTML = document.getElementById('p2-val-wr').innerHTML;
+                    document.getElementById('p2-val-rank').innerHTML = r1; document.getElementById('p2-val-bp').innerText = bp1; document.getElementById('p2-val-wr').innerHTML = wr1;
+                    // ベイブレード名も入れ替え
+                    const tempBey = beybladeP1; beybladeP1 = beybladeP2; beybladeP2 = tempBey;
+                    updateBeybladeBar(1, beybladeP1);
+                    updateBeybladeBar(2, beybladeP2);
+                }
+                
+                if (cmd === 'P1_X') addScore(1, 3, 'XTREME');
+                if (cmd === 'P1_B') addScore(1, 2, 'BURST');
+                if (cmd === 'P1_O') addScore(1, 2, 'OVER');
+                if (cmd === 'P1_S') addScore(1, 1, 'SPIN');
+                if (cmd === 'P1_MINUS') { s1 = Math.max(0, s1-1); document.getElementById('score1').innerText = s1; }
+                if (cmd === 'P1_PLUS') { s1 = Math.min(winScoreLimit, s1+1); document.getElementById('score1').innerText = s1; }
+                
+                if (cmd === 'P2_X') addScore(2, 3, 'XTREME');
+                if (cmd === 'P2_B') addScore(2, 2, 'BURST');
+                if (cmd === 'P2_O') addScore(2, 2, 'OVER');
+                if (cmd === 'P2_S') addScore(2, 1, 'SPIN');
+                if (cmd === 'P2_MINUS') { s2 = Math.max(0, s2-1); document.getElementById('score2').innerText = s2; }
+                if (cmd === 'P2_PLUS') { s2 = Math.min(winScoreLimit, s2+1); document.getElementById('score2').innerText = s2; }
+            }
+        }
+
+        window.addEventListener('keydown', e => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            const key = e.key;
+            if (key === '-') { e.preventDefault(); location.reload(); return; }
+            
+            if (isReplayMode) {
+                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === '5') executeCommand('REPLAY_PLAY');
+                if (key === '6') executeCommand('REPLAY_SLOW');
+                if (key === '4') executeCommand('REPLAY_REV');
+                if (key === 'Enter') executeCommand('REPLAY_LATEST');
+            } else {
+                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === 'Backspace') executeCommand('SYS_PRO');
+                if (key === 'r' || key === 'R' || key === '/') executeCommand('SYS_RESET');
+                if (key === '+') executeCommand('SYS_CAM');
+                if (key === '*') executeCommand('SYS_STATS');
+                if (key === 'Enter') { e.preventDefault(); executeCommand('CALL'); }
+                if (key === '5') executeCommand('SYS_SWAP');
+
+                if (key === '0') {
+                    zeroCount++;
+                    if (zeroCount === 1) {
+                        zeroTimeout = setTimeout(() => { executeCommand('P1_S'); zeroCount = 0; }, 50);
+                    } else if (zeroCount === 2) {
+                        clearTimeout(zeroTimeout); executeCommand('TIMER'); zeroCount = 0;
+                    }
+                } else {
+                    if (key === '7') executeCommand('P1_X'); 
+                    if (key === '4') executeCommand('P1_B'); 
+                    if (key === '1') executeCommand('P1_O'); 
+                    if (key === '9') executeCommand('P2_X'); 
+                    if (key === '6') executeCommand('P2_B'); 
+                    if (key === '3') executeCommand('P2_O'); 
+                    if (key === '.') executeCommand('P2_S');
+                    if (key === '8') executeCommand('P1_MINUS');
+                    if (key === '2') executeCommand('P2_MINUS');
+                }
+            }
+        });
+
+        initMedia();
+
+        const linkCode = Math.floor(1000 + Math.random() * 9000);
+        const peerId = 'itabashi-link-' + linkCode;
+        let peer = new Peer(peerId);
+        let activeConn = null;
+        
+        function initPeer() {
+            peer.on('open', (id) => {
+                document.getElementById('link-text').innerText = "LINK CODE: " + linkCode;
+                document.getElementById('link-dot').classList.remove('connected');
+            });
+
+            peer.on('connection', (conn) => {
+                if (activeConn && activeConn.open) { activeConn.close(); }
+                activeConn = conn;
+                document.getElementById('link-dot').classList.add('connected');
+                
+                conn.on('data', (data) => {
+                    if (data.type === 'REMOTE_CMD') {
+                        executeCommand(data.cmd);
+                    }
+                    else if (data.type === 'SHOW_OVERLAY') {
+                        const overlay = document.getElementById('remote-content-overlay');
+                        overlay.innerHTML = '<style>*{pointer-events:none!important;cursor:default!important;}</style>' + data.html;
+                        overlay.classList.remove('hidden');
+                    }
+                    else if (data.type === 'HIDE_OVERLAY') {
+                        const overlay = document.getElementById('remote-content-overlay');
+                        overlay.classList.add('hidden');
+                        overlay.innerHTML = '';
+                    }
+                    else if (data.type === 'SHOW_PREVIEW') {
+                        // 新しい次戦予告表示（ロゴ対応）
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo);
+                    }
+                    else if (data.type === 'HIDE_PREVIEW') {
+                        // 次戦予告非表示
+                        hideNextBattle();
+                    }
+                    else if (data.type === 'NEXT_BATTLE_CALL') {
+                        // 旧形式との互換性維持
+                        showNextBattle(data.p1, data.p2, data.stage, data.round, data.showLogo);
+                    }
+                    else if (data.type === 'SCROLL_OVERLAY') {
+                        const overlayScroll = document.getElementById('remote-content-overlay');
+                        if (!overlayScroll.classList.contains('hidden')) {
+                            overlayScroll.scrollBy({ top: data.offset, behavior: 'smooth' });
+                        }
+                    }
+                    else if (data.type === 'SET_BEYBLADE') {
+                        // ★NEW: ベイブレード名受信処理
+                        handleBeybladeSelection(data.data);
+                    }
+                    else if (data.type === 'SET_MATCH') {
+                        document.getElementById('name1').value = data.p1;
+                        document.getElementById('name2').value = data.p2;
+                        
+                        if (data.tName) {
+                            document.getElementById('tournament-name-1').value = data.tName;
+                            localStorage.setItem('tbh_t1_v2', data.tName);
+                        }
+
+                        if (data.p1Stats) {
+                            document.getElementById('p1-val-rank').innerHTML = formatRank(data.p1Stats.rank);
+                            document.getElementById('p1-val-bp').innerText = data.p1Stats.power;
+                            document.getElementById('p1-val-wr').innerHTML = formatRate(data.p1Stats.rate);
+                        } else {
+                            document.getElementById('p1-val-rank').innerHTML = formatRank('--');
+                            document.getElementById('p1-val-bp').innerText = '----';
+                            document.getElementById('p1-val-wr').innerHTML = formatRate('--%');
+                        }
+
+                        if (data.p2Stats) {
+                            document.getElementById('p2-val-rank').innerHTML = formatRank(data.p2Stats.rank);
+                            document.getElementById('p2-val-bp').innerText = data.p2Stats.power;
+                            document.getElementById('p2-val-wr').innerHTML = formatRate(data.p2Stats.rate);
+                        } else {
+                            document.getElementById('p2-val-rank').innerHTML = formatRank('--');
+                            document.getElementById('p2-val-bp').innerText = '----';
+                            document.getElementById('p2-val-wr').innerHTML = formatRate('--%');
+                        }
+                        
+                        resetGame(); 
+                    }
+                });
+                
+                conn.on('close', () => {
+                    if (activeConn === conn) {
+                        document.getElementById('link-dot').classList.remove('connected');
+                        activeConn = null;
+                    }
+                });
+            });
+
+            peer.on('disconnected', () => {
+                document.getElementById('link-dot').classList.remove('connected');
+                peer.reconnect();
+            });
+        }
+        initPeer();
+
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false) {
+            const overlay = document.getElementById('next-battle-overlay');
+            const logo = document.getElementById('next-battle-logo');
+            
+            // ロゴ表示設定
+            if (showLogo) {
+                logo.style.display = 'block';
+            } else {
+                logo.style.display = 'none';
+            }
+            
+            // ラベルテキスト生成（新形式と旧形式の両方に対応）
+            let stageText = '';
+            if (round) {
+                // 旧形式: stage と round が別々
+                stageText = [stageOrLabel, round].filter(Boolean).join('  /  ');
+            } else {
+                // 新形式: label に全て含まれている
+                stageText = stageOrLabel || '';
+            }
+            
+            document.getElementById('nb-stage-round').textContent = stageText;
+            document.getElementById('nb-p1').textContent = p1;
+            document.getElementById('nb-p2').textContent = p2;
+            overlay.classList.remove('hidden');
+        }
+        function hideNextBattle() {
+            document.getElementById('next-battle-overlay').classList.add('hidden');
+        }
+
+        // ==========================================
+        // ベイブレード名受信・表示処理
+        // ==========================================
+        let beybladeP1 = '';
+        let beybladeP2 = '';
+
+        /**
+         * ベイブレード選択データを受信して表示
+         * @param {Object} data - { player: 'P1'|'P2', beyblade: 'ベイブレード名', timestamp: number }
+         */
+        function handleBeybladeSelection(data) {
+            console.log('📥 ベイブレード受信:', data);
+            
+            if (!data || !data.player || !data.beyblade) {
+                console.warn('⚠️ 無効なベイブレードデータ:', data);
+                return;
+            }
+
+            const player = data.player.toUpperCase();
+            const beybladeName = data.beyblade;
+
+            // プレイヤーごとに保存して個別枠に表示
+            if (player === 'P1') {
+                beybladeP1 = beybladeName;
+                updateBeybladeBar(1, beybladeName);
+            } else if (player === 'P2') {
+                beybladeP2 = beybladeName;
+                updateBeybladeBar(2, beybladeName);
+            } else {
+                console.warn('⚠️ 不明なプレイヤー:', player);
+            }
+        }
+
+        /**
+         * 下部ベイブレード表示バーを更新（個別枠のみ）
+         * @param {number} playerNum - 1 or 2
+         * @param {string} beybladeName - ベイブレード名
+         */
+        function updateBeybladeBar(playerNum, beybladeName) {
+            const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
+            
+            // 個別枠の更新
+            if (boxEl) {
+                if (beybladeName) {
+                    boxEl.textContent = beybladeName;
+                    boxEl.style.display = isStatsVisible ? 'block' : 'none';
+                } else {
+                    boxEl.textContent = '';
+                    boxEl.style.display = 'none';
+                }
+            }
+            
+            console.log(`✅ P${playerNum}のベイ名更新: ${beybladeName}`);
+        }
+
+        /**
+         * ベイブレード名をクリア
+         */
+        function clearBeybladeDisplay() {
+            beybladeP1 = '';
+            beybladeP2 = '';
+            
+            // 個別枠をクリア
+            updateBeybladeBar(1, '');
+            updateBeybladeBar(2, '');
+        }
+
+    </script>
+</body>
+</html>

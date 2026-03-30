@@ -75,8 +75,8 @@
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       </div>
 
-      <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">ITABASHI BEY-ROULETTE</h1>
-      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">MAIN / 親機 <span class="text-cyber-orange">v1.4</span></p>
+      <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">トラボCUP 大会管理</h1>
+      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">RedBullGamingSphereTokyo · MAIN <span class="text-cyber-orange">v1.5</span></p>
       
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-1.5 z-50 flex-wrap justify-end max-w-[min(100%,22rem)]">
         <div class="flex items-center gap-1 bg-[#0a0e17] p-1.5 rounded-lg border border-cyber-orange shadow-lg">
@@ -117,7 +117,7 @@
           <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
           <div class="mb-4">
             <label class="block font-bold mb-2 text-cyber-text font-sf">TOURNAMENT NAME</label>
-            <input type="text" id="tournamentNameInput" placeholder="例: 第1回 板橋会カップ" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
+            <input type="text" id="tournamentNameInput" placeholder="トラボCUP@RedBullGamingSphereTokyo" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
           </div>
           <div class="mb-6">
             <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
@@ -170,11 +170,11 @@
         </div>
       </div>
 
-      <div id="view-blockparent" class="hidden flex flex-col max-w-2xl mx-auto w-full gap-4">
+      <div id="view-blockparent" class="hidden flex flex-col max-w-3xl mx-auto w-full gap-4 pb-8">
         <div class="bg-cyber-dark border border-cyber-orange rounded-lg p-4 neon-blue">
           <h2 class="text-lg font-sf text-cyber-orange tracking-widest mb-2">BLOCK 子機連携（親機）</h2>
           <p class="text-xs text-cyber-text opacity-80 mb-3 leading-relaxed">
-            右上に表示の <span class="text-cyber-orange font-bold">4桁コード</span> を <code class="text-cyber-green">block.html</code> の PARENT 欄に入力して接続します。接続後、スタジアム・部・チームを指定して <strong>BLOCK_INIT</strong> を送信すると、子機が受信してトーナメントを開始できます。
+            <strong class="text-cyber-orange">トラボCUP@RedBullGamingSphereTokyo</strong> 向け。この画面で参加者から3人1組のチームを編成し、スタジアム A〜D に割り当てます。<strong>BLOCK_MASTER_INIT</strong> で全子機に一括送信し、各子機が「担当スタジアム」を選びます。第1部・第2部は別々に送信してください（一部終了・決勝進出2チーム確定後に第2部データを送信）。
           </p>
           <div class="flex flex-wrap gap-2 items-center mb-3">
             <label class="text-xs font-sf text-cyber-text opacity-70">親機コード（変更可）</label>
@@ -186,38 +186,101 @@
           <p class="text-[10px] text-cyber-text opacity-50 font-sf">接続中の子機: <span id="block-parent-conn-count" class="text-cyber-green">0</span></p>
         </div>
 
+        <div class="bg-cyber-dark border border-cyber-pink rounded-lg p-4">
+          <h3 class="font-sf text-cyber-pink text-sm mb-2">① チーム編成（参加者から · tag式）</h3>
+          <p class="text-[10px] text-cyber-text opacity-60 mb-2">参加者一覧から最大<strong>3名</strong>タップで選択 →「3人チームを結成」。2名のみの場合は大将欄が空になります。</p>
+          <div id="block-formation-hint" class="text-[10px] text-cyber-orange mb-2 hidden">セットアップ完了後、参加者タブで登録した名前がここに表示されます。</div>
+          <div id="block-team-pick-list" class="max-h-48 overflow-y-auto border border-cyber-table-border rounded mb-2 bg-[#0d131f]"></div>
+          <div class="flex gap-2 flex-wrap">
+            <button type="button" onclick="formEventBlockTeamFromParticipants()" class="flex-1 min-w-[140px] bg-cyber-pink/20 border border-cyber-pink text-cyber-pink py-2 rounded font-bold font-sf text-sm hover:bg-cyber-pink/30">3人チームを結成</button>
+            <button type="button" onclick="clearBlockParticipantSelection()" class="bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-sf">選択解除</button>
+          </div>
+          <div class="mt-3">
+            <h4 class="text-xs font-sf text-cyber-blue mb-1">編成済みチーム</h4>
+            <div id="block-formed-teams-list" class="space-y-1 text-sm"></div>
+          </div>
+        </div>
+
         <div class="bg-cyber-dark border border-cyber-blue rounded-lg p-4">
-          <h3 class="font-sf text-cyber-blue text-sm mb-3">BLOCK_INIT を送信</h3>
+          <h3 class="font-sf text-cyber-blue text-sm mb-2">② スタジアム（ブロック）へ割当 · 一括送信</h3>
+          <p class="text-[10px] opacity-70 mb-2">各チームを A〜D のどれかに割り当て（1チーム1ブロック）。各ブロック2〜4チームで子機がトーナメント開始できます。</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3" id="block-assign-slots"></div>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">スタジアム</label>
-              <select id="block-init-stadium" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
-                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">開催部</label>
+              <select id="block-master-part" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                <option value="1">第1部</option>
+                <option value="2">第2部（一部終了後）</option>
               </select>
             </div>
             <div>
-              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">部</label>
-              <select id="block-init-part" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
-                <option value="1">第1部</option><option value="2">第2部</option>
+              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">親機の自担当スタジアム</label>
+              <select id="parent-local-block-stadium" onchange="onParentLocalStadiumChange()" class="w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-orange font-sf text-sm">
+                <option value="A">A（この親がAブロックを運営）</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="">なし（ブロック運営しない）</option>
               </select>
             </div>
           </div>
-          <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">送信先子機</label>
-          <select id="block-parent-conn-select" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm mb-3">
-            <option value="">— 子機が接続するまで待機 —</option>
-          </select>
-          <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">チーム一覧（1行1チーム: チーム名, メンバー1, メンバー2, メンバー3）</label>
-          <textarea id="block-init-teams" rows="6" class="w-full p-2 bg-cyber-bg border border-cyber-green rounded text-cyber-text text-sm font-sans resize-y mb-3 focus:border-cyber-blue outline-none" placeholder="例:&#10;チームA, 田中, 鈴木, 佐藤&#10;チームB, 山田, 伊藤, 加藤"></textarea>
-          <button type="button" onclick="parentSendBlockInit()" class="w-full bg-cyber-orange hover:bg-cyber-orange/90 text-cyber-bg py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#ffaa00] active:scale-95 transition-transform">
-            📡 BLOCK_INIT 送信
+          <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">接続中の子機へ（全台に同一データを送信）</label>
+          <p class="text-[10px] text-cyber-green mb-2" id="block-master-conn-note">接続数: 0 — 各子機で担当スタジアムを選択します</p>
+          <button type="button" onclick="parentSendBlockMasterInit()" class="w-full bg-cyber-green hover:bg-cyber-green/90 text-cyber-bg py-3 rounded-full font-bold font-sf shadow-[0_0_12px_#22c55e] active:scale-95 transition-transform mb-3">
+            📡 BLOCK_MASTER_INIT（全ブロック一括・子機へ）
           </button>
+          <details class="text-xs opacity-80">
+            <summary class="cursor-pointer text-cyber-orange font-sf">従来: 単一ブロックのみ BLOCK_INIT</summary>
+            <div class="mt-2 space-y-2 border border-cyber-table-border rounded p-2">
+              <div class="grid grid-cols-2 gap-2">
+                <select id="block-init-stadium" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                  <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                </select>
+                <select id="block-init-part" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                  <option value="1">第1部</option><option value="2">第2部</option>
+                </select>
+              </div>
+              <select id="block-parent-conn-select" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                <option value="">— 子機未接続 —</option>
+              </select>
+              <textarea id="block-init-teams" rows="4" class="w-full p-2 bg-cyber-bg border border-cyber-green rounded text-cyber-text text-sm font-sans" placeholder="チーム名, m1, m2, m3"></textarea>
+              <button type="button" onclick="parentSendBlockInit()" class="w-full bg-cyber-orange text-cyber-bg py-2 rounded font-bold font-sf text-sm">BLOCK_INIT（1台向け）</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-[#0a0e17] border-2 border-cyber-blue rounded-lg p-4">
+          <h3 class="font-sf text-cyber-blue text-sm mb-2">③ 自担当ブロック用 HUD — score_torabo.html</h3>
+          <p class="text-[10px] text-cyber-text opacity-70 mb-2"><code class="text-cyber-green">score_torabo.html</code> の LINK CODE（4桁）を入力。本大会のスコア表示とリモコン連携します（通常の「HUD」とは別接続可）。</p>
+          <div class="flex flex-wrap gap-2 items-center mb-2">
+            <input type="text" id="toraboLinkCodeInput" maxlength="4" inputmode="numeric" placeholder="CODE" class="w-16 p-2 bg-cyber-bg border border-cyber-blue text-cyber-text text-center font-sf rounded">
+            <button type="button" onclick="connectToraboLink()" id="btn-torabo-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-2 rounded text-xs font-sf font-bold">TORABO CONN</button>
+            <button type="button" onclick="forceResetToraboLink()" class="text-cyber-pink text-sm font-bold px-1">✖</button>
+            <div id="torabo-link-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
+          </div>
+          <button type="button" onclick="openToraboBlockRemote()" class="w-full bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg py-2 rounded-full font-bold font-sf text-sm">🎮 チーム戦リモート（TORABOへ）</button>
+          <p class="text-[9px] opacity-50 mt-1">自担当スタジアムの対戦で使用。左右チーム名を入力して開きます。</p>
         </div>
 
         <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4">
           <h3 class="font-sf text-cyber-green text-sm mb-2">代表決定戦: 相手を子機へ（SET_SF_OPPONENT）</h3>
-          <p class="text-[10px] text-cyber-text opacity-60 mb-2">ブロック代表決定後、別スタジアムの代表名を子機に渡す場合に使用します。</p>
+          <p class="text-[10px] text-cyber-text opacity-60 mb-2">ブロック代表決定後、別スタジアムの代表名を子機に渡す場合に使用します。接続中の子機へ全台ブロードキャスト（各子機は自ブロックのみ反映）。</p>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <div>
+              <label class="text-[10px] text-cyber-text opacity-70 font-sf block mb-1">送付先スタジアム</label>
+              <select id="block-sf-stadium" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] text-cyber-text opacity-70 font-sf block mb-1">部（②の開催部に合わせる）</label>
+              <select id="block-sf-part" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+                <option value="1">第1部</option><option value="2">第2部</option>
+              </select>
+            </div>
+          </div>
           <input type="text" id="block-sf-opponent-name" placeholder="相手チーム名" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm mb-2">
-          <button type="button" onclick="parentSendSfOpponent()" class="w-full bg-cyber-dark border border-cyber-green text-cyber-green py-2 rounded font-bold font-sf text-sm hover:bg-cyber-green/20">送信</button>
+          <button type="button" onclick="parentSendSfOpponent()" class="w-full bg-cyber-dark border border-cyber-green text-cyber-green py-2 rounded font-bold font-sf text-sm hover:bg-cyber-green/20">送信（全子機）</button>
         </div>
 
         <div class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-4">
@@ -743,6 +806,48 @@
   </div>
 </div>
 
+  <!-- TORABO HUD（score_torabo.html）専用リモート：メイン大会HUDの conn とは別 DataConnection -->
+  <div id="toraboRemoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[110] p-3 overflow-y-auto">
+    <div class="bg-cyber-dark p-4 rounded-lg shadow-xl w-full max-w-lg border-2 border-cyber-blue flex flex-col my-auto">
+      <div class="flex justify-between items-center mb-3 border-b border-cyber-table-border pb-2 shrink-0">
+        <h2 class="text-sm font-sf text-cyber-blue tracking-widest">TORABO HUD REMOTE</h2>
+        <button type="button" onclick="closeToraboBlockRemote()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf">✖</button>
+      </div>
+      <p class="text-[9px] text-cyber-text opacity-60 mb-2">トラボCUP@RedBullGamingSphereTokyo · 自担当ブロック向け score_torabo へ送信</p>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <input type="text" id="torabo-remote-p1" placeholder="LEFT チーム名" class="p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text text-sm font-sf">
+        <input type="text" id="torabo-remote-p2" placeholder="RIGHT チーム名" class="p-2 bg-cyber-bg border border-cyber-pink rounded text-cyber-text text-sm font-sf">
+      </div>
+      <button type="button" onclick="toraboSendSetMatch()" class="w-full mb-3 py-2 bg-cyber-dark border border-cyber-green text-cyber-green text-xs font-sf font-bold rounded">名前を score_torabo に再送信（SET_MATCH）</button>
+      <div class="flex justify-between gap-2 mb-2 text-center">
+        <div class="flex-1">
+          <div class="text-[10px] text-cyber-blue font-sf">LEFT</div>
+          <div id="torabo-remote-left-score" class="text-3xl font-mono text-white">0</div>
+        </div>
+        <button type="button" onclick="toraboHandleSwap()" class="self-center text-[10px] px-2 py-1 bg-[#111827] border border-gray-600 rounded font-sf">SWAP</button>
+        <div class="flex-1">
+          <div class="text-[10px] text-cyber-pink font-sf">RIGHT</div>
+          <div id="torabo-remote-right-score" class="text-3xl font-mono text-white">0</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <button type="button" onclick="toraboScoreCmd('left', 'P1_X', 3)" class="py-2 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded text-sm">X</button>
+        <button type="button" onclick="toraboScoreCmd('right', 'P2_X', 3)" class="py-2 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded text-sm">X</button>
+        <button type="button" onclick="toraboScoreCmd('left', 'P1_B', 2)" class="py-2 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded text-sm">B</button>
+        <button type="button" onclick="toraboScoreCmd('right', 'P2_B', 2)" class="py-2 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded text-sm">B</button>
+        <button type="button" onclick="toraboScoreCmd('left', 'P1_O', 2)" class="py-2 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded text-sm">O</button>
+        <button type="button" onclick="toraboScoreCmd('right', 'P2_O', 2)" class="py-2 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded text-sm">O</button>
+        <button type="button" onclick="toraboScoreCmd('left', 'P1_S', 1)" class="py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">S</button>
+        <button type="button" onclick="toraboScoreCmd('right', 'P2_S', 1)" class="py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">S</button>
+      </div>
+      <div class="flex gap-2 mb-2">
+        <button type="button" onclick="sendToraboRemoteCmd('CALL')" class="flex-1 py-3 bg-cyber-blue text-cyber-bg font-sf font-bold rounded text-sm">MATCH CALL</button>
+        <button type="button" onclick="sendToraboRemoteCmd('TIMER')" class="flex-1 py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">TIMER</button>
+      </div>
+      <button type="button" onclick="toraboScoreCmd('both', 'SYS_RESET', 'reset')" class="w-full py-2 bg-[#111827] border border-cyber-red text-cyber-red rounded text-xs font-sf">MATCH RESET</button>
+    </div>
+  </div>
+
 
   <div id="remoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
     <div class="bg-cyber-dark p-4 md:p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative overflow-y-auto max-h-full">
@@ -1008,7 +1113,18 @@
     // ==========================================
     let parentPeer = null;
     let parentChildConns = [];
+    let eventBlockTeams = [];
+    let blockStadiumTeams = { A: [], B: [], C: [], D: [] };
+    let blockTeamIdCounter = 1;
+    let blockParentSelectedPids = [];
+    let toraboPeer = null;
+    let toraboConn = null;
+    let toraboRemoteScoreLeft = 0;
+    let toraboRemoteScoreRight = 0;
+    let toraboRemoteWinLimit = 4;
+    let toraboRemoteSwapped = false;
     const PARENT_CODE_KEY = 'tbh_main_parent_code';
+    const TORABO_CODE_KEY = 'tbh_main_torabo_link_code';
     const PARENT_ICE = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
@@ -1089,6 +1205,8 @@
       const cnt = document.getElementById('block-parent-conn-count');
       const open = parentChildConns.filter((x) => x.conn && x.conn.open);
       if (cnt) cnt.textContent = String(open.length);
+      const note = document.getElementById('block-master-conn-note');
+      if (note) note.textContent = '接続数: ' + open.length + ' — 各子機で担当スタジアムを選択します';
       if (!sel) return;
       sel.innerHTML = '';
       if (open.length === 0) {
@@ -1148,22 +1266,377 @@
       if (!c) return showAlert('子機が接続されていません。\nblock.html の PARENT 欄に、この親機の4桁コードを入力して CONN してください。');
       const stadium = document.getElementById('block-init-stadium').value;
       const part = parseInt(document.getElementById('block-init-part').value, 10);
-      const tn = (document.getElementById('tournamentNameInput') && document.getElementById('tournamentNameInput').value.trim()) || 'CYBER TOURNAMENT';
+      const tn = getBlockExportTournamentName();
       const teams = parseBlockTeamsFromText(document.getElementById('block-init-teams').value);
       if (teams.length < 2) return showAlert('チームを2〜4チーム入力してください（貼付形式: チーム名, メンバー1, メンバー2, メンバー3）');
       c.send({ type: 'BLOCK_INIT', stadium: stadium, part: part, tournamentName: tn, teams: teams });
       showAlert('📡 BLOCK_INIT を送信しました\n\n' + stadium + ' / 第' + part + '部 / ' + teams.length + 'チーム');
     }
 
+    function getParentOpenBlockChildConns() {
+      return parentChildConns.filter((x) => x.conn && x.conn.open).map((x) => x.conn);
+    }
+
+    function getBlockExportTournamentName() {
+      const el = document.getElementById('tournamentNameInput');
+      const v = (el && el.value.trim()) || '';
+      return v || 'トラボCUP@RedBullGamingSphereTokyo';
+    }
+
+    function getParticipantIdsInEventBlockTeams() {
+      const s = new Set();
+      eventBlockTeams.forEach((t) => (t.memberIds || []).forEach((id) => s.add(id)));
+      return s;
+    }
+
+    function getUnassignedEventTeamIds() {
+      const used = new Set();
+      ['A', 'B', 'C', 'D'].forEach((st) => (blockStadiumTeams[st] || []).forEach((id) => used.add(id)));
+      return eventBlockTeams.map((t) => t.id).filter((id) => !used.has(id));
+    }
+
+    function eventBlockTeamToPayload(teamId) {
+      const t = eventBlockTeams.find((x) => x.id === teamId);
+      if (!t) return null;
+      const m = t.members || ['', '', ''];
+      return { name: t.name, members: [m[0] || '', m[1] || '', m[2] || ''], beyblades: t.beyblades || [] };
+    }
+
+    function toggleBlockParentParticipantPick(pid) {
+      const used = getParticipantIdsInEventBlockTeams();
+      if (used.has(pid)) return showAlert('この参加者は既にブロック用チームに所属しています');
+      const i = blockParentSelectedPids.indexOf(pid);
+      if (i >= 0) blockParentSelectedPids.splice(i, 1);
+      else {
+        if (blockParentSelectedPids.length >= 3) return showAlert('最大3名まで選択できます');
+        blockParentSelectedPids.push(pid);
+      }
+      renderBlockTeamPickList();
+    }
+
+    function renderBlockTeamPickList() {
+      const el = document.getElementById('block-team-pick-list');
+      const hint = document.getElementById('block-formation-hint');
+      if (!el) return;
+      if (!isSetupDone) {
+        if (hint) hint.classList.remove('hidden');
+        el.innerHTML = '';
+        return;
+      }
+      if (hint) hint.classList.add('hidden');
+      el.innerHTML = '';
+      const used = getParticipantIdsInEventBlockTeams();
+      participants.forEach((p) => {
+        if (used.has(p.id)) return;
+        const row = document.createElement('div');
+        const sel = blockParentSelectedPids.includes(p.id);
+        row.className = 'py-2 px-3 mb-1 rounded border cursor-pointer text-sm ' + (sel ? 'border-cyber-pink bg-cyber-pink/15 ring-1 ring-cyber-pink' : 'border-cyber-table-border bg-[#0a0e17] hover:border-cyber-blue');
+        row.textContent = p.name + (p.memo1 ? ' · ' + p.memo1 : '');
+        row.onclick = () => toggleBlockParentParticipantPick(p.id);
+        el.appendChild(row);
+      });
+    }
+
+    function renderBlockFormedTeams() {
+      const el = document.getElementById('block-formed-teams-list');
+      if (!el) return;
+      el.innerHTML = '';
+      eventBlockTeams.forEach((t) => {
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center gap-2 bg-[#0a0e17] border border-cyber-table-border rounded px-2 py-1 text-xs';
+        const names = (t.members || []).filter(Boolean).join(' / ') || t.name;
+        const span = document.createElement('span');
+        span.textContent = t.name + ' — ' + names;
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'text-cyber-pink font-sf font-bold shrink-0';
+        rm.textContent = '削除';
+        rm.onclick = () => removeEventBlockTeam(t.id);
+        row.appendChild(span);
+        row.appendChild(rm);
+        el.appendChild(row);
+      });
+    }
+
+    function removeEventBlockTeam(teamId) {
+      eventBlockTeams = eventBlockTeams.filter((t) => t.id !== teamId);
+      ['A', 'B', 'C', 'D'].forEach((st) => {
+        blockStadiumTeams[st] = (blockStadiumTeams[st] || []).filter((id) => id !== teamId);
+      });
+      renderBlockTeamPickList();
+      renderBlockFormedTeams();
+      renderBlockAssignSlots();
+      saveState();
+    }
+
+    function formEventBlockTeamFromParticipants() {
+      if (blockParentSelectedPids.length === 0) return showAlert('参加者を1〜3名選択してください');
+      const ids = [...blockParentSelectedPids];
+      const members = ids.map((id) => participants.find((p) => p.id === id)).filter(Boolean);
+      const names = [members[0] && members[0].name ? members[0].name : '', members[1] && members[1].name ? members[1].name : '', members[2] && members[2].name ? members[2].name : ''];
+      const teamName = names.filter(Boolean).join(' / ') || ('チーム' + (eventBlockTeams.length + 1));
+      eventBlockTeams.push({
+        id: blockTeamIdCounter++,
+        name: teamName,
+        memberIds: ids,
+        members: names,
+        beyblades: []
+      });
+      blockParentSelectedPids = [];
+      renderBlockTeamPickList();
+      renderBlockFormedTeams();
+      renderBlockAssignSlots();
+      saveState();
+    }
+
+    function clearBlockParticipantSelection() {
+      blockParentSelectedPids = [];
+      renderBlockTeamPickList();
+    }
+
+    function removeTeamFromStadium(st, tid) {
+      blockStadiumTeams[st] = (blockStadiumTeams[st] || []).filter((id) => id !== tid);
+      renderBlockAssignSlots();
+      saveState();
+    }
+
+    function assignTeamToStadium(st, tid) {
+      if ((blockStadiumTeams[st] || []).length >= 4) return showAlert('ブロック1つあたり最大4チームです');
+      for (const k of ['A', 'B', 'C', 'D']) {
+        blockStadiumTeams[k] = (blockStadiumTeams[k] || []).filter((id) => id !== tid);
+      }
+      if (!blockStadiumTeams[st]) blockStadiumTeams[st] = [];
+      blockStadiumTeams[st].push(tid);
+      renderBlockAssignSlots();
+      saveState();
+    }
+
+    function renderBlockAssignSlots() {
+      const host = document.getElementById('block-assign-slots');
+      if (!host) return;
+      host.innerHTML = '';
+      ['A', 'B', 'C', 'D'].forEach((st) => {
+        const card = document.createElement('div');
+        card.className = 'border border-cyber-table-border rounded p-2 bg-[#0d131f]';
+        const title = document.createElement('div');
+        title.className = 'font-sf text-cyber-blue text-xs mb-1';
+        title.textContent = 'BLOCK ' + st;
+        const list = document.createElement('div');
+        list.className = 'space-y-1 mb-2 min-h-[2.5rem]';
+        (blockStadiumTeams[st] || []).forEach((tid) => {
+          const t = eventBlockTeams.find((x) => x.id === tid);
+          if (!t) return;
+          const row = document.createElement('div');
+          row.className = 'flex justify-between items-center text-[11px] bg-cyber-bg rounded px-2 py-1';
+          const sp = document.createElement('span');
+          sp.textContent = t.name;
+          const rm = document.createElement('button');
+          rm.type = 'button';
+          rm.className = 'text-cyber-pink text-xs';
+          rm.textContent = '✕';
+          rm.onclick = () => removeTeamFromStadium(st, tid);
+          row.appendChild(sp);
+          row.appendChild(rm);
+          list.appendChild(row);
+        });
+        const sel = document.createElement('select');
+        sel.className = 'w-full text-[11px] p-1 bg-cyber-bg border border-cyber-table-border rounded';
+        const unassigned = getUnassignedEventTeamIds();
+        sel.appendChild(new Option('— チームを追加 —', ''));
+        unassigned.forEach((tid) => {
+          const t = eventBlockTeams.find((x) => x.id === tid);
+          if (t) sel.appendChild(new Option(t.name, String(tid)));
+        });
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '追加';
+        btn.className = 'w-full mt-1 py-1 text-[11px] bg-cyber-dark border border-cyber-green text-cyber-green rounded font-sf';
+        btn.onclick = () => {
+          const v = sel.value;
+          if (!v) return;
+          assignTeamToStadium(st, parseInt(v, 10));
+        };
+        card.appendChild(title);
+        card.appendChild(list);
+        card.appendChild(sel);
+        card.appendChild(btn);
+        host.appendChild(card);
+      });
+    }
+
+    function renderBlockParentTab() {
+      renderBlockTeamPickList();
+      renderBlockFormedTeams();
+      renderBlockAssignSlots();
+    }
+
+    function onParentLocalStadiumChange() {
+      saveState();
+    }
+
+    function parentSendBlockMasterInit() {
+      const open = getParentOpenBlockChildConns();
+      if (open.length === 0) return showAlert('子機が接続されていません。');
+      const part = parseInt(document.getElementById('block-master-part').value, 10);
+      const tn = getBlockExportTournamentName();
+      const blocks = {};
+      let anyOk = false;
+      ['A', 'B', 'C', 'D'].forEach((st) => {
+        const ids = blockStadiumTeams[st] || [];
+        const teams = ids.map((id) => eventBlockTeamToPayload(id)).filter(Boolean);
+        blocks[st] = { teams: teams };
+        if (teams.length >= 2) anyOk = true;
+      });
+      if (!anyOk) return showAlert('少なくとも1つのブロックに2チーム以上割り当ててください。');
+      const pl = document.getElementById('parent-local-block-stadium');
+      const parentLocalStadium = pl && pl.value ? pl.value : '';
+      const payload = { type: 'BLOCK_MASTER_INIT', tournamentName: tn, part: part, blocks: blocks, parentLocalStadium: parentLocalStadium };
+      open.forEach((c) => c.send(payload));
+      showAlert('📡 BLOCK_MASTER_INIT を ' + open.length + ' 台に送信しました。\n第' + part + '部 · ' + tn);
+    }
+
+    function ensureToraboPeer() {
+      if (toraboPeer && !toraboPeer.destroyed) return;
+      toraboPeer = new Peer({ debug: 0, config: { iceServers: PARENT_ICE } });
+      toraboPeer.on('disconnected', () => {
+        if (toraboPeer && !toraboPeer.destroyed) {
+          try { toraboPeer.reconnect(); } catch (e) {}
+        }
+      });
+      toraboPeer.on('error', () => {});
+    }
+
+    function setToraboDot(ok) {
+      const dot = document.getElementById('torabo-link-dot');
+      if (!dot) return;
+      dot.className = ok ? 'w-2 h-2 rounded-full bg-cyber-green shadow-[0_0_6px_#22c55e]' : 'w-2 h-2 rounded-full bg-red-500';
+    }
+
+    function connectToraboLink() {
+      const btn = document.getElementById('btn-torabo-connect');
+      if (toraboConn && toraboConn.open) {
+        try { toraboConn.close(); } catch (e) {}
+        toraboConn = null;
+        setToraboDot(false);
+        if (btn) btn.innerText = 'TORABO CONN';
+        return;
+      }
+      const inp = document.getElementById('toraboLinkCodeInput');
+      const code = (inp && inp.value.trim()) || '';
+      if (!code || code.length !== 4) return showAlert('score_torabo の LINK CODE（4桁）を入力してください');
+      if (btn) btn.innerText = 'WAIT...';
+      ensureToraboPeer();
+      if (toraboConn) try { toraboConn.close(); } catch (e) {}
+      toraboConn = toraboPeer.connect('itabashi-link-' + code, { reliable: true, serialization: 'json' });
+      toraboConn.on('open', () => {
+        setToraboDot(true);
+        if (btn) btn.innerText = 'DISCONN';
+        try { localStorage.setItem(TORABO_CODE_KEY, code); } catch (e) {}
+      });
+      toraboConn.on('close', () => {
+        toraboConn = null;
+        setToraboDot(false);
+        if (btn) btn.innerText = 'TORABO CONN';
+      });
+      toraboConn.on('error', () => {
+        toraboConn = null;
+        setToraboDot(false);
+        if (btn) btn.innerText = 'TORABO CONN';
+        showAlert('TORABO 接続に失敗しました');
+      });
+    }
+
+    function forceResetToraboLink() {
+      if (toraboConn) try { toraboConn.close(); } catch (e) {}
+      toraboConn = null;
+      setToraboDot(false);
+      const btn = document.getElementById('btn-torabo-connect');
+      if (btn) btn.innerText = 'TORABO CONN';
+    }
+
+    function sendToraboRemoteCmd(cmd) {
+      if (!toraboConn || !toraboConn.open) {
+        showAlert('TORABO（score_torabo）が未接続です');
+        return;
+      }
+      toraboConn.send({ type: 'REMOTE_CMD', cmd: cmd });
+    }
+
+    function updateToraboRemoteScoreUI() {
+      const l = document.getElementById('torabo-remote-left-score');
+      const r = document.getElementById('torabo-remote-right-score');
+      if (l) l.textContent = String(toraboRemoteScoreLeft);
+      if (r) r.textContent = String(toraboRemoteScoreRight);
+    }
+
+    function toraboHandleSwap() {
+      toraboRemoteSwapped = !toraboRemoteSwapped;
+      const tmp = toraboRemoteScoreLeft;
+      toraboRemoteScoreLeft = toraboRemoteScoreRight;
+      toraboRemoteScoreRight = tmp;
+      updateToraboRemoteScoreUI();
+      sendToraboRemoteCmd('SYS_SWAP');
+    }
+
+    function toraboScoreCmd(side, cmd, pts) {
+      if (!toraboConn || !toraboConn.open) return showAlert('TORABO が未接続です');
+      sendToraboRemoteCmd(cmd);
+      if (cmd === 'SYS_RESET') {
+        toraboRemoteScoreLeft = 0;
+        toraboRemoteScoreRight = 0;
+      } else if (typeof pts === 'number') {
+        if (side === 'left') toraboRemoteScoreLeft = Math.max(0, Math.min(toraboRemoteScoreLeft + pts, toraboRemoteWinLimit));
+        else if (side === 'right') toraboRemoteScoreRight = Math.max(0, Math.min(toraboRemoteScoreRight + pts, toraboRemoteWinLimit));
+      }
+      updateToraboRemoteScoreUI();
+    }
+
+    function toraboSendSetMatch() {
+      if (!toraboConn || !toraboConn.open) return;
+      const p1e = document.getElementById('torabo-remote-p1');
+      const p2e = document.getElementById('torabo-remote-p2');
+      const p1 = (p1e && p1e.value.trim()) || 'LEFT';
+      const p2 = (p2e && p2e.value.trim()) || 'RIGHT';
+      toraboConn.send({ type: 'SET_MATCH', p1: p1, p2: p2, tName: getBlockExportTournamentName() });
+    }
+
+    function openToraboBlockRemote() {
+      const locEl = document.getElementById('parent-local-block-stadium');
+      if (!locEl || !locEl.value) return showAlert('先に「② 親機の自担当スタジアム」で A〜D のいずれかを選んでください。');
+      if (!toraboConn || !toraboConn.open) return showAlert('TORABO CONN で score_torabo.html と接続してください');
+      toraboRemoteScoreLeft = 0;
+      toraboRemoteScoreRight = 0;
+      toraboRemoteSwapped = false;
+      updateToraboRemoteScoreUI();
+      toraboSendSetMatch();
+      const m = document.getElementById('toraboRemoteModal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      }
+    }
+
+    function closeToraboBlockRemote() {
+      const m = document.getElementById('toraboRemoteModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
     function parentSendSfOpponent() {
-      const c = getSelectedParentChildConn();
-      if (!c) return showAlert('子機が接続されていません。');
+      const open = getParentOpenBlockChildConns();
+      if (open.length === 0) return showAlert('子機が接続されていません。\nblock.html の PARENT に親機コードを入力して CONN してください。');
       const name = (document.getElementById('block-sf-opponent-name') && document.getElementById('block-sf-opponent-name').value.trim()) || '';
       if (!name) return showAlert('相手チーム名を入力してください');
-      const stadium = document.getElementById('block-init-stadium').value;
-      const part = parseInt(document.getElementById('block-init-part').value, 10);
-      c.send({ type: 'SET_SF_OPPONENT', stadium: stadium, part: part, opponent: name, members: [], beyblades: [] });
-      showAlert('📡 SET_SF_OPPONENT を送信しました\n相手: ' + name);
+      const stadiumEl = document.getElementById('block-sf-stadium');
+      const stadium = (stadiumEl && stadiumEl.value) || document.getElementById('block-init-stadium').value;
+      const partEl = document.getElementById('block-sf-part');
+      const masterPart = document.getElementById('block-master-part');
+      const part = parseInt((partEl && partEl.value) || (masterPart && masterPart.value) || document.getElementById('block-init-part').value || '1', 10);
+      const payload = { type: 'SET_SF_OPPONENT', stadium: stadium, part: part, opponent: name, members: [], beyblades: [] };
+      open.forEach((c) => c.send(payload));
+      showAlert('📡 SET_SF_OPPONENT を ' + open.length + ' 台に送信しました（' + stadium + ' / 第' + part + '部）\n相手: ' + name);
     }
 
     // ==========================================
@@ -1375,7 +1848,7 @@
 
     function confirmSetup() {
       const nameInput = document.getElementById('tournamentNameInput');
-      tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'CYBER BEY-ROULETTE';
+      tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'トラボCUP@RedBullGamingSphereTokyo';
       let sizeInput = document.getElementById('tournamentSizeInput'); let sizeStr = sizeInput ? sizeInput.value : "32";
       if (!sizeStr) sizeStr = "32";
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
@@ -1427,6 +1900,12 @@
         }
       });
       if (tabId === 'tournament') { isSetupSwapMode = false; setupSwapPending = null; renderTournament(); }
+      if (tabId === 'blockparent') {
+        const smp = document.getElementById('block-master-part');
+        const sfp = document.getElementById('block-sf-part');
+        if (smp && sfp) sfp.value = smp.value;
+        renderBlockParentTab();
+      }
     }
 
     // ==========================================
@@ -1555,6 +2034,8 @@
       const thNm = document.getElementById('th-name-t'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
       const thLt = document.getElementById('th-lottery-t'); if(thLt) thLt.classList.toggle('text-cyber-blue', participantSortMode==='lottery');
       saveState();
+      const vbp = document.getElementById('view-blockparent');
+      if (vbp && !vbp.classList.contains('hidden')) renderBlockParentTab();
     }
 
     // ==========================================
@@ -2454,8 +2935,11 @@
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
-          blockActivePositions, blockMatches, finals, isEffectOn
+          blockActivePositions, blockMatches, finals, isEffectOn,
+          eventBlockTeams, blockStadiumTeams, blockTeamIdCounter, blockParentSelectedPids
         };
+        const pls = document.getElementById('parent-local-block-stadium');
+        if (pls) state.parentLocalBlockStadium = pls.value || '';
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -2484,6 +2968,15 @@
         blockMatches = s.blockMatches || {};
         finals = s.finals || {};
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        eventBlockTeams = s.eventBlockTeams || [];
+        blockStadiumTeams = s.blockStadiumTeams || { A: [], B: [], C: [], D: [] };
+        ['A', 'B', 'C', 'D'].forEach((k) => {
+          if (!Array.isArray(blockStadiumTeams[k])) blockStadiumTeams[k] = [];
+        });
+        blockTeamIdCounter = s.blockTeamIdCounter || 1;
+        blockParentSelectedPids = s.blockParentSelectedPids || [];
+        const pls = document.getElementById('parent-local-block-stadium');
+        if (pls && s.parentLocalBlockStadium !== undefined) pls.value = s.parentLocalBlockStadium;
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -3014,6 +3507,16 @@
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
       initParentServerPeer();
+      try {
+        const tc = localStorage.getItem(TORABO_CODE_KEY);
+        const ti = document.getElementById('toraboLinkCodeInput');
+        if (tc && /^\d{4}$/.test(tc) && ti) ti.value = tc;
+      } catch (e) {}
+      const bmp = document.getElementById('block-master-part');
+      const bsf = document.getElementById('block-sf-part');
+      if (bmp && bsf) {
+        bmp.addEventListener('change', () => { bsf.value = bmp.value; });
+      }
       await loadPartsCSV();
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
