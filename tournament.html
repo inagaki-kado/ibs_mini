@@ -10,8 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
   <script>
     tailwind.config = {
       theme: {
@@ -124,8 +122,6 @@
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
-            <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
-
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
             <div class="flex-grow"></div>
@@ -250,17 +246,6 @@
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
 
-    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
-      <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
-      <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
-      <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
-      <div class="flex gap-4 w-full max-w-sm">
-        <button id="reTakeBtn" onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
-        <button onclick="closeCameraModal()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 transition-transform">OK</button>
-      </div>
-    </div>
-    <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
-
   <!-- ベイブレード登録モーダル -->
   <div id="beybladeModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8">
@@ -277,12 +262,6 @@
         <div class="flex items-center gap-2">
           <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
             ＋ ベイブレードを追加
-          </button>
-          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" title="写真を撮影" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
-            📷
-          </button>
-          <button id="viewBeyImageBtn" onclick="openBeyImagePreview()" title="ベイチェック画像を確認" class="hidden w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-orange text-cyber-orange rounded-full font-bold text-xl shadow-[0_0_10px_rgba(255,170,0,0.5)] hover:bg-cyber-orange hover:text-white transition-colors active:scale-95 shrink-0">
-            🖼️
           </button>
         </div>
       </div>
@@ -790,8 +769,7 @@
     let beybladeSelectionStep = 0;
     let beybladeSelectionPath = [];
     let currentEditingBeybladeIndex = -1;
-    let currentCheckId = null; let currentLotteryId = null;
-    let _cameraContext = null; // カメラ起動元のコンテキスト識別用
+    let currentLotteryId = null;
 
     let isSetupSwapMode = false;
     let setupSwapPending = null;
@@ -1211,7 +1189,7 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            bayChecked: false, bayImage: null, beyblades: [], color: null, position: null }); count++;
+            beyblades: [], color: null, position: null }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
@@ -1222,7 +1200,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, bayImage: null, beyblades: [], color: null, position: null });
+          beyblades: [], color: null, position: null });
       renderParticipants();
     }
     
@@ -1471,164 +1449,6 @@
     async function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
       if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
-    }
-
-    // ==========================================
-    // カメラ撮影 ＆ ZIP保存
-    // ==========================================
-    function handleBayCheck(id) {
-        openCamera(id);
-    }
-    
-    function openCamera(id) {
-        currentCheckId = id;
-        const p = participants.find(x => x.id === id);
-        if (p.bayChecked && p.bayImage) {
-            document.getElementById('resultImage').src = p.bayImage;
-            document.getElementById('cameraModal').classList.remove('hidden');
-            document.getElementById('cameraModal').classList.add('flex');
-        } else { document.getElementById('cameraInput').click(); }
-    }
-
-    function reTakePhoto() {
-      if (_cameraContext === 'beyblade_confirm') _cameraContext = 'beyblade';
-      document.getElementById('cameraInput').click();
-    }
-
-    /**
-     * Canvas に文字情報を描画する共通関数
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {HTMLCanvasElement} canvas
-     * @param {object} p - 参加者オブジェクト
-     */
-    function drawBeyCheckOverlay(ctx, canvas, p) {
-      const w = canvas.width;
-      const fontSize = Math.max(w / 15, 30);
-      ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
-      ctx.fillStyle = '#0ea5e9';
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-      ctx.lineWidth = fontSize / 12;
-      ctx.textBaseline = 'top';
-
-      const tName = tournamentName || '大会';
-      const pName = p ? p.name : '';
-      const margin = 20;
-
-      // 大会名（右揃え）
-      ctx.textAlign = 'right';
-      const y1 = margin;
-      ctx.strokeText(tName, w - margin, y1);
-      ctx.fillText(tName, w - margin, y1);
-
-      // プレイヤー名（右揃え）
-      const y2 = y1 + fontSize * 1.2;
-      ctx.strokeText(pName, w - margin, y2);
-      ctx.fillText(pName, w - margin, y2);
-
-      // 使用ベイ名（参加者名の下に）
-      if (p && p.beyblades && p.beyblades.length > 0) {
-        const beyFontSize = Math.max(w / 20, 24);
-        ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
-        ctx.fillStyle = '#22c55e';
-        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-        ctx.lineWidth = beyFontSize / 12;
-        ctx.textBaseline = 'top';
-
-        let yOffset = y2 + fontSize * 1.5;
-
-        ctx.textAlign = 'left';
-        const beyLabels = ['①', '②', '③'];
-
-        // ベイ1〜3: すべて左揃え＋①②③
-        if (p.beyblades[0]) {
-          const bey1Name = beyLabels[0] + (p.beyblades[0].name || 'ー');
-          ctx.strokeText(bey1Name, margin, yOffset);
-          ctx.fillText(bey1Name, margin, yOffset);
-          yOffset += beyFontSize * 1.4;
-        }
-
-        if (p.beyblades[1]) {
-          const bey2Name = beyLabels[1] + (p.beyblades[1].name || 'ー');
-          ctx.strokeText(bey2Name, margin, yOffset);
-          ctx.fillText(bey2Name, margin, yOffset);
-          yOffset += beyFontSize * 1.4;
-        }
-
-        if (p.beyblades[2]) {
-          const bey3Name = beyLabels[2] + (p.beyblades[2].name || 'ー');
-          ctx.strokeText(bey3Name, margin, yOffset);
-          ctx.fillText(bey3Name, margin, yOffset);
-        }
-      }
-    }
-
-
-    function closeCameraModal() {
-        const wasBeyblade = (_cameraContext === 'beyblade_confirm');
-        const wasView = (_cameraContext === 'beyblade_view');
-        _cameraContext = null;
-        document.getElementById('cameraModal').classList.add('hidden');
-        document.getElementById('cameraModal').classList.remove('flex');
-        document.getElementById('cameraInput').value = '';
-        document.getElementById('cancelCameraBtn').classList.add('hidden');
-        if (wasBeyblade) {
-          // 撮影後OKでベイブレードモーダルも閉じて参加者一覧へ
-          closeBeybladeModal();
-        }
-        // wasView の場合はベイブレードモーダルはそのまま（戻るだけ）
-    }
-
-    function cancelCameraAndBack() {
-        // 撮影をキャンセルしてベイブレード登録画面に戻る（画像・ベイ名は変更しない）
-        _cameraContext = null;
-        document.getElementById('cameraModal').classList.add('hidden');
-        document.getElementById('cameraModal').classList.remove('flex');
-        document.getElementById('cameraInput').value = '';
-        document.getElementById('cancelCameraBtn').classList.add('hidden');
-        // beybladeModalはそのまま表示（閉じない）
-    }
-
-    async function downloadAllImagesZip() {
-        if (typeof JSZip === 'undefined') return showAlert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
-        const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
-        if (checkedParticipants.length === 0) return showAlert("保存するベイチェック画像がありません。");
-        const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
-        const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
-        
-        // 画像を追加
-        checkedParticipants.forEach(p => {
-            const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-            folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
-        });
-        
-        // CSVファイルを作成
-        let csvContent = '\uFEFF'; // BOM（UTF-8）
-        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
-        
-        checkedParticipants.forEach(p => {
-            const name = p.name || '';
-            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
-            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
-            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
-            
-            // CSVエスケープ処理（カンマや改行、ダブルクォートを含む場合）
-            const escapeCsv = (str) => {
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-            
-            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
-        });
-        
-        // CSVファイルをZIPに追加
-        folder.file(`${safeTournamentName}_参加者リスト.csv`, csvContent);
-        
-        zip.generateAsync({type:"blob"}).then(function(content) {
-            const link = document.createElement('a'); link.href = URL.createObjectURL(content);
-            link.download = `${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
-        });
     }
 
     function exportParticipantsCSV() {
@@ -2240,6 +2060,8 @@
         // 既存データにbeyblades配列がなければ追加
         participants.forEach(p => {
           if (!p.beyblades) p.beyblades = [];
+          delete p.bayImage;
+          delete p.bayChecked;
         });
         participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
@@ -2391,30 +2213,8 @@
       }
       
       renderBeybladeList();
-
-      // 🖼️ボタン：bayImageがある場合のみ表示
-      const viewBtn = document.getElementById('viewBeyImageBtn');
-      if (participant.bayImage) {
-        viewBtn.classList.remove('hidden');
-      } else {
-        viewBtn.classList.add('hidden');
-      }
-      
       document.getElementById('beybladeModal').classList.remove('hidden');
       document.getElementById('beybladeModal').classList.add('flex');
-    }
-
-    /**
-     * ベイチェック画像をプレビューで開く（ベイブレード登録モーダルから）
-     */
-    function openBeyImagePreview() {
-      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
-      if (!participant || !participant.bayImage) return;
-      _cameraContext = 'beyblade_view';
-      document.getElementById('resultImage').src = participant.bayImage;
-      document.getElementById('reTakeBtn').classList.add('hidden');
-      document.getElementById('cameraModal').classList.remove('hidden');
-      document.getElementById('cameraModal').classList.add('flex');
     }
 
     /**
@@ -2729,17 +2529,6 @@
       document.getElementById('beybladeSelectModal').classList.remove('flex');
     }
 
-    /**
-     * ベイブレード登録モーダルから直接写真撮影を起動する
-     * 既存の cameraInput / cameraModal の仕組みを流用する
-     */
-    function triggerBeybladePhoto() {
-      _cameraContext = 'beyblade';
-      const input = document.getElementById('cameraInput');
-      input.value = '';
-      input.click();
-    }
-
     // ==========================================
     // PeerJS: SET_BEYBLADE メッセージ送信
     // ==========================================
@@ -2775,74 +2564,12 @@
      */
 
     // ==========================================
-    // アプリ初期化時にCSVを読み込む & カメライベント登録
+    // アプリ初期化時にCSVを読み込む
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
       await loadPartsCSV();
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
-
-      // カメラ入力のイベントリスナーをここで確実に登録
-      const camInput = document.getElementById('cameraInput');
-      if (camInput) {
-        camInput.addEventListener('change', function(e) {
-          if (_cameraContext === 'beyblade') {
-            _cameraContext = 'beyblade_confirm';
-            const file = e.target.files[0];
-            if (!file) { _cameraContext = null; return; }
-            const img = new Image();
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-              img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width; canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                const p = participants.find(x => x.id === currentBeybladeParticipantId);
-                drawBeyCheckOverlay(ctx, canvas, p);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                if (p) {
-                  p.bayImage = dataUrl;
-                  p.bayChecked = true;
-                  renderParticipants();
-                  saveState();
-                }
-                document.getElementById('resultImage').src = dataUrl;
-                document.getElementById('reTakeBtn').classList.remove('hidden');
-                document.getElementById('cancelCameraBtn').classList.remove('hidden');
-                document.getElementById('cameraModal').classList.remove('hidden');
-                document.getElementById('cameraModal').classList.add('flex');
-              };
-              img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            return;
-          }
-
-          // 通常ベイチェック撮影
-          const file = e.target.files[0]; if (!file) return;
-          const img = new Image(); const reader = new FileReader();
-          reader.onload = function(event) {
-            img.onload = function() {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width; canvas.height = img.height;
-              const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-              const p = participants.find(x => x.id === currentCheckId);
-              drawBeyCheckOverlay(ctx, canvas, p);
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-              if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
-              document.getElementById('resultImage').src = dataUrl;
-              document.getElementById('reTakeBtn').classList.remove('hidden');
-              document.getElementById('cancelCameraBtn').classList.remove('hidden');
-              document.getElementById('cameraModal').classList.remove('hidden');
-              document.getElementById('cameraModal').classList.add('flex');
-              renderParticipants();
-            };
-            img.src = event.target.result;
-          };
-          reader.readAsDataURL(file);
-        });
-      }
     });
 
 

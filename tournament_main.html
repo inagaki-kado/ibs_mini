@@ -10,8 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
   <script>
     tailwind.config = {
       theme: {
@@ -75,8 +73,10 @@
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       </div>
 
-      <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">トラボCUP 大会管理</h1>
-      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">RedBullGamingSphereTokyo · MAIN <span class="text-cyber-orange">v1.5</span></p>
+      <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
+        <img src="torabo_logo.png" alt="トラボCUP" class="h-11 md:h-14 w-auto max-w-[min(85vw,320px)] object-contain object-center" width="320" height="80" decoding="async">
+        <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest">大会管理 · RedBullGamingSphereTokyo · MAIN <span class="text-cyber-orange">v1.5</span></p>
+      </div>
       
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-1.5 z-50 flex-wrap justify-end max-w-[min(100%,22rem)]">
         <div class="flex items-center gap-1 bg-[#0a0e17] p-1.5 rounded-lg border border-cyber-orange shadow-lg">
@@ -120,8 +120,8 @@
             <input type="text" id="tournamentNameInput" placeholder="トラボCUP@RedBullGamingSphereTokyo" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
           </div>
           <div class="mb-6">
-            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
-            <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
+            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜96)</label>
+            <input type="text" inputmode="numeric" id="tournamentSizeInput" value="96" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
           </div>
           <button id="btn-confirm-setup" onclick="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
         </div>
@@ -133,8 +133,6 @@
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
-            <button onclick="downloadAllImagesZip()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
-
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
             <div class="flex-grow"></div>
@@ -190,7 +188,7 @@
           <h3 class="font-sf text-cyber-pink text-sm mb-2">① チーム編成（参加者から · tag式）</h3>
           <p class="text-[10px] text-cyber-text opacity-60 mb-2">参加者一覧から最大<strong>3名</strong>タップで選択 →「3人チームを結成」。2名のみの場合は大将欄が空になります。</p>
           <div id="block-formation-hint" class="text-[10px] text-cyber-orange mb-2 hidden">セットアップ完了後、参加者タブで登録した名前がここに表示されます。</div>
-          <div id="block-team-pick-list" class="max-h-48 overflow-y-auto border border-cyber-table-border rounded mb-2 bg-[#0d131f]"></div>
+          <div id="block-team-pick-list" class="max-h-72 overflow-y-auto border border-cyber-table-border rounded mb-2 bg-[#0d131f]"></div>
           <div class="flex gap-2 flex-wrap">
             <button type="button" onclick="formEventBlockTeamFromParticipants()" class="flex-1 min-w-[140px] bg-cyber-pink/20 border border-cyber-pink text-cyber-pink py-2 rounded font-bold font-sf text-sm hover:bg-cyber-pink/30">3人チームを結成</button>
             <button type="button" onclick="clearBlockParticipantSelection()" class="bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-sf">選択解除</button>
@@ -250,16 +248,10 @@
         </div>
 
         <div class="bg-[#0a0e17] border-2 border-cyber-blue rounded-lg p-4">
-          <h3 class="font-sf text-cyber-blue text-sm mb-2">③ 自担当ブロック用 HUD — score_torabo.html</h3>
-          <p class="text-[10px] text-cyber-text opacity-70 mb-2"><code class="text-cyber-green">score_torabo.html</code> の LINK CODE（4桁）を入力。本大会のスコア表示とリモコン連携します（通常の「HUD」とは別接続可）。</p>
-          <div class="flex flex-wrap gap-2 items-center mb-2">
-            <input type="text" id="toraboLinkCodeInput" maxlength="4" inputmode="numeric" placeholder="CODE" class="w-16 p-2 bg-cyber-bg border border-cyber-blue text-cyber-text text-center font-sf rounded">
-            <button type="button" onclick="connectToraboLink()" id="btn-torabo-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-2 rounded text-xs font-sf font-bold">TORABO CONN</button>
-            <button type="button" onclick="forceResetToraboLink()" class="text-cyber-pink text-sm font-bold px-1">✖</button>
-            <div id="torabo-link-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
-          </div>
-          <button type="button" onclick="openToraboBlockRemote()" class="w-full bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg py-2 rounded-full font-bold font-sf text-sm">🎮 チーム戦リモート（TORABOへ）</button>
-          <p class="text-[9px] opacity-50 mt-1">自担当スタジアムの対戦で使用。左右チーム名を入力して開きます。</p>
+          <h3 class="font-sf text-cyber-blue text-sm mb-2">③ 自担当ブロック用 HUD — score.html</h3>
+          <p class="text-[10px] text-cyber-text opacity-70 mb-2">画面上部の <strong class="text-cyber-green">HUD · CONN</strong> と同じ接続（<code class="text-cyber-green">score.html</code> の LINK CODE）を使います。大会本戦のスコア表示・リモコンと共通です。</p>
+          <button type="button" onclick="openToraboBlockRemote()" class="w-full bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg py-2 rounded-full font-bold font-sf text-sm">🎮 チーム戦リモート（score.html へ）</button>
+          <p class="text-[9px] opacity-50 mt-1">未接続のときは先にヘッダーで HUD を CONN してください。自担当スタジアムのチーム戦用です。</p>
         </div>
 
         <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4">
@@ -378,17 +370,6 @@
       <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
     </div>
 
-    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
-      <button id="cancelCameraBtn" onclick="cancelCameraAndBack()" class="hidden absolute top-4 right-4 w-11 h-11 flex items-center justify-center bg-cyber-dark border-2 border-red-500 text-red-400 rounded-full font-bold text-xl hover:bg-red-500 hover:text-white transition-colors active:scale-95 z-10">✕</button>
-      <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
-      <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
-      <div class="flex gap-4 w-full max-w-sm">
-        <button id="reTakeBtn" onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
-        <button onclick="closeCameraModal()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 transition-transform">OK</button>
-      </div>
-    </div>
-    <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
-
   <!-- ベイブレード登録モーダル -->
   <div id="beybladeModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8">
@@ -405,12 +386,6 @@
         <div class="flex items-center gap-2">
           <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
             ＋ ベイブレードを追加
-          </button>
-          <button id="addBeybladePhotoBtn" onclick="triggerBeybladePhoto()" title="写真を撮影" class="w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-pink text-cyber-pink rounded-full font-bold text-xl shadow-[0_0_10px_rgba(236,72,153,0.5)] hover:bg-cyber-pink hover:text-white transition-colors active:scale-95 shrink-0">
-            📷
-          </button>
-          <button id="viewBeyImageBtn" onclick="openBeyImagePreview()" title="ベイチェック画像を確認" class="hidden w-12 h-12 flex items-center justify-center bg-cyber-dark border-2 border-cyber-orange text-cyber-orange rounded-full font-bold text-xl shadow-[0_0_10px_rgba(255,170,0,0.5)] hover:bg-cyber-orange hover:text-white transition-colors active:scale-95 shrink-0">
-            🖼️
           </button>
         </div>
       </div>
@@ -806,19 +781,19 @@
   </div>
 </div>
 
-  <!-- TORABO HUD（score_torabo.html）専用リモート：メイン大会HUDの conn とは別 DataConnection -->
+  <!-- 自担当ブロック用：メイン HUD（score.html）へのリモート（conn 共通） -->
   <div id="toraboRemoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[110] p-3 overflow-y-auto">
     <div class="bg-cyber-dark p-4 rounded-lg shadow-xl w-full max-w-lg border-2 border-cyber-blue flex flex-col my-auto">
       <div class="flex justify-between items-center mb-3 border-b border-cyber-table-border pb-2 shrink-0">
-        <h2 class="text-sm font-sf text-cyber-blue tracking-widest">TORABO HUD REMOTE</h2>
+        <h2 class="text-sm font-sf text-cyber-blue tracking-widest">BLOCK HUD — score.html</h2>
         <button type="button" onclick="closeToraboBlockRemote()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf">✖</button>
       </div>
-      <p class="text-[9px] text-cyber-text opacity-60 mb-2">トラボCUP@RedBullGamingSphereTokyo · 自担当ブロック向け score_torabo へ送信</p>
+      <p class="text-[9px] text-cyber-text opacity-60 mb-2">トラボCUP@RedBullGamingSphereTokyo · ヘッダー HUD と同じ score.html へ送信</p>
       <div class="grid grid-cols-2 gap-2 mb-3">
         <input type="text" id="torabo-remote-p1" placeholder="LEFT チーム名" class="p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text text-sm font-sf">
         <input type="text" id="torabo-remote-p2" placeholder="RIGHT チーム名" class="p-2 bg-cyber-bg border border-cyber-pink rounded text-cyber-text text-sm font-sf">
       </div>
-      <button type="button" onclick="toraboSendSetMatch()" class="w-full mb-3 py-2 bg-cyber-dark border border-cyber-green text-cyber-green text-xs font-sf font-bold rounded">名前を score_torabo に再送信（SET_MATCH）</button>
+      <button type="button" onclick="toraboSendSetMatch()" class="w-full mb-3 py-2 bg-cyber-dark border border-cyber-green text-cyber-green text-xs font-sf font-bold rounded">名前を score.html に再送信（SET_MATCH）</button>
       <div class="flex justify-between gap-2 mb-2 text-center">
         <div class="flex-1">
           <div class="text-[10px] text-cyber-blue font-sf">LEFT</div>
@@ -960,8 +935,7 @@
     let beybladeSelectionStep = 0;
     let beybladeSelectionPath = [];
     let currentEditingBeybladeIndex = -1;
-    let currentCheckId = null; let currentLotteryId = null;
-    let _cameraContext = null; // カメラ起動元のコンテキスト識別用
+    let currentLotteryId = null;
 
     let isSetupSwapMode = false;
     let setupSwapPending = null;
@@ -1090,7 +1064,7 @@
     function connectLink() {
       if (conn && conn.open) { conn.close(); resetLinkUI(); return; }
       const code = document.getElementById('linkCodeInput').value;
-      if(!code || code.length !== 4) return showAlert("iPhoneのLINK CODEを入力してください");
+      if(!code || code.length !== 4) return showAlert("score.html の LINK CODE（4桁）を入力してください");
       const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
       if (!peer || peer.destroyed) initPeer();
       if (conn) conn.close();
@@ -1117,14 +1091,11 @@
     let blockStadiumTeams = { A: [], B: [], C: [], D: [] };
     let blockTeamIdCounter = 1;
     let blockParentSelectedPids = [];
-    let toraboPeer = null;
-    let toraboConn = null;
     let toraboRemoteScoreLeft = 0;
     let toraboRemoteScoreRight = 0;
     let toraboRemoteWinLimit = 4;
     let toraboRemoteSwapped = false;
     const PARENT_CODE_KEY = 'tbh_main_parent_code';
-    const TORABO_CODE_KEY = 'tbh_main_torabo_link_code';
     const PARENT_ICE = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
@@ -1495,71 +1466,12 @@
       showAlert('📡 BLOCK_MASTER_INIT を ' + open.length + ' 台に送信しました。\n第' + part + '部 · ' + tn);
     }
 
-    function ensureToraboPeer() {
-      if (toraboPeer && !toraboPeer.destroyed) return;
-      toraboPeer = new Peer({ debug: 0, config: { iceServers: PARENT_ICE } });
-      toraboPeer.on('disconnected', () => {
-        if (toraboPeer && !toraboPeer.destroyed) {
-          try { toraboPeer.reconnect(); } catch (e) {}
-        }
-      });
-      toraboPeer.on('error', () => {});
-    }
-
-    function setToraboDot(ok) {
-      const dot = document.getElementById('torabo-link-dot');
-      if (!dot) return;
-      dot.className = ok ? 'w-2 h-2 rounded-full bg-cyber-green shadow-[0_0_6px_#22c55e]' : 'w-2 h-2 rounded-full bg-red-500';
-    }
-
-    function connectToraboLink() {
-      const btn = document.getElementById('btn-torabo-connect');
-      if (toraboConn && toraboConn.open) {
-        try { toraboConn.close(); } catch (e) {}
-        toraboConn = null;
-        setToraboDot(false);
-        if (btn) btn.innerText = 'TORABO CONN';
-        return;
-      }
-      const inp = document.getElementById('toraboLinkCodeInput');
-      const code = (inp && inp.value.trim()) || '';
-      if (!code || code.length !== 4) return showAlert('score_torabo の LINK CODE（4桁）を入力してください');
-      if (btn) btn.innerText = 'WAIT...';
-      ensureToraboPeer();
-      if (toraboConn) try { toraboConn.close(); } catch (e) {}
-      toraboConn = toraboPeer.connect('itabashi-link-' + code, { reliable: true, serialization: 'json' });
-      toraboConn.on('open', () => {
-        setToraboDot(true);
-        if (btn) btn.innerText = 'DISCONN';
-        try { localStorage.setItem(TORABO_CODE_KEY, code); } catch (e) {}
-      });
-      toraboConn.on('close', () => {
-        toraboConn = null;
-        setToraboDot(false);
-        if (btn) btn.innerText = 'TORABO CONN';
-      });
-      toraboConn.on('error', () => {
-        toraboConn = null;
-        setToraboDot(false);
-        if (btn) btn.innerText = 'TORABO CONN';
-        showAlert('TORABO 接続に失敗しました');
-      });
-    }
-
-    function forceResetToraboLink() {
-      if (toraboConn) try { toraboConn.close(); } catch (e) {}
-      toraboConn = null;
-      setToraboDot(false);
-      const btn = document.getElementById('btn-torabo-connect');
-      if (btn) btn.innerText = 'TORABO CONN';
-    }
-
     function sendToraboRemoteCmd(cmd) {
-      if (!toraboConn || !toraboConn.open) {
-        showAlert('TORABO（score_torabo）が未接続です');
+      if (!conn || !conn.open) {
+        showAlert('score.html（HUD）が未接続です。\n画面上部の CONN で接続してください。');
         return;
       }
-      toraboConn.send({ type: 'REMOTE_CMD', cmd: cmd });
+      conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
     function updateToraboRemoteScoreUI() {
@@ -1579,7 +1491,7 @@
     }
 
     function toraboScoreCmd(side, cmd, pts) {
-      if (!toraboConn || !toraboConn.open) return showAlert('TORABO が未接続です');
+      if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です。\n画面上部の CONN で接続してください。');
       sendToraboRemoteCmd(cmd);
       if (cmd === 'SYS_RESET') {
         toraboRemoteScoreLeft = 0;
@@ -1592,18 +1504,18 @@
     }
 
     function toraboSendSetMatch() {
-      if (!toraboConn || !toraboConn.open) return;
+      if (!conn || !conn.open) return;
       const p1e = document.getElementById('torabo-remote-p1');
       const p2e = document.getElementById('torabo-remote-p2');
       const p1 = (p1e && p1e.value.trim()) || 'LEFT';
       const p2 = (p2e && p2e.value.trim()) || 'RIGHT';
-      toraboConn.send({ type: 'SET_MATCH', p1: p1, p2: p2, tName: getBlockExportTournamentName() });
+      conn.send({ type: 'SET_MATCH', p1: p1, p2: p2, tName: getBlockExportTournamentName() });
     }
 
     function openToraboBlockRemote() {
       const locEl = document.getElementById('parent-local-block-stadium');
       if (!locEl || !locEl.value) return showAlert('先に「② 親機の自担当スタジアム」で A〜D のいずれかを選んでください。');
-      if (!toraboConn || !toraboConn.open) return showAlert('TORABO CONN で score_torabo.html と接続してください');
+      if (!conn || !conn.open) return showAlert('画面上部の HUD で score.html と CONN してください（4桁コード）。');
       toraboRemoteScoreLeft = 0;
       toraboRemoteScoreRight = 0;
       toraboRemoteSwapped = false;
@@ -1849,16 +1761,17 @@
     function confirmSetup() {
       const nameInput = document.getElementById('tournamentNameInput');
       tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'トラボCUP@RedBullGamingSphereTokyo';
-      let sizeInput = document.getElementById('tournamentSizeInput'); let sizeStr = sizeInput ? sizeInput.value : "32";
-      if (!sizeStr) sizeStr = "32";
+      let sizeInput = document.getElementById('tournamentSizeInput'); let sizeStr = sizeInput ? sizeInput.value : "96";
+      if (!sizeStr) sizeStr = "96";
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       let totalSize = parseInt(sizeStr);
-      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
-      if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
-      colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
+      if (isNaN(totalSize) || totalSize < 8 || totalSize > 96) { totalSize = 96; if(sizeInput) sizeInput.value = "96"; }
       const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
       const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize };
       if (remainder >= 1) caps['A']++; if (remainder >= 2) caps['C']++; if (remainder >= 3) caps['B']++;
+      const maxCap = Math.max(caps['A'], caps['B'], caps['C'], caps['D']);
+      globalBlockSize = Math.max(2, maxCap);
+      colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
       colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
       isSetupDone = true;
       document.getElementById('setupSection').classList.add('hidden');
@@ -1879,6 +1792,7 @@
       } else if (blockSize === 2) {
         switch(count) { case 2: return [0,1]; case 1: return [0]; default: return []; }
       }
+      if (count <= blockSize && blockSize > 8) return Array.from({ length: count }, (_, i) => i);
       return [];
     }
 
@@ -1925,7 +1839,7 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            bayChecked: false, bayImage: null, beyblades: [], color: null, position: null }); count++;
+            beyblades: [], color: null, position: null }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
@@ -1936,7 +1850,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, bayImage: null, beyblades: [], color: null, position: null });
+          beyblades: [], color: null, position: null });
       renderParticipants();
     }
     
@@ -2189,164 +2103,6 @@
       if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
     }
 
-    // ==========================================
-    // カメラ撮影 ＆ ZIP保存
-    // ==========================================
-    function handleBayCheck(id) {
-        openCamera(id);
-    }
-    
-    function openCamera(id) {
-        currentCheckId = id;
-        const p = participants.find(x => x.id === id);
-        if (p.bayChecked && p.bayImage) {
-            document.getElementById('resultImage').src = p.bayImage;
-            document.getElementById('cameraModal').classList.remove('hidden');
-            document.getElementById('cameraModal').classList.add('flex');
-        } else { document.getElementById('cameraInput').click(); }
-    }
-
-    function reTakePhoto() {
-      if (_cameraContext === 'beyblade_confirm') _cameraContext = 'beyblade';
-      document.getElementById('cameraInput').click();
-    }
-
-    /**
-     * Canvas に文字情報を描画する共通関数
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {HTMLCanvasElement} canvas
-     * @param {object} p - 参加者オブジェクト
-     */
-    function drawBeyCheckOverlay(ctx, canvas, p) {
-      const w = canvas.width;
-      const fontSize = Math.max(w / 15, 30);
-      ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
-      ctx.fillStyle = '#0ea5e9';
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-      ctx.lineWidth = fontSize / 12;
-      ctx.textBaseline = 'top';
-
-      const tName = tournamentName || '大会';
-      const pName = p ? p.name : '';
-      const margin = 20;
-
-      // 大会名（右揃え）
-      ctx.textAlign = 'right';
-      const y1 = margin;
-      ctx.strokeText(tName, w - margin, y1);
-      ctx.fillText(tName, w - margin, y1);
-
-      // プレイヤー名（右揃え）
-      const y2 = y1 + fontSize * 1.2;
-      ctx.strokeText(pName, w - margin, y2);
-      ctx.fillText(pName, w - margin, y2);
-
-      // 使用ベイ名（参加者名の下に）
-      if (p && p.beyblades && p.beyblades.length > 0) {
-        const beyFontSize = Math.max(w / 20, 24);
-        ctx.font = `bold ${beyFontSize}px Orbitron, sans-serif`;
-        ctx.fillStyle = '#22c55e';
-        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-        ctx.lineWidth = beyFontSize / 12;
-        ctx.textBaseline = 'top';
-
-        let yOffset = y2 + fontSize * 1.5;
-
-        ctx.textAlign = 'left';
-        const beyLabels = ['①', '②', '③'];
-
-        // ベイ1〜3: すべて左揃え＋①②③
-        if (p.beyblades[0]) {
-          const bey1Name = beyLabels[0] + (p.beyblades[0].name || 'ー');
-          ctx.strokeText(bey1Name, margin, yOffset);
-          ctx.fillText(bey1Name, margin, yOffset);
-          yOffset += beyFontSize * 1.4;
-        }
-
-        if (p.beyblades[1]) {
-          const bey2Name = beyLabels[1] + (p.beyblades[1].name || 'ー');
-          ctx.strokeText(bey2Name, margin, yOffset);
-          ctx.fillText(bey2Name, margin, yOffset);
-          yOffset += beyFontSize * 1.4;
-        }
-
-        if (p.beyblades[2]) {
-          const bey3Name = beyLabels[2] + (p.beyblades[2].name || 'ー');
-          ctx.strokeText(bey3Name, margin, yOffset);
-          ctx.fillText(bey3Name, margin, yOffset);
-        }
-      }
-    }
-
-
-    function closeCameraModal() {
-        const wasBeyblade = (_cameraContext === 'beyblade_confirm');
-        const wasView = (_cameraContext === 'beyblade_view');
-        _cameraContext = null;
-        document.getElementById('cameraModal').classList.add('hidden');
-        document.getElementById('cameraModal').classList.remove('flex');
-        document.getElementById('cameraInput').value = '';
-        document.getElementById('cancelCameraBtn').classList.add('hidden');
-        if (wasBeyblade) {
-          // 撮影後OKでベイブレードモーダルも閉じて参加者一覧へ
-          closeBeybladeModal();
-        }
-        // wasView の場合はベイブレードモーダルはそのまま（戻るだけ）
-    }
-
-    function cancelCameraAndBack() {
-        // 撮影をキャンセルしてベイブレード登録画面に戻る（画像・ベイ名は変更しない）
-        _cameraContext = null;
-        document.getElementById('cameraModal').classList.add('hidden');
-        document.getElementById('cameraModal').classList.remove('flex');
-        document.getElementById('cameraInput').value = '';
-        document.getElementById('cancelCameraBtn').classList.add('hidden');
-        // beybladeModalはそのまま表示（閉じない）
-    }
-
-    async function downloadAllImagesZip() {
-        if (typeof JSZip === 'undefined') return showAlert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
-        const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
-        if (checkedParticipants.length === 0) return showAlert("保存するベイチェック画像がありません。");
-        const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
-        const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
-        
-        // 画像を追加
-        checkedParticipants.forEach(p => {
-            const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-            folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
-        });
-        
-        // CSVファイルを作成
-        let csvContent = '\uFEFF'; // BOM（UTF-8）
-        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
-        
-        checkedParticipants.forEach(p => {
-            const name = p.name || '';
-            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
-            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
-            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
-            
-            // CSVエスケープ処理（カンマや改行、ダブルクォートを含む場合）
-            const escapeCsv = (str) => {
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-            
-            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
-        });
-        
-        // CSVファイルをZIPに追加
-        folder.file(`${safeTournamentName}_参加者リスト.csv`, csvContent);
-        
-        zip.generateAsync({type:"blob"}).then(function(content) {
-            const link = document.createElement('a'); link.href = URL.createObjectURL(content);
-            link.download = `${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
-        });
-    }
-
     function exportParticipantsCSV() {
         if (participants.length === 0) {
             showAlert("参加者がいません。");
@@ -2472,6 +2228,31 @@
     // ==========================================
     // トーナメント進行
     // ==========================================
+    /** 各ブロックの配席（globalBlockSize 枠）から単淘汰赛ブラケットを生成。人数が2の累乗でない場合は BYE で埋めて整合させる */
+    function buildEliminationRoundsForBlock(members) {
+      const slots = [];
+      const len = members ? members.length : 0;
+      for (let i = 0; i < len; i++) slots.push(members[i] != null ? members[i] : BYE);
+      if (slots.length === 0) return [[{ p1: BYE, p2: BYE, winner: null, score: null }]];
+      const P = 1 << Math.ceil(Math.log2(slots.length));
+      while (slots.length < P) slots.push(BYE);
+      const rounds = [];
+      const r0 = [];
+      for (let i = 0; i < slots.length; i += 2) {
+        r0.push({ p1: slots[i], p2: slots[i + 1], winner: null, score: null });
+      }
+      rounds.push(r0);
+      while (rounds[rounds.length - 1].length > 1) {
+        const prev = rounds[rounds.length - 1];
+        const next = [];
+        for (let j = 0; j < prev.length / 2; j++) {
+          next.push({ p1: null, p2: null, winner: null, score: null });
+        }
+        rounds.push(next);
+      }
+      return rounds;
+    }
+
     async function startTournament() {
       // ▼ オート抽選機能: 未抽選の参加者を自動配置
       const unlotteryParticipants = participants.filter(p => p.color === null);
@@ -2520,18 +2301,8 @@
       document.getElementById('displayTournamentName').innerText = tournamentName;
       
       ['A', 'B', 'C', 'D'].forEach(bName => {
-        const color = colors.find(c => blockMap[c] === bName); const members = blockData[color]; let rounds = [];
-        if (globalBlockSize === 8) {
-          let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
-          rounds = [ r1, [ {p1:null,p2:null,winner:null,score:null}, {p1:null,p2:null,winner:null,score:null} ], [ {p1:null,p2:null,winner:null,score:null} ] ];
-        } else if (globalBlockSize === 4) {
-          let r1 = []; for(let i=0; i<4; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
-          rounds = [ r1, [ {p1:null,p2:null,winner:null,score:null} ] ];
-        } else if (globalBlockSize === 2) {
-          let r1 = []; for(let i=0; i<2; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
-          rounds = [ r1 ];
-        }
-        blockMatches[bName] = rounds;
+        const color = colors.find(c => blockMap[c] === bName);
+        blockMatches[bName] = buildEliminationRoundsForBlock(blockData[color]);
       });
       finals = { sf: [{p1:null,p2:null,winner:null,score:null},{p1:null,p2:null,winner:null,score:null}], third: {p1:null,p2:null,winner:null,score:null}, f: {p1:null,p2:null,winner:null,score:null} };
       updateAdvancements(); switchTab('tournament');
@@ -2959,6 +2730,8 @@
         // 既存データにbeyblades配列がなければ追加
         participants.forEach(p => {
           if (!p.beyblades) p.beyblades = [];
+          delete p.bayImage;
+          delete p.bayChecked;
         });
         participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
@@ -3119,30 +2892,8 @@
       }
       
       renderBeybladeList();
-
-      // 🖼️ボタン：bayImageがある場合のみ表示
-      const viewBtn = document.getElementById('viewBeyImageBtn');
-      if (participant.bayImage) {
-        viewBtn.classList.remove('hidden');
-      } else {
-        viewBtn.classList.add('hidden');
-      }
-      
       document.getElementById('beybladeModal').classList.remove('hidden');
       document.getElementById('beybladeModal').classList.add('flex');
-    }
-
-    /**
-     * ベイチェック画像をプレビューで開く（ベイブレード登録モーダルから）
-     */
-    function openBeyImagePreview() {
-      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
-      if (!participant || !participant.bayImage) return;
-      _cameraContext = 'beyblade_view';
-      document.getElementById('resultImage').src = participant.bayImage;
-      document.getElementById('reTakeBtn').classList.add('hidden');
-      document.getElementById('cameraModal').classList.remove('hidden');
-      document.getElementById('cameraModal').classList.add('flex');
     }
 
     /**
@@ -3457,17 +3208,6 @@
       document.getElementById('beybladeSelectModal').classList.remove('flex');
     }
 
-    /**
-     * ベイブレード登録モーダルから直接写真撮影を起動する
-     * 既存の cameraInput / cameraModal の仕組みを流用する
-     */
-    function triggerBeybladePhoto() {
-      _cameraContext = 'beyblade';
-      const input = document.getElementById('cameraInput');
-      input.value = '';
-      input.click();
-    }
-
     // ==========================================
     // PeerJS: SET_BEYBLADE メッセージ送信
     // ==========================================
@@ -3503,15 +3243,10 @@
      */
 
     // ==========================================
-    // アプリ初期化時にCSVを読み込む & カメライベント登録
+    // アプリ初期化時にCSVを読み込む
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
       initParentServerPeer();
-      try {
-        const tc = localStorage.getItem(TORABO_CODE_KEY);
-        const ti = document.getElementById('toraboLinkCodeInput');
-        if (tc && /^\d{4}$/.test(tc) && ti) ti.value = tc;
-      } catch (e) {}
       const bmp = document.getElementById('block-master-part');
       const bsf = document.getElementById('block-sf-part');
       if (bmp && bsf) {
@@ -3520,68 +3255,6 @@
       await loadPartsCSV();
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
-
-      // カメラ入力のイベントリスナーをここで確実に登録
-      const camInput = document.getElementById('cameraInput');
-      if (camInput) {
-        camInput.addEventListener('change', function(e) {
-          if (_cameraContext === 'beyblade') {
-            _cameraContext = 'beyblade_confirm';
-            const file = e.target.files[0];
-            if (!file) { _cameraContext = null; return; }
-            const img = new Image();
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-              img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width; canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                const p = participants.find(x => x.id === currentBeybladeParticipantId);
-                drawBeyCheckOverlay(ctx, canvas, p);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                if (p) {
-                  p.bayImage = dataUrl;
-                  p.bayChecked = true;
-                  renderParticipants();
-                  saveState();
-                }
-                document.getElementById('resultImage').src = dataUrl;
-                document.getElementById('reTakeBtn').classList.remove('hidden');
-                document.getElementById('cancelCameraBtn').classList.remove('hidden');
-                document.getElementById('cameraModal').classList.remove('hidden');
-                document.getElementById('cameraModal').classList.add('flex');
-              };
-              img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            return;
-          }
-
-          // 通常ベイチェック撮影
-          const file = e.target.files[0]; if (!file) return;
-          const img = new Image(); const reader = new FileReader();
-          reader.onload = function(event) {
-            img.onload = function() {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width; canvas.height = img.height;
-              const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-              const p = participants.find(x => x.id === currentCheckId);
-              drawBeyCheckOverlay(ctx, canvas, p);
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-              if (p) { p.bayImage = dataUrl; p.bayChecked = true; }
-              document.getElementById('resultImage').src = dataUrl;
-              document.getElementById('reTakeBtn').classList.remove('hidden');
-              document.getElementById('cancelCameraBtn').classList.remove('hidden');
-              document.getElementById('cameraModal').classList.remove('hidden');
-              document.getElementById('cameraModal').classList.add('flex');
-              renderParticipants();
-            };
-            img.src = event.target.result;
-          };
-          reader.readAsDataURL(file);
-        });
-      }
     });
 
 

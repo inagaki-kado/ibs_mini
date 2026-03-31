@@ -820,8 +820,8 @@
                         overlay.innerHTML = '';
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
-                        // 新しい次戦予告表示（ロゴ対応）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo);
+                        // 新しい次戦予告表示（ロゴ対応・任意の画像データURL）
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -889,10 +889,14 @@
         }
         initPeer();
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
-            
+            if (logoDataUrl) {
+                logo.src = logoDataUrl;
+            } else {
+                logo.src = 'BEYX_logo_amb.png';
+            }
             // ロゴ表示設定
             if (showLogo) {
                 logo.style.display = 'block';
