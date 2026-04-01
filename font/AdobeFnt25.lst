@@ -1,0 +1,74 @@
+%!Adobe-FontList 1.25
+%Locale:0x411
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:TrueType
+FontName:ChakraPetch-BoldItalic
+FamilyName:Chakra Petch
+StyleName:Bold Italic
+FullName:Chakra Petch Bold Italic
+MenuName:Chakra Petch
+StyleBits:3
+WritingScript:Roman
+OutlineFileName:C:\Users\yamiz\Documents\ベイ会アプリ\Font\ChakraPetch-BoldItalic.ttf
+DataFormat:sfntData
+hasSVG:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:73772
+FileModTime:1768352757
+WeightClass:700
+WidthClass:5
+AngleClass:1
+NameArray:0,Win,1,Chakra Petch
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:TrueType
+FontName:DSEG7Classic-BoldItalic
+FamilyName:DSEG7 Classic
+StyleName:Bold Italic
+FullName:DSEG7 Classic Bold Italic
+MenuName:DSEG7 Classic
+StyleBits:3
+WritingScript:Roman
+OutlineFileName:C:\Users\yamiz\Documents\ベイ会アプリ\Font\DSEG7Classic-BoldItalic.ttf
+DataFormat:sfntData
+hasSVG:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:23464
+FileModTime:1768352757
+WeightClass:700
+WidthClass:5
+AngleClass:1
+NameArray:0,Mac,4,DSEG7 Classic Bold Italic
+NameArray:0,Win,1,DSEG7 Classic
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:TrueType
+FontName:Orbitron-Black
+FamilyName:Orbitron
+StyleName:Black
+FullName:Orbitron Black
+MenuName:Orbitron Black
+StyleBits:0
+WritingScript:Roman
+OutlineFileName:C:\Users\yamiz\Documents\ベイ会アプリ\Font\Orbitron-Black.ttf
+DataFormat:sfntData
+hasSVG:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:23392
+FileModTime:1768352757
+WeightClass:900
+WidthClass:5
+AngleClass:0
+NameArray:0,Win,1,Orbitron Black
+NameArray:0,Win,16,Orbitron
+%EndFont
+

@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>板橋ベイブレード会 | MEETUP of ITABASHI</title>
+<link rel="icon" href="BEYX_logo_amb.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04070f;
+    --bg2: #080d1a;
+    --bg3: #0c1220;
+    --neon-green: #00ff88;
+    --neon-blue: #0ea5e9;
+    --neon-pink: #ec4899;
+    --neon-yellow: #facc15;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --border: rgba(0,255,136,0.2);
+    --glow-green: 0 0 20px rgba(0,255,136,0.4), 0 0 40px rgba(0,255,136,0.2);
+    --glow-blue: 0 0 20px rgba(14,165,233,0.4), 0 0 40px rgba(14,165,233,0.2);
+    --glow-pink: 0 0 20px rgba(236,72,153,0.4), 0 0 40px rgba(236,72,153,0.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ─── Scanline overlay ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── Grid BG ─── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 2rem;
+    background: rgba(4,7,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--neon-green);
+    text-shadow: var(--glow-green);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.8rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+
+  .nav-links a:hover {
+    color: var(--neon-green);
+    text-shadow: var(--glow-green);
+  }
+
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+  }
+
+  /* ─── HERO ─── */
+  #hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6rem 1.5rem 4rem;
+    overflow: hidden;
+  }
+
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .hero-orb-1 { width: 500px; height: 500px; top: -100px; left: -150px; background: rgba(0,255,136,0.07); }
+  .hero-orb-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: rgba(14,165,233,0.07); }
+  .hero-orb-3 { width: 300px; height: 300px; top: 30%; left: 50%; transform: translate(-50%,-50%); background: rgba(236,72,153,0.05); }
+
+  /* Spinning ring */
+  .spin-ring {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,255,136,0.08);
+    animation: spinRing 20s linear infinite;
+    pointer-events: none;
+  }
+  .spin-ring::before {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    top: -4px; left: 50%;
+    box-shadow: var(--glow-green);
+  }
+  .spin-ring-2 {
+    width: 400px; height: 400px;
+    border-color: rgba(14,165,233,0.08);
+    animation-duration: 15s;
+    animation-direction: reverse;
+  }
+  .spin-ring-2::before { background: var(--neon-blue); box-shadow: var(--glow-blue); }
+
+  @keyframes spinRing { to { transform: rotate(360deg); } }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 0.3rem 1rem;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 7vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: #fff;
+    animation: fadeUp 0.8s 0.1s ease both;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title .accent-green { color: var(--neon-green); text-shadow: var(--glow-green); }
+  .hero-title .accent-blue  { color: var(--neon-blue);  text-shadow: var(--glow-blue); }
+
+  .hero-sub {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: clamp(0.9rem, 2vw, 1.15rem);
+    color: var(--text-dim);
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--neon-green);
+    padding: 0.85rem 2rem;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    animation: fadeUp 0.8s 0.3s ease both;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+
+  .hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-green);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── SECTION COMMON ─── */
+  section { position: relative; z-index: 1; }
+
+  .section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 1.5rem;
+  }
+
+  .section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--neon-green);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-line {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--neon-green), transparent);
+    margin-bottom: 2.5rem;
+  }
+
+  /* ─── ABOUT ─── */
+  #about { background: var(--bg2); }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
+
+  .about-text p {
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .about-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .stat-card {
+    background: rgba(0,255,136,0.03);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--neon-green);
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--neon-green);
+    text-shadow: var(--glow-green);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  /* Video embed */
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: #000;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .video-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 30px rgba(0,255,136,0.1);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .video-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  /* ─── RULES ─── */
+  #rules { background: var(--bg3); }
+
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .rule-card {
+    background: rgba(4,7,15,0.8);
+    border: 1px solid rgba(14,165,233,0.2);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .rule-card:hover {
+    border-color: rgba(14,165,233,0.5);
+    box-shadow: 0 0 20px rgba(14,165,233,0.1);
+  }
+
+  .rule-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-blue), transparent);
+  }
+
+  .rule-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--neon-blue);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.6rem;
+    text-shadow: var(--glow-blue);
+  }
+
+  .rule-card ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .rule-card ul li {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .rule-card ul li:last-child { border-bottom: none; }
+
+  .rule-card ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--neon-blue);
+    font-size: 0.7rem;
+  }
+
+  /* ─── EVENTS ─── */
+  #events { background: var(--bg2); }
+
+  #events-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    #events-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  .loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(0,255,136,0.1);
+    border-top-color: var(--neon-green);
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    border: 1px dashed rgba(0,255,136,0.2);
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  /* Event Card */
+  .event-card {
+    background: var(--bg3);
+    border: 1px solid rgba(0,255,136,0.15);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+  }
+
+  .event-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-blue), transparent);
+  }
+
+  .event-card:hover {
+    border-color: rgba(0,255,136,0.4);
+    box-shadow: 0 4px 30px rgba(0,255,136,0.08);
+  }
+
+  .event-date-block {
+    background: rgba(0,255,136,0.06);
+    border-right: 1px solid rgba(0,255,136,0.15);
+    padding: 1.5rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .event-date-month {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    color: var(--neon-green);
+    text-transform: uppercase;
+    margin-bottom: 0.1rem;
+  }
+
+  .event-date-day {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 2.2rem;
+    line-height: 1;
+    color: #fff;
+    text-shadow: var(--glow-green);
+    margin-bottom: 0.15rem;
+  }
+
+  .event-date-dow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .event-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .event-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+  }
+
+  .event-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .event-tag {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+
+  .event-tag.green { color: var(--neon-green); border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.05); }
+  .event-tag.blue  { color: var(--neon-blue);  border-color: rgba(14,165,233,0.3); background: rgba(14,165,233,0.05); }
+  .event-tag.pink  { color: var(--neon-pink);  border-color: rgba(236,72,153,0.3); background: rgba(236,72,153,0.05); }
+  .event-tag.yellow{ color: var(--neon-yellow);border-color: rgba(250,204,21,0.3); background: rgba(250,204,21,0.05); }
+
+  .event-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem 1.5rem;
+  }
+
+  .event-info-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .event-info-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .event-info-value {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .event-comment {
+    background: rgba(250,204,21,0.04);
+    border-left: 3px solid var(--neon-yellow);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.83rem;
+    color: #fff;
+    font-style: normal;
+  }
+
+  .event-map {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    border: 1px solid rgba(0,255,136,0.1);
+    filter: grayscale(40%) invert(5%);
+    display: block;
+  }
+
+  .event-footer {
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .btn-tonamel {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--neon-green);
+    padding: 0.9rem 1.5rem;
+    text-decoration: none;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-tonamel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+
+  .btn-tonamel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-green);
+    filter: brightness(1.1);
+  }
+
+  .btn-tonamel:hover::before { transform: translateX(100%); }
+
+  @media (max-width: 600px) {
+    .event-card {
+      grid-template-columns: 1fr;
+    }
+    .event-date-block {
+      border-right: none;
+      border-bottom: 1px solid rgba(0,255,136,0.15);
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.8rem;
+      align-items: center;
+      padding: 1rem 1.5rem;
+    }
+    .event-date-day { font-size: 1.6rem; }
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--bg);
+    border-top: 1px solid rgba(0,255,136,0.1);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer-logo {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: var(--neon-green);
+    text-shadow: var(--glow-green);
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-x-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    color: var(--neon-blue);
+    text-decoration: none;
+    border: 1px solid rgba(14,165,233,0.3);
+    padding: 0.5rem 1.2rem;
+    transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+  }
+
+  .footer-x-link:hover {
+    color: #fff;
+    border-color: var(--neon-blue);
+    box-shadow: var(--glow-blue);
+  }
+
+  .footer-copy {
+    margin-top: 2rem;
+    font-size: 0.72rem;
+    color: rgba(148,163,184,0.4);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── Scroll reveal ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── INFORMATION ─── */
+  #information { background: var(--bg); }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .info-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    border-left: 3px solid var(--neon-blue);
+    padding: 0.8rem 1rem;
+    background: rgba(14,165,233,0.04);
+    transition: background 0.2s;
+  }
+
+  .info-item:hover { background: rgba(14,165,233,0.08); }
+
+  .info-item-dot {
+    width: 8px; height: 8px;
+    background: var(--neon-blue);
+    border-radius: 50%;
+    margin-top: 0.45rem;
+    flex-shrink: 0;
+    box-shadow: var(--glow-blue);
+  }
+
+  .info-item-text {
+    font-size: 0.92rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .info-empty {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    padding: 1rem;
+  }
+
+
+  /* ─── Capacity Badge ─── */
+  .capacity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .capacity-badge.open {
+    color: var(--neon-green);
+    border-color: rgba(0,255,136,0.4);
+    background: rgba(0,255,136,0.07);
+  }
+  .capacity-badge.few {
+    color: var(--neon-yellow);
+    border-color: rgba(250,204,21,0.4);
+    background: rgba(250,204,21,0.07);
+    animation: badgePulse 1.4s ease-in-out infinite;
+  }
+  .capacity-badge.full {
+    color: #ff4d4d;
+    border-color: rgba(255,77,77,0.4);
+    background: rgba(255,77,77,0.07);
+  }
+  .capacity-badge.info {
+    color: #cbd5e1;
+    border-color: rgba(203,213,225,0.3);
+    background: rgba(203,213,225,0.05);
+  }
+  @keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+
+  .event-name-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#hero">板橋ベイブレード会</a>
+  <ul class="nav-links">
+    <li><a href="#about">ABOUT</a></li>
+    <li><a href="#information">INFO</a></li>
+    <li><a href="#events">EVENTS</a></li>
+    <li><a href="#rules">PRECAUTION</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="spin-ring"></div>
+  <div class="spin-ring spin-ring-2"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+
+  <!-- Ambassador logo background -->
+  <img
+    src="BEYX_logo_amb.png"
+    alt=""
+    aria-hidden="true"
+    style="
+      position: absolute;
+      width: min(1040px, 95vw);
+      height: auto;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.18;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+    "
+  >
+
+  <p class="hero-badge" style="position:relative;z-index:1;">BEYBLADE X EVENT AMBASSADOR PRESENTS</p>
+  <h1 class="hero-title" style="position:relative;z-index:1;">
+    <span class="accent-green">板橋</span><br>
+    <span class="accent-blue">ベイブレード会</span>
+  </h1>
+  <p class="hero-sub" style="position:relative;z-index:1;">MEETUP OF ITABASHI</p>
+  <a class="hero-cta" href="#events" style="position:relative;z-index:1;">▶ イベントを確認する</a>
+</section>
+
+<!-- ABOUT & MOVIE -->
+<section id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <p class="section-label">// ABOUT US</p>
+        <h2 class="section-title">板橋ベイブレード会<br>とは？</h2>
+        <div class="section-line"></div>
+        <p>「<strong>板橋ベイブレード会</strong>」とは、<a href="https://www.takaratomy.co.jp/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">株式会社タカラトミー</a>公認のイベントアンバサダーである<a href="https://x.com/yamizaki" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">イナッシー</a>（稲垣ヤミー）が主に東京都板橋区で主催する<a href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;text-shadow:var(--glow-green);">BEYBLADE X</a>のイベントです。</p>
+        <p>気軽な練習会から、公式ルールに準じた本格的なアンバサダー大会まで、幅広いスタイルで定期開催しています。初心者から上級者まで大歓迎！</p>
+      </div>
+
+      <div class="reveal">
+        <p class="section-label">// PROMO VIDEO</p>
+        <h2 class="section-title" style="font-size:1.2rem; margin-bottom:1rem;">イメージ動画</h2>
+        <div class="video-wrap">
+          <iframe
+            src="https://www.youtube.com/embed/I_RO4i45jII?si=-IaCVJs0IrivHLSx"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- INFORMATION -->
+<section id="information">
+  <div class="section-inner">
+    <p class="section-label reveal">// LATEST NEWS</p>
+    <h2 class="section-title reveal">INFORMATION</h2>
+    <div class="section-line reveal"></div>
+    <div id="info-list" class="info-list reveal">
+      <div class="info-empty">情報を読み込み中...</div>
+    </div>
+  </div>
+</section>
+
+<!-- EVENTS -->
+<section id="events">
+  <div class="section-inner">
+    <p class="section-label">// EVENT SCHEDULE</p>
+    <h2 class="section-title">開催予定イベント</h2>
+    <div class="section-line"></div>
+    <div id="events-container">
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>イベント情報を読み込み中...</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RULES -->
+<section id="rules">
+  <div class="section-inner">
+    <p class="section-label reveal">// PARTICIPATION RULES</p>
+    <h2 class="section-title reveal">参加要項・共通ルール</h2>
+    <div class="section-line reveal"></div>
+    <div class="rules-grid">
+      <div class="rule-card reveal">
+        <div class="rule-title">未成年の参加について</div>
+        <ul>
+          <li>6歳未満の方は参加できません</li>
+          <li>17歳以下の方は保護者の同伴または事前の承諾が必須です</li>
+          <li>大会に参加しない保護者等の同伴・見学は無料です</li>
+        </ul>
+      </div>
+      <div class="rule-card reveal">
+        <div class="rule-title">飲食について</div>
+        <ul>
+          <li>ペットボトルなど蓋付きの飲み物のみ持ち込み可</li>
+          <li>パンやおにぎりといった軽食は可（匂いの強いものは禁止）</li>
+          <li>弁当・汁物・麺類等は持ち込み禁止</li>
+        </ul>
+      </div>
+      <div class="rule-card reveal">
+        <div class="rule-title">マナー・禁止事項</div>
+        <ul>
+          <li>会場は公共施設のため過度な騒音は厳禁です</li>
+          <li>会場内での喫煙不可</li>
+          <li>参加者間でのベイの売買・トレード・貸し借りは禁止</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">板橋ベイブレード会</div>
+  <div class="footer-sub">MEETUP OF ITABASHI — Powered by Inagaki"INASSY"Yammy</div>
+  <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+    <a class="footer-x-link" href="https://x.com/yamizaki" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      @yamizaki をフォロー
+    </a>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ─── CONFIG ───────────────────────────────────────────
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=0&single=true&output=csv';
+
+// CSVカラムインデックス（0始まり）
+const COL = {
+  status:    0,  // 公開状況
+  name:      1,  // イベント名
+  date:      2,  // 開催日
+  reception: 3,  // 受付開始時間
+  startTime: 4,  // 大会開始時間
+  endTime:   5,  // 大会終了時間
+  qualify:   6,  // 参加資格
+  fee:       7,  // 参加費
+  stadium:   8,  // 使用スタジアム
+  format:    9,  // 大会形式
+  comment:   10, // コメント
+  venue:     11, // 会場
+  venueSub:  12, // 会場補足
+  mapUrl:    13, // GoogleマップURL
+  tonamel:   14, // トナメルURL
+  capacity:  15, // 定員状況（受付中／残りわずか／満員）
+  kind:      16, // 種別（Q列）
+};
+
+const DOW_JA = ['日', '月', '火', '水', '木', '金', '土'];
+const MONTH_EN = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// ─── UTILS ────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = [];
+  let i = 0;
+  while (i < text.length) {
+    const row = [];
+    while (i < text.length && text[i] !== '\n') {
+      if (text[i] === '"') {
+        let cell = '';
+        i++;
+        while (i < text.length) {
+          if (text[i] === '"' && text[i+1] === '"') { cell += '"'; i += 2; }
+          else if (text[i] === '"') { i++; break; }
+          else { cell += text[i++]; }
+        }
+        row.push(cell);
+      } else {
+        let cell = '';
+        while (i < text.length && text[i] !== ',' && text[i] !== '\n') cell += text[i++];
+        row.push(cell);
+      }
+      if (text[i] === ',') i++;
+    }
+    if (text[i] === '\n') i++;
+    if (row.length > 1 || (row.length === 1 && row[0] !== '')) rows.push(row);
+  }
+  return rows;
+}
+
+function convertMapUrl(url) {
+  if (!url || url.trim() === '') return null;
+  // すでにembed形式ならそのまま
+  if (url.includes('/embed')) return url.trim();
+  // place URLをembed形式に変換
+  const placeMatch = url.match(/place\/([^/]+)/);
+  if (placeMatch) {
+    return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU3aok&q=${encodeURIComponent(placeMatch[1])}`;
+  }
+  // query パラメータ抽出
+  const qMatch = url.match(/[?&]q=([^&]+)/);
+  if (qMatch) {
+    return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU3aok&q=${qMatch[1]}`;
+  }
+  // @座標抽出
+  const coordMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (coordMatch) {
+    return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU3aok&q=${coordMatch[1]},${coordMatch[2]}`;
+  }
+  // フォールバック: URLをそのままqに
+  try {
+    return `https://www.google.com/maps?output=embed&q=${encodeURIComponent(url.trim())}`;
+  } catch {
+    return null;
+  }
+}
+
+// ─── CARD RENDER ──────────────────────────────────────
+function renderCard(row) {
+  const name      = (row[COL.name]      || '').trim();
+  const dateStr   = (row[COL.date]      || '').trim();
+  const reception = (row[COL.reception] || '').trim();
+  const startTime = (row[COL.startTime] || '').trim();
+  const endTime   = (row[COL.endTime]   || '').trim();
+  const qualify   = (row[COL.qualify]   || '').trim();
+  const fee       = (row[COL.fee]       || '').trim();
+  const stadium   = (row[COL.stadium]   || '').trim();
+  const format    = (row[COL.format]    || '').trim();
+  const comment   = (row[COL.comment]   || '').trim();
+  const venue     = (row[COL.venue]     || '').trim();
+  const venueSub  = (row[COL.venueSub]  || '').trim();
+  const mapUrl    = (row[COL.mapUrl]    || '').trim();
+  const tonamel   = (row[COL.tonamel]   || '').trim();
+  const capacity  = (row[COL.capacity]  || '').trim();
+  const kind      = (row[COL.kind]      || '').trim();
+
+  // 定員バッジ生成
+  let capacityBadge = '';
+  if (capacity === '受付中') {
+    capacityBadge = `<span class="capacity-badge open">✅ 受付中</span>`;
+  } else if (capacity === '残りわずか') {
+    capacityBadge = `<span class="capacity-badge few">⚡ 残りわずか</span>`;
+  } else if (capacity === '満員') {
+    capacityBadge = `<span class="capacity-badge full">🔴 定員埋まりました</span>`;
+  } else if (capacity) {
+    // 上記以外の自由テキストはそのまま表示
+    capacityBadge = `<span class="capacity-badge info">📢 ${capacity}</span>`;
+  }
+
+  // 大会時間を結合（開始〜終了）
+  const timeStr = startTime && endTime ? `${startTime}〜${endTime}`
+                : startTime ? startTime
+                : endTime   ? `〜${endTime}` : '';
+
+  // 日付パース
+  let dateDisplay = { month: '---', day: '--', dow: '-' };
+  if (dateStr) {
+    const d = new Date(dateStr.replace(/\//g, '-'));
+    if (!isNaN(d)) {
+      dateDisplay = {
+        month: MONTH_EN[d.getMonth()],
+        day:   String(d.getDate()).padStart(2, '0'),
+        dow:   DOW_JA[d.getDay()]
+      };
+    }
+  }
+
+  // 地図embed URL
+  const embedUrl = convertMapUrl(mapUrl);
+
+  const card = document.createElement('div');
+  card.className = 'event-card reveal';
+
+  card.innerHTML = `
+    <div class="event-date-block">
+      <div class="event-date-month">${dateDisplay.month}</div>
+      <div class="event-date-day">${dateDisplay.day}</div>
+      <div class="event-date-dow">${dateDisplay.dow}曜</div>
+    </div>
+    <div class="event-body">
+      ${kind ? `<div style="font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--neon-blue);margin-bottom:0.2rem;">${kind}</div>` : ''}
+      <div class="event-name-row">
+        <div class="event-name">${name}</div>
+        ${capacityBadge}
+      </div>
+
+      <div class="event-meta-row">
+        ${format   ? `<span class="event-tag blue">${format}</span>` : ''}
+        ${qualify  ? `<span class="event-tag pink">${qualify}</span>` : ''}
+        ${fee      ? `<span class="event-tag yellow">参加費: ${fee}</span>` : ''}
+        ${stadium  ? `<span class="event-tag green">${stadium}</span>` : ''}
+      </div>
+
+      <div class="event-info-grid">
+        ${reception ? `<div class="event-info-item"><span class="event-info-label">受付</span><span class="event-info-value">${reception}</span></div>` : ''}
+        ${timeStr   ? `<div class="event-info-item"><span class="event-info-label">大会時間（予定）</span><span class="event-info-value">${timeStr}</span></div>` : ''}
+        ${venue     ? `<div class="event-info-item"><span class="event-info-label">会場</span><span class="event-info-value">${venue}${venueSub ? `<br><small style="color:var(--text-dim);font-size:0.8em">${venueSub}</small>` : ''}</span></div>` : ''}
+      </div>
+
+      ${comment ? `<div class="event-comment">💬 ${comment}</div>` : ''}
+
+      ${embedUrl ? `<iframe class="event-map" src="${embedUrl}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : ''}
+
+      <div class="event-footer">
+        ${tonamel
+          ? `<a class="btn-tonamel" href="${tonamel}" target="_blank" rel="noopener">🏆 詳細やお申し込みはこちら！</a>`
+          : `<div style="text-align:center;font-size:0.8rem;color:var(--text-dim);padding:0.5rem">申し込みリンクは準備中です</div>`
+        }
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+// ─── FETCH & RENDER ───────────────────────────────────
+async function loadEvents() {
+  const container = document.getElementById('events-container');
+
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const rows = parseCSV(text);
+
+    // ヘッダー行を除外し、「公開」のみフィルタ
+    const dataRows = rows.slice(1).filter(r => (r[COL.status] || '').trim() === '公開');
+
+    if (dataRows.length === 0) {
+      container.innerHTML = `<div class="empty-state">📭 現在予定されているイベントはありません。<br>SNSで最新情報をチェックしてください！</div>`;
+      return;
+    }
+
+    // 日付順ソート（近いものが上）
+    dataRows.sort((a, b) => {
+      const da = new Date((a[COL.date] || '').replace(/\//g, '-'));
+      const db = new Date((b[COL.date] || '').replace(/\//g, '-'));
+      return da - db;
+    });
+
+    container.innerHTML = '';
+    dataRows.forEach(row => {
+      container.appendChild(renderCard(row));
+    });
+
+    // reveal アニメーション再トリガー
+    observeReveal();
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = `
+      <div class="empty-state">
+        ⚠️ イベント情報の取得に失敗しました。<br>
+        しばらく経ってから再度お試しください。
+      </div>`;
+  }
+}
+
+// ─── SCROLL REVEAL ────────────────────────────────────
+function observeReveal() {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el => io.observe(el));
+}
+
+
+// ─── INFORMATION ──────────────────────────────────────
+const INFO_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=347993454&single=true&output=csv';
+
+async function loadInformation() {
+  const container = document.getElementById('info-list');
+  try {
+    const res = await fetch(INFO_CSV_URL);
+    if (!res.ok) throw new Error();
+    const text = await res.text();
+    const rows = parseCSV(text).slice(1);
+    const items = rows.map(r => (r[0] || '').trim()).filter(t => t !== '').slice(0, 3);
+    if (items.length === 0) {
+      container.innerHTML = '<div class="info-empty">現在お知らせはありません。</div>';
+      return;
+    }
+    container.innerHTML = items.map(t => `
+      <div class="info-item">
+        <div class="info-item-dot"></div>
+        <div class="info-item-text">${t}</div>
+      </div>
+    `).join('');
+    observeReveal();
+  } catch(e) {
+    container.innerHTML = '<div class="info-empty">情報の取得に失敗しました。</div>';
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  observeReveal();
+  loadEvents();
+  loadInformation();
+});
+</script>
+</body>
+</html>

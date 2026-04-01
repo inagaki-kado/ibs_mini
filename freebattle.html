@@ -1236,7 +1236,7 @@
             activeNextBattleId = null;
         } else {
             const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
-            if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled, logoDataUrl: previewLogoDataUrl || null });
+            if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled, logoDataUrl: previewLogoDataUrl || null, logoSrc: previewLogoDataUrl ? null : 'BEYX_logo_amb.png' });
             activeNextBattleId = matchId;
         }
     }

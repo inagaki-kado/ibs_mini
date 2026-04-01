@@ -294,7 +294,7 @@
 
     <!-- NEXT BATTLE announcement overlay -->
     <div id="next-battle-overlay" class="hidden" onclick="hideNextBattle()">
-        <img id="next-battle-logo" src="BEYX_logo_amb.png" alt="Logo" style="display:none;">
+        <img id="next-battle-logo" src="maintitle_white.png" alt="Logo" style="display:none;">
         <div id="next-battle-content">
             <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vw,80px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.25em;text-align:center;margin-bottom:0.5rem;">NEXT BATTLE</div>
             <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(11px,1.6vw,20px);color:#94a3b8;letter-spacing:0.3em;text-align:center;margin-bottom:2rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
@@ -820,8 +820,8 @@
                         overlay.innerHTML = '';
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
-                        // 新しい次戦予告表示（ロゴ対応・任意の画像データURL）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl);
+                        // 新しい次戦予告表示（ロゴ対応・logoDataUrl 優先、なければ logoSrc、なければ HUD デフォルト画像）
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -889,13 +889,17 @@
         }
         initPeer();
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null) {
+        const DEFAULT_NEXT_BATTLE_LOGO = 'maintitle_white.png';
+
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
             if (logoDataUrl) {
                 logo.src = logoDataUrl;
+            } else if (logoSrc && typeof logoSrc === 'string') {
+                logo.src = logoSrc;
             } else {
-                logo.src = 'BEYX_logo_amb.png';
+                logo.src = DEFAULT_NEXT_BATTLE_LOGO;
             }
             // ロゴ表示設定
             if (showLogo) {

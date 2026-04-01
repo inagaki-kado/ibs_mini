@@ -73,8 +73,10 @@
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       </div>
 
-      <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">ITABASHI BEY-ROULETTE</h1>
-      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">TOURNAMENT SYSTEM <span>v1.3</span></p>
+      <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
+        <img src="maintitle_white.png" alt="ITABASHI BEY-ROULETTE" class="h-10 md:h-12 w-auto max-w-[min(85vw,320px)] object-contain object-center" width="320" height="72" decoding="async">
+        <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest">TOURNAMENT SYSTEM <span>v1.3</span></p>
+      </div>
       
       <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
         <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
@@ -1761,7 +1763,7 @@
         activeNextBattleId = null;
       } else {
         const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled });
+        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled, logoSrc: 'maintitle_white.png' });
         activeNextBattleId = matchKey;
       }
     }

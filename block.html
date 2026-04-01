@@ -253,6 +253,21 @@
       <p class="text-[10px] font-sf text-center mt-2 opacity-60" id="rm-next-info" style="color:#64748b"></p>
     </div>
 
+    <!-- ★ 出場選手を選ぶ（tag方式） -->
+    <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
+      <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">PLAYER PICK — SELECT WHO PLAYS</p>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center">P1（左）</p>
+          <div id="rm-pick-left" class="grid grid-cols-3 gap-1"></div>
+        </div>
+        <div class="flex-1">
+          <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center">P2（右）</p>
+          <div id="rm-pick-right" class="grid grid-cols-3 gap-1"></div>
+        </div>
+      </div>
+      <p class="text-[10px] font-sf text-center mt-2 opacity-60" style="color:#64748b">対戦ごとに出場選手を選べます（勝ち抜き自動進行後も手動で変更可）</p>
+    </div>
     <!-- スコアボタン -->
     <div class="flex p-3 gap-3 shrink-0">
       <div class="flex-1 flex flex-col items-center gap-2">
@@ -738,9 +753,61 @@ function updateRemoteUI(){
   document.getElementById('rm-win-left').textContent=(lMember||'左')+' WIN →';
   document.getElementById('rm-win-right').textContent=(rMember||'右')+' WIN →';
 
+  // 出場選手ピッカー
+  renderMemberPickers(lt, rt);
+
   // ベイブレードボタン
   renderBeyBtns(lt,'rm-bey-left','P1','border-cyber-blue text-cyber-blue');
   renderBeyBtns(rt,'rm-bey-right','P2','border-cyber-pink text-cyber-pink');
+}
+
+function setCurrentMember(side, idx){
+  if(!currentMatchRef) return;
+  const i = Math.max(0, Math.min(2, parseInt(idx,10) || 0));
+  if(side === 'left') currentMemberLeft = i;
+  else currentMemberRight = i;
+  // 現在対戦のスコアはリセット（選手が変わるため）
+  remoteScoreLeft = 0;
+  remoteScoreRight = 0;
+  sendRemoteCmd('SYS_RESET');
+  // HUDの表示も更新（選手名を送る）
+  if(hudConn?.open){
+    const m=currentMatchRef.match;
+    const lt=isRemoteSwapped?m.t2:m.t1;
+    const rt=isRemoteSwapped?m.t1:m.t2;
+    const lName=(lt?.members?.[currentMemberLeft]||MEMBER_LABELS[currentMemberLeft]) || 'P1';
+    const rName=(rt?.members?.[currentMemberRight]||MEMBER_LABELS[currentMemberRight]) || 'P2';
+    hudConn.send({type:'SET_MATCH',
+      p1:lName,p2:rName,
+      tName:(lt?.name||'?')+' vs '+(rt?.name||'?'),
+      p1Stats:null,p2Stats:null});
+  }
+  updateRemoteUI();
+}
+
+function renderMemberPickers(lt, rt){
+  const leftBox = document.getElementById('rm-pick-left');
+  const rightBox = document.getElementById('rm-pick-right');
+  if(!leftBox || !rightBox) return;
+  const mk = (side, team, activeIdx, accent) => {
+    const wrap = (side === 'left') ? leftBox : rightBox;
+    wrap.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const name = (team?.members?.[i] || '').trim();
+      const label = MEMBER_LABELS[i] + (name ? '：' + name : '');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isActive = (activeIdx === i);
+      btn.className =
+        'py-2 px-2 rounded font-sf text-[10px] border transition-colors active:scale-95 truncate ' +
+        (isActive ? `bg-${accent}/20 border-${accent} text-${accent}` : 'bg-[#0a0e17] border-cyber-table-border text-cyber-text opacity-80 hover:bg-gray-800');
+      btn.textContent = label;
+      btn.onclick = () => setCurrentMember(side, i);
+      wrap.appendChild(btn);
+    }
+  };
+  mk('left', lt, currentMemberLeft, 'cyber-blue');
+  mk('right', rt, currentMemberRight, 'cyber-pink');
 }
 
 function renderWinDots(containerId, wins, color){
@@ -758,19 +825,8 @@ function renderWinDots(containerId, wins, color){
 function updateNextInfo(lt, rt){
   const el=document.getElementById('rm-next-info');
   if(!el)return;
-  // 次に出てくる選手を計算
-  const nextL=currentMemberLeft+1;
-  const nextR=currentMemberRight+1;
-  if(nextL<3||nextR<3){
-    const nextLName=lt?.members?.[nextL]||MEMBER_LABELS[Math.min(nextL,2)];
-    const nextRName=rt?.members?.[nextR]||MEMBER_LABELS[Math.min(nextR,2)];
-    const nextLabel=nextL<3?MEMBER_LABELS[nextL]:'（終了）';
-    const nextLLabel=nextL<3?(lt?.members?.[nextL]?MEMBER_LABELS[nextL]+'：'+nextLName:MEMBER_LABELS[nextL]):'終了';
-    const nextRLabel=nextR<3?(rt?.members?.[nextR]?MEMBER_LABELS[nextR]+'：'+nextRName:MEMBER_LABELS[nextR]):'終了';
-    el.textContent='次の対戦（勝者が残る）→ '+nextLLabel+' vs '+nextRLabel;
-  }else{
-    el.textContent='最終戦（大将）';
-  }
+  // tag方式: 次の出場選手は手動選択（勝ち抜き自動進行後も変更可）
+  el.textContent='次の対戦 → 下の「出場選手」を選択して進行';
 }
 
 function renderBeyBtns(team,cid,pk,cls){

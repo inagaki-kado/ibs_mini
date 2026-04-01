@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>板橋会抽選アプリ - CYBER BEY-ROULETTE</title>
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBhMGUxNyIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzBlYTVlOSI+44OIPC90ZXh0Pgo8L3N2Zz4=">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Noto Sans JP', 'sans-serif'],
+            'orbitron': ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            'cyber-bg': '#0a0e17',
+            'cyber-dark': '#111827',
+            'cyber-blue': '#0ea5e9',
+            'cyber-green': '#22c55e',
+            'cyber-pink': '#ec4899',
+            'cyber-red': '#ff0055',
+            'cyber-red-orange': '#ff4500',
+            'cyber-orange': '#ffaa00',
+            'cyber-text': '#e2e8f0',
+            'cyber-table-border': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0e17; color: #e2e8f0; }
+    .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+    
+    .neon-blue { box-shadow: 0 0 10px #0ea5e9; }
+    .neon-green { box-shadow: 0 0 10px #22c55e; }
+    .neon-pink { box-shadow: 0 0 15px rgba(236,72,153,0.6); }
+    .neon-yellow { box-shadow: 0 0 20px #facc15; }
+    .text-neon-yellow { text-shadow: 0 0 10px #facc15; }
+
+    .tournament-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .bracket { border: 2px solid #374151; border-radius: 0.5rem; padding: 1rem; background: #111827; }
+    .hidden { display: none !important; }
+
+    .memo-badge {
+      display: inline-block; padding: 2px 6px; font-size: 0.75rem; font-weight: bold;
+      color: #ec4899; background-color: transparent; border: 1px solid #ec4899;
+      border-radius: 9999px; vertical-align: middle; box-shadow: 0 0 5px #ec4899; margin-left: 4px;
+    }
+    
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0e17; }
+    ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
+  </style>
+</head>
+<body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
+  <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
+
+    <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
+      <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
+        <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
+        <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
+        <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
+      </div>
+
+      <h1 class="text-xl md:text-2xl font-sf text-cyber-blue ml-24 md:ml-0">ITABASHI BEY-ROULETTE</h1>
+      <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">TOURNAMENT SYSTEM</p>
+      
+      <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
+        <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
+        <input type="text" id="linkCodeInput" placeholder="CODE" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
+        <button onclick="connectLink()" ontouchend="handleTouch(event,connectLink)" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
+        <button onclick="forceResetLink()" ontouchend="handleTouch(event,forceResetLink)" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+        <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+      </div>
+    </header>
+
+    <div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0">
+      <button onclick="switchTab('participants')" id="tab-participants" class="flex-1 py-3 text-center font-bold border-b-4 border-cyber-blue text-cyber-blue transition-colors">👤 参加者管理・受付</button>
+      <button onclick="switchTab('tournament')" id="tab-tournament" class="flex-1 py-3 text-center font-bold border-b-4 border-transparent text-cyber-text transition-colors">🏆 トーナメント進行</button>
+    </div>
+
+    <div class="p-4 flex-1 overflow-y-auto">
+      <div id="view-participants" class="h-full flex flex-col">
+        
+        <div id="resume-banner" class="hidden p-4 bg-cyber-dark border border-cyber-green rounded-lg max-w-md mx-auto mt-8 text-center neon-green">
+          <p class="text-cyber-green font-sf font-bold mb-2">💾 セーブデータが見つかりました</p>
+          <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
+          <div class="flex gap-3">
+            <button onclick="resumeFromSave()" ontouchend="handleTouch(event,resumeFromSave)" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
+            <button onclick="clearSave()" ontouchend="handleTouch(event,clearSave)" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+          </div>
+        </div>
+
+        <div id="setupSection" class="p-6 bg-cyber-dark rounded-lg shadow-xl max-w-md mx-auto mt-8 text-center border border-cyber-blue neon-blue">
+          <h2 class="text-2xl font-sf text-cyber-blue mb-4">⚙️ INITIAL SETUP</h2>
+          <div class="mb-4">
+            <label class="block font-bold mb-2 text-cyber-text font-sf">TOURNAMENT NAME</label>
+            <input type="text" id="tournamentNameInput" placeholder="例: 第1回 板橋会カップ" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
+          </div>
+          <div class="mb-6">
+            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
+            <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
+          </div>
+          <button id="btn-confirm-setup" onclick="handleConfirmSetup(event)" ontouchend="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
+        </div>
+
+        <div id="mainManagementSection" class="hidden flex-col h-full">
+          <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
+            <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+            <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+            
+            <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
+
+            <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
+            
+            <div class="flex-grow"></div>
+            
+            <button onclick="toggleEffectMode()" ontouchend="handleTouch(event,toggleEffectMode)" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap ml-2">✨ 演出: ON</button>
+            <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
+          </div>
+          
+          <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
+            <div class="overflow-y-auto flex-1">
+              <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-[#111827] z-10">
+                  <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
+                    <th id="th-no-t" class="p-3 text-sm font-sf text-center w-12 cursor-pointer hover:text-cyber-blue transition-colors text-cyber-blue" onclick="toggleParticipantSort('id')" ontouchend="handleTouch(event,()=>toggleParticipantSort('id'))">NO. <span id="sort-icon-id-t">🔽</span></th>
+                    <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')" ontouchend="handleTouch(event,()=>toggleParticipantSort('name'))">NAME / STATS <span id="sort-icon-name-t"></span></th>
+                    <th id="th-lottery-t" class="p-3 text-sm text-center font-sf whitespace-nowrap cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('lottery')" ontouchend="handleTouch(event,()=>toggleParticipantSort('lottery'))">LOTTERY <span id="sort-icon-lottery-t"></span></th>
+                    <th class="p-3 text-sm text-center font-sf w-20">BAY CHECK</th>
+                    <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="participantList"></tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="text-center pt-4 shrink-0">
+            <button id="btn-start-tournament" onclick="handleStartTournament(event)" ontouchend="handleStartTournament(event)" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-tournament" class="hidden flex-col">
+        <div id="tournamentPreStart" class="text-center mt-8 hidden"></div>
+        
+        <div id="tournamentActive" class="flex flex-col">
+          <div class="flex justify-between items-center mb-4 shrink-0">
+            <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+              <button id="tv-btn-active" onclick="toggleTvMode('active')" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#0ea5e9]" title="モニター出力">📺</button>
+              <span id="tv-scroll-btns-active" class="hidden flex items-center gap-1">
+                <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors" title="スクロールUP">🔼</button>
+                <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
+              </span>
+              <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
+              <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
+            </div>
+            <button id="showResultsBtn" onclick="showResults()" ontouchend="handleTouch(event,showResults)" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
+          </div>
+          
+          <div id="tournamentContainer" class="tournament-grid overflow-x-auto mb-4 pb-2 shrink-0"></div>
+          
+          <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
+            <h2 class="text-2xl font-sf text-cyber-green text-center mb-4">FINAL STAGE</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pb-8" id="finalsContainer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-green neon-green flex flex-col h-[60vh]">
+        <h2 class="text-xl font-sf text-cyber-green mb-2">📋 BATCH IMPORT</h2>
+        <p class="mb-4 text-cyber-text text-xs opacity-80 leading-relaxed">
+          スプレッドシート等からコピーしたテキストを貼り付けてください。<br>
+          <span class="text-cyber-blue">名前, メモ, ランク, ベイパワー, 試合数, 勝利数, 敗北数</span> の順で並べてください。<br>
+          <span class="text-cyber-pink">※勝率は自動計算されるため、入力は不要です。</span>
+        </p>
+        <textarea id="pasteArea" class="flex-1 w-full p-3 bg-cyber-bg border border-cyber-green rounded text-cyber-text focus:outline-none focus:border-cyber-blue resize-none font-sans text-sm mb-4"></textarea>
+        <div class="flex gap-4">
+          <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf transition-colors">CANCEL</button>
+          <button onclick="processPasteData()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf">IMPORT</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="exportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-blue neon-blue flex flex-col h-[70vh]">
+        <h2 class="text-2xl font-sf text-cyber-blue mb-2">📋 MATCH DATA EXPORT</h2>
+        <p class="mb-4 text-cyber-text text-sm opacity-80 leading-relaxed">
+          下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
+          （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
+        </p>
+        <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
+        <div class="flex gap-4">
+          <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
+          <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
+      <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
+        <div class="flex items-center justify-center gap-3 mb-4 md:mb-8">
+          <button id="tv-btn-results" onclick="toggleTvMode('results')" class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#0ea5e9]" title="モニター出力">📺</button>
+          <span id="tv-scroll-btns-results" class="hidden flex items-center gap-1">
+            <button onclick="scrollRemote(-200)" class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors" title="スクロールUP">🔼</button>
+            <button onclick="scrollRemote(200)" class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors" title="スクロールDOWN">🔽</button>
+          </span>
+          <h2 class="text-xl md:text-2xl text-cyber-blue font-sf" id="resultTournamentName"></h2>
+        </div>
+        <h1 class="text-4xl md:text-5xl text-yellow-400 font-sf mb-2 text-neon-yellow">🏆 WINNER 🏆</h1>
+        <p class="text-4xl md:text-5xl font-bold mb-6 md:mb-10 text-white" id="res1"></p>
+        <h2 class="text-2xl md:text-3xl text-gray-300 font-sf mb-2">🥈 2ND PLACE</h2>
+        <p class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white" id="res2"></p>
+        <div class="flex justify-around mt-2 border-t border-cyber-table-border pt-4 md:pt-6">
+          <div><h3 class="text-lg md:text-xl text-orange-400 font-sf mb-1 md:mb-2">🥉 3RD PLACE</h3><p class="text-xl md:text-2xl font-bold text-white" id="res3"></p></div>
+          <div><h3 class="text-lg md:text-xl text-cyber-text font-sf mb-1 md:mb-2 opacity-70">4TH PLACE</h3><p class="text-xl md:text-2xl font-bold text-gray-400" id="res4"></p></div>
+        </div>
+        <div class="flex justify-center gap-4 mt-6 md:mt-10">
+          <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="lotteryModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
+      <div id="operatorViewBox" class="hidden absolute top-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-cyber-table-border p-3 px-6 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.8)] rotate-180 items-center justify-center gap-3 w-max max-w-[90%] z-50"></div>
+      <div id="lotteryModalContent" class="bg-cyber-dark p-6 rounded-lg shadow-2xl text-center w-full max-w-md border border-cyber-blue neon-blue relative z-10"></div>
+    </div>
+
+    <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+      <h2 class="text-xl font-sf text-cyber-blue mb-4 tracking-widest">BEY CHECK PREVIEW</h2>
+      <img id="resultImage" class="max-w-full max-h-[60vh] rounded-lg shadow-lg mb-6 border-4 border-cyber-text" src="" alt="ベイチェック画像">
+      <div class="flex gap-4 w-full max-w-sm">
+        <button onclick="reTakePhoto()" class="flex-1 bg-cyber-dark border border-cyber-blue text-cyber-blue px-4 py-3 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">RE-TAKE 📸</button>
+        <button onclick="closeCameraModal()" class="flex-1 bg-cyber-green text-cyber-bg px-4 py-3 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] active:scale-95 transition-transform">OK</button>
+      </div>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+
+  </div>
+
+  <div id="remoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4">
+    <div class="bg-cyber-dark p-4 md:p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative overflow-y-auto max-h-full">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-2 shrink-0">
+        <h2 class="text-xl font-sf text-cyber-blue tracking-widest">HUD REMOTE</h2>
+        <button onclick="closeRemoteModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors">✖ CLOSE</button>
+      </div>
+
+      <div class="flex justify-between items-center text-lg md:text-xl font-bold text-cyber-text mb-4 bg-[#0d131f] p-3 rounded border border-cyber-table-border shrink-0">
+        <div class="flex-1 flex justify-end items-center gap-2 overflow-hidden">
+            <span id="remote-left-name" class="truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right">Player 1</span>
+            <span id="remote-left-score" class="text-3xl md:text-4xl font-mono text-white font-bold shrink-0 ml-1 w-8 text-center drop-shadow-[0_0_8px_#fff]">0</span>
+        </div>
+        <div class="flex flex-col items-center justify-center px-2 shrink-0 w-16">
+            <div class="text-xs opacity-50 font-sf mb-1">VS</div>
+            <button onclick="handleRemoteSwap()" class="text-[10px] bg-[#111827] border border-gray-600 text-gray-300 px-2 py-1 rounded font-sf hover:bg-gray-800 hover:text-white transition-colors shadow-sm" title="左右を入れ替える">🔁 SWAP</button>
+        </div>
+        <div class="flex-1 flex justify-start items-center gap-2 overflow-hidden">
+            <span id="remote-right-score" class="text-3xl md:text-4xl font-mono text-white font-bold shrink-0 mr-1 w-8 text-center drop-shadow-[0_0_8px_#fff]">0</span>
+            <span id="remote-right-name" class="truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left">Player 2</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mb-4 shrink-0">
+        <button id="tab-remote-score" onclick="switchRemoteTab('score')" class="flex-1 py-3 font-bold font-sf border border-cyber-blue bg-cyber-blue text-cyber-bg rounded transition-all shadow-[0_0_10px_#0ea5e9]">SCORE MODE ⚔️</button>
+        <button id="tab-remote-replay" onclick="switchRemoteTab('replay')" class="flex-1 py-3 font-bold font-sf border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 rounded transition-all">REPLAY MODE 🔁</button>
+      </div>
+
+      <div id="remote-score-area" class="flex flex-col gap-4">
+        <div class="flex justify-between gap-6">
+          <div class="flex-1 flex flex-col gap-2">
+            <button onclick="handleScoreCmd('left', 'P1_X', 3)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="handleScoreCmd('left', 'P1_B', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="handleScoreCmd('left', 'P1_O', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="handleScoreCmd('left', 'P1_S', 1)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <div class="flex gap-2 mt-1">
+                <button onclick="handleScoreCmd('left', 'P1_MINUS', -1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="handleScoreCmd('left', 'P1_PLUS', 1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+            </div>
+          </div>
+          <div class="flex-1 flex flex-col gap-2">
+            <button onclick="handleScoreCmd('right', 'P2_X', 3)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded hover:bg-cyber-red hover:text-white transition-colors text-lg md:text-xl">X (3)</button>
+            <button onclick="handleScoreCmd('right', 'P2_B', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded hover:bg-cyber-red-orange hover:text-white transition-colors text-lg md:text-xl">B (2)</button>
+            <button onclick="handleScoreCmd('right', 'P2_O', 2)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange hover:text-white transition-colors text-lg md:text-xl">O (2)</button>
+            <button onclick="handleScoreCmd('right', 'P2_S', 1)" class="py-3 md:py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue hover:text-white transition-colors text-lg md:text-xl">S (1)</button>
+            <div class="flex gap-2 mt-1">
+                <button onclick="handleScoreCmd('right', 'P2_MINUS', -1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-600 text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors">-1</button>
+                <button onclick="handleScoreCmd('right', 'P2_PLUS', 1)" class="flex-1 py-2 bg-[#0a0e17] border border-gray-400 text-gray-200 font-sf font-bold rounded hover:bg-gray-700 transition-colors">+1</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-2 mt-2">
+          <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">📢 MATCH CALL (3,2,1..)</button>
+          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">⏱ TIMER</button>
+        </div>
+      </div>
+
+      <div id="remote-replay-area" class="hidden flex-col gap-4">
+        <div class="grid grid-cols-2 gap-4">
+          <button onclick="sendRemoteCmd('REPLAY_LATEST')" class="col-span-2 py-6 bg-cyber-pink hover:bg-cyber-pink/80 text-white font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_15px_#ec4899]">🔥 LATEST HIGHLIGHT (Enter)</button>
+          <button onclick="sendRemoteCmd('REPLAY_REV')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">⏪ -5 SEC</button>
+          <button onclick="sendRemoteCmd('REPLAY_PLAY')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">▶ / ⏸ PLAY / PAUSE</button>
+          <button onclick="sendRemoteCmd('REPLAY_SLOW')" class="col-span-2 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">🐢 SLOW (0.1x)</button>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-cyber-table-border shrink-0 text-right">
+        <button onclick="handleScoreCmd('both', 'SYS_RESET', 'reset')" class="px-6 py-2 bg-[#111827] border border-cyber-red text-cyber-red rounded font-sf hover:bg-cyber-red hover:text-white transition-colors text-xs">♻️ MATCH RESET</button>
+      </div>
+
+      <div class="mt-4 p-4 bg-[#0a0e17] border border-cyber-green rounded-lg shrink-0">
+        <h3 class="text-center font-sf text-cyber-green font-bold mb-3 tracking-widest">SET WINNER & ADVANCE</h3>
+        <div class="flex gap-4">
+          <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
+          <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
+    let _tDebounce = false;
+    function handleTouch(e, fn) {
+      e.preventDefault();
+      if (_tDebounce) return;
+      _tDebounce = true;
+      setTimeout(() => { _tDebounce = false; }, 400);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+      fn();
+    }
+
+    let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
+    const colors = ['赤', '青', '黄', '緑']; const colorCodes = { '赤': 'bg-cyber-pink', '青': 'bg-cyber-blue', '黄': 'bg-yellow-400 text-black', '緑': 'bg-cyber-green' };
+    
+    let participantSortMode = 'id';
+
+    let globalBlockSize = 8;
+    let blockMap = {}; let blockData = {}; let blockCapacities = {}; let blockActivePositions = {};
+    let blockMatches = {}; let finals = {}; const BYE = { id: 'BYE', name: 'BYE (シード)' };
+    let currentCheckId = null; let currentLotteryId = null;
+
+    let isSetupSwapMode = false;
+    let setupSwapPending = null;
+    let isSwapMode = false;
+    let swapPending = null;
+
+    let isEffectOn = true;
+
+    function toggleEffectMode() {
+        isEffectOn = !isEffectOn;
+        const btn = document.getElementById('btn-toggle-effect');
+        if (isEffectOn) {
+            btn.classList.replace('bg-cyber-dark', 'bg-cyber-pink');
+            btn.classList.replace('text-cyber-pink', 'text-white');
+            btn.classList.add('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: ON";
+        } else {
+            btn.classList.replace('bg-cyber-pink', 'bg-cyber-dark');
+            btn.classList.replace('text-white', 'text-cyber-pink');
+            btn.classList.remove('shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: OFF";
+        }
+    }
+
+    function calculateRate(wins, matches) {
+        if (matches === 0) return '0.00%';
+        return ((wins / matches) * 100).toFixed(2) + '%';
+    }
+
+    function processMatchForStats(match) {
+        if (!match || match.winner === null || !match.p1 || !match.p2) return;
+        if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+        let s1 = match.p1.currentStats; let s2 = match.p2.currentStats;
+        if (!s1 || !s2) return;
+        let winnerStats = (match.winner === 1) ? s1 : s2; let loserStats = (match.winner === 1) ? s2 : s1;
+        let rWin = winnerStats.power; let rLose = loserStats.power;
+        let eWin = 1 / (1 + Math.pow(10, (rLose - rWin) / 400));
+        let change = Math.round(32 * (1 - eWin));
+        winnerStats.power += change; loserStats.power -= change;
+        s1.matches += 1; s2.matches += 1;
+        if (match.winner === 1) { s1.wins += 1; s2.loses += 1; } else { s2.wins += 1; s1.loses += 1; }
+        s1.rate = calculateRate(s1.wins, s1.matches); s2.rate = calculateRate(s2.wins, s2.matches);
+    }
+
+    function recalculateAllStats() {
+        participants.forEach(p => {
+            if (p.initialStats) {
+                p.currentStats = { power: p.initialStats.power, matches: p.initialStats.matches, wins: p.initialStats.wins, loses: p.initialStats.loses, rate: calculateRate(p.initialStats.wins, p.initialStats.matches) };
+            }
+        });
+        if (!isTournamentStarted) return;
+        let maxRounds = 0;
+        ['A', 'B', 'C', 'D'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName].length > maxRounds) maxRounds = blockMatches[bName].length; });
+        for (let r = 0; r < maxRounds; r++) {
+            ['A', 'B', 'C', 'D'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName][r]) { blockMatches[bName][r].forEach(processMatchForStats); } });
+        }
+        if (finals.sf) finals.sf.forEach(processMatchForStats);
+        if (finals.third) processMatchForStats(finals.third);
+        if (finals.f) processMatchForStats(finals.f);
+    }
+
+    // ==========================================
+    // リモート通信 / PeerJS
+    // ==========================================
+    let peer = null; let conn = null;
+    let isTvMode_active = false;
+    let isTvMode_results = false;
+    let activeNextBattleId = null;
+
+    function initPeer() {
+      if (peer) peer.destroy();
+      peer = new Peer();
+      peer.on('error', (err) => { console.error(err); resetLinkUI(); alert("通信エラーが発生しました: " + err.type); });
+      peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
+    }
+
+    function forceResetLink() { if (conn) { conn.close(); conn = null; } initPeer(); resetLinkUI(); }
+
+    function resetLinkUI() {
+      const btn = document.getElementById('btn-connect');
+      btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+      const dot = document.getElementById('link-status-dot');
+      dot.classList.replace('bg-cyber-green', 'bg-red-500'); dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
+      conn = null;
+    }
+
+    function connectLink() {
+      if (conn && conn.open) { conn.close(); resetLinkUI(); return; }
+      const code = document.getElementById('linkCodeInput').value;
+      if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力してください");
+      const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
+      if (!peer || peer.destroyed) initPeer();
+      if (conn) conn.close();
+      conn = peer.connect('itabashi-link-' + code, { reliable: true });
+      conn.on('open', () => {
+        btn.innerText = "DISCONN"; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+        const dot = document.getElementById('link-status-dot');
+        dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
+      });
+      conn.on('close', () => resetLinkUI());
+    }
+
+    function sendRemoteCmd(cmd) {
+        if(!conn || !conn.open) {
+            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return alert("⚠️ HUD（スコアアプリ）がリンクされていません。");
+            return;
+        }
+        conn.send({ type: 'REMOTE_CMD', cmd: cmd });
+    }
+
+    // ==========================================
+    // リモコンモーダル ＆ スコア連動
+    // ==========================================
+    let currentRemoteMatch = null; let currentRemoteMode = 'score'; let isRemoteSwapped = false;
+    let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
+
+    function updateRemoteScoreUI() {
+        document.getElementById('remote-left-score').innerText = remoteScoreLeft;
+        document.getElementById('remote-right-score').innerText = remoteScoreRight;
+    }
+
+    function handleScoreCmd(side, cmd, pts) {
+        sendRemoteCmd(cmd);
+        if (cmd === 'SYS_RESET') { remoteScoreLeft = 0; remoteScoreRight = 0; }
+        else {
+            if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
+            else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
+        }
+        updateRemoteScoreUI();
+    }
+
+    function openRemoteModal(block, roundIdx, matchIdx) {
+        if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+        activeNextBattleId = null;
+        let match;
+        if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
+        else { match = blockMatches[block][roundIdx][matchIdx]; }
+        if (!match || !match.p1 || !match.p2) return;
+        currentRemoteMatch = { block, roundIdx, matchIdx, match };
+        isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
+        updateRemoteNamesUI(); updateRemoteScoreUI();
+        if(conn && conn.open) {
+            conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
+                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
+                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
+            });
+        } else { alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
+        currentRemoteMode = 'score'; switchRemoteTab('score');
+        document.getElementById('remoteModal').classList.remove('hidden'); document.getElementById('remoteModal').classList.add('flex');
+    }
+
+    function closeRemoteModal() { document.getElementById('remoteModal').classList.add('hidden'); document.getElementById('remoteModal').classList.remove('flex'); currentRemoteMatch = null; }
+
+    function updateRemoteNamesUI() {
+        if (!currentRemoteMatch) return;
+        const m = currentRemoteMatch.match;
+        const leftNameEl = document.getElementById('remote-left-name'); const rightNameEl = document.getElementById('remote-right-name');
+        const leftWinBtn = document.getElementById('remote-left-win-btn'); const rightWinBtn = document.getElementById('remote-right-win-btn');
+        if (isRemoteSwapped) {
+            leftNameEl.innerText = m.p2.name; rightNameEl.innerText = m.p1.name;
+            leftNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
+            rightNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
+            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+        } else {
+            leftNameEl.innerText = m.p1.name; rightNameEl.innerText = m.p2.name;
+            leftNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
+            rightNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
+            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+        }
+    }
+
+    function handleRemoteSwap() {
+        isRemoteSwapped = !isRemoteSwapped;
+        let tempScore = remoteScoreLeft; remoteScoreLeft = remoteScoreRight; remoteScoreRight = tempScore;
+        updateRemoteNamesUI(); updateRemoteScoreUI(); sendRemoteCmd('SYS_SWAP');
+    }
+
+    function handleRemoteWinner(side) {
+        if (!currentRemoteMatch) return;
+        let winnerVal = (side === 'left') ? (isRemoteSwapped ? 2 : 1) : (isRemoteSwapped ? 1 : 2);
+        setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
+        closeRemoteModal();
+    }
+
+    function switchRemoteTab(mode) {
+        const tabScore = document.getElementById('tab-remote-score'); const tabReplay = document.getElementById('tab-remote-replay');
+        const areaScore = document.getElementById('remote-score-area'); const areaReplay = document.getElementById('remote-replay-area');
+        if (mode === 'score') {
+            tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue bg-cyber-blue text-cyber-bg rounded transition-all shadow-[0_0_10px_#0ea5e9]";
+            tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 rounded transition-all";
+            areaScore.classList.remove('hidden'); areaScore.classList.add('flex');
+            areaReplay.classList.add('hidden'); areaReplay.classList.remove('flex');
+            if (currentRemoteMode === 'replay') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'score'; }
+        } else {
+            tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_10px_#ec4899]";
+            tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 rounded transition-all";
+            areaReplay.classList.remove('hidden'); areaReplay.classList.add('flex');
+            areaScore.classList.add('hidden'); areaScore.classList.remove('flex');
+            if (currentRemoteMode === 'score') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'replay'; }
+        }
+    }
+
+    // ==========================================
+    // 基本セットアップ & タブ切り替え
+    // ==========================================
+    function initApp() {
+      const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
+      colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
+      if (loadState()) { showResumeBanner(); }
+    }
+
+    let setupDebounce = false;
+    function handleConfirmSetup(e) {
+      if (e) e.preventDefault();
+      if (setupDebounce) return; setupDebounce = true; setTimeout(() => { setupDebounce = false; }, 500);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+      confirmSetup();
+    }
+
+    let startDebounce = false;
+    function handleStartTournament(e) {
+      if (e) e.preventDefault();
+      if (startDebounce) return; startDebounce = true; setTimeout(() => { startDebounce = false; }, 500);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+      startTournament();
+    }
+
+    function confirmSetup() {
+      const nameInput = document.getElementById('tournamentNameInput');
+      tournamentName = (nameInput && nameInput.value.trim() !== '') ? nameInput.value.trim() : 'CYBER BEY-ROULETTE';
+      let sizeInput = document.getElementById('tournamentSizeInput'); let sizeStr = sizeInput ? sizeInput.value : "32";
+      if (!sizeStr) sizeStr = "32";
+      sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+      let totalSize = parseInt(sizeStr);
+      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
+      if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
+      colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
+      const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
+      const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize };
+      if (remainder >= 1) caps['A']++; if (remainder >= 2) caps['C']++; if (remainder >= 3) caps['B']++;
+      colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
+      isSetupDone = true;
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('mainManagementSection').classList.remove('hidden');
+      document.getElementById('mainManagementSection').classList.add('flex');
+      renderParticipants();
+    }
+
+    function getFairPositions(count, blockSize) {
+      if (blockSize === 8) {
+        switch(count) {
+          case 8: return [0,1,2,3,4,5,6,7]; case 7: return [0,2,3,4,5,6,7]; case 6: return [0,2,3,4,5,7];
+          case 5: return [0,2,4,5,7]; case 4: return [0,2,4,6]; case 3: return [0,1,4];
+          case 2: return [0,4]; case 1: return [0]; default: return [];
+        }
+      } else if (blockSize === 4) {
+        switch(count) { case 4: return [0,1,2,3]; case 3: return [0,1,2]; case 2: return [0,2]; case 1: return [0]; default: return []; }
+      } else if (blockSize === 2) {
+        switch(count) { case 2: return [0,1]; case 1: return [0]; default: return []; }
+      }
+      return [];
+    }
+
+    function switchTab(tabId) {
+      ['participants', 'tournament'].forEach(id => {
+        document.getElementById(`view-${id}`).classList.add('hidden');
+        document.getElementById(`tab-${id}`).classList.replace('border-cyber-blue', 'border-transparent');
+        document.getElementById(`tab-${id}`).classList.replace('text-cyber-blue', 'text-cyber-text');
+      });
+      const targetView = document.getElementById(`view-${tabId}`);
+      if (tabId === 'participants') { targetView.classList.remove('hidden'); } else { targetView.classList.remove('hidden'); targetView.classList.add('flex'); }
+      document.getElementById(`tab-${tabId}`).classList.replace('border-transparent', 'border-cyber-blue');
+      document.getElementById(`tab-${tabId}`).classList.replace('text-cyber-text', 'text-cyber-blue');
+      if (tabId === 'tournament') { isSetupSwapMode = false; setupSwapPending = null; renderTournament(); }
+    }
+
+    // ==========================================
+    // 参加者管理
+    // ==========================================
+    function openPasteModal() { if(isTournamentStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
+    function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
+    
+    function processPasteData() {
+      const text = document.getElementById('pasteArea').value; if(!text.trim()) return alert("テキストが入力されていません");
+      const lines = text.split(/\r\n|\n/); let count = 0;
+      lines.forEach(line => {
+        if(!line.trim()) return; const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
+        if(cols[0] && cols[0].trim() !== '') {
+          let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
+          let initialWins = parseInt(cols[5]) || 0; let initialLoses = parseInt(cols[6]) || 0;
+          participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
+            initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
+            currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+            bayChecked: false, bayImage: null, color: null, position: null }); count++;
+        }
+      });
+      renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！`);
+    }
+
+    function addParticipant(name = '', memo1 = '') {
+      if(isTournamentStarted) return alert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
+      participants.push({ id: pidCounter++, name, memo1, rank: '--',
+          initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
+          currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          bayChecked: false, bayImage: null, color: null, position: null });
+      renderParticipants();
+    }
+    
+    function removeParticipant(id) {
+      if(isTournamentStarted) return alert("開始後は削除できません"); if(!confirm("削除しますか？")) return;
+      const p = participants.find(x => x.id === id); if(p && p.color) blockData[p.color][p.position] = null;
+      participants = participants.filter(x => x.id !== id); renderParticipants();
+    }
+    
+
+    function toggleSetupSwapMode() {
+      if(isTournamentStarted) return;
+      isSetupSwapMode = !isSetupSwapMode; setupSwapPending = null;
+      const btn = document.getElementById('btn-setup-swap');
+      if (isSetupSwapMode) { btn.classList.replace('bg-cyber-dark', 'bg-yellow-400'); btn.classList.replace('text-yellow-400', 'text-black'); btn.innerText = "✖ 入替キャンセル"; }
+      else { btn.classList.replace('bg-yellow-400', 'bg-cyber-dark'); btn.classList.replace('text-black', 'text-yellow-400'); btn.innerText = "🔄 配置入替"; }
+      renderParticipants();
+    }
+
+    function handleSetupSwap(pid) {
+      if (!setupSwapPending) { setupSwapPending = pid; }
+      else {
+        if (setupSwapPending === pid) { setupSwapPending = null; }
+        else {
+          const p1 = participants.find(x => x.id === setupSwapPending); const p2 = participants.find(x => x.id === pid);
+          if (p1 && p2 && p1.color && p2.color) {
+            blockData[p1.color][p1.position] = p2; blockData[p2.color][p2.position] = p1;
+            let tempColor = p1.color; let tempPos = p1.position;
+            p1.color = p2.color; p1.position = p2.position; p2.color = tempColor; p2.position = tempPos;
+          }
+          setupSwapPending = null;
+        }
+      }
+      renderParticipants();
+    }
+
+
+    function getSortedParticipants() {
+      let sorted = [...participants];
+      if (participantSortMode === 'name') {
+        sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      } else if (participantSortMode === 'lottery') {
+        // 未抽選を先頭、抽選済みはブロック名(A→B→...)→ポジション順
+        sorted.sort((a, b) => {
+          const aHas = a.color != null, bHas = b.color != null;
+          if (!aHas && !bHas) return a.id - b.id;
+          if (!aHas) return -1;
+          if (!bHas) return 1;
+          const aName = blockMap[a.color] || a.color;
+          const bName = blockMap[b.color] || b.color;
+          if (aName !== bName) return aName.localeCompare(bName);
+          return a.position - b.position;
+        });
+      } else {
+        sorted.sort((a, b) => a.id - b.id);
+      }
+      return sorted;
+    }
+
+    function toggleParticipantSort(mode) {
+      participantSortMode = mode;
+      renderParticipants();
+    }
+
+    function renderParticipants() {
+      if(!isSetupDone) return; const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
+      const sortedP = getSortedParticipants();
+      sortedP.forEach(p => {
+        const originalNo = participants.indexOf(p) + 1;
+        const tr = document.createElement('tr'); tr.className = "border-b border-cyber-table-border hover:bg-cyber-dark transition-colors";
+        const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
+        const statsDisplay = `<span class="text-[10px] text-cyber-green font-mono font-normal opacity-80 ml-1">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
+        let lotteryHTML = '';
+        if (p.color) {
+            if (isSetupSwapMode) {
+                let isActive = setupSwapPending === p.id;
+                let activeClass = isActive ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-cyber-dark text-yellow-400 border-yellow-400 hover:bg-yellow-400/20';
+                lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${blockMap[p.color]}-${p.position + 1}</button>`;
+            } else {
+                lotteryHTML = `<button onclick="reLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${blockMap[p.color]}-${p.position + 1} 🔄</button>`;
+            }
+        } else {
+            lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
+        }
+        const checkBtnColor = p.bayChecked ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>📷</button></td><td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tbody.appendChild(tr);
+      });
+      const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
+      const siNm = document.getElementById('sort-icon-name-t'); if(siNm) siNm.innerText = participantSortMode==='name'?'🔽':'';
+      const siLt = document.getElementById('sort-icon-lottery-t'); if(siLt) siLt.innerText = participantSortMode==='lottery'?'🔽':'';
+      const thNo = document.getElementById('th-no-t'); if(thNo) thNo.classList.toggle('text-cyber-blue', participantSortMode==='id');
+      const thNm = document.getElementById('th-name-t'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
+      const thLt = document.getElementById('th-lottery-t'); if(thLt) thLt.classList.toggle('text-cyber-blue', participantSortMode==='lottery');
+      saveState();
+    }
+
+    // ==========================================
+    // 抽選 ＆ ルーレット演出機能
+    // ==========================================
+    function openLotteryModal(id) {
+      if(isTournamentStarted || isSetupSwapMode) return;
+      currentLotteryId = id;
+
+      // 演出ONの場合、即座に180度回転
+      if (isEffectOn) {
+          const wrapper = document.getElementById('app-wrapper');
+          wrapper.style.transform = 'rotate(180deg)';
+      }
+
+      const p = participants.find(x => x.id === id);
+      const counts = {}; colors.forEach(c => counts[c] = blockData[c].filter(x => x !== null).length);
+      let activeCounts = []; colors.forEach(col => { if(counts[col] < blockCapacities[col]) activeCounts.push(counts[col]); });
+      const minCount = activeCounts.length > 0 ? Math.min(...activeCounts) : 0;
+
+      const modalContent = document.getElementById('lotteryModalContent');
+      modalContent.innerHTML = `
+          <h2 class="text-2xl font-sf text-cyber-blue mb-2">TARGET: ${p.name}</h2>
+          <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
+          <div class="grid grid-cols-2 gap-4" id="modalColorButtons"></div>
+          <button onclick="closeLotteryModal()" class="mt-6 bg-cyber-bg text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-sf hover:bg-gray-800 transition-colors">CANCEL</button>
+      `;
+
+      const container = document.getElementById('modalColorButtons');
+      colors.forEach(c => {
+        const remain = blockCapacities[c] - counts[c]; const isDisabled = remain === 0 || (counts[c] > minCount);
+        const btn = document.createElement('button'); btn.className = `py-6 rounded-lg font-bold text-cyber-text shadow-lg text-2xl ${colorCodes[c]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform`;
+        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`;
+        if(!isDisabled) btn.onclick = () => doLotteryModal(c);
+        container.appendChild(btn);
+      });
+
+      document.getElementById('lotteryModal').classList.remove('hidden');
+      document.getElementById('lotteryModal').classList.add('flex');
+    }
+
+    function doLotteryModal(selectedColor) {
+        const p = participants.find(x => x.id === currentLotteryId);
+        const emptyPositions = [];
+        blockActivePositions[selectedColor].forEach(idx => {
+            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx);
+        });
+
+        if(emptyPositions.length === 0) return alert("満員です");
+        const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+        const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
+
+        // 演出OFFの場合：即座に結果をalertで表示して終了
+        if (!isEffectOn) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+            alert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
+            closeLotteryModal();
+            renderParticipants();
+            return;
+        }
+
+        // 演出ONの場合：シンプルなテキストルーレット
+        let totalCap = 0; let totalEmpty = 0; let allEmptySlots = [];
+        colors.forEach(c => {
+            totalCap += blockCapacities[c];
+            blockActivePositions[c].forEach(idx => {
+                if (blockData[c][idx] === null) {
+                    totalEmpty++; allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
+                }
+            });
+        });
+
+        // 最後の1枠なら即結果表示
+        if (totalEmpty === 1) {
+            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+            showLotteryResultScreen(p.name, finalSlotName);
+            return;
+        }
+
+        // 演出ONの場合：シンプルなテキストルーレット表示
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
+            <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
+        `;
+
+        const rDisplay = document.getElementById('rouletteDisplay');
+        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
+        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
+        const remainRatio = totalEmpty / totalCap;
+        const duration = remainRatio >= 0.5 ? 2000 : 1000;
+        let startTime = Date.now();
+
+        let rInterval = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            if (elapsed > duration) {
+                clearInterval(rInterval);
+                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+                showLotteryResultScreen(p.name, finalSlotName);
+            } else {
+                // ランダムにスロット名をテキスト表示
+                let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
+                rDisplay.innerText = randomSlot;
+            }
+        }, 50);
+    }
+
+    // 結果画面：「Your Battlefield is」→ ピンク色の結果 → Confirmedボタン
+    function showLotteryResultScreen(playerName, slotName) {
+        const modalContent = document.getElementById('lotteryModalContent');
+        modalContent.innerHTML = `
+            <div class="flex flex-col items-center justify-center">
+                <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
+                <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
+                <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
+            </div>
+        `;
+
+        // 運営者向け反転表示
+        const opBox = document.getElementById('operatorViewBox');
+        if (isEffectOn) {
+            opBox.innerHTML = `
+                <span class="text-[10px] text-cyber-text font-sf opacity-80">OPERATOR:</span>
+                <span class="text-base font-bold font-sf text-cyber-blue truncate max-w-[150px]">${playerName}</span>
+                <span class="text-xl font-bold font-sf text-cyber-pink">【${slotName}】</span>
+            `;
+            opBox.classList.remove('hidden');
+            opBox.classList.add('flex');
+        }
+    }
+
+    function confirmLotteryResult() {
+        closeLotteryModal();
+        renderParticipants();
+    }
+
+    function closeLotteryModal() {
+        document.getElementById('lotteryModal').classList.add('hidden');
+        document.getElementById('lotteryModal').classList.remove('flex');
+        const opBox = document.getElementById('operatorViewBox');
+        if(opBox) { opBox.classList.add('hidden'); opBox.classList.remove('flex'); }
+        currentLotteryId = null;
+        // 画面回転を元に戻す
+        const wrapper = document.getElementById('app-wrapper');
+        wrapper.style.transform = '';
+    }
+
+    function reLottery(id) {
+      if(isTournamentStarted || isSetupSwapMode) return;
+      if(confirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
+    }
+
+    // ==========================================
+    // カメラ撮影 ＆ ZIP保存
+    // ==========================================
+    function openCamera(id) {
+        currentCheckId = id;
+        const p = participants.find(x => x.id === id);
+        if (p.bayChecked && p.bayImage) {
+            document.getElementById('resultImage').src = p.bayImage;
+            document.getElementById('cameraModal').classList.remove('hidden');
+            document.getElementById('cameraModal').classList.add('flex');
+        } else { document.getElementById('cameraInput').click(); }
+    }
+
+    function reTakePhoto() { document.getElementById('cameraInput').click(); }
+
+    document.getElementById('cameraInput').addEventListener('change', function(e) {
+      const file = e.target.files[0]; if(!file) return; const img = new Image(); const reader = new FileReader();
+      reader.onload = function(event) { img.onload = function() {
+        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const p = participants.find(x => x.id === currentCheckId); const fontSize = Math.max(img.width / 15, 30);
+        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`; ctx.fillStyle = '#0ea5e9'; ctx.strokeStyle = 'white';
+        ctx.lineWidth = fontSize / 20; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        const tName = tournamentName || '大会'; const pName = p.name;
+        const x = canvas.width - 20; const y1 = 20; const y2 = 20 + fontSize * 1.2;
+        ctx.strokeText(tName, x, y1); ctx.fillText(tName, x, y1);
+        ctx.strokeText(pName, x, y2); ctx.fillText(pName, x, y2);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        p.bayImage = dataUrl; p.bayChecked = true;
+        document.getElementById('resultImage').src = dataUrl;
+        document.getElementById('cameraModal').classList.remove('hidden');
+        document.getElementById('cameraModal').classList.add('flex');
+        renderParticipants();
+      }; img.src = event.target.result; }; reader.readAsDataURL(file);
+    });
+
+    function closeCameraModal() {
+        document.getElementById('cameraModal').classList.add('hidden');
+        document.getElementById('cameraModal').classList.remove('flex');
+        document.getElementById('cameraInput').value = '';
+    }
+
+    async function downloadAllImagesZip() {
+        if (typeof JSZip === 'undefined') return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
+        const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
+        if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
+        const zip = new JSZip(); const safeTournamentName = tournamentName || 'Tournament';
+        const folderName = safeTournamentName + "_BeyCheck"; const folder = zip.folder(folderName);
+        checkedParticipants.forEach(p => {
+            const base64Data = p.bayImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+            folder.file(`${safeTournamentName}_${p.name}.jpg`, base64Data, {base64: true});
+        });
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            const link = document.createElement('a'); link.href = URL.createObjectURL(content);
+            link.download = `${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
+        });
+    }
+
+    // ==========================================
+    // トーナメント進行
+    // ==========================================
+    function startTournament() {
+      if(!confirm("トーナメントを開始しますか？")) return;
+      isSetupSwapMode = false; setupSwapPending = null;
+      if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
+      isTournamentStarted = true;
+      document.getElementById('tournamentPreStart').classList.add('hidden');
+      document.getElementById('tournamentActive').classList.remove('hidden');
+      document.getElementById('tournamentActive').classList.add('flex');
+      document.getElementById('displayTournamentName').innerText = tournamentName;
+      
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        const color = colors.find(c => blockMap[c] === bName); const members = blockData[color]; let rounds = [];
+        if (globalBlockSize === 8) {
+          let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
+          rounds = [ r1, [ {p1:null,p2:null,winner:null}, {p1:null,p2:null,winner:null} ], [ {p1:null,p2:null,winner:null} ] ];
+        } else if (globalBlockSize === 4) {
+          let r1 = []; for(let i=0; i<4; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
+          rounds = [ r1, [ {p1:null,p2:null,winner:null} ] ];
+        } else if (globalBlockSize === 2) {
+          let r1 = []; for(let i=0; i<2; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null });
+          rounds = [ r1 ];
+        }
+        blockMatches[bName] = rounds;
+      });
+      finals = { sf: [{p1:null,p2:null,winner:null},{p1:null,p2:null,winner:null}], third: {p1:null,p2:null,winner:null}, f: {p1:null,p2:null,winner:null} };
+      updateAdvancements(); switchTab('tournament');
+    }
+
+    function toggleSwapMode() {
+      isSwapMode = !isSwapMode; swapPending = null;
+      const btn = document.getElementById('btn-toggle-swap');
+      if (isSwapMode) { btn.classList.replace('bg-cyber-dark','bg-yellow-500'); btn.classList.replace('text-cyber-blue','text-black'); btn.classList.replace('border-cyber-blue','border-yellow-500'); }
+      else { btn.classList.replace('bg-yellow-500','bg-cyber-dark'); btn.classList.replace('text-black','text-cyber-blue'); btn.classList.replace('border-yellow-500','border-cyber-blue'); }
+      renderTournament();
+    }
+
+    function handleSwapClick(block, matchIdx, playerSide) {
+      if (!swapPending) { swapPending = { block, matchIdx, playerSide }; }
+      else {
+          if (swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === playerSide) { swapPending = null; }
+          else {
+              let m1 = blockMatches[swapPending.block][0][swapPending.matchIdx]; let m2 = blockMatches[block][0][matchIdx];
+              let p1 = swapPending.playerSide === 1 ? m1.p1 : m1.p2; let p2 = playerSide === 1 ? m2.p1 : m2.p2;
+              if(swapPending.playerSide === 1) m1.p1 = p2; else m1.p2 = p2;
+              if(playerSide === 1) m2.p1 = p1; else m2.p2 = p1;
+              swapPending = null; m1.winner = null; m2.winner = null;
+              autoProcessBye(m1); autoProcessBye(m2); updateAdvancements();
+          }
+      }
+      renderTournament();
+    }
+
+    function autoProcessBye(match) { if (match.p1 && match.p2 && match.winner === null) { if (match.p1.id !== 'BYE' && match.p2.id === 'BYE') match.winner = 1; else if (match.p1.id === 'BYE' && match.p2.id !== 'BYE') match.winner = 2; else if (match.p1.id === 'BYE' && match.p2.id === 'BYE') match.winner = 0; } }
+    function getW(match) { if (match.winner === 1) return match.p1; if (match.winner === 2) return match.p2; if (match.winner === 0) return BYE; return null; }
+    function getL(match) { if (match.winner === 1) return match.p2; if (match.winner === 2) return match.p1; return null; }
+    function setNextMatch(match, newP1, newP2) { let changed = false; if (match.p1?.id !== newP1?.id) { match.p1 = newP1; changed = true; } if (match.p2?.id !== newP2?.id) { match.p2 = newP2; changed = true; } if (changed) match.winner = null; }
+
+    function updateAdvancements() {
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        let rounds = blockMatches[bName];
+        for (let i = 0; i < rounds.length; i++) {
+          rounds[i].forEach(autoProcessBye);
+          if (i < rounds.length - 1) { let nextRound = rounds[i+1]; for (let j = 0; j < nextRound.length; j++) { setNextMatch(nextRound[j], getW(rounds[i][j*2]), getW(rounds[i][j*2+1])); } }
+        }
+      });
+      let repA = getW(blockMatches['A'][blockMatches['A'].length-1][0]);
+      let repB = getW(blockMatches['B'][blockMatches['B'].length-1][0]);
+      let repC = getW(blockMatches['C'][blockMatches['C'].length-1][0]);
+      let repD = getW(blockMatches['D'][blockMatches['D'].length-1][0]);
+      setNextMatch(finals.sf[0], repA, repB); setNextMatch(finals.sf[1], repC, repD); finals.sf.forEach(autoProcessBye);
+      setNextMatch(finals.f, getW(finals.sf[0]), getW(finals.sf[1])); autoProcessBye(finals.f);
+      setNextMatch(finals.third, getL(finals.sf[0]), getL(finals.sf[1])); autoProcessBye(finals.third);
+      if (finals.f.winner !== null && finals.third.winner !== null) document.getElementById('showResultsBtn').classList.remove('hidden');
+      else document.getElementById('showResultsBtn').classList.add('hidden');
+      recalculateAllStats(); renderTournament(); saveState();
+    }
+
+    function setWinner(block, roundIdx, matchIdx, winnerVal) {
+      let match;
+      if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
+      else { match = blockMatches[block][roundIdx][matchIdx]; }
+      if (match.p1.id === 'BYE' || match.p2.id === 'BYE' || !match.p1 || !match.p2) return;
+      match.winner = (match.winner === winnerVal) ? null : winnerVal; updateAdvancements();
+    }
+
+    function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
+      const p1 = match.p1; const p2 = match.p2; const p1Name = p1 ? p1.name : 'TBD'; const p2Name = p2 ? p2.name : 'TBD';
+      const isP1Bye = p1?.id === 'BYE'; const isP2Bye = p2?.id === 'BYE'; const canSelect = p1 && p2 && !isP1Bye && !isP2Bye;
+      const baseBtnClass = "flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans ";
+      let p1Class = baseBtnClass; let p2Class = baseBtnClass;
+      if (match.winner === 1) { p1Class += "bg-cyber-blue text-cyber-bg shadow-[0_0_8px_#0ea5e9]"; p2Class += "bg-cyber-bg text-gray-600 opacity-50"; }
+      else if (match.winner === 2) { p1Class += "bg-cyber-bg text-gray-600 opacity-50"; p2Class += "bg-cyber-pink text-cyber-bg shadow-[0_0_8px_#ec4899]"; }
+      else { p1Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; p2Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; }
+      if (isP1Bye) p1Class += " italic opacity-40"; if (isP2Bye) p2Class += " italic opacity-40";
+
+      if (roundIdx === 0 && isSwapMode && match.winner === null) {
+          let active1 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 1) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
+          let active2 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 2) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
+          let btnHtml1 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 1)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-left flex items-center gap-1 ${active1} ${isP1Bye ? 'italic opacity-40' : ''}"><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>`;
+          let btnHtml2 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 2)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-right flex items-center justify-end gap-1 ${active2} ${isP2Bye ? 'italic opacity-40' : ''}"><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button>`;
+          return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${btnHtml1}<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>${btnHtml2}</div>`;
+      }
+
+      const onclick1 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 1)"` : '';
+      const onclick2 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 2)"` : '';
+      const canSendToScore = canSelect && match.winner === null;
+      const vsArea = canSendToScore
+        ? `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">REMOTE</button></div>`
+        : `<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>`;
+
+      const stageInfo = (block === 'finals') ? 'FINAL STAGE' : block + ' BLOCK';
+      const roundInfo = (block === 'finals')
+        ? (roundIdx === 'sf' ? 'SEMIFINALS' : roundIdx === 'f' ? 'GRAND FINAL' : '3RD PLACE MATCH')
+        : (blockMatches[block] && roundIdx === blockMatches[block].length - 1 ? 'BLOCK FINAL' : 'ROUND ' + (roundIdx + 1));
+      const matchKey = `${block}-${roundIdx}-${matchIdx}`;
+      const nextBtn = canSendToScore
+        ? `<button onclick="sendNextBattle('${matchKey}','${p1Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${p2Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${stageInfo}','${roundInfo}')" class="text-sm leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>`
+        : '';
+
+      return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
+    }
+
+    function sendNextBattle(matchKey, p1, p2, stage, round) {
+      if (activeNextBattleId === matchKey) {
+        if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+        activeNextBattleId = null;
+      } else {
+        if (conn) conn.send({ type: 'NEXT_BATTLE_CALL', p1, p2, stage, round });
+        activeNextBattleId = matchKey;
+      }
+    }
+
+    function scrollRemote(amount) {
+      if (conn) conn.send({ type: 'SCROLL_OVERLAY', offset: amount });
+    }
+
+    function toggleTvMode(mode) {
+      const colorBlue = 'background:#0ea5e9;color:#fff;box-shadow:0 0 16px #0ea5e9,0 0 32px #0ea5e9;border-color:#0ea5e9;';
+      if (mode === 'active') {
+        isTvMode_active = !isTvMode_active;
+        const btn = document.getElementById('tv-btn-active');
+        const showBtn = document.getElementById('showResultsBtn');
+        const scrollBtns = document.getElementById('tv-scroll-btns-active');
+        if (isTvMode_active) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+          btn.style.cssText = colorBlue;
+          if (showBtn) showBtn.classList.add('hidden');
+          if (scrollBtns) scrollBtns.classList.remove('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (showBtn) showBtn.classList.remove('hidden');
+          if (scrollBtns) scrollBtns.classList.add('hidden');
+        }
+      } else if (mode === 'results') {
+        isTvMode_results = !isTvMode_results;
+        const btn = document.getElementById('tv-btn-results');
+        const csvBtn = document.getElementById('results-export-csv-btn');
+        const scrollBtns = document.getElementById('tv-scroll-btns-results');
+        if (isTvMode_results) {
+          if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('resultsModal').innerHTML });
+          btn.style.cssText = colorBlue;
+          if (csvBtn) csvBtn.classList.add('hidden');
+          if (scrollBtns) scrollBtns.classList.remove('hidden');
+        } else {
+          if (conn) conn.send({ type: 'HIDE_OVERLAY' });
+          btn.style.cssText = '';
+          if (csvBtn) csvBtn.classList.remove('hidden');
+          if (scrollBtns) scrollBtns.classList.add('hidden');
+        }
+      }
+    }
+
+    function renderTournament() {
+      if (!isTournamentStarted) return;
+      const container = document.getElementById('tournamentContainer'); container.innerHTML = '';
+      ['A', 'B', 'C', 'D'].forEach(blockName => {
+        const rounds = blockMatches[blockName];
+        let html = `<div class="bracket min-w-[280px] border border-cyber-blue shadow-lg"><h3 class="text-center font-bold text-xl mb-4 border-b-2 border-cyber-blue text-cyber-blue font-sf pb-2">${blockName} BLOCK</h3>`;
+        for (let i = 0; i < rounds.length; i++) {
+          let roundTitle = (i === rounds.length - 1) ? `<h4 class="text-xs font-sf text-cyber-pink mb-1 mt-4">BLOCK FINAL</h4>` : `<h4 class="text-xs font-sf text-cyber-green mb-1 mt-4">ROUND ${i+1}</h4>`;
+          if (i === 0) roundTitle = roundTitle.replace('mt-4', 'mt-2');
+          html += roundTitle;
+          rounds[i].forEach((match, j) => {
+            let label1 = '', label2 = ''; if (i === 0) { label1 = j * 2 + 1; label2 = j * 2 + 2; }
+            html += renderMatchCard(match, blockName, i, j, label1, label2);
+          });
+        }
+        html += `</div>`; container.innerHTML += html;
+      });
+      document.getElementById('finalsContainer').innerHTML = `<div class="border border-cyber-table-border bg-[#0d131f] p-4 rounded-lg"><h3 class="text-center font-bold text-lg mb-4 text-cyber-blue font-sf">SEMIFINALS</h3>${renderMatchCard(finals.sf[0], 'finals', 'sf', 0, 'A代表', 'B代表')}<div class="my-4"></div>${renderMatchCard(finals.sf[1], 'finals', 'sf', 1, 'C代表', 'D代表')}</div><div class="border border-cyber-pink bg-[#0d131f] p-4 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.3)]"><h3 class="text-center font-bold text-lg mb-2 text-yellow-400 font-sf">GRAND FINAL</h3>${renderMatchCard(finals.f, 'finals', 'f', 0, 'W1', 'W2')}<h3 class="text-center font-bold text-sm mb-2 mt-6 text-orange-400 font-sf">3RD PLACE MATCH</h3>${renderMatchCard(finals.third, 'finals', 'third', 0, 'L1', 'L2')}</div>`;
+      if (isTvMode_active) {
+        if (conn) conn.send({ type: 'SHOW_OVERLAY', html: document.getElementById('tournamentActive').innerHTML });
+      }
+    }
+
+    function showResults() {
+      document.getElementById('resultTournamentName').innerText = tournamentName;
+      document.getElementById('res1').innerText = getW(finals.f).name; document.getElementById('res2').innerText = getL(finals.f).name;
+      document.getElementById('res3').innerText = getW(finals.third).name; document.getElementById('res4').innerText = getL(finals.third).name;
+      document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
+    }
+    function closeResults() { document.getElementById('resultsModal').classList.add('hidden'); document.getElementById('resultsModal').classList.remove('flex'); }
+
+    function openExportModal() {
+      let exportText = "";
+      const addMatch = (m) => {
+        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
+          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+        }
+      };
+      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
+      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
+      document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
+    }
+
+    function closeExportModal() { document.getElementById('exportModal').classList.add('hidden'); document.getElementById('exportModal').classList.remove('flex'); }
+
+    function copyExportData() {
+      const area = document.getElementById('exportArea'); area.select(); document.execCommand('copy');
+      const btn = event.currentTarget; const originalText = btn.innerText; btn.innerText = "✅ COPIED!"; btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
+      setTimeout(() => { btn.innerText = originalText; btn.classList.replace('bg-cyber-green', 'bg-cyber-blue'); }, 2000);
+    }
+
+
+    // ==========================================
+    // localStorage 自動保存・復元
+    // ==========================================
+    const SAVE_KEY = 'tbh_tournament';
+
+    function saveState() {
+      try {
+        const state = {
+          tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
+          pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
+          blockActivePositions, blockMatches, finals, isEffectOn
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('saveState error:', e); }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s.isSetupDone) return false;
+        tournamentName = s.tournamentName || '';
+        globalBlockSize = s.globalBlockSize || 8;
+        isSetupDone = s.isSetupDone || false;
+        isTournamentStarted = s.isTournamentStarted || false;
+        pidCounter = s.pidCounter || 1;
+        participants = s.participants || [];
+        participantSortMode = s.participantSortMode || 'id';
+        blockMap = s.blockMap || {};
+        blockData = s.blockData || {};
+        blockCapacities = s.blockCapacities || {};
+        blockActivePositions = s.blockActivePositions || {};
+        blockMatches = s.blockMatches || {};
+        finals = s.finals || {};
+        isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        return true;
+      } catch(e) { console.warn('loadState error:', e); return false; }
+    }
+
+    function clearSave() {
+      if (!confirm("セーブデータを削除して最初からやり直しますか？\n※この操作は元に戻せません")) return;
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+
+    function showResumeBanner() {
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('resume-banner').classList.remove('hidden');
+    }
+
+    function resumeFromSave() {
+      document.getElementById('resume-banner').classList.add('hidden');
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('mainManagementSection').classList.remove('hidden');
+      document.getElementById('mainManagementSection').classList.add('flex');
+      const effectBtn = document.getElementById('btn-toggle-effect');
+      if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
+      recalculateAllStats();
+      renderParticipants();
+      if (isTournamentStarted) {
+        document.getElementById('displayTournamentName').innerText = tournamentName;
+        document.getElementById('tournamentActive').classList.remove('hidden');
+        document.getElementById('tournamentActive').classList.add('flex');
+        document.getElementById('tournamentPreStart').classList.add('hidden');
+        if (document.getElementById('btn-setup-swap')) document.getElementById('btn-setup-swap').classList.add('hidden');
+        updateAdvancements();
+        switchTab('tournament');
+      } else {
+        switchTab('participants');
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
