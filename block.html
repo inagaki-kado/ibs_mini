@@ -224,7 +224,7 @@
     <!-- ★ チーム勝利数ドット（3勝先取） -->
     <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
       <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">TEAM WINS — 3 WIN MATCH</p>
-      <div class="flex items-center justify-center gap-4">
+      <div class="flex items-center justify-center gap-4" id="rm-dots-row">
         <!-- 左チームドット -->
         <div class="flex gap-1.5" id="rm-dots-left"></div>
         <div class="font-sf text-xl font-bold text-cyber-text" id="rm-team-score-display">0 - 0</div>
@@ -256,20 +256,20 @@
     <!-- ★ 出場選手を選ぶ（tag方式） -->
     <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
       <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">PLAYER PICK — SELECT WHO PLAYS</p>
-      <div class="flex gap-3">
+      <div class="flex gap-3" id="rm-pick-row">
         <div class="flex-1">
-          <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center">P1（左）</p>
+          <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center" id="rm-pick-lbl-left">P1（左）</p>
           <div id="rm-pick-left" class="grid grid-cols-3 gap-1"></div>
         </div>
         <div class="flex-1">
-          <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center">P2（右）</p>
+          <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center" id="rm-pick-lbl-right">P2（右）</p>
           <div id="rm-pick-right" class="grid grid-cols-3 gap-1"></div>
         </div>
       </div>
       <p class="text-[10px] font-sf text-center mt-2 opacity-60" style="color:#64748b">対戦ごとに出場選手を選べます（勝ち抜き自動進行後も手動で変更可）</p>
     </div>
-    <!-- スコアボタン -->
-    <div class="flex p-3 gap-3 shrink-0">
+    <!-- スコアボタン（SWAP 時は flex-row-reverse で左右と HUD の対応を一致） -->
+    <div class="flex p-3 gap-3 shrink-0" id="rm-score-btn-row">
       <div class="flex-1 flex flex-col items-center gap-2">
         <div class="grid grid-cols-2 gap-1.5">
           <button onclick="sendScore('left','P1_X',3)" class="rcmd btn-x">X</button>
@@ -298,19 +298,19 @@
     </div>
 
     <!-- ベイ選択 -->
-    <div class="flex gap-3 px-3 pb-2 shrink-0">
+    <div class="flex gap-3 px-3 pb-2 shrink-0" id="rm-bey-row">
       <div class="flex-1">
-        <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60">P1 ベイ選択</p>
+        <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center" id="rm-bey-lbl-left">P1 ベイ（左）</p>
         <div id="rm-bey-left" class="flex flex-col gap-1"></div>
       </div>
       <div class="flex-1">
-        <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-right">P2 ベイ選択</p>
+        <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center" id="rm-bey-lbl-right">P2 ベイ（右）</p>
         <div id="rm-bey-right" class="flex flex-col gap-1"></div>
       </div>
     </div>
 
     <!-- ★ 1対戦勝者ボタン（手動確定用） -->
-    <div class="flex gap-3 p-3 border-t border-cyber-table-border shrink-0">
+    <div class="flex gap-3 p-3 border-t border-cyber-table-border shrink-0" id="rm-win-row">
       <button onclick="recordBattleWin('left')" id="rm-win-left"
         class="flex-1 py-3 bg-cyber-blue text-cyber-bg font-bold font-sf rounded text-xs active:scale-95 shadow-[0_0_8px_#0ea5e9]">LEFT WIN →</button>
       <button onclick="recordBattleWin('right')" id="rm-win-right"
@@ -759,6 +759,28 @@ function updateRemoteUI(){
   // ベイブレードボタン
   renderBeyBtns(lt,'rm-bey-left','P1','border-cyber-blue text-cyber-blue');
   renderBeyBtns(rt,'rm-bey-right','P2','border-cyber-pink text-cyber-pink');
+
+  applyRemoteSwapLayout(isRemoteSwapped);
+}
+
+/** SWAP 時: 決まり手・PLAYER PICK・ベイ・WIN 列を画面左右で反転（P1 列＝左固定をやめ、チーム名バーと一致） */
+function applyRemoteSwapLayout(swapped){
+  ['rm-score-btn-row','rm-pick-row','rm-bey-row','rm-win-row'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.classList.toggle('flex-row-reverse',!!swapped);
+  });
+  var pll=document.getElementById('rm-pick-lbl-left');
+  var plr=document.getElementById('rm-pick-lbl-right');
+  if(pll&&plr){
+    if(swapped){ pll.textContent='P1（右）'; plr.textContent='P2（左）'; }
+    else { pll.textContent='P1（左）'; plr.textContent='P2（右）'; }
+  }
+  var bll=document.getElementById('rm-bey-lbl-left');
+  var blr=document.getElementById('rm-bey-lbl-right');
+  if(bll&&blr){
+    if(swapped){ bll.textContent='P1 ベイ（右）'; blr.textContent='P2 ベイ（左）'; }
+    else { bll.textContent='P1 ベイ（左）'; blr.textContent='P2 ベイ（右）'; }
+  }
 }
 
 function setCurrentMember(side, idx){

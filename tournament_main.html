@@ -61,6 +61,26 @@
     ::-webkit-scrollbar-track { background: #0a0e17; }
     ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
+
+    /* block.html 準拠：自担当ブロック戦・チーム戦リモート */
+    .tb-match-card { display: flex; align-items: center; gap: 6px; background: #0d131f; border: 1px solid #1f2937; border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; }
+    .tb-team-btn { flex: 1; padding: 8px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; text-align: left; background: #0a0e17; border: 1px solid #374151; color: #e2e8f0; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tb-team-btn.winner { background: #0ea5e9; border-color: #0ea5e9; color: #0a0e17; box-shadow: 0 0 8px rgba(14, 165, 233, 0.6); }
+    .tb-team-btn.loser { background: transparent; border-color: #374151; color: #4b5563; }
+    .tb-team-btn.tbd { color: #4b5563; font-style: italic; cursor: default !important; }
+    .tb-vs-badge { font-family: 'Orbitron', sans-serif; font-size: 9px; color: #4b5563; flex-shrink: 0; font-weight: 900; }
+    .tb-round-label { font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px; padding: 4px 8px 2px; margin-top: 8px; }
+    .tbr-score-num { font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; line-height: 1; }
+    .tbr-rcmd { width: 52px; height: 52px; border-radius: 50%; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.15s; user-select: none; cursor: pointer; }
+    .tbr-rcmd:active { transform: scale(0.9); }
+    .tbr-btn-x { border-color: #ff0055; color: #ff0055; background: transparent; }
+    .tbr-btn-b { border-color: #ff4500; color: #ff4500; background: transparent; }
+    .tbr-btn-o { border-color: #ffaa00; color: #ffaa00; background: transparent; }
+    .tbr-btn-s { border-color: #0ea5e9; color: #0ea5e9; background: transparent; }
+    .tbr-btn-x:active { background: #ff0055; color: #fff; }
+    .tbr-btn-b:active { background: #ff4500; color: #fff; }
+    .tbr-btn-o:active { background: #ffaa00; color: #000; }
+    .tbr-btn-s:active { background: #0ea5e9; color: #fff; }
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
@@ -147,6 +167,9 @@
           
           <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
             <div class="overflow-y-auto flex-1">
+              <p id="participant-team-sort-hint" class="hidden text-[10px] text-cyber-orange font-sf px-3 py-2 bg-[#0d131f] border-b border-cyber-table-border leading-relaxed">
+                ブロック用チーム編成あり: 一覧は<strong class="text-cyber-text">チーム順</strong>（結成順）→メンバーは<strong class="text-cyber-text">先鋒→中堅→大将</strong>。チーム未所属は下段へ（NO./名前/抽選の並び替えは未所属のみ）。
+              </p>
               <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-[#111827] z-10">
                   <tr class="border-b border-cyber-table-border text-cyber-text opacity-70 select-none">
@@ -206,7 +229,7 @@
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">開催部</label>
-              <select id="block-master-part" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
+              <select id="block-master-part" onchange="onParentLocalPartChange()" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
                 <option value="1">第1部</option>
                 <option value="2">第2部（一部終了後）</option>
               </select>
@@ -247,11 +270,52 @@
           </details>
         </div>
 
+        <!-- block.html 準拠：自担当スタジアムのブロック戦・代表決定戦 -->
+        <div id="parent-local-block-ui-wrap" class="hidden flex flex-col gap-0 border-2 border-cyber-green rounded-lg overflow-hidden">
+          <div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0 text-sm">
+            <button type="button" onclick="parentLocalSwitchSubTab('bracket')" id="parent-local-tab-bracket"
+              class="flex-1 py-2.5 font-bold border-b-4 border-cyber-green text-cyber-green transition-colors">🏆 ブロック戦</button>
+            <button type="button" onclick="parentLocalSwitchSubTab('semifinal')" id="parent-local-tab-semifinal"
+              class="flex-1 py-2.5 font-bold border-b-4 border-transparent text-cyber-text transition-colors hidden">⚔️ 代表決定戦</button>
+          </div>
+          <div id="parent-local-view-bracket" class="p-4 bg-[#0a0e17] flex flex-col">
+            <p class="text-[10px] text-cyber-text opacity-70 mb-3 leading-relaxed" id="parent-local-block-hint">自担当スタジアムに2チーム以上割り当てた後、「トーナメント開始」で進行します（<strong class="text-cyber-green">block.html</strong> と同じトーナメント表・操作です）。</p>
+            <button type="button" onclick="parentLocalStartBlockTournament()" id="btn-parent-local-start"
+              class="w-full bg-cyber-green text-cyber-bg py-4 rounded-full font-bold font-sf text-lg mb-4 opacity-50 cursor-not-allowed transition-all">▶ トーナメント開始</button>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="font-sf text-cyber-green text-lg" id="parent-local-bracket-title">A BLOCK</h2>
+                <p class="text-xs text-cyber-text opacity-60 font-sf" id="parent-local-bracket-sub">第1部 予選</p>
+              </div>
+            </div>
+            <div id="parent-local-bracket-area"></div>
+            <div id="parent-local-rep-banner" class="hidden mt-4 p-4 bg-[#0d131f] border-2 border-cyber-green rounded-lg text-center">
+              <p class="font-sf text-cyber-green text-sm mb-1">🏆 ブロック代表決定</p>
+              <p class="text-xl font-bold text-white" id="parent-local-rep-team-name"></p>
+              <p class="text-xs text-cyber-text opacity-60 mt-1">「代表決定戦」タブへ進むか、下の SET_SF で子機へ送ってください</p>
+              <button type="button" onclick="parentLocalGoSfTab()"
+                class="mt-3 bg-cyber-green text-cyber-bg px-5 py-2 rounded-full font-bold font-sf text-sm active:scale-95">⚔️ 代表決定戦へ</button>
+            </div>
+          </div>
+          <div id="parent-local-view-semifinal" class="hidden p-4 bg-[#0a0e17] flex flex-col border-t border-cyber-table-border">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="font-sf text-cyber-orange text-lg" id="parent-local-sf-title">代表決定戦</h2>
+                <p class="text-xs text-cyber-text opacity-60 font-sf" id="parent-local-sf-sub">各ブロック代表が対決</p>
+              </div>
+            </div>
+            <div id="parent-local-sf-area"></div>
+            <div id="parent-local-final-banner" class="hidden mt-4 p-4 bg-[#0d131f] border-2 border-cyber-orange rounded-lg text-center">
+              <p class="font-sf text-cyber-orange text-sm mb-1">🏆 決勝進出チーム決定</p>
+              <p class="text-xl font-bold text-white" id="parent-local-final-team-name"></p>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-[#0a0e17] border-2 border-cyber-blue rounded-lg p-4">
           <h3 class="font-sf text-cyber-blue text-sm mb-2">③ 自担当ブロック用 HUD — score.html</h3>
-          <p class="text-[10px] text-cyber-text opacity-70 mb-2">画面上部の <strong class="text-cyber-green">HUD · CONN</strong> と同じ接続（<code class="text-cyber-green">score.html</code> の LINK CODE）を使います。大会本戦のスコア表示・リモコンと共通です。</p>
-          <button type="button" onclick="openToraboBlockRemote()" class="w-full bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg py-2 rounded-full font-bold font-sf text-sm">🎮 チーム戦リモート（score.html へ）</button>
-          <p class="text-[9px] opacity-50 mt-1">未接続のときは先にヘッダーで HUD を CONN してください。自担当スタジアムのチーム戦用です。</p>
+          <p class="text-[10px] text-cyber-text opacity-70 mb-2">進行は上の「ブロック戦」で対戦カードの <strong class="text-cyber-orange">🛜</strong> からチーム戦リモートを開きます。画面上部の <strong class="text-cyber-green">HUD · CONN</strong>（<code class="text-cyber-green">score.html</code>）を先に接続してください。</p>
+          <p class="text-[9px] opacity-50">block.html の「HUD REMOTE — チーム戦」と同じ操作パネルが開きます。</p>
         </div>
 
         <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4">
@@ -379,6 +443,7 @@
       </div>
 
       <div id="beybladeContent" class="flex flex-col gap-4">
+        <p id="beybladeModalHint" class="hidden text-[11px] text-cyber-text opacity-80 font-sf leading-relaxed border border-cyber-table-border rounded-lg px-3 py-2 bg-[#0a0e17]"></p>
         <!-- ベイブレードリスト表示エリア -->
         <div id="beybladeList" class="space-y-3"></div>
         
@@ -781,45 +846,105 @@
   </div>
 </div>
 
-  <!-- 自担当ブロック用：メイン HUD（score.html）へのリモート（conn 共通） -->
+  <!-- 自担当ブロック：block.html と同じ HUD REMOTE — チーム戦（score.html） -->
   <div id="toraboRemoteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[110] p-3 overflow-y-auto">
-    <div class="bg-cyber-dark p-4 rounded-lg shadow-xl w-full max-w-lg border-2 border-cyber-blue flex flex-col my-auto">
-      <div class="flex justify-between items-center mb-3 border-b border-cyber-table-border pb-2 shrink-0">
-        <h2 class="text-sm font-sf text-cyber-blue tracking-widest">BLOCK HUD — score.html</h2>
-        <button type="button" onclick="closeToraboBlockRemote()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf">✖</button>
-      </div>
-      <p class="text-[9px] text-cyber-text opacity-60 mb-2">トラボCUP@RedBullGamingSphereTokyo · ヘッダー HUD と同じ score.html へ送信</p>
-      <div class="grid grid-cols-2 gap-2 mb-3">
-        <input type="text" id="torabo-remote-p1" placeholder="LEFT チーム名" class="p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text text-sm font-sf">
-        <input type="text" id="torabo-remote-p2" placeholder="RIGHT チーム名" class="p-2 bg-cyber-bg border border-cyber-pink rounded text-cyber-text text-sm font-sf">
-      </div>
-      <button type="button" onclick="toraboSendSetMatch()" class="w-full mb-3 py-2 bg-cyber-dark border border-cyber-green text-cyber-green text-xs font-sf font-bold rounded">名前を score.html に再送信（SET_MATCH）</button>
-      <div class="flex justify-between gap-2 mb-2 text-center">
-        <div class="flex-1">
-          <div class="text-[10px] text-cyber-blue font-sf">LEFT</div>
-          <div id="torabo-remote-left-score" class="text-3xl font-mono text-white">0</div>
+    <div class="bg-cyber-dark rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue flex flex-col my-auto">
+      <div class="flex justify-between items-center px-4 py-3 border-b border-cyber-table-border shrink-0">
+        <div>
+          <h2 class="font-sf text-cyber-blue text-sm tracking-widest">HUD REMOTE — チーム戦</h2>
+          <p class="text-[10px] text-cyber-text opacity-50 font-sf mt-0.5">score.html · 2P先取・勝ち抜き・3勝先取（block.html 同等）</p>
         </div>
-        <button type="button" onclick="toraboHandleSwap()" class="self-center text-[10px] px-2 py-1 bg-[#111827] border border-gray-600 rounded font-sf">SWAP</button>
-        <div class="flex-1">
-          <div class="text-[10px] text-cyber-pink font-sf">RIGHT</div>
-          <div id="torabo-remote-right-score" class="text-3xl font-mono text-white">0</div>
+        <button type="button" onclick="closeToraboBlockRemote()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf text-sm">✖ CLOSE</button>
+      </div>
+      <div class="flex items-center justify-between px-4 py-2 bg-[#0d131f] border-b border-cyber-table-border shrink-0">
+        <div class="flex-1 text-right overflow-hidden pr-2">
+          <div class="truncate text-cyber-blue font-bold text-base" id="tbr-rm-left-name">TEAM 1</div>
+        </div>
+        <button type="button" onclick="toraboHandleSwap()" class="text-[10px] bg-[#111827] border border-gray-600 text-gray-300 px-2 py-1 rounded font-sf mx-2 active:bg-gray-700 shrink-0">🔁 SWAP</button>
+        <div class="flex-1 overflow-hidden pl-2">
+          <div class="truncate text-cyber-pink font-bold text-base" id="tbr-rm-right-name">TEAM 2</div>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2 mb-2">
-        <button type="button" onclick="toraboScoreCmd('left', 'P1_X', 3)" class="py-2 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded text-sm">X</button>
-        <button type="button" onclick="toraboScoreCmd('right', 'P2_X', 3)" class="py-2 bg-[#0a0e17] border border-cyber-red text-cyber-red font-sf font-bold rounded text-sm">X</button>
-        <button type="button" onclick="toraboScoreCmd('left', 'P1_B', 2)" class="py-2 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded text-sm">B</button>
-        <button type="button" onclick="toraboScoreCmd('right', 'P2_B', 2)" class="py-2 bg-[#0a0e17] border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded text-sm">B</button>
-        <button type="button" onclick="toraboScoreCmd('left', 'P1_O', 2)" class="py-2 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded text-sm">O</button>
-        <button type="button" onclick="toraboScoreCmd('right', 'P2_O', 2)" class="py-2 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded text-sm">O</button>
-        <button type="button" onclick="toraboScoreCmd('left', 'P1_S', 1)" class="py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">S</button>
-        <button type="button" onclick="toraboScoreCmd('right', 'P2_S', 1)" class="py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">S</button>
+      <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
+        <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">TEAM WINS — 3 WIN MATCH</p>
+        <div class="flex items-center justify-center gap-4" id="tbr-rm-dots-row">
+          <div class="flex gap-1.5" id="tbr-rm-dots-left"></div>
+          <div class="font-sf text-xl font-bold text-cyber-text" id="tbr-rm-team-score-display">0 - 0</div>
+          <div class="flex gap-1.5" id="tbr-rm-dots-right"></div>
+        </div>
       </div>
-      <div class="flex gap-2 mb-2">
-        <button type="button" onclick="sendToraboRemoteCmd('CALL')" class="flex-1 py-3 bg-cyber-blue text-cyber-bg font-sf font-bold rounded text-sm">MATCH CALL</button>
-        <button type="button" onclick="sendToraboRemoteCmd('TIMER')" class="flex-1 py-2 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded text-sm">TIMER</button>
+      <div class="px-4 py-3 bg-[#0d131f] border-b border-cyber-table-border shrink-0">
+        <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">CURRENT BATTLE — 2P FIRST</p>
+        <div class="flex items-center justify-center gap-3">
+          <div class="text-right flex-1 overflow-hidden">
+            <span class="text-cyber-blue text-sm font-bold truncate block" id="tbr-rm-member-left">先鋒</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="tbr-score-num text-cyber-blue" id="tbr-rm-score-left">0</span>
+            <span class="font-sf text-cyber-text opacity-30 text-lg">-</span>
+            <span class="tbr-score-num text-cyber-pink" id="tbr-rm-score-right">0</span>
+          </div>
+          <div class="text-left flex-1 overflow-hidden">
+            <span class="text-cyber-pink text-sm font-bold truncate block" id="tbr-rm-member-right">先鋒</span>
+          </div>
+        </div>
+        <p class="text-[10px] font-sf text-center mt-2 opacity-60" id="tbr-rm-next-info" style="color:#64748b"></p>
       </div>
-      <button type="button" onclick="toraboScoreCmd('both', 'SYS_RESET', 'reset')" class="w-full py-2 bg-[#111827] border border-cyber-red text-cyber-red rounded text-xs font-sf">MATCH RESET</button>
+      <div class="px-4 py-3 bg-[#080c14] border-b border-cyber-table-border shrink-0">
+        <p class="text-[9px] font-sf text-cyber-text opacity-40 text-center tracking-widest mb-2">PLAYER PICK — SELECT WHO PLAYS</p>
+        <div class="flex gap-3" id="tbr-rm-pick-row">
+          <div class="flex-1">
+            <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center" id="tbr-pick-lbl-left">P1（左）</p>
+            <div id="tbr-rm-pick-left" class="grid grid-cols-3 gap-1"></div>
+          </div>
+          <div class="flex-1">
+            <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center" id="tbr-pick-lbl-right">P2（右）</p>
+            <div id="tbr-rm-pick-right" class="grid grid-cols-3 gap-1"></div>
+          </div>
+        </div>
+        <p class="text-[10px] font-sf text-center mt-2 opacity-60" style="color:#64748b">対戦ごとに出場選手を選べます（勝ち抜き自動進行後も手動で変更可）</p>
+      </div>
+      <div class="flex p-3 gap-3 shrink-0" id="tbr-rm-score-btn-row">
+        <div class="flex-1 flex flex-col items-center gap-2">
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="toraboSendScore('left','P1_X',3)" class="tbr-rcmd tbr-btn-x">X</button>
+            <button type="button" onclick="toraboSendScore('left','P1_B',2)" class="tbr-rcmd tbr-btn-b">B</button>
+            <button type="button" onclick="toraboSendScore('left','P1_O',2)" class="tbr-rcmd tbr-btn-o">O</button>
+            <button type="button" onclick="toraboSendScore('left','P1_S',1)" class="tbr-rcmd tbr-btn-s">S</button>
+          </div>
+          <button type="button" onclick="toraboSendScore('left','P1_MINUS',-1)" class="text-xs bg-cyber-dark border border-gray-600 text-gray-300 px-4 py-1.5 rounded font-sf active:bg-gray-800 w-full">－ 取消</button>
+        </div>
+        <div class="flex flex-col items-center justify-center gap-1.5 shrink-0">
+          <button type="button" onclick="sendToraboRemoteCmd('CALL')" class="bg-cyber-dark border border-cyber-green text-cyber-green px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-green active:text-cyber-bg">📣 CALL</button>
+          <button type="button" onclick="toraboResetCurrentBattle()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-pink active:text-white">⟳ RESET</button>
+          <button type="button" onclick="sendToraboRemoteCmd('TIMER')" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-2 py-1.5 rounded font-sf text-[10px] active:bg-cyber-blue active:text-cyber-bg">⏱ TIMER</button>
+        </div>
+        <div class="flex-1 flex flex-col items-center gap-2">
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="toraboSendScore('right','P2_X',3)" class="tbr-rcmd tbr-btn-x">X</button>
+            <button type="button" onclick="toraboSendScore('right','P2_B',2)" class="tbr-rcmd tbr-btn-b">B</button>
+            <button type="button" onclick="toraboSendScore('right','P2_O',2)" class="tbr-rcmd tbr-btn-o">O</button>
+            <button type="button" onclick="toraboSendScore('right','P2_S',1)" class="tbr-rcmd tbr-btn-s">S</button>
+          </div>
+          <button type="button" onclick="toraboSendScore('right','P2_MINUS',-1)" class="text-xs bg-cyber-dark border border-gray-600 text-gray-300 px-4 py-1.5 rounded font-sf active:bg-gray-800 w-full">－ 取消</button>
+        </div>
+      </div>
+      <div class="flex gap-3 px-3 pb-2 shrink-0" id="tbr-rm-bey-row">
+        <div class="flex-1">
+          <p class="text-[9px] text-cyber-blue font-sf mb-1 opacity-60 text-center" id="tbr-bey-lbl-left">P1 ベイ（左）</p>
+          <div id="tbr-rm-bey-left" class="flex flex-col gap-1"></div>
+        </div>
+        <div class="flex-1">
+          <p class="text-[9px] text-cyber-pink font-sf mb-1 opacity-60 text-center" id="tbr-bey-lbl-right">P2 ベイ（右）</p>
+          <div id="tbr-rm-bey-right" class="flex flex-col gap-1"></div>
+        </div>
+      </div>
+      <div class="flex gap-3 p-3 border-t border-cyber-table-border shrink-0" id="tbr-rm-win-row">
+        <button type="button" onclick="toraboRecordBattleWin('left')" id="tbr-rm-win-left"
+          class="flex-1 py-3 bg-cyber-blue text-cyber-bg font-bold font-sf rounded text-xs active:scale-95 shadow-[0_0_8px_#0ea5e9]">LEFT WIN →</button>
+        <button type="button" onclick="toraboRecordBattleWin('right')" id="tbr-rm-win-right"
+          class="flex-1 py-3 bg-cyber-pink text-white font-bold font-sf rounded text-xs active:scale-95 shadow-[0_0_8px_#ec4899]">RIGHT WIN →</button>
+      </div>
     </div>
   </div>
 
@@ -1091,10 +1216,21 @@
     let blockStadiumTeams = { A: [], B: [], C: [], D: [] };
     let blockTeamIdCounter = 1;
     let blockParentSelectedPids = [];
+    let parentLocalBracketRounds = [];
+    let parentLocalBlockStarted = false;
+    let parentLocalSfMatch = { t1: null, t2: null, winner: null, score: null };
+    let parentLocalSubTab = 'bracket';
     let toraboRemoteScoreLeft = 0;
     let toraboRemoteScoreRight = 0;
-    let toraboRemoteWinLimit = 4;
     let toraboRemoteSwapped = false;
+    let toraboTeamWinsLeft = 0;
+    let toraboTeamWinsRight = 0;
+    let toraboCurrentMemberLeft = 0;
+    let toraboCurrentMemberRight = 0;
+    let toraboCurrentMatchRef = null;
+    const TBR_MEMBER_LABELS = ['先鋒', '次鋒', '大将'];
+    const TBR_BATTLE_WIN_SCORE = 2;
+    const TBR_TEAM_WIN_COUNT = 3;
     const PARENT_CODE_KEY = 'tbh_main_parent_code';
     const PARENT_ICE = [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -1260,6 +1396,40 @@
       return s;
     }
 
+    function isEventBlockTeamMember(pid) {
+      return getParticipantIdsInEventBlockTeams().has(pid);
+    }
+
+    /** チーム戦: 1人1ベイ。それ以外（ブロック抽選のみ等）は従来どおり最大3 */
+    function getMaxBeybladesForParticipantId(pid) {
+      return isEventBlockTeamMember(pid) ? 1 : 3;
+    }
+
+    /**
+     * チームの HUD 用ベイ一覧。memberIds がある場合は各メンバー参加者の先頭1件を順に採用。
+     * 旧データ・貼付のみのチームは team.beyblades をそのまま使う。
+     */
+    function getTeamBeybladesAggregated(team) {
+      if (!team) return [];
+      let mids = team.memberIds;
+      if ((!mids || mids.length === 0) && team.id != null) {
+        const et = eventBlockTeams.find((x) => x.id === team.id);
+        if (et && et.memberIds && et.memberIds.length) mids = et.memberIds;
+      }
+      if (Array.isArray(mids) && mids.length > 0) {
+        const out = [];
+        for (let i = 0; i < mids.length; i++) {
+          const pid = mids[i];
+          if (pid == null) continue;
+          const p = participants.find((x) => x.id === pid);
+          const bs = p && p.beyblades;
+          if (bs && bs[0] && bs[0].name) out.push(bs[0]);
+        }
+        return out;
+      }
+      return Array.isArray(team.beyblades) ? team.beyblades.slice() : [];
+    }
+
     function getUnassignedEventTeamIds() {
       const used = new Set();
       ['A', 'B', 'C', 'D'].forEach((st) => (blockStadiumTeams[st] || []).forEach((id) => used.add(id)));
@@ -1270,7 +1440,11 @@
       const t = eventBlockTeams.find((x) => x.id === teamId);
       if (!t) return null;
       const m = t.members || ['', '', ''];
-      return { name: t.name, members: [m[0] || '', m[1] || '', m[2] || ''], beyblades: t.beyblades || [] };
+      return {
+        name: t.name,
+        members: [m[0] || '', m[1] || '', m[2] || ''],
+        beyblades: getTeamBeybladesAggregated(t)
+      };
     }
 
     function toggleBlockParentParticipantPick(pid) {
@@ -1334,10 +1508,13 @@
       ['A', 'B', 'C', 'D'].forEach((st) => {
         blockStadiumTeams[st] = (blockStadiumTeams[st] || []).filter((id) => id !== teamId);
       });
+      if (parentLocalBlockStarted) parentLocalInvalidateBracket();
       renderBlockTeamPickList();
       renderBlockFormedTeams();
       renderBlockAssignSlots();
       saveState();
+      updateParentLocalBlockUiVisibility();
+      renderParticipants();
     }
 
     function formEventBlockTeamFromParticipants() {
@@ -1358,6 +1535,8 @@
       renderBlockFormedTeams();
       renderBlockAssignSlots();
       saveState();
+      updateParentLocalBlockUiVisibility();
+      renderParticipants();
     }
 
     function clearBlockParticipantSelection() {
@@ -1367,8 +1546,10 @@
 
     function removeTeamFromStadium(st, tid) {
       blockStadiumTeams[st] = (blockStadiumTeams[st] || []).filter((id) => id !== tid);
+      if (parentLocalBlockStarted) parentLocalInvalidateBracket();
       renderBlockAssignSlots();
       saveState();
+      updateParentLocalBlockUiVisibility();
     }
 
     function assignTeamToStadium(st, tid) {
@@ -1378,8 +1559,10 @@
       }
       if (!blockStadiumTeams[st]) blockStadiumTeams[st] = [];
       blockStadiumTeams[st].push(tid);
+      if (parentLocalBlockStarted) parentLocalInvalidateBracket();
       renderBlockAssignSlots();
       saveState();
+      updateParentLocalBlockUiVisibility();
     }
 
     function renderBlockAssignSlots() {
@@ -1439,10 +1622,332 @@
       renderBlockTeamPickList();
       renderBlockFormedTeams();
       renderBlockAssignSlots();
+      updateParentLocalBlockUiVisibility();
+    }
+
+    function getParentLocalStadiumCode() {
+      const el = document.getElementById('parent-local-block-stadium');
+      const v = el && el.value;
+      return v && ['A', 'B', 'C', 'D'].includes(v) ? v : '';
+    }
+
+    function getParentLocalPartNum() {
+      const el = document.getElementById('block-master-part');
+      return parseInt((el && el.value) || '1', 10) || 1;
+    }
+
+    function parentLocalInvalidateBracket() {
+      parentLocalBracketRounds = [];
+      parentLocalBlockStarted = false;
+      parentLocalSfMatch = { t1: null, t2: null, winner: null, score: null };
+      parentLocalSubTab = 'bracket';
+    }
+
+    function parentLocalGetTeamsForLocalStadium() {
+      const st = getParentLocalStadiumCode();
+      if (!st) return [];
+      const ids = blockStadiumTeams[st] || [];
+      return ids
+        .map((id) => {
+          const t = eventBlockTeams.find((x) => x.id === id);
+          if (!t) return null;
+          const m = t.members || ['', '', ''];
+          return {
+            id: t.id,
+            name: t.name,
+            members: [m[0] || '', m[1] || '', m[2] || ''],
+            memberIds: (t.memberIds || []).slice(),
+            beyblades: getTeamBeybladesAggregated(t)
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function updateParentLocalBlockUiVisibility() {
+      const wrap = document.getElementById('parent-local-block-ui-wrap');
+      const btn = document.getElementById('btn-parent-local-start');
+      const st = getParentLocalStadiumCode();
+      if (!wrap || !btn) return;
+      const show = !!st;
+      wrap.classList.toggle('hidden', !show);
+      if (!show) return;
+      const tms = parentLocalGetTeamsForLocalStadium();
+      const ok = tms.length >= 2;
+      btn.classList.toggle('opacity-50', !ok);
+      btn.classList.toggle('cursor-not-allowed', !ok);
+      btn.classList.toggle('shadow-[0_0_15px_#22c55e]', ok);
+      const title = document.getElementById('parent-local-bracket-title');
+      const sub = document.getElementById('parent-local-bracket-sub');
+      const part = getParentLocalPartNum();
+      if (title) title.textContent = st + ' BLOCK';
+      if (sub) sub.textContent = '第' + part + '部 予選';
+      const sfTitle = document.getElementById('parent-local-sf-title');
+      const sfSub = document.getElementById('parent-local-sf-sub');
+      if (sfTitle) sfTitle.textContent = st + ' BLOCK 代表決定戦';
+      if (sfSub) sfSub.textContent = '第' + part + '部';
+      if (parentLocalBlockStarted) {
+        parentLocalSwitchSubTab(parentLocalSubTab === 'semifinal' ? 'semifinal' : 'bracket');
+      }
     }
 
     function onParentLocalStadiumChange() {
+      parentLocalInvalidateBracket();
       saveState();
+      updateParentLocalBlockUiVisibility();
+    }
+
+    function onParentLocalPartChange() {
+      saveState();
+      updateParentLocalBlockUiVisibility();
+    }
+
+    function parentLocalStartBlockTournament() {
+      const tms = parentLocalGetTeamsForLocalStadium();
+      if (tms.length < 2) return showAlert('自担当スタジアムに2チーム以上割り当ててください。');
+      parentLocalBracketRounds = [];
+      parentLocalBlockStarted = true;
+      if (tms.length === 4) {
+        parentLocalBracketRounds = [
+          [
+            { t1: tms[0], t2: tms[3], winner: null, score: null },
+            { t1: tms[1], t2: tms[2], winner: null, score: null }
+          ],
+          [{ t1: null, t2: null, winner: null, score: null }]
+        ];
+      } else if (tms.length === 3) {
+        parentLocalBracketRounds = [
+          [
+            { t1: tms[0], t2: tms[1], winner: null, score: null },
+            { t1: tms[2], t2: null, winner: 1, score: 'BYE' }
+          ],
+          [{ t1: null, t2: null, winner: null, score: null }]
+        ];
+        parentLocalAdvanceBracket();
+      } else {
+        parentLocalBracketRounds = [[{ t1: tms[0], t2: tms[1], winner: null, score: null }]];
+      }
+      parentLocalSubTab = 'bracket';
+      saveState();
+      parentLocalSwitchSubTab('bracket');
+      parentLocalRenderBracket();
+    }
+
+    function parentLocalAdvanceBracket() {
+      if (parentLocalBracketRounds.length >= 2) {
+        const r1 = parentLocalBracketRounds[0];
+        const r2 = parentLocalBracketRounds[1][0];
+        if (r1[0].winner !== null) r2.t1 = r1[0].winner === 1 ? r1[0].t1 : r1[0].t2;
+        if (r1[1] && r1[1].winner !== null) r2.t2 = r1[1].winner === 1 ? r1[1].t1 : r1[1].t2;
+      }
+    }
+
+    function parentLocalGetBlockRep() {
+      const last = parentLocalBracketRounds[parentLocalBracketRounds.length - 1];
+      if (!last || !last[0]) return null;
+      const f = last[0];
+      if (f.winner === null) return null;
+      return f.winner === 1 ? f.t1 : f.t2;
+    }
+
+    function parentLocalRenderBracket() {
+      if (!parentLocalBlockStarted) return;
+      const area = document.getElementById('parent-local-bracket-area');
+      if (!area) return;
+      area.innerHTML = '';
+      parentLocalBracketRounds.forEach((round, ri) => {
+        const lbl = document.createElement('div');
+        lbl.className = 'tb-round-label ' + (ri === parentLocalBracketRounds.length - 1 ? 'text-cyber-pink' : 'text-cyber-green');
+        lbl.textContent = ri === 0 ? 'ROUND 1' : 'BLOCK FINAL';
+        area.appendChild(lbl);
+        round.forEach((match, mi) => area.appendChild(parentLocalBuildMatchCard(match, ri, mi, 'bracket')));
+      });
+      const rep = parentLocalGetBlockRep();
+      const ban = document.getElementById('parent-local-rep-banner');
+      const tabSf = document.getElementById('parent-local-tab-semifinal');
+      if (ban) {
+        ban.classList.toggle('hidden', !rep);
+        if (rep) {
+          const el = document.getElementById('parent-local-rep-team-name');
+          if (el) el.textContent = rep.name;
+        }
+      }
+      if (tabSf) tabSf.classList.toggle('hidden', !rep);
+    }
+
+    function parentLocalBuildMatchCard(match, rIdx, mIdx, src) {
+      const card = document.createElement('div');
+      card.className = 'tb-match-card';
+      const isBye = match.t2 === null;
+      const canSel = match.t1 && match.t2 && !isBye && match.winner === null;
+      if (canSel) {
+        const nb = document.createElement('button');
+        nb.type = 'button';
+        nb.textContent = '📢';
+        nb.title = 'NEXT BATTLE 予告';
+        nb.className = 'text-sm shrink-0';
+        nb.onclick = () => parentLocalSendNextBattle(match);
+        card.appendChild(nb);
+        const rb = document.createElement('button');
+        rb.type = 'button';
+        rb.textContent = '🛜';
+        rb.title = 'リモコン';
+        rb.className = 'text-sm shrink-0';
+        rb.onclick = () => openToraboBlockRemoteFromMatch(match, rIdx, mIdx, src);
+        card.appendChild(rb);
+      }
+      const mkBtn = (team, wv) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className =
+          'tb-team-btn' +
+          (!team ? ' tbd' : match.winner === wv ? ' winner' : match.winner !== null ? ' loser' : '');
+        b.textContent = team ? team.name : 'TBD';
+        if (canSel)
+          b.onclick = () => {
+            parentLocalDoSetWinner(rIdx, mIdx, wv, src);
+          };
+        return b;
+      };
+      card.appendChild(mkBtn(match.t1, 1));
+      const vs = document.createElement('span');
+      vs.className = 'tb-vs-badge';
+      vs.textContent = match.score ? match.score : isBye ? 'BYE' : 'VS';
+      card.appendChild(vs);
+      card.appendChild(mkBtn(match.t2, 2));
+      if (match.winner !== null && !isBye) {
+        const u = document.createElement('button');
+        u.type = 'button';
+        u.textContent = '↩';
+        u.title = '取消';
+        u.className = 'text-xs text-cyber-pink px-1 shrink-0';
+        u.onclick = () => {
+          match.winner = null;
+          match.score = null;
+          parentLocalAdvanceBracket();
+          saveState();
+          src === 'bracket' ? parentLocalRenderBracket() : parentLocalRenderSemiFinal();
+        };
+        card.appendChild(u);
+      }
+      return card;
+    }
+
+    function parentLocalDoSetWinner(rIdx, mIdx, wv, src) {
+      let m = src === 'bracket' ? parentLocalBracketRounds[rIdx][mIdx] : parentLocalSfMatch;
+      if (!m || m.winner !== null) return;
+      m.winner = wv;
+      parentLocalAdvanceBracket();
+      saveState();
+      src === 'bracket' ? parentLocalRenderBracket() : parentLocalRenderSemiFinal();
+    }
+
+    function parentLocalSendNextBattle(match) {
+      if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です。');
+      const st = getParentLocalStadiumCode();
+      const part = getParentLocalPartNum();
+      conn.send({
+        type: 'SHOW_PREVIEW',
+        p1: match.t1?.name || '?',
+        p2: match.t2?.name || '?',
+        label: st + ' BLOCK - 第' + part + '部',
+        showLogo: false
+      });
+    }
+
+    function parentLocalSwitchSubTab(tab) {
+      if (tab === 'semifinal' && !parentLocalGetBlockRep()) tab = 'bracket';
+      parentLocalSubTab = tab;
+      const vb = document.getElementById('parent-local-view-bracket');
+      const vs = document.getElementById('parent-local-view-semifinal');
+      const tb = document.getElementById('parent-local-tab-bracket');
+      const ts = document.getElementById('parent-local-tab-semifinal');
+      if (tab === 'bracket') {
+        if (vb) vb.classList.remove('hidden');
+        if (vs) vs.classList.add('hidden');
+        if (tb) {
+          tb.className =
+            'flex-1 py-2.5 font-bold border-b-4 border-cyber-green text-cyber-green transition-colors';
+        }
+        if (ts) {
+          ts.className =
+            'flex-1 py-2.5 font-bold border-b-4 border-transparent text-cyber-text transition-colors';
+        }
+        parentLocalRenderBracket();
+      } else {
+        if (vb) vb.classList.add('hidden');
+        if (vs) vs.classList.remove('hidden');
+        if (tb) {
+          tb.className =
+            'flex-1 py-2.5 font-bold border-b-4 border-transparent text-cyber-text transition-colors';
+        }
+        if (ts) {
+          ts.className =
+            'flex-1 py-2.5 font-bold border-b-4 border-cyber-orange text-cyber-orange transition-colors';
+        }
+        parentLocalRenderSemiFinal();
+      }
+    }
+
+    function parentLocalGoSfTab() {
+      const rep = parentLocalGetBlockRep();
+      if (!rep) return;
+      document.getElementById('parent-local-tab-semifinal')?.classList.remove('hidden');
+      parentLocalSwitchSubTab('semifinal');
+    }
+
+    function parentLocalRenderSemiFinal() {
+      const area = document.getElementById('parent-local-sf-area');
+      if (!area) return;
+      area.innerHTML = '';
+      if (!parentLocalSfMatch.t1 && !parentLocalSfMatch.t2) {
+        area.innerHTML =
+          '<p class="text-center text-cyber-text opacity-50 text-sm py-8 font-sf">代表戦の相手チームが未設定です<br>下の入力で対戦相手を設定するか、親機の SET_SF で子機へ送ってください</p>';
+        parentLocalRenderSfTeamInput(area);
+        return;
+      }
+      const lbl = document.createElement('div');
+      lbl.className = 'tb-round-label text-cyber-orange';
+      lbl.textContent = '代表決定戦';
+      area.appendChild(lbl);
+      area.appendChild(parentLocalBuildMatchCard(parentLocalSfMatch, 0, 0, 'sf'));
+      const finalist = parentLocalSfMatch.winner !== null ? (parentLocalSfMatch.winner === 1 ? parentLocalSfMatch.t1 : parentLocalSfMatch.t2) : null;
+      const fb = document.getElementById('parent-local-final-banner');
+      const fn = document.getElementById('parent-local-final-team-name');
+      if (fb) fb.classList.toggle('hidden', !finalist);
+      if (finalist && fn) fn.textContent = finalist.name;
+    }
+
+    function parentLocalRenderSfTeamInput(area) {
+      const rep = parentLocalGetBlockRep();
+      if (!rep) return;
+      const div = document.createElement('div');
+      div.className = 'bg-[#0d131f] border border-cyber-table-border rounded-lg p-4 mt-3';
+      div.innerHTML =
+        '<p class="font-sf text-cyber-orange text-sm mb-3">対戦相手チームを入力</p>' +
+        '<p class="text-xs text-cyber-text opacity-70 mb-1">自分のブロック代表: <span class="text-cyber-green font-bold">' +
+        rep.name +
+        '</span></p>' +
+        '<input id="parent-local-sf-opp-input" type="text" placeholder="相手チーム名" class="w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-text outline-none font-sf text-sm mb-3 focus:border-cyber-green">' +
+        '<button type="button" id="parent-local-sf-opp-btn" class="w-full bg-cyber-orange text-cyber-bg py-2 rounded font-bold font-sf text-sm active:scale-95">⚔️ 対戦設定</button>';
+      area.appendChild(div);
+      document.getElementById('parent-local-sf-opp-btn')?.addEventListener('click', parentLocalSetSfOpponent);
+    }
+
+    function parentLocalSetSfOpponent() {
+      const inp = document.getElementById('parent-local-sf-opp-input');
+      if (!inp) return;
+      const name = inp.value.trim();
+      if (!name) return showAlert('チーム名を入力してください');
+      const rep = parentLocalGetBlockRep();
+      if (!rep) return showAlert('先にブロック代表を決定してください');
+      parentLocalSfMatch = {
+        t1: rep,
+        t2: { id: 'ext_' + Date.now(), name: name, members: ['', '', ''], beyblades: [] },
+        winner: null,
+        score: null
+      };
+      saveState();
+      parentLocalRenderSemiFinal();
     }
 
     function parentSendBlockMasterInit() {
@@ -1474,53 +1979,31 @@
       conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
-    function updateToraboRemoteScoreUI() {
-      const l = document.getElementById('torabo-remote-left-score');
-      const r = document.getElementById('torabo-remote-right-score');
-      if (l) l.textContent = String(toraboRemoteScoreLeft);
-      if (r) r.textContent = String(toraboRemoteScoreRight);
-    }
-
-    function toraboHandleSwap() {
-      toraboRemoteSwapped = !toraboRemoteSwapped;
-      const tmp = toraboRemoteScoreLeft;
-      toraboRemoteScoreLeft = toraboRemoteScoreRight;
-      toraboRemoteScoreRight = tmp;
-      updateToraboRemoteScoreUI();
-      sendToraboRemoteCmd('SYS_SWAP');
-    }
-
-    function toraboScoreCmd(side, cmd, pts) {
-      if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です。\n画面上部の CONN で接続してください。');
-      sendToraboRemoteCmd(cmd);
-      if (cmd === 'SYS_RESET') {
-        toraboRemoteScoreLeft = 0;
-        toraboRemoteScoreRight = 0;
-      } else if (typeof pts === 'number') {
-        if (side === 'left') toraboRemoteScoreLeft = Math.max(0, Math.min(toraboRemoteScoreLeft + pts, toraboRemoteWinLimit));
-        else if (side === 'right') toraboRemoteScoreRight = Math.max(0, Math.min(toraboRemoteScoreRight + pts, toraboRemoteWinLimit));
-      }
-      updateToraboRemoteScoreUI();
-    }
-
-    function toraboSendSetMatch() {
-      if (!conn || !conn.open) return;
-      const p1e = document.getElementById('torabo-remote-p1');
-      const p2e = document.getElementById('torabo-remote-p2');
-      const p1 = (p1e && p1e.value.trim()) || 'LEFT';
-      const p2 = (p2e && p2e.value.trim()) || 'RIGHT';
-      conn.send({ type: 'SET_MATCH', p1: p1, p2: p2, tName: getBlockExportTournamentName() });
-    }
-
-    function openToraboBlockRemote() {
+    function openToraboBlockRemoteFromMatch(match, rIdx, mIdx, src) {
       const locEl = document.getElementById('parent-local-block-stadium');
-      if (!locEl || !locEl.value) return showAlert('先に「② 親機の自担当スタジアム」で A〜D のいずれかを選んでください。');
-      if (!conn || !conn.open) return showAlert('画面上部の HUD で score.html と CONN してください（4桁コード）。');
+      if (!locEl || !locEl.value) return showAlert('先に「② 親機の自担当スタジアム」で A〜D を選んでください。');
+      if (!conn || !conn.open) return showAlert('画面上部の HUD で score.html と CONN してください。');
+      toraboCurrentMatchRef = { match: match, rIdx: rIdx, mIdx: mIdx, src: src };
+      toraboRemoteSwapped = false;
       toraboRemoteScoreLeft = 0;
       toraboRemoteScoreRight = 0;
-      toraboRemoteSwapped = false;
-      updateToraboRemoteScoreUI();
-      toraboSendSetMatch();
+      toraboTeamWinsLeft = 0;
+      toraboTeamWinsRight = 0;
+      toraboCurrentMemberLeft = 0;
+      toraboCurrentMemberRight = 0;
+      toraboUpdateRemoteUI();
+      const lt = match.t1;
+      const rt = match.t2;
+      const st = getParentLocalStadiumCode();
+      const part = getParentLocalPartNum();
+      conn.send({
+        type: 'SET_MATCH',
+        p1: lt?.name || '?',
+        p2: rt?.name || '?',
+        tName: getBlockExportTournamentName() + ' ' + st + 'BLOCK 第' + part + '部',
+        p1Stats: null,
+        p2Stats: null
+      });
       const m = document.getElementById('toraboRemoteModal');
       if (m) {
         m.classList.remove('hidden');
@@ -1528,7 +2011,259 @@
       }
     }
 
+    function toraboUpdateRemoteUI() {
+      if (!toraboCurrentMatchRef) return;
+      const m = toraboCurrentMatchRef.match;
+      const lt = toraboRemoteSwapped ? m.t2 : m.t1;
+      const rt = toraboRemoteSwapped ? m.t1 : m.t2;
+      const lName = document.getElementById('tbr-rm-left-name');
+      const rName = document.getElementById('tbr-rm-right-name');
+      if (lName) lName.textContent = lt?.name || '?';
+      if (rName) rName.textContent = rt?.name || '?';
+      const sl = document.getElementById('tbr-rm-score-left');
+      const sr = document.getElementById('tbr-rm-score-right');
+      if (sl) sl.textContent = String(toraboRemoteScoreLeft);
+      if (sr) sr.textContent = String(toraboRemoteScoreRight);
+      const lMember = lt?.members?.[toraboCurrentMemberLeft] || TBR_MEMBER_LABELS[toraboCurrentMemberLeft];
+      const rMember = rt?.members?.[toraboCurrentMemberRight] || TBR_MEMBER_LABELS[toraboCurrentMemberRight];
+      const ml = document.getElementById('tbr-rm-member-left');
+      const mr = document.getElementById('tbr-rm-member-right');
+      if (ml) ml.textContent = TBR_MEMBER_LABELS[toraboCurrentMemberLeft] + '：' + lMember;
+      if (mr) mr.textContent = TBR_MEMBER_LABELS[toraboCurrentMemberRight] + '：' + rMember;
+      toraboRenderWinDots('tbr-rm-dots-left', toraboTeamWinsLeft, '#0ea5e9');
+      toraboRenderWinDots('tbr-rm-dots-right', toraboTeamWinsRight, '#ec4899');
+      const disp = document.getElementById('tbr-rm-team-score-display');
+      if (disp) disp.textContent = toraboTeamWinsLeft + ' - ' + toraboTeamWinsRight;
+      const ni = document.getElementById('tbr-rm-next-info');
+      if (ni) ni.textContent = '次の対戦 → 下の「出場選手」を選択して進行';
+      const wl = document.getElementById('tbr-rm-win-left');
+      const wr = document.getElementById('tbr-rm-win-right');
+      if (wl) wl.textContent = (lMember || '左') + ' WIN →';
+      if (wr) wr.textContent = (rMember || '右') + ' WIN →';
+      toraboRenderMemberPickers(lt, rt);
+      toraboRenderBeyBtns(lt, 'tbr-rm-bey-left', 'P1', 'border-cyber-blue text-cyber-blue');
+      toraboRenderBeyBtns(rt, 'tbr-rm-bey-right', 'P2', 'border-cyber-pink text-cyber-pink');
+      toraboApplyRemoteSwapLayout(toraboRemoteSwapped);
+    }
+
+    function toraboApplyRemoteSwapLayout(swapped) {
+      ['tbr-rm-score-btn-row', 'tbr-rm-pick-row', 'tbr-rm-bey-row', 'tbr-rm-win-row'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('flex-row-reverse', !!swapped);
+      });
+      const pll = document.getElementById('tbr-pick-lbl-left');
+      const plr = document.getElementById('tbr-pick-lbl-right');
+      if (pll && plr) {
+        if (swapped) {
+          pll.textContent = 'P1（右）';
+          plr.textContent = 'P2（左）';
+        } else {
+          pll.textContent = 'P1（左）';
+          plr.textContent = 'P2（右）';
+        }
+      }
+      const bll = document.getElementById('tbr-bey-lbl-left');
+      const blr = document.getElementById('tbr-bey-lbl-right');
+      if (bll && blr) {
+        if (swapped) {
+          bll.textContent = 'P1 ベイ（右）';
+          blr.textContent = 'P2 ベイ（左）';
+        } else {
+          bll.textContent = 'P1 ベイ（左）';
+          blr.textContent = 'P2 ベイ（右）';
+        }
+      }
+    }
+
+    function toraboRenderWinDots(containerId, wins, color) {
+      const c = document.getElementById(containerId);
+      if (!c) return;
+      c.innerHTML = '';
+      for (let i = 0; i < TBR_TEAM_WIN_COUNT; i++) {
+        const dot = document.createElement('div');
+        dot.style.cssText =
+          'width:22px;height:22px;border-radius:50%;border:2px solid ' +
+          color +
+          ';' +
+          (i < wins ? 'background:' + color + ';box-shadow:0 0 6px ' + color + ';' : 'background:transparent;');
+        c.appendChild(dot);
+      }
+    }
+
+    function toraboRenderMemberPickers(lt, rt) {
+      const leftBox = document.getElementById('tbr-rm-pick-left');
+      const rightBox = document.getElementById('tbr-rm-pick-right');
+      if (!leftBox || !rightBox) return;
+      const mk = (side, team, activeIdx) => {
+        const wrap = side === 'left' ? leftBox : rightBox;
+        wrap.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+          const name = (team?.members?.[i] || '').trim();
+          const label = TBR_MEMBER_LABELS[i] + (name ? '：' + name : '');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = activeIdx === i;
+          btn.className =
+            'py-2 px-2 rounded font-sf text-[10px] border transition-colors active:scale-95 truncate ' +
+            (isActive
+              ? side === 'left'
+                ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue'
+                : 'bg-cyber-pink/20 border-cyber-pink text-cyber-pink'
+              : 'bg-[#0a0e17] border-cyber-table-border text-cyber-text opacity-80 hover:bg-gray-800');
+          btn.textContent = label;
+          btn.onclick = () => toraboSetCurrentMember(side, i);
+          wrap.appendChild(btn);
+        }
+      };
+      mk('left', lt, toraboCurrentMemberLeft);
+      mk('right', rt, toraboCurrentMemberRight);
+    }
+
+    function toraboSetCurrentMember(side, idx) {
+      if (!toraboCurrentMatchRef) return;
+      const i = Math.max(0, Math.min(2, parseInt(idx, 10) || 0));
+      if (side === 'left') toraboCurrentMemberLeft = i;
+      else toraboCurrentMemberRight = i;
+      toraboRemoteScoreLeft = 0;
+      toraboRemoteScoreRight = 0;
+      sendToraboRemoteCmd('SYS_RESET');
+      if (conn && conn.open) {
+        const m = toraboCurrentMatchRef.match;
+        const lt = toraboRemoteSwapped ? m.t2 : m.t1;
+        const rt = toraboRemoteSwapped ? m.t1 : m.t2;
+        const lName = lt?.members?.[toraboCurrentMemberLeft] || TBR_MEMBER_LABELS[toraboCurrentMemberLeft] || 'P1';
+        const rName = rt?.members?.[toraboCurrentMemberRight] || TBR_MEMBER_LABELS[toraboCurrentMemberRight] || 'P2';
+        conn.send({
+          type: 'SET_MATCH',
+          p1: lName,
+          p2: rName,
+          tName: (lt?.name || '?') + ' vs ' + (rt?.name || '?'),
+          p1Stats: null,
+          p2Stats: null
+        });
+      }
+      toraboUpdateRemoteUI();
+    }
+
+    function toraboRenderBeyBtns(team, cid, pk, cls) {
+      const c = document.getElementById(cid);
+      if (!c) return;
+      c.innerHTML = '';
+      const beys = getTeamBeybladesAggregated(team);
+      if (beys.length > 0) {
+        beys.forEach((b, i) => {
+          if (!b || !b.name) return;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = i + 1 + '. ' + b.name;
+          btn.className = 'py-1.5 px-2 bg-[#0a0e17] border ' + cls + ' font-sf text-xs rounded active:opacity-60 truncate text-left';
+          btn.onclick = () => {
+            if (conn && conn.open)
+              conn.send({ type: 'SET_BEYBLADE', data: { player: pk, beyblade: b.name, timestamp: Date.now() } });
+          };
+          c.appendChild(btn);
+        });
+      } else {
+        c.innerHTML = '<p class="text-gray-600 text-xs font-sf">登録なし</p>';
+      }
+    }
+
+    function toraboHandleSwap() {
+      toraboRemoteSwapped = !toraboRemoteSwapped;
+      let t = toraboRemoteScoreLeft;
+      toraboRemoteScoreLeft = toraboRemoteScoreRight;
+      toraboRemoteScoreRight = t;
+      t = toraboTeamWinsLeft;
+      toraboTeamWinsLeft = toraboTeamWinsRight;
+      toraboTeamWinsRight = t;
+      t = toraboCurrentMemberLeft;
+      toraboCurrentMemberLeft = toraboCurrentMemberRight;
+      toraboCurrentMemberRight = t;
+      toraboUpdateRemoteUI();
+      sendToraboRemoteCmd('SYS_SWAP');
+    }
+
+    function toraboSendScore(side, cmd, pts) {
+      if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です。');
+      sendToraboRemoteCmd(cmd);
+      if (pts < 0) {
+        if (side === 'left') toraboRemoteScoreLeft = Math.max(0, toraboRemoteScoreLeft + pts);
+        else toraboRemoteScoreRight = Math.max(0, toraboRemoteScoreRight + pts);
+      } else {
+        if (side === 'left') toraboRemoteScoreLeft = Math.min(9, toraboRemoteScoreLeft + pts);
+        else toraboRemoteScoreRight = Math.min(9, toraboRemoteScoreRight + pts);
+      }
+      if (toraboRemoteScoreLeft >= TBR_BATTLE_WIN_SCORE) {
+        toraboRecordBattleWin('left');
+        return;
+      }
+      if (toraboRemoteScoreRight >= TBR_BATTLE_WIN_SCORE) {
+        toraboRecordBattleWin('right');
+        return;
+      }
+      toraboUpdateRemoteUI();
+    }
+
+    function toraboResetCurrentBattle() {
+      toraboRemoteScoreLeft = 0;
+      toraboRemoteScoreRight = 0;
+      sendToraboRemoteCmd('SYS_RESET');
+      toraboUpdateRemoteUI();
+    }
+
+    function toraboRecordBattleWin(side) {
+      if (!toraboCurrentMatchRef) return;
+      const actualSide = toraboRemoteSwapped ? (side === 'left' ? 'right' : 'left') : side;
+      if (actualSide === 'left') {
+        toraboTeamWinsLeft++;
+        toraboCurrentMemberRight = Math.min(toraboCurrentMemberRight + 1, 2);
+      } else {
+        toraboTeamWinsRight++;
+        toraboCurrentMemberLeft = Math.min(toraboCurrentMemberLeft + 1, 2);
+      }
+      toraboRemoteScoreLeft = 0;
+      toraboRemoteScoreRight = 0;
+      sendToraboRemoteCmd('SYS_RESET');
+      if (toraboTeamWinsLeft >= TBR_TEAM_WIN_COUNT || toraboTeamWinsRight >= TBR_TEAM_WIN_COUNT) {
+        toraboFinalizeTeamMatch();
+        return;
+      }
+      if (conn && conn.open) {
+        const m = toraboCurrentMatchRef.match;
+        const lt = toraboRemoteSwapped ? m.t2 : m.t1;
+        const rt = toraboRemoteSwapped ? m.t1 : m.t2;
+        const lMember = lt?.members?.[toraboCurrentMemberLeft] || TBR_MEMBER_LABELS[toraboCurrentMemberLeft];
+        const rMember = rt?.members?.[toraboCurrentMemberRight] || TBR_MEMBER_LABELS[toraboCurrentMemberRight];
+        conn.send({
+          type: 'SET_MATCH',
+          p1: lMember,
+          p2: rMember,
+          tName: (lt?.name || '?') + ' vs ' + (rt?.name || '?'),
+          p1Stats: null,
+          p2Stats: null
+        });
+      }
+      toraboUpdateRemoteUI();
+    }
+
+    function toraboFinalizeTeamMatch() {
+      if (!toraboCurrentMatchRef) return;
+      const m = toraboCurrentMatchRef.match;
+      const teamWinnerIsLeft = toraboTeamWinsLeft >= TBR_TEAM_WIN_COUNT;
+      const wv = teamWinnerIsLeft ? (toraboRemoteSwapped ? 2 : 1) : toraboRemoteSwapped ? 1 : 2;
+      m.winner = wv;
+      m.score = toraboTeamWinsLeft + '-' + toraboTeamWinsRight;
+      parentLocalAdvanceBracket();
+      saveState();
+      const src = toraboCurrentMatchRef.src;
+      toraboCurrentMatchRef = null;
+      closeToraboBlockRemote();
+      if (src === 'bracket') parentLocalRenderBracket();
+      else parentLocalRenderSemiFinal();
+    }
+
     function closeToraboBlockRemote() {
+      toraboCurrentMatchRef = null;
       const m = document.getElementById('toraboRemoteModal');
       if (m) {
         m.classList.add('hidden');
@@ -1888,14 +2623,14 @@
     }
 
 
-    function getSortedParticipants() {
-      let sorted = [...participants];
+    /** 参加者配列を participantSortMode で並べ替え（インプレース） */
+    function sortParticipantsByMode(arr) {
       if (participantSortMode === 'name') {
-        sorted.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+        arr.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
       } else if (participantSortMode === 'lottery') {
-        // 未抽選を先頭、抽選済みはブロック名(A→B→...)→ポジション順
-        sorted.sort((a, b) => {
-          const aHas = a.color != null, bHas = b.color != null;
+        arr.sort((a, b) => {
+          const aHas = a.color != null,
+            bHas = b.color != null;
           if (!aHas && !bHas) return a.id - b.id;
           if (!aHas) return -1;
           if (!bHas) return 1;
@@ -1905,8 +2640,28 @@
           return a.position - b.position;
         });
       } else {
-        sorted.sort((a, b) => a.id - b.id);
+        arr.sort((a, b) => a.id - b.id);
       }
+      return arr;
+    }
+
+    function getSortedParticipants() {
+      const sorted = [...participants];
+      if (eventBlockTeams.length > 0) {
+        const inTeam = new Set();
+        eventBlockTeams.forEach((t) => (t.memberIds || []).forEach((id) => inTeam.add(id)));
+        const ordered = [];
+        eventBlockTeams.forEach((t) => {
+          (t.memberIds || []).forEach((pid) => {
+            const p = participants.find((x) => x.id === pid);
+            if (p) ordered.push(p);
+          });
+        });
+        const rest = sorted.filter((p) => !inTeam.has(p.id));
+        sortParticipantsByMode(rest);
+        return [...ordered, ...rest];
+      }
+      sortParticipantsByMode(sorted);
       return sorted;
     }
 
@@ -1917,6 +2672,8 @@
 
     function renderParticipants() {
       if(!isSetupDone) return; const tbody = document.getElementById('participantList'); tbody.innerHTML = '';
+      const hintTeam = document.getElementById('participant-team-sort-hint');
+      if (hintTeam) hintTeam.classList.toggle('hidden', eventBlockTeams.length === 0);
       const sortedP = getSortedParticipants();
       sortedP.forEach(p => {
         const originalNo = participants.indexOf(p) + 1;
@@ -2711,6 +3468,10 @@
         };
         const pls = document.getElementById('parent-local-block-stadium');
         if (pls) state.parentLocalBlockStadium = pls.value || '';
+        state.parentLocalBracketRounds = parentLocalBracketRounds;
+        state.parentLocalBlockStarted = parentLocalBlockStarted;
+        state.parentLocalSfMatch = parentLocalSfMatch;
+        state.parentLocalSubTab = parentLocalSubTab;
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -2750,6 +3511,10 @@
         blockParentSelectedPids = s.blockParentSelectedPids || [];
         const pls = document.getElementById('parent-local-block-stadium');
         if (pls && s.parentLocalBlockStadium !== undefined) pls.value = s.parentLocalBlockStadium;
+        parentLocalBracketRounds = s.parentLocalBracketRounds || [];
+        parentLocalBlockStarted = !!s.parentLocalBlockStarted;
+        parentLocalSfMatch = s.parentLocalSfMatch || { t1: null, t2: null, winner: null, score: null };
+        parentLocalSubTab = s.parentLocalSubTab || 'bracket';
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -2774,6 +3539,7 @@
       if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
       recalculateAllStats();
       renderParticipants();
+      updateParentLocalBlockUiVisibility();
       if (isTournamentStarted) {
         document.getElementById('displayTournamentName').innerText = tournamentName;
         document.getElementById('tournamentActive').classList.remove('hidden');
@@ -2903,6 +3669,22 @@
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       const listEl = document.getElementById('beybladeList');
       const addBtn = document.getElementById('addBeybladeBtn');
+      const hintEl = document.getElementById('beybladeModalHint');
+      if (!participant || !listEl || !addBtn) return;
+      const maxBey = getMaxBeybladesForParticipantId(participant.id);
+      if (hintEl) {
+        const teamRule = isEventBlockTeamMember(participant.id);
+        hintEl.classList.toggle('hidden', !teamRule);
+        if (teamRule) {
+          let h =
+            'チーム編成メンバーは<strong class="text-cyber-blue">1人1ベイ</strong>までです。トーナメント開始後も登録・変更できます。';
+          if ((participant.beyblades || []).length > 1) {
+            h +=
+              '<br><span class="text-cyber-pink">登録が2件以上あります。チーム戦に合わせて余分を削除してください。</span>';
+          }
+          hintEl.innerHTML = h;
+        }
+      }
       
       listEl.innerHTML = '';
       
@@ -2940,8 +3722,7 @@
         });
       }
       
-      // 3つまで追加可能
-      if (participant.beyblades.length >= 3) {
+      if (participant.beyblades.length >= maxBey) {
         addBtn.style.display = 'none';
       } else {
         addBtn.style.display = 'block';
@@ -2998,6 +3779,17 @@
      * ベイブレード登録を開始
      */
     function startBeybladeRegistration() {
+      const participant = participants.find((p) => p.id === currentBeybladeParticipantId);
+      if (!participant) return;
+      const maxBey = getMaxBeybladesForParticipantId(participant.id);
+      if ((participant.beyblades || []).length >= maxBey) {
+        showAlert(
+          maxBey === 1
+            ? 'チーム編成メンバーは1人1ベイまでです。変更する場合は既存を削除してください。'
+            : 'ベイブレードは最大3つまでです。'
+        );
+        return;
+      }
       currentBeybladeSelection = {};
       beybladeSelectionStep = 0;
       beybladeSelectionPath = [];
@@ -3156,6 +3948,14 @@
      */
     function completeBeybladeSelection() {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      if (!participant) return;
+      const maxBey = getMaxBeybladesForParticipantId(participant.id);
+      if (!participant.beyblades) participant.beyblades = [];
+      if (participant.beyblades.length >= maxBey) {
+        showAlert(maxBey === 1 ? 'チーム編成メンバーは1人1ベイまでです。' : 'ベイブレードは最大3つまでです。');
+        closeBeybladeSelectModal();
+        return;
+      }
       
       // ベイブレード名を自動生成（記号なし、間を詰める）
       let name = '';
@@ -3196,6 +3996,8 @@
     function closeBeybladeModal() {
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
+      const hintEl = document.getElementById('beybladeModalHint');
+      if (hintEl) hintEl.classList.add('hidden');
       currentBeybladeParticipantId = null;
       currentEditingBeybladeIndex = -1;
     }
