@@ -157,9 +157,15 @@
             
             <div class="flex-grow"></div>
             
-            <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
-              <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
-              <span>🖼️ ロゴ表示</span>
+            <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="score.html 次戦予告（📢）の背景画像">
+              <span class="whitespace-nowrap">🖼️ 次戦予告 背景</span>
+              <select id="hud-preview-bg" onchange="onHudPreviewBgChange()" class="max-w-[min(52vw,220px)] text-[11px] bg-cyber-bg border border-cyber-table-border rounded px-2 py-1 font-sf text-cyber-text">
+                <option value="BEYX_logo_amb.png">BEYX_logo_amb.png</option>
+                <option value="maintitle_white.png" selected>maintitle_white.png</option>
+                <option value="torabo_logo.png">torabo_logo.png</option>
+                <option value="evojlogo.png">evojlogo.png</option>
+                <option value="none">非表示</option>
+              </select>
             </label>
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
@@ -362,6 +368,7 @@
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
           
+          <div id="blockPrelimSummary" class="mb-4 w-full shrink-0" aria-label="ブロック予選の途中経過"></div>
           <div id="tournamentContainer" class="tournament-grid mb-4 pb-2 shrink-0"></div>
           
           <div class="mt-2 pt-4 border-t border-cyber-blue flex-1 overflow-y-auto">
@@ -1134,7 +1141,29 @@
     let isTvMode_active = false;
     let isTvMode_results = false;
     let activeNextBattleId = null;
-    let logoDisplayEnabled = true;
+    const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
+    let hudPreviewBackground = 'maintitle_white.png';
+
+    function getShowPreviewHudFields() {
+      const el = document.getElementById('hud-preview-bg');
+      const bg = el ? el.value : hudPreviewBackground;
+      if (bg === 'none') return { showLogo: false, previewBackground: 'none', logoSrc: null, logoDataUrl: null };
+      return { showLogo: true, previewBackground: bg, logoSrc: bg, logoDataUrl: null };
+    }
+
+    function onHudPreviewBgChange() {
+      const el = document.getElementById('hud-preview-bg');
+      if (el) hudPreviewBackground = el.value;
+      saveState();
+    }
+
+    function syncHudPreviewBgSelect() {
+      const el = document.getElementById('hud-preview-bg');
+      if (!el) return;
+      const v = HUD_PREVIEW_BG_KEYS.includes(hudPreviewBackground) ? hudPreviewBackground : 'maintitle_white.png';
+      el.value = v;
+      hudPreviewBackground = v;
+    }
 
     let _retryCount = 0;
     let _retryTarget = null;
@@ -1850,7 +1879,7 @@
         p1: match.t1?.name || '?',
         p2: match.t2?.name || '?',
         label: st + ' BLOCK - 第' + part + '部',
-        showLogo: false
+        ...getShowPreviewHudFields()
       });
     }
 
@@ -2047,20 +2076,17 @@
     }
 
     function toraboApplyRemoteSwapLayout(swapped) {
-      ['tbr-rm-score-btn-row', 'tbr-rm-pick-row', 'tbr-rm-bey-row', 'tbr-rm-win-row'].forEach((id) => {
+      /* PLAYER PICK は含めない: updateRemoteUI で lt/rt を既に入れ替えて描画しているため、
+         ここでも flex-row-reverse すると二重反転しチーム名バーとずれる */
+      ['tbr-rm-score-btn-row', 'tbr-rm-bey-row', 'tbr-rm-win-row'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('flex-row-reverse', !!swapped);
       });
       const pll = document.getElementById('tbr-pick-lbl-left');
       const plr = document.getElementById('tbr-pick-lbl-right');
       if (pll && plr) {
-        if (swapped) {
-          pll.textContent = 'P1（右）';
-          plr.textContent = 'P2（左）';
-        } else {
-          pll.textContent = 'P1（左）';
-          plr.textContent = 'P2（右）';
-        }
+        pll.textContent = 'P1（左）';
+        plr.textContent = 'P2（右）';
       }
       const bll = document.getElementById('tbr-bey-lbl-left');
       const blr = document.getElementById('tbr-bey-lbl-right');
@@ -2513,6 +2539,7 @@
       document.getElementById('mainManagementSection').classList.remove('hidden');
       document.getElementById('mainManagementSection').classList.add('flex');
       renderParticipants();
+      syncHudPreviewBgSelect();
     }
 
     function getFairPositions(count, blockSize) {
@@ -3131,6 +3158,97 @@
       updateAdvancements();
     }
 
+    function escapeHtml(str) {
+      if (str == null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /** ブロック予選の実質対戦の消化数・次の試合・代表確定状況 */
+    function getBlockPrelimStats(blockName) {
+      const rounds = blockMatches[blockName];
+      if (!rounds || rounds.length === 0) {
+        return { totalReal: 0, doneReal: 0, nextInfo: null, repKind: 'none', repName: '', finalP1: '', finalP2: '' };
+      }
+      let totalReal = 0, doneReal = 0;
+      let nextInfo = null;
+      for (let i = 0; i < rounds.length; i++) {
+        for (let j = 0; j < rounds[i].length; j++) {
+          const m = rounds[i][j];
+          const p1 = m.p1, p2 = m.p2;
+          if (!p1 || !p2) continue;
+          const real = p1.id !== 'BYE' && p2.id !== 'BYE';
+          if (real) {
+            totalReal++;
+            if (m.winner !== null) doneReal++;
+            else if (!nextInfo) nextInfo = { p1: p1.name, p2: p2.name };
+          }
+        }
+      }
+      const finalMatch = rounds[rounds.length - 1][0];
+      let repKind = 'pending';
+      let repName = '';
+      let finalP1 = '';
+      let finalP2 = '';
+      if (finalMatch && finalMatch.p1 && finalMatch.p2) {
+        finalP1 = finalMatch.p1.id === 'BYE' ? 'BYE' : finalMatch.p1.name;
+        finalP2 = finalMatch.p2.id === 'BYE' ? 'BYE' : finalMatch.p2.name;
+        const fp1 = finalMatch.p1, fp2 = finalMatch.p2;
+        const finalIsReal = fp1.id !== 'BYE' && fp2.id !== 'BYE';
+        if (finalMatch.winner !== null && finalIsReal) {
+          const w = getW(finalMatch);
+          repKind = 'done';
+          repName = w && w.id !== 'BYE' ? w.name : (w && w.id === 'BYE' ? 'BYE' : '—');
+        } else if (finalIsReal) {
+          repKind = 'final_ready';
+        } else {
+          repKind = 'early';
+        }
+      }
+      return { totalReal, doneReal, nextInfo, repKind, repName, finalP1, finalP2 };
+    }
+
+    function buildBlockPrelimSummaryHtml() {
+      const blocks = ['A', 'B', 'C', 'D'];
+      let cards = '';
+      blocks.forEach((bName) => {
+        const st = getBlockPrelimStats(bName);
+        const pct = st.totalReal > 0 ? Math.round((st.doneReal / st.totalReal) * 100) : 0;
+        let mainLine = '';
+        if (st.repKind === 'done') {
+          mainLine = `<div class="text-cyber-green font-sf text-xs font-bold leading-tight">代表確定: ${escapeHtml(st.repName)}</div>`;
+        } else if (st.repKind === 'final_ready') {
+          mainLine = `<div class="text-cyber-pink font-sf text-xs font-bold leading-tight">決勝: ${escapeHtml(st.finalP1)} <span class="text-gray-500 font-sf">vs</span> ${escapeHtml(st.finalP2)}</div>`;
+        } else if (st.repKind === 'early') {
+          mainLine = `<div class="text-gray-500 font-sf text-[10px] leading-tight">ブロック決勝まで繰り上げ</div>`;
+        } else {
+          mainLine = `<div class="text-gray-500 font-sf text-[10px]">—</div>`;
+        }
+        let subLine = '';
+        if (st.nextInfo) {
+          subLine = `<div class="text-[10px] text-gray-400 mt-1.5 truncate" title="${escapeHtml(st.nextInfo.p1)} vs ${escapeHtml(st.nextInfo.p2)}">次の試合: ${escapeHtml(st.nextInfo.p1)} <span class="opacity-50">vs</span> ${escapeHtml(st.nextInfo.p2)}</div>`;
+        } else if (st.totalReal > 0 && st.doneReal >= st.totalReal) {
+          subLine = `<div class="text-[10px] text-cyber-green mt-1.5">実質対戦はすべて消化済み</div>`;
+        }
+        cards += `
+          <div class="border border-cyber-table-border bg-[#0d131f] rounded-lg p-3 shadow-sm min-w-0">
+            <div class="flex justify-between items-baseline gap-2 mb-2">
+              <span class="font-sf font-bold text-cyber-blue text-lg leading-none">${bName}</span>
+              <span class="text-[10px] font-sf text-gray-500 shrink-0">${st.doneReal}/${st.totalReal}</span>
+            </div>
+            <div class="h-1.5 bg-cyber-bg rounded overflow-hidden mb-2">
+              <div class="h-full bg-cyber-green rounded-sm" style="width:${pct}%"></div>
+            </div>
+            ${mainLine}
+            ${subLine}
+          </div>`;
+      });
+      return `
+        <div class="border border-cyber-blue/40 rounded-lg p-3 md:p-4 bg-[#0a0e17]/90">
+          <h3 class="text-xs font-sf text-cyber-blue mb-3 tracking-widest">ブロック予選 · 途中経過</h3>
+          <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">${cards}</div>
+        </div>`;
+    }
+
     function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
       const p1 = match.p1; const p2 = match.p2; const p1Name = p1 ? p1.name : 'TBD'; const p2Name = p2 ? p2.name : 'TBD';
       const isP1Bye = p1?.id === 'BYE'; const isP2Bye = p2?.id === 'BYE'; const canSelect = p1 && p2 && !isP1Bye && !isP2Bye;
@@ -3158,6 +3276,9 @@
       if (match.score) {
         // スコアが記録されている場合は表示
         vsArea = `<div class="flex flex-col items-center justify-center mx-1 min-w-[60px]"><span class="text-cyber-orange font-sf font-bold text-sm whitespace-nowrap">${match.score}</span></div>`;
+      } else if (match.winner !== null) {
+        // 勝敗のみ確定（スコア未入力）のときは途中経過が分かるように明示
+        vsArea = `<div class="flex flex-col items-center justify-center mx-1 min-w-[44px]"><span class="text-cyber-green font-sf font-bold text-[10px] whitespace-nowrap">決着済</span></div>`;
       } else if (canSendToScore) {
         // 試合前の場合はREMOTEボタン
         vsArea = `<div class="flex flex-col items-center justify-center mx-1"><button onclick="openRemoteModal('${block}', '${roundIdx}', ${matchIdx})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-base font-sf px-1 py-1 rounded transition-colors shadow-sm" title="リモコンを開く">🛜</button></div>`;
@@ -3185,13 +3306,9 @@
         activeNextBattleId = null;
       } else {
         const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled });
+        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
         activeNextBattleId = matchKey;
       }
-    }
-
-    function toggleLogoDisplay() {
-      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
     }
 
     function scrollRemote(amount) {
@@ -3395,6 +3512,8 @@
 
     function renderTournament() {
       if (!isTournamentStarted) return;
+      const summaryEl = document.getElementById('blockPrelimSummary');
+      if (summaryEl) summaryEl.innerHTML = buildBlockPrelimSummaryHtml();
       const container = document.getElementById('tournamentContainer'); container.innerHTML = '';
       ['A', 'B', 'C', 'D'].forEach(blockName => {
         const rounds = blockMatches[blockName];
@@ -3464,7 +3583,8 @@
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, blockMatches, finals, isEffectOn,
-          eventBlockTeams, blockStadiumTeams, blockTeamIdCounter, blockParentSelectedPids
+          eventBlockTeams, blockStadiumTeams, blockTeamIdCounter, blockParentSelectedPids,
+          hudPreviewBackground
         };
         const pls = document.getElementById('parent-local-block-stadium');
         if (pls) state.parentLocalBlockStadium = pls.value || '';
@@ -3515,6 +3635,9 @@
         parentLocalBlockStarted = !!s.parentLocalBlockStarted;
         parentLocalSfMatch = s.parentLocalSfMatch || { t1: null, t2: null, winner: null, score: null };
         parentLocalSubTab = s.parentLocalSubTab || 'bracket';
+        hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
+          ? s.hudPreviewBackground
+          : 'maintitle_white.png';
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -3551,6 +3674,7 @@
       } else {
         switchTab('participants');
       }
+      syncHudPreviewBgSelect();
     }
 
     // ==========================================
@@ -3559,20 +3683,62 @@
 
     let partsData = []; // パースしたパーツデータを保存
 
+    function applyPartsCsvFromText(csvText) {
+      partsData = parsePartsCSV(csvText || '');
+      return partsData.length;
+    }
+
+    /**
+     * 手動で parts.csv を読み込み（file:// 時や fetch 失敗時用）
+     */
+    function onManualPartsCsvPick(ev) {
+      const f = ev.target && ev.target.files && ev.target.files[0];
+      if (ev.target) ev.target.value = '';
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const n = applyPartsCsvFromText(reader.result);
+        if (n === 0) {
+          showAlert('parts.csv を解析しましたが、有効なパーツがありません。');
+          return;
+        }
+        const modal = document.getElementById('beybladeSelectModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          showNextPartSelection();
+        } else {
+          showAlert('parts.csv を読み込みました（' + n + ' 件）。ベイ登録を続けられます。');
+        }
+      };
+      reader.onerror = () => showAlert('ファイルの読み込みに失敗しました。');
+      reader.readAsText(f, 'UTF-8');
+    }
+
     /**
      * 同じフォルダの parts.csv を fetch で読み込んでパースする
+     * ※ file:// で HTML を開いている場合、ブラウザ制限で fetch が使えず空になります → HTTP で開くか、パーツ選択画面で CSV を指定してください。
      */
     async function loadPartsCSV() {
+      if (window.location.protocol === 'file:') {
+        console.warn(
+          '[ベイ登録] file:// では parts.csv を自動読み込みできません。ローカルサーバー（例: npx serve）で http:// から開くか、パーツ選択画面で parts.csv を手動指定してください。'
+        );
+        return [];
+      }
       try {
         const response = await fetch('parts.csv');
         if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
         const csvText = await response.text();
-        partsData = parsePartsCSV(csvText);
-        console.log('✅ parts.csv読み込み成功:', partsData.length, '件');
+        const n = applyPartsCsvFromText(csvText);
+        console.log('✅ parts.csv読み込み成功:', n, '件');
         return partsData;
       } catch (error) {
         console.error('❌ parts.csv読み込みエラー:', error);
-        showAlert('parts.csvの読み込みに失敗しました。\nparts.csvがtournament.htmlと同じフォルダにあるか確認してください。');
+        showAlert(
+          'parts.csvの読み込みに失敗しました。\n' +
+            '・tournament_main.html と同じフォルダに parts.csv があるか確認\n' +
+            '・可能ならフォルダで「npx serve」や Live Server など http:// で開き直してください\n' +
+            '・またはベイのパーツ選択画面で parts.csv を手動で選べます'
+        );
         return [];
       }
     }
@@ -3901,10 +4067,38 @@
       }
       
       const parts = getPartsByCategory(categoryId);
-      
+
       content.innerHTML = '';
+      if (parts.length === 0) {
+        content.className = 'flex flex-col gap-3 p-3 overflow-y-auto flex-1 text-left';
+        const isFileProto = window.location.protocol === 'file:';
+        const p1 = document.createElement('p');
+        p1.className = 'text-sm text-cyber-text leading-relaxed';
+        p1.innerHTML =
+          '<strong class="text-cyber-pink">パーツ一覧が空です。</strong><br>' +
+          (isFileProto
+            ? 'HTML をダブルクリックで開いている（<code class="text-cyber-blue">file://</code>）と、ブラウザの制限で <code class="text-cyber-blue">parts.csv</code> を読み込めません。<br>'
+            : '') +
+          '対処: (1) このフォルダでローカルサーバーを起動して <code class="text-cyber-blue">http://</code> から開く（例: ターミナルで <code class="text-cyber-green">npx --yes serve</code>）<br>' +
+          '(2) 下の「parts.csv を指定」でファイルを選ぶ<br>' +
+          '(3) <code class="text-cyber-blue">parts.csv</code> が tournament_main.html と同じフォルダにあるか確認';
+        content.appendChild(p1);
+        const lab = document.createElement('label');
+        lab.className =
+          'inline-flex items-center gap-2 text-xs font-sf text-cyber-green border border-cyber-green/50 rounded px-3 py-2 cursor-pointer hover:bg-cyber-green/10';
+        const fin = document.createElement('input');
+        fin.type = 'file';
+        fin.accept = '.csv,text/csv';
+        fin.className = 'text-[11px] max-w-full';
+        fin.onchange = onManualPartsCsvPick;
+        lab.appendChild(document.createTextNode('parts.csv を指定 '));
+        lab.appendChild(fin);
+        content.appendChild(lab);
+        return;
+      }
+
       content.className = 'grid grid-cols-2 gap-2 overflow-y-auto flex-1';
-      
+
       parts.forEach(part => {
         const btn = document.createElement('button');
         const textColor = part.isFrequent ? 'text-cyber-red' : 'text-cyber-text';
