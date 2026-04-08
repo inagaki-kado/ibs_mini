@@ -1040,6 +1040,16 @@
 
       <div class="mt-4 p-4 bg-[#0a0e17] border border-cyber-green rounded-lg shrink-0">
         <h3 class="text-center font-sf text-cyber-green font-bold mb-3 tracking-widest">SET WINNER & ADVANCE</h3>
+        <div class="mb-3">
+          <div class="text-[11px] font-sf text-cyber-text opacity-70 mb-2 text-center">決まり手</div>
+          <div class="grid grid-cols-5 gap-2" id="remote-kimarite-buttons">
+            <button type="button" onclick="selectRemoteKimarite('SF')" data-k="SF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">SF</button>
+            <button type="button" onclick="selectRemoteKimarite('BF')" data-k="BF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">BF</button>
+            <button type="button" onclick="selectRemoteKimarite('OF')" data-k="OF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">OF</button>
+            <button type="button" onclick="selectRemoteKimarite('XF')" data-k="XF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">XF</button>
+            <button type="button" onclick="selectRemoteKimarite('')" data-k="" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">－</button>
+          </div>
+        </div>
         <div class="flex gap-4">
           <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
           <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
@@ -2317,6 +2327,7 @@
     // ==========================================
     let currentRemoteMatch = null; let currentRemoteMode = 'score'; let isRemoteSwapped = false;
     let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
+    let remoteKimarite = '';
 
     function updateRemoteScoreUI() {
         document.getElementById('remote-left-score').innerText = remoteScoreLeft;
@@ -2346,9 +2357,11 @@
         if (!match || !match.p1 || !match.p2) return;
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
+        remoteKimarite = (match && typeof match.kimarite === 'string') ? match.kimarite : '';
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
+        updateRemoteKimariteUI();
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
@@ -2403,18 +2416,13 @@
         // 左側のプレイヤー（スワップ考慮）
         const leftPlayer = isRemoteSwapped ? m.p2 : m.p1;
         const rightPlayer = isRemoteSwapped ? m.p1 : m.p2;
-        // score.html側はSWAPコマンドでP1↔P2を入れ替え済みなので
-        // リモコン側は画面上の左=P1・右=P2で固定送信する
-        const leftPlayerName = 'P1';
-        const rightPlayerName = 'P2';
-        
         // 左側のベイボタン
         if (leftPlayer.beyblades && leftPlayer.beyblades.length > 0) {
             leftPlayer.beyblades.forEach((bey, idx) => {
                 const btn = document.createElement('button');
                 btn.textContent = `${idx + 1}. ${bey.name}`;
                 btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf text-xs rounded hover:bg-cyber-blue hover:text-white transition-colors truncate';
-                btn.onclick = () => selectBeyblade(leftPlayerName, bey.name);
+                btn.onclick = () => selectBeyblade('left', bey.name);
                 leftContainer.appendChild(btn);
             });
         } else {
@@ -2434,7 +2442,7 @@
                 const btn = document.createElement('button');
                 btn.textContent = `${idx + 1}. ${bey.name}`;
                 btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf text-xs rounded hover:bg-cyber-pink hover:text-white transition-colors truncate';
-                btn.onclick = () => selectBeyblade(rightPlayerName, bey.name);
+                btn.onclick = () => selectBeyblade('right', bey.name);
                 rightContainer.appendChild(btn);
             });
         } else {
@@ -2449,9 +2457,56 @@
         }
     }
 
-    function selectBeyblade(player, beybladeName) {
-        // SET_BEYBLADEメッセージをscore.htmlに送信
-        sendBeybladeSelection(player, beybladeName);
+    function selectBeyblade(side, beybladeName) {
+        if (!currentRemoteMatch) return;
+        const m = currentRemoteMatch.match;
+        if (!m) return;
+        // score.html 側は SWAP コマンドで P1↔P2 を入れ替えるため、
+        // リモコン側は画面左=P1 / 右=P2 で固定送信する
+        const playerName = (side === 'left') ? 'P1' : 'P2';
+        sendBeybladeSelection(playerName, beybladeName);
+        // ローカル保存（match.p1/p2 実体に合わせて格納）
+        if (side === 'left') {
+          if (isRemoteSwapped) m.p2BeyUsed = beybladeName;
+          else m.p1BeyUsed = beybladeName;
+        } else {
+          if (isRemoteSwapped) m.p1BeyUsed = beybladeName;
+          else m.p2BeyUsed = beybladeName;
+        }
+        saveState();
+    }
+
+    function updateRemoteKimariteUI() {
+      const wrap = document.getElementById('remote-kimarite-buttons');
+      if (!wrap) return;
+      wrap.querySelectorAll('button[data-k]').forEach((b) => {
+        const k = b.getAttribute('data-k') || '';
+        const active = k === (remoteKimarite || '');
+        b.classList.toggle('bg-cyber-green', active);
+        b.classList.toggle('text-cyber-bg', active);
+        b.classList.toggle('border-cyber-green', active);
+        if (active) {
+          b.classList.remove('bg-[#0a0e17]', 'border-cyber-table-border', 'text-cyber-text', 'text-gray-400');
+        } else {
+          // restore base style hints
+          if (k === '') {
+            b.classList.add('text-gray-400');
+          } else {
+            b.classList.add('text-cyber-text');
+          }
+          b.classList.add('bg-[#0a0e17]', 'border-cyber-table-border');
+          b.classList.remove('bg-cyber-green', 'text-cyber-bg', 'border-cyber-green');
+        }
+      });
+    }
+
+    function selectRemoteKimarite(k) {
+      remoteKimarite = (k || '').toString().trim().toUpperCase();
+      updateRemoteKimariteUI();
+      if (currentRemoteMatch && currentRemoteMatch.match) {
+        currentRemoteMatch.match.kimarite = remoteKimarite;
+        saveState();
+      }
     }
 
     function handleRemoteWinner(side) {
@@ -2470,6 +2525,7 @@
         }
         // スコアを "4-2" 形式で保存
         match.score = `${scoreP1}-${scoreP2}`;
+        match.kimarite = remoteKimarite || '';
         // ▲ スコア保存処理ここまで
         
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -3552,14 +3608,32 @@
 
     function openExportModal() {
       let exportText = "";
-      const addMatch = (m) => {
-        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
-          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
-        }
+      const now = new Date();
+      const ymd = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+      exportText += `日付\t大会名\tラウンド\tP1\tP2\t勝者\tスコア\t決まり手\tP1使用ベイ\tP2使用ベイ\n`;
+      const addMatch = (m, roundLabel) => {
+        if (!m || !m.p1 || !m.p2) return;
+        if (m.p1.id === 'BYE' || m.p2.id === 'BYE') return;
+        if (m.p1.name === 'TBD' || m.p2.name === 'TBD') return;
+        if (m.winner === null) return;
+        const p1Name = m.p1.name;
+        const p2Name = m.p2.name;
+        const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+        const score = (m.score || '').toString();
+        const kim = (m.kimarite || '').toString();
+        const p1B = (m.p1BeyUsed || '').toString();
+        const p2B = (m.p2BeyUsed || '').toString();
+        exportText += `${ymd}\t${tournamentName}\t${roundLabel}\t${p1Name}\t${p2Name}\t${winnerName}\t${score}\t${kim}\t${p1B}\t${p2B}\n`;
       };
-      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
-      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        if (!blockMatches[bName]) return;
+        blockMatches[bName].forEach((round, ri) => {
+          round.forEach((match, mi) => addMatch(match, `${bName}-R${ri + 1}-M${mi + 1}`));
+        });
+      });
+      if (finals.sf) finals.sf.forEach((m, i) => addMatch(m, `SF-${i + 1}`));
+      if (finals.third) addMatch(finals.third, `3RD`);
+      if (finals.f) addMatch(finals.f, `FINAL`);
       document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
     }
 

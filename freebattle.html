@@ -98,8 +98,19 @@
         <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
         <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
         <div class="flex-grow"></div>
-        <div class="flex flex-col gap-1 bg-cyber-bg border border-cyber-orange/50 rounded px-2 py-1.5 max-w-[220px]">
-          <span class="text-[9px] font-sf text-cyber-orange font-bold leading-tight">HUD 次戦予告ロゴ</span>
+        <div class="flex flex-col gap-1 bg-cyber-bg border border-cyber-orange/50 rounded px-2 py-1.5 max-w-[240px]">
+          <span class="text-[9px] font-sf text-cyber-orange font-bold leading-tight">HUD 次戦予告（📢）</span>
+          <label class="flex flex-col gap-0.5 mb-1">
+            <span class="text-[8px] text-cyber-text opacity-80 font-sf">プリセット背景</span>
+            <select id="hud-preview-bg" onchange="onHudPreviewBgChange()" class="w-full text-[10px] bg-cyber-bg border border-cyber-table-border rounded px-1.5 py-1 font-sf text-cyber-text">
+              <option value="BEYX_logo_amb.png" selected>BEYX_logo_amb.png</option>
+              <option value="maintitle_white.png">maintitle_white.png</option>
+              <option value="torabo_logo.png">torabo_logo.png</option>
+              <option value="evojlogo.png">evojlogo.png</option>
+              <option value="none">非表示</option>
+            </select>
+          </label>
+          <span class="text-[8px] text-cyber-text opacity-70 font-sf">カスタム画像（任意・優先）</span>
           <div class="flex flex-wrap items-center gap-1.5">
             <input type="file" id="previewLogoInput" accept="image/*" class="hidden" onchange="onPreviewLogoFile(event)">
             <button type="button" onclick="document.getElementById('previewLogoInput').click()" class="text-[10px] bg-cyber-dark border border-cyber-orange text-cyber-orange px-2 py-1 rounded font-sf font-bold hover:bg-cyber-orange/15">📁 選択</button>
@@ -107,10 +118,6 @@
             <img id="previewLogoThumb" src="" alt="" class="h-8 max-w-[72px] object-contain rounded border border-cyber-table-border hidden">
           </div>
         </div>
-        <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
-          <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
-          <span>🖼️ ロゴ表示</span>
-        </label>
         <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
         <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
       </div>
@@ -412,8 +419,30 @@
     let conn = null;
     let isTvMode = false;
     let activeNextBattleId = null;
-    let logoDisplayEnabled = true;
+    const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
+    let hudPreviewBackground = 'BEYX_logo_amb.png';
     let previewLogoDataUrl = null;
+
+    function getShowPreviewHudFields() {
+      const el = document.getElementById('hud-preview-bg');
+      const bg = el ? el.value : hudPreviewBackground;
+      if (bg === 'none') return { showLogo: false, previewBackground: 'none', logoSrc: null, logoDataUrl: null };
+      return { showLogo: true, previewBackground: bg, logoSrc: bg, logoDataUrl: null };
+    }
+
+    function onHudPreviewBgChange() {
+      const el = document.getElementById('hud-preview-bg');
+      if (el) hudPreviewBackground = el.value;
+      saveState();
+    }
+
+    function syncHudPreviewBgSelect() {
+      const el = document.getElementById('hud-preview-bg');
+      if (!el) return;
+      const v = HUD_PREVIEW_BG_KEYS.includes(hudPreviewBackground) ? hudPreviewBackground : 'BEYX_logo_amb.png';
+      el.value = v;
+      hudPreviewBackground = v;
+    }
     let _retryCount = 0;
     let _retryTarget = null;
     let _retryTimer = null;
@@ -1236,19 +1265,27 @@
             activeNextBattleId = null;
         } else {
             const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
-            if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled, logoDataUrl: previewLogoDataUrl || null, logoSrc: previewLogoDataUrl ? null : 'BEYX_logo_amb.png' });
+            if (conn) {
+              if (previewLogoDataUrl) {
+                conn.send({
+                  type: 'SHOW_PREVIEW',
+                  p1,
+                  p2,
+                  label,
+                  showLogo: true,
+                  logoDataUrl: previewLogoDataUrl,
+                  logoSrc: null,
+                  previewBackground: null
+                });
+              } else {
+                conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
+              }
+            }
             activeNextBattleId = matchId;
         }
     }
 
-    function toggleLogoDisplay() {
-      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
-      saveState();
-    }
-
     function syncHudPreviewLogoUI() {
-      const cb = document.getElementById('toggle-logo-display');
-      if (cb) cb.checked = logoDisplayEnabled;
       const thumb = document.getElementById('previewLogoThumb');
       if (!thumb) return;
       if (previewLogoDataUrl) {
@@ -1352,7 +1389,7 @@
 
     function saveState() {
       try {
-        const state = { pidCounter, matchIdCounter, participants, matches, participantSortMode, isEffectOn, logoDisplayEnabled, previewLogoDataUrl };
+        const state = { pidCounter, matchIdCounter, participants, matches, participantSortMode, isEffectOn, hudPreviewBackground, previewLogoDataUrl };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -1374,7 +1411,9 @@
         matches = s.matches || [];
         participantSortMode = s.participantSortMode || 'id';
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
-        logoDisplayEnabled = s.logoDisplayEnabled !== undefined ? s.logoDisplayEnabled : true;
+        hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
+          ? s.hudPreviewBackground
+          : 'BEYX_logo_amb.png';
         previewLogoDataUrl = s.previewLogoDataUrl || null;
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
@@ -1405,6 +1444,7 @@
         }
       }
       recalculateAllStats();
+      syncHudPreviewBgSelect();
       syncHudPreviewLogoUI();
       renderParticipants();
       updateMatchSelects();
@@ -1417,6 +1457,7 @@
 
     window.addEventListener('DOMContentLoaded', async function() {
       await loadPartsCSV();
+      syncHudPreviewBgSelect();
       syncHudPreviewLogoUI();
     });
   </script>

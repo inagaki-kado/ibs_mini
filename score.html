@@ -820,8 +820,8 @@
                         overlay.innerHTML = '';
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
-                        // 新しい次戦予告表示（ロゴ対応・logoDataUrl 優先、なければ logoSrc、なければ HUD デフォルト画像）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc);
+                        // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -891,21 +891,23 @@
 
         const DEFAULT_NEXT_BATTLE_LOGO = 'maintitle_white.png';
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
             if (logoDataUrl) {
                 logo.src = logoDataUrl;
-            } else if (logoSrc && typeof logoSrc === 'string') {
-                logo.src = logoSrc;
+                logo.style.display = showLogo ? 'block' : 'none';
             } else {
-                logo.src = DEFAULT_NEXT_BATTLE_LOGO;
-            }
-            // ロゴ表示設定
-            if (showLogo) {
-                logo.style.display = 'block';
-            } else {
-                logo.style.display = 'none';
+                const bg = previewBackground != null && previewBackground !== '' ? previewBackground : logoSrc;
+                if (bg === 'none' || bg === '') {
+                    logo.style.display = 'none';
+                } else if (bg && typeof bg === 'string') {
+                    logo.src = bg;
+                    logo.style.display = showLogo ? 'block' : 'none';
+                } else {
+                    logo.src = DEFAULT_NEXT_BATTLE_LOGO;
+                    logo.style.display = showLogo ? 'block' : 'none';
+                }
             }
             
             // ラベルテキスト生成（新形式と旧形式の両方に対応）

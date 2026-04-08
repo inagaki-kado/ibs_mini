@@ -111,7 +111,7 @@
             <input type="text" id="tournamentNameInput" placeholder="例: 第1回 板橋会カップ" class="w-full p-3 bg-cyber-bg border border-cyber-blue rounded text-lg text-center font-bold text-cyber-text focus:border-cyber-green outline-none">
           </div>
           <div class="mb-6">
-            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜32)</label>
+            <label class="block font-bold mb-2 text-cyber-text font-sf">MAX PARTICIPANTS (8〜64)</label>
             <input type="text" inputmode="numeric" id="tournamentSizeInput" value="32" class="w-full p-4 bg-cyber-bg border-2 border-cyber-blue rounded text-3xl text-center font-sf text-cyber-blue focus:border-cyber-green outline-none">
           </div>
           <button id="btn-confirm-setup" onclick="handleConfirmSetup(event)" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-text font-bold py-4 px-8 rounded-full shadow-lg w-full text-lg transition-transform active:scale-95 font-sf">CONFIRM SETUP</button>
@@ -128,9 +128,15 @@
             
             <div class="flex-grow"></div>
             
-            <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="次戦予告時にロゴを表示">
-              <input type="checkbox" id="toggle-logo-display" onchange="toggleLogoDisplay()" checked class="w-4 h-4">
-              <span>🖼️ ロゴ表示</span>
+            <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="score.html 次戦予告（📢）の背景画像">
+              <span class="whitespace-nowrap">🖼️ 次戦予告 背景</span>
+              <select id="hud-preview-bg" onchange="onHudPreviewBgChange()" class="max-w-[min(52vw,220px)] text-[11px] bg-cyber-bg border border-cyber-table-border rounded px-2 py-1 font-sf text-cyber-text">
+                <option value="BEYX_logo_amb.png">BEYX_logo_amb.png</option>
+                <option value="maintitle_white.png" selected>maintitle_white.png</option>
+                <option value="torabo_logo.png">torabo_logo.png</option>
+                <option value="evojlogo.png">evojlogo.png</option>
+                <option value="none">非表示</option>
+              </select>
             </label>
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
@@ -744,6 +750,16 @@
 
       <div class="mt-4 p-4 bg-[#0a0e17] border border-cyber-green rounded-lg shrink-0">
         <h3 class="text-center font-sf text-cyber-green font-bold mb-3 tracking-widest">SET WINNER & ADVANCE</h3>
+        <div class="mb-3">
+          <div class="text-[11px] font-sf text-cyber-text opacity-70 mb-2 text-center">決まり手</div>
+          <div class="grid grid-cols-5 gap-2" id="remote-kimarite-buttons">
+            <button type="button" onclick="selectRemoteKimarite('SF')" data-k="SF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">SF</button>
+            <button type="button" onclick="selectRemoteKimarite('BF')" data-k="BF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">BF</button>
+            <button type="button" onclick="selectRemoteKimarite('OF')" data-k="OF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">OF</button>
+            <button type="button" onclick="selectRemoteKimarite('XF')" data-k="XF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">XF</button>
+            <button type="button" onclick="selectRemoteKimarite('')" data-k="" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">－</button>
+          </div>
+        </div>
         <div class="flex gap-4">
           <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
           <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
@@ -845,7 +861,29 @@
     let isTvMode_active = false;
     let isTvMode_results = false;
     let activeNextBattleId = null;
-    let logoDisplayEnabled = true;
+    const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
+    let hudPreviewBackground = 'maintitle_white.png';
+
+    function getShowPreviewHudFields() {
+      const el = document.getElementById('hud-preview-bg');
+      const bg = el ? el.value : hudPreviewBackground;
+      if (bg === 'none') return { showLogo: false, previewBackground: 'none', logoSrc: null, logoDataUrl: null };
+      return { showLogo: true, previewBackground: bg, logoSrc: bg, logoDataUrl: null };
+    }
+
+    function onHudPreviewBgChange() {
+      const el = document.getElementById('hud-preview-bg');
+      if (el) hudPreviewBackground = el.value;
+      saveState();
+    }
+
+    function syncHudPreviewBgSelect() {
+      const el = document.getElementById('hud-preview-bg');
+      if (!el) return;
+      const v = HUD_PREVIEW_BG_KEYS.includes(hudPreviewBackground) ? hudPreviewBackground : 'maintitle_white.png';
+      el.value = v;
+      hudPreviewBackground = v;
+    }
 
     let _retryCount = 0;
     let _retryTarget = null;
@@ -923,6 +961,7 @@
     // ==========================================
     let currentRemoteMatch = null; let currentRemoteMode = 'score'; let isRemoteSwapped = false;
     let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
+    let remoteKimarite = '';
 
     function updateRemoteScoreUI() {
         document.getElementById('remote-left-score').innerText = remoteScoreLeft;
@@ -952,9 +991,11 @@
         if (!match || !match.p1 || !match.p2) return;
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
+        remoteKimarite = (match && typeof match.kimarite === 'string') ? match.kimarite : '';
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
+        updateRemoteKimariteUI();
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
@@ -1009,18 +1050,13 @@
         // 左側のプレイヤー（スワップ考慮）
         const leftPlayer = isRemoteSwapped ? m.p2 : m.p1;
         const rightPlayer = isRemoteSwapped ? m.p1 : m.p2;
-        // score.html側はSWAPコマンドでP1↔P2を入れ替え済みなので
-        // リモコン側は画面上の左=P1・右=P2で固定送信する
-        const leftPlayerName = 'P1';
-        const rightPlayerName = 'P2';
-        
         // 左側のベイボタン
         if (leftPlayer.beyblades && leftPlayer.beyblades.length > 0) {
             leftPlayer.beyblades.forEach((bey, idx) => {
                 const btn = document.createElement('button');
                 btn.textContent = `${idx + 1}. ${bey.name}`;
                 btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf text-xs rounded hover:bg-cyber-blue hover:text-white transition-colors truncate';
-                btn.onclick = () => selectBeyblade(leftPlayerName, bey.name);
+                btn.onclick = () => selectBeyblade('left', bey.name);
                 leftContainer.appendChild(btn);
             });
         } else {
@@ -1040,7 +1076,7 @@
                 const btn = document.createElement('button');
                 btn.textContent = `${idx + 1}. ${bey.name}`;
                 btn.className = 'py-2 px-3 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf text-xs rounded hover:bg-cyber-pink hover:text-white transition-colors truncate';
-                btn.onclick = () => selectBeyblade(rightPlayerName, bey.name);
+                btn.onclick = () => selectBeyblade('right', bey.name);
                 rightContainer.appendChild(btn);
             });
         } else {
@@ -1055,9 +1091,49 @@
         }
     }
 
-    function selectBeyblade(player, beybladeName) {
-        // SET_BEYBLADEメッセージをscore.htmlに送信
-        sendBeybladeSelection(player, beybladeName);
+    function selectBeyblade(side, beybladeName) {
+        if (!currentRemoteMatch) return;
+        const m = currentRemoteMatch.match;
+        if (!m) return;
+        const playerName = (side === 'left') ? 'P1' : 'P2';
+        sendBeybladeSelection(playerName, beybladeName);
+        if (side === 'left') {
+          if (isRemoteSwapped) m.p2BeyUsed = beybladeName;
+          else m.p1BeyUsed = beybladeName;
+        } else {
+          if (isRemoteSwapped) m.p1BeyUsed = beybladeName;
+          else m.p2BeyUsed = beybladeName;
+        }
+        saveState();
+    }
+
+    function updateRemoteKimariteUI() {
+      const wrap = document.getElementById('remote-kimarite-buttons');
+      if (!wrap) return;
+      wrap.querySelectorAll('button[data-k]').forEach((b) => {
+        const k = b.getAttribute('data-k') || '';
+        const active = k === (remoteKimarite || '');
+        b.classList.toggle('bg-cyber-green', active);
+        b.classList.toggle('text-cyber-bg', active);
+        b.classList.toggle('border-cyber-green', active);
+        if (active) {
+          b.classList.remove('bg-[#0a0e17]', 'border-cyber-table-border', 'text-cyber-text', 'text-gray-400');
+        } else {
+          if (k === '') b.classList.add('text-gray-400');
+          else b.classList.add('text-cyber-text');
+          b.classList.add('bg-[#0a0e17]', 'border-cyber-table-border');
+          b.classList.remove('bg-cyber-green', 'text-cyber-bg', 'border-cyber-green');
+        }
+      });
+    }
+
+    function selectRemoteKimarite(k) {
+      remoteKimarite = (k || '').toString().trim().toUpperCase();
+      updateRemoteKimariteUI();
+      if (currentRemoteMatch && currentRemoteMatch.match) {
+        currentRemoteMatch.match.kimarite = remoteKimarite;
+        saveState();
+      }
     }
 
     function handleRemoteWinner(side) {
@@ -1076,6 +1152,7 @@
         }
         // スコアを "4-2" 形式で保存
         match.score = `${scoreP1}-${scoreP2}`;
+        match.kimarite = remoteKimarite || '';
         // ▲ スコア保存処理ここまで
         
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -1132,7 +1209,7 @@
       if (!sizeStr) sizeStr = "32";
       sizeStr = sizeStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       let totalSize = parseInt(sizeStr);
-      if (isNaN(totalSize) || totalSize < 8 || totalSize > 32) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
+      if (isNaN(totalSize) || totalSize < 8 || totalSize > 64) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
       if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
       colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
       const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
@@ -1144,6 +1221,7 @@
       document.getElementById('mainManagementSection').classList.remove('hidden');
       document.getElementById('mainManagementSection').classList.add('flex');
       renderParticipants();
+      syncHudPreviewBgSelect();
     }
 
     function getFairPositions(count, blockSize) {
@@ -1763,13 +1841,9 @@
         activeNextBattleId = null;
       } else {
         const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: logoDisplayEnabled, logoSrc: 'maintitle_white.png' });
+        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
         activeNextBattleId = matchKey;
       }
-    }
-
-    function toggleLogoDisplay() {
-      logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
     }
 
     function scrollRemote(amount) {
@@ -2011,14 +2085,32 @@
 
     function openExportModal() {
       let exportText = "";
-      const addMatch = (m) => {
-        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
-          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
-        }
+      const now = new Date();
+      const ymd = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+      exportText += `日付\t大会名\tラウンド\tP1\tP2\t勝者\tスコア\t決まり手\tP1使用ベイ\tP2使用ベイ\n`;
+      const addMatch = (m, roundLabel) => {
+        if (!m || !m.p1 || !m.p2) return;
+        if (m.p1.id === 'BYE' || m.p2.id === 'BYE') return;
+        if (m.p1.name === 'TBD' || m.p2.name === 'TBD') return;
+        if (m.winner === null) return;
+        const p1Name = m.p1.name;
+        const p2Name = m.p2.name;
+        const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+        const score = (m.score || '').toString();
+        const kim = (m.kimarite || '').toString();
+        const p1B = (m.p1BeyUsed || '').toString();
+        const p2B = (m.p2BeyUsed || '').toString();
+        exportText += `${ymd}\t${tournamentName}\t${roundLabel}\t${p1Name}\t${p2Name}\t${winnerName}\t${score}\t${kim}\t${p1B}\t${p2B}\n`;
       };
-      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
-      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        if (!blockMatches[bName]) return;
+        blockMatches[bName].forEach((round, ri) => {
+          round.forEach((match, mi) => addMatch(match, `${bName}-R${ri + 1}-M${mi + 1}`));
+        });
+      });
+      if (finals.sf) finals.sf.forEach((m, i) => addMatch(m, `SF-${i + 1}`));
+      if (finals.third) addMatch(finals.third, `3RD`);
+      if (finals.f) addMatch(finals.f, `FINAL`);
       document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
     }
 
@@ -2041,7 +2133,8 @@
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
-          blockActivePositions, blockMatches, finals, isEffectOn
+          blockActivePositions, blockMatches, finals, isEffectOn,
+          hudPreviewBackground
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
@@ -2073,6 +2166,9 @@
         blockMatches = s.blockMatches || {};
         finals = s.finals || {};
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
+          ? s.hudPreviewBackground
+          : 'maintitle_white.png';
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -2108,6 +2204,7 @@
       } else {
         switchTab('participants');
       }
+      syncHudPreviewBgSelect();
     }
 
     // ==========================================

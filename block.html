@@ -765,15 +765,15 @@ function updateRemoteUI(){
 
 /** SWAP 時: 決まり手・PLAYER PICK・ベイ・WIN 列を画面左右で反転（P1 列＝左固定をやめ、チーム名バーと一致） */
 function applyRemoteSwapLayout(swapped){
-  ['rm-score-btn-row','rm-pick-row','rm-bey-row','rm-win-row'].forEach(function(id){
+  /* rm-pick-row は含めない: updateRemoteUI で lt/rt 入れ替え済みのため二重反転させない */
+  ['rm-score-btn-row','rm-bey-row','rm-win-row'].forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.classList.toggle('flex-row-reverse',!!swapped);
   });
   var pll=document.getElementById('rm-pick-lbl-left');
   var plr=document.getElementById('rm-pick-lbl-right');
   if(pll&&plr){
-    if(swapped){ pll.textContent='P1（右）'; plr.textContent='P2（左）'; }
-    else { pll.textContent='P1（左）'; plr.textContent='P2（右）'; }
+    pll.textContent='P1（左）'; plr.textContent='P2（右）';
   }
   var bll=document.getElementById('rm-bey-lbl-left');
   var blr=document.getElementById('rm-bey-lbl-right');
