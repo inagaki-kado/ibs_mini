@@ -2233,7 +2233,7 @@
 
     /**
      * CSVテキストをパースしてソートする
-     * 頻出フラグ=1を優先、次に名前順（日本語対応）
+     * 選択名の50音順（日本語ロケール）。頻出フラグはリスト順には使わずUIで赤表示のみ。
      */
     function parsePartsCSV(csvText) {
       const lines = csvText.split('\n');
@@ -2260,15 +2260,7 @@
         }
       }
       
-      // ソート処理
-      parts.sort((a, b) => {
-        // 1. 頻出フラグ優先（1のものを先に）
-        if (a.isFrequent !== b.isFrequent) {
-          return b.isFrequent ? 1 : -1;
-        }
-        // 2. 名前順（日本語対応のlocaleCompare）
-        return a.selectionName.localeCompare(b.selectionName, 'ja');
-      });
+      parts.sort((a, b) => a.selectionName.localeCompare(b.selectionName, 'ja'));
       
       return parts;
     }

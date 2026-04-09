@@ -928,6 +928,10 @@
         return [];
       }
     }
+    /**
+     * CSVをパースしてソートする
+     * 選択名の50音順（日本語ロケール）。頻出フラグはリスト順には使わずUIで赤表示のみ。
+     */
     function parsePartsCSV(csvText) {
       const lines = csvText.split('\n'); const parts = [];
       for (let i = 1; i < lines.length; i++) {
@@ -936,7 +940,7 @@
         const part = { id: values[0]?.trim() || '', selectionName: values[1]?.trim() || '', hudName: values[2]?.trim() || '', isFrequent: parseFloat(values[3]) === 1 };
         if (part.id && part.selectionName) parts.push(part);
       }
-      parts.sort((a, b) => { if (a.isFrequent !== b.isFrequent) return b.isFrequent ? 1 : -1; return a.selectionName.localeCompare(b.selectionName, 'ja'); });
+      parts.sort((a, b) => a.selectionName.localeCompare(b.selectionName, 'ja'));
       return parts;
     }
     function getPartsByCategory(categoryId) {
