@@ -751,7 +751,8 @@
       <div class="mt-4 p-4 bg-[#0a0e17] border border-cyber-green rounded-lg shrink-0">
         <h3 class="text-center font-sf text-cyber-green font-bold mb-3 tracking-widest">SET WINNER & ADVANCE</h3>
         <div class="mb-3">
-          <div class="text-[11px] font-sf text-cyber-text opacity-70 mb-2 text-center">決まり手</div>
+          <div class="text-[11px] font-sf text-cyber-text opacity-70 mb-1 text-center">決まり手</div>
+          <div class="text-[10px] font-sf text-cyber-text opacity-50 mb-2 text-center">同じボタンで1回ずつ追加（例: SF×2＝SFを2回）／「－」で全消去／「戻す」で直前を削除</div>
           <div class="grid grid-cols-5 gap-2" id="remote-kimarite-buttons">
             <button type="button" onclick="selectRemoteKimarite('SF')" data-k="SF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">SF</button>
             <button type="button" onclick="selectRemoteKimarite('BF')" data-k="BF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">BF</button>
@@ -759,6 +760,8 @@
             <button type="button" onclick="selectRemoteKimarite('XF')" data-k="XF" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-cyber-text font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">XF</button>
             <button type="button" onclick="selectRemoteKimarite('')" data-k="" class="py-2 bg-[#0a0e17] border border-cyber-table-border text-gray-400 font-sf font-bold rounded hover:bg-gray-800 transition-colors text-xs">－</button>
           </div>
+          <div id="remote-kimarite-summary" class="text-[11px] font-sf text-cyber-green mt-2 text-center min-h-[1.25rem] break-all leading-snug"></div>
+          <button type="button" onclick="undoRemoteKimariteLast()" class="w-full mt-1 py-1.5 bg-[#111827] border border-cyber-table-border text-cyber-text/80 font-sf text-[10px] rounded hover:bg-gray-800 transition-colors">← 1つ戻す</button>
         </div>
         <div class="flex gap-4">
           <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
@@ -961,7 +964,35 @@
     // ==========================================
     let currentRemoteMatch = null; let currentRemoteMode = 'score'; let isRemoteSwapped = false;
     let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
-    let remoteKimarite = '';
+    /** 選択中の決まり手（出現順を保持。同一略称の重複も可＝例: SF,SF,BF） */
+    let remoteKimariteList = [];
+    const KIMARITE_ORDER = ['SF', 'BF', 'OF', 'XF'];
+    function parseKimariteStored(val) {
+      if (val == null || val === '') return [];
+      if (Array.isArray(val)) {
+        const out = [];
+        val.forEach((v) => {
+          const x = String(v || '').trim().toUpperCase();
+          if (KIMARITE_ORDER.includes(x)) out.push(x);
+        });
+        return out;
+      }
+      const s = String(val).trim();
+      if (!s) return [];
+      const parts = s.split(/[,、\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean);
+      const out = [];
+      parts.forEach((p) => { if (KIMARITE_ORDER.includes(p)) out.push(p); });
+      return out;
+    }
+    function serializeKimariteList(arr) {
+      if (!Array.isArray(arr)) return '';
+      const out = [];
+      arr.forEach((v) => {
+        const x = String(v || '').trim().toUpperCase();
+        if (KIMARITE_ORDER.includes(x)) out.push(x);
+      });
+      return out.join(',');
+    }
 
     function updateRemoteScoreUI() {
         document.getElementById('remote-left-score').innerText = remoteScoreLeft;
@@ -991,7 +1022,7 @@
         if (!match || !match.p1 || !match.p2) return;
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
-        remoteKimarite = (match && typeof match.kimarite === 'string') ? match.kimarite : '';
+        remoteKimariteList = parseKimariteStored(match && match.kimarite != null ? match.kimarite : '');
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
@@ -1107,12 +1138,24 @@
         saveState();
     }
 
+    function updateRemoteKimariteSummary() {
+      const el = document.getElementById('remote-kimarite-summary');
+      if (!el) return;
+      if (!remoteKimariteList.length) {
+        el.textContent = '（未入力）';
+        el.classList.add('opacity-50');
+      } else {
+        el.textContent = remoteKimariteList.join(',');
+        el.classList.remove('opacity-50');
+      }
+    }
+
     function updateRemoteKimariteUI() {
       const wrap = document.getElementById('remote-kimarite-buttons');
       if (!wrap) return;
       wrap.querySelectorAll('button[data-k]').forEach((b) => {
         const k = b.getAttribute('data-k') || '';
-        const active = k === (remoteKimarite || '');
+        const active = k === '' ? (remoteKimariteList.length === 0) : remoteKimariteList.includes(k);
         b.classList.toggle('bg-cyber-green', active);
         b.classList.toggle('text-cyber-bg', active);
         b.classList.toggle('border-cyber-green', active);
@@ -1125,13 +1168,29 @@
           b.classList.remove('bg-cyber-green', 'text-cyber-bg', 'border-cyber-green');
         }
       });
+      updateRemoteKimariteSummary();
     }
 
     function selectRemoteKimarite(k) {
-      remoteKimarite = (k || '').toString().trim().toUpperCase();
+      const key = (k || '').toString().trim().toUpperCase();
+      if (key === '') {
+        remoteKimariteList = [];
+      } else if (KIMARITE_ORDER.includes(key)) {
+        remoteKimariteList.push(key);
+      }
       updateRemoteKimariteUI();
       if (currentRemoteMatch && currentRemoteMatch.match) {
-        currentRemoteMatch.match.kimarite = remoteKimarite;
+        currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
+        saveState();
+      }
+    }
+
+    function undoRemoteKimariteLast() {
+      if (!remoteKimariteList.length) return;
+      remoteKimariteList.pop();
+      updateRemoteKimariteUI();
+      if (currentRemoteMatch && currentRemoteMatch.match) {
+        currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
         saveState();
       }
     }
@@ -1152,7 +1211,7 @@
         }
         // スコアを "4-2" 形式で保存
         match.score = `${scoreP1}-${scoreP2}`;
-        match.kimarite = remoteKimarite || '';
+        match.kimarite = serializeKimariteList(remoteKimariteList);
         // ▲ スコア保存処理ここまで
         
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -1857,7 +1916,9 @@
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
           * { box-sizing: border-box; }
-          .tv-wrap { background:${C.bg}; min-height:100vh; padding:10px env(safe-area-inset-right,10px) 10px env(safe-area-inset-left,10px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+          .tv-wrap { position:relative; overflow:hidden; background:${C.bg}; min-height:100vh; padding:10px env(safe-area-inset-right,10px) 10px env(safe-area-inset-left,10px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
+          .tv-wrap > .tv-title, .tv-wrap > .tv-blocks, .tv-wrap > .tv-finals { position:relative; z-index:1; }
           .tv-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.8vw,16px); color:${C.blue}; text-align:center; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 10px ${C.blue}; }
           .tv-blocks { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
           .tv-block { border:1px solid ${C.blue}; border-radius:8px; overflow:hidden; background:${C.card}; }
@@ -1916,7 +1977,10 @@
       }
 
       const tName = tournamentName || '大会';
-      return `${S}<div class="tv-wrap"><div class="tv-title">${tName}</div><div class="tv-blocks">${blocksHtml}</div>${finalsHtml}</div>`;
+      const tvBgLogoHtml = (hudPreviewBackground && hudPreviewBackground !== 'none')
+        ? `<img class="tv-bg-logo" src="${hudPreviewBackground}" alt="" />`
+        : '';
+      return `${S}<div class="tv-wrap">${tvBgLogoHtml}<div class="tv-title">${tName}</div><div class="tv-blocks">${blocksHtml}</div>${finalsHtml}</div>`;
     }
 
 
@@ -1925,6 +1989,9 @@
       const w1 = getW(finals.f), w2 = getL(finals.f), w3 = getW(finals.third), w4 = getL(finals.third);
       const n1 = w1 ? w1.name : '---', n2 = w2 ? w2.name : '---', n3 = w3 ? w3.name : '---', n4 = w4 ? w4.name : '---';
       const tName = tournamentName || '大会';
+      const tvBgLogoHtml = (hudPreviewBackground && hudPreviewBackground !== 'none')
+        ? `<img class="tv-bg-logo" src="${hudPreviewBackground}" alt="" />`
+        : '';
       return `
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
@@ -1936,13 +2003,14 @@
             padding: 16px env(safe-area-inset-right,16px) 16px env(safe-area-inset-left,16px);
             position: relative; overflow: hidden;
           }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
           .tv-res-ghost {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
             font-family: 'Chakra Petch', sans-serif; font-style: italic; font-weight: 700;
             font-size: clamp(80px, 18vw, 160px); color: rgba(250,204,21,0.04);
-            white-space: nowrap; pointer-events: none; letter-spacing: 4px; z-index: 0;
+            white-space: nowrap; pointer-events: none; letter-spacing: 4px; z-index: 1;
           }
-          .tv-res-card { position: relative; z-index: 1; width: 100%; max-width: 600px; text-align: center; }
+          .tv-res-card { position: relative; z-index: 2; width: 100%; max-width: 600px; text-align: center; }
           .tv-res-tname {
             font-family: 'Orbitron', sans-serif; font-size: clamp(10px,1.6vw,14px);
             color: #0ea5e9; letter-spacing: 4px; margin-bottom: 8px;
@@ -1986,6 +2054,7 @@
           }
         </style>
         <div class="tv-res-outer">
+          ${tvBgLogoHtml}
           <div class="tv-res-ghost">${n1}</div>
           <div class="tv-res-card">
             <div class="tv-res-tname">${tName}</div>
@@ -2097,7 +2166,7 @@
         const p2Name = m.p2.name;
         const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
         const score = (m.score || '').toString();
-        const kim = (m.kimarite || '').toString();
+        const kim = serializeKimariteList(parseKimariteStored(m.kimarite));
         const p1B = (m.p1BeyUsed || '').toString();
         const p2B = (m.p2BeyUsed || '').toString();
         exportText += `${ymd}\t${tournamentName}\t${roundLabel}\t${p1Name}\t${p2Name}\t${winnerName}\t${score}\t${kim}\t${p1B}\t${p2B}\n`;

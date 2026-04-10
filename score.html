@@ -224,7 +224,13 @@
         /* NEXT BATTLE overlay */
         #next-battle-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 95; background: #0a0e17; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
         #next-battle-overlay.hidden { display: none !important; }
-        #next-battle-logo { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; opacity: 0.18; pointer-events: none; z-index: 0; }
+        /* 次戦予告（📢）背景ロゴ（トーナメント表・結果画面の TV オーバーレイと同様、約80%スケール） */
+        #next-battle-logo {
+            position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh; object-fit: cover;
+            opacity: 0.18; pointer-events: none; z-index: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+            transform-origin: center center;
+        }
         #next-battle-content { position: relative; z-index: 1; width: 100%; }
         @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }

@@ -1632,11 +1632,15 @@ function renderResults(players) {
     kimKeys.forEach(k => kimStats[k] = { win: 0, lose: 0 });
     const beyAgg = {}; // { bey: { win, lose } }
     details.forEach(d => {
-      const k = (d.kimarite || '').toUpperCase().trim();
-      if (kimStats[k]) {
+      const raw = (d.kimarite || '').toString().trim();
+      if (!raw) return;
+      const parts = raw.split(/[,、\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean);
+      const keys = parts.length ? parts : [raw.toUpperCase()];
+      keys.forEach(k => {
+        if (!kimStats[k]) return;
         if (d.isWin) kimStats[k].win += 1;
         else kimStats[k].lose += 1;
-      }
+      });
       const b = (d.bey || '').trim();
       if (b) {
         if (!beyAgg[b]) beyAgg[b] = { win: 0, lose: 0 };
