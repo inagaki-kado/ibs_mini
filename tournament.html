@@ -1642,8 +1642,9 @@
             if (!p || !p.type) return bey.name || '';
             if (p.type === 'BX')   return p.BX || '';
             if (p.type === 'UX')   return p.UX || '';
-            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '') + (p.AB || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '') + (p.AB || '');
+            // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
+            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
+            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '');
             return bey.name || '';
         }
 
@@ -2154,32 +2155,14 @@
 
     function openExportModal() {
       let exportText = "";
-      const now = new Date();
-      const ymd = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-      exportText += `日付\t大会名\tラウンド\tP1\tP2\t勝者\tスコア\t決まり手\tP1使用ベイ\tP2使用ベイ\n`;
-      const addMatch = (m, roundLabel) => {
-        if (!m || !m.p1 || !m.p2) return;
-        if (m.p1.id === 'BYE' || m.p2.id === 'BYE') return;
-        if (m.p1.name === 'TBD' || m.p2.name === 'TBD') return;
-        if (m.winner === null) return;
-        const p1Name = m.p1.name;
-        const p2Name = m.p2.name;
-        const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-        const score = (m.score || '').toString();
-        const kim = serializeKimariteList(parseKimariteStored(m.kimarite));
-        const p1B = (m.p1BeyUsed || '').toString();
-        const p2B = (m.p2BeyUsed || '').toString();
-        exportText += `${ymd}\t${tournamentName}\t${roundLabel}\t${p1Name}\t${p2Name}\t${winnerName}\t${score}\t${kim}\t${p1B}\t${p2B}\n`;
+      const addMatch = (m) => {
+        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
+          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+        }
       };
-      ['A', 'B', 'C', 'D'].forEach(bName => {
-        if (!blockMatches[bName]) return;
-        blockMatches[bName].forEach((round, ri) => {
-          round.forEach((match, mi) => addMatch(match, `${bName}-R${ri + 1}-M${mi + 1}`));
-        });
-      });
-      if (finals.sf) finals.sf.forEach((m, i) => addMatch(m, `SF-${i + 1}`));
-      if (finals.third) addMatch(finals.third, `3RD`);
-      if (finals.f) addMatch(finals.f, `FINAL`);
+      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
+      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
       document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
     }
 

@@ -1092,16 +1092,15 @@ const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 // 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
-// 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
-// 追加列（任意）:
-// M=決まり手, N=P1使用ベイ, O=P2使用ベイ, P=スコア
-const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:P');
+// B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
+const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:L');
 const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
 let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
 let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履歴から生成
-let matchDetailsByPlayer = null; // cache: { 選手名: [{date, tName, round, opp, isWin, kimarite, bey, score}] }
+/** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
+let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1274,14 +1273,13 @@ async function fetchPlayers() {
     }
   });
 
-  // 全対戦履歴からBP推移データを生成（＋任意で詳細情報も集計）
+  // 全対戦履歴からBP推移データを生成し、大会別の対戦数・勝数も集計
   // B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
-  // M=決まり手, N=P1使用ベイ, O=P2使用ベイ, P=スコア（任意）
   try {
     const json3 = await res3.json();
     const matchRows = json3.values || [];
     const playerMap = {}; // { 選手名: { date: {date, names:Set, bp} } }
-    matchDetailsByPlayer = {};
+    tournamentStatsByPlayer = {};
 
     matchRows.forEach(row => {
       if (row.length < 11) return;
@@ -1289,6 +1287,7 @@ async function fetchPlayers() {
       const bp1a  = parseFloat((row[6] || '').replace(/,/g, ''));
       const p2    = (row[2] || '').trim();
       const bp2a  = parseFloat((row[7] || '').replace(/,/g, ''));
+      const winner = (row[4] || '').trim();
       const tName = (row[9]  || '').trim();
       const date  = (row[10] || '').trim();
       if (!date) return;
@@ -1314,28 +1313,16 @@ async function fetchPlayers() {
         }
       }
 
-      // 追加列（あれば）
-      const winner = (row[4] || '').trim();
-      const round  = (row[8] || '').trim();
-      const kim    = (row[11] || '').trim();
-      const p1Bey  = (row[12] || '').trim();
-      const p2Bey  = (row[13] || '').trim();
-      const score  = (row[14] || '').trim();
-      const pushDetail = (name, opp, isWin, bey) => {
-        if (!name) return;
-        if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
-        matchDetailsByPlayer[name].push({
-          date, tName, round,
-          opp,
-          isWin: !!isWin,
-          kimarite: kim || '',
-          bey: bey || '',
-          score: score || '',
-        });
-      };
-      if (p1 && p2) {
-        pushDetail(p1, p2, winner && winner === p1, p1Bey);
-        pushDetail(p2, p1, winner && winner === p2, p2Bey);
+      if (p1 && p2 && winner) {
+        const statKey = `${date}|${tName}`;
+        if (!tournamentStatsByPlayer[p1]) tournamentStatsByPlayer[p1] = {};
+        if (!tournamentStatsByPlayer[p2]) tournamentStatsByPlayer[p2] = {};
+        if (!tournamentStatsByPlayer[p1][statKey]) tournamentStatsByPlayer[p1][statKey] = { matches: 0, wins: 0 };
+        if (!tournamentStatsByPlayer[p2][statKey]) tournamentStatsByPlayer[p2][statKey] = { matches: 0, wins: 0 };
+        tournamentStatsByPlayer[p1][statKey].matches += 1;
+        tournamentStatsByPlayer[p2][statKey].matches += 1;
+        if (winner === p1) tournamentStatsByPlayer[p1][statKey].wins += 1;
+        if (winner === p2) tournamentStatsByPlayer[p2][statKey].wins += 1;
       }
     });
 
@@ -1348,10 +1335,46 @@ async function fetchPlayers() {
     });
   } catch(e) {
     bpHistory = {}; // 取得失敗時はグラフ非表示
-    matchDetailsByPlayer = {};
+    tournamentStatsByPlayer = {};
   }
 
   return allPlayers;
+}
+
+/**
+ * 参加履歴テキストの各行（先頭が yyyy/mm/dd の形式）の末尾に 【○戦○勝】 を付与する
+ */
+function enrichParticipationHistory(playerName, rawHistory) {
+  if (!rawHistory || rawHistory === '－' || rawHistory === '-') return rawHistory;
+  if (!tournamentStatsByPlayer || !tournamentStatsByPlayer[playerName]) return rawHistory;
+  const pmap = tournamentStatsByPlayer[playerName];
+  return rawHistory.split(/\r?\n/).map((line) => {
+    const t = line.trim();
+    if (!t) return line;
+    if (/【\d+戦\d+勝】/.test(t)) return line;
+    const m = t.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+)$/);
+    if (!m) return line;
+    const d = m[1];
+    const title = m[2].trim();
+    const key = `${d}|${title}`;
+    let rec = pmap[key];
+    if (!rec) {
+      for (const k of Object.keys(pmap)) {
+        const sep = k.indexOf('|');
+        if (sep < 0) continue;
+        const kd = k.slice(0, sep);
+        const kt = k.slice(sep + 1);
+        if (kd === d && (kt === title || title.includes(kt) || kt.includes(title))) {
+          rec = pmap[k];
+          break;
+        }
+      }
+    }
+    if (rec && rec.matches > 0) {
+      return `${t} 【${rec.matches}戦${rec.wins}勝】`;
+    }
+    return line;
+  }).join('\n');
 }
 
 // ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
@@ -1625,78 +1648,6 @@ function renderResults(players) {
         </div>`;
     }
 
-    // ── Match details stats (決まり手/使用ベイ) ──
-    const details = (matchDetailsByPlayer && matchDetailsByPlayer[name]) ? matchDetailsByPlayer[name] : [];
-    const kimKeys = ['SF', 'BF', 'OF', 'XF'];
-    const kimStats = {};
-    kimKeys.forEach(k => kimStats[k] = { win: 0, lose: 0 });
-    const beyAgg = {}; // { bey: { win, lose } }
-    details.forEach(d => {
-      const raw = (d.kimarite || '').toString().trim();
-      if (!raw) return;
-      const parts = raw.split(/[,、\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean);
-      const keys = parts.length ? parts : [raw.toUpperCase()];
-      keys.forEach(k => {
-        if (!kimStats[k]) return;
-        if (d.isWin) kimStats[k].win += 1;
-        else kimStats[k].lose += 1;
-      });
-      const b = (d.bey || '').trim();
-      if (b) {
-        if (!beyAgg[b]) beyAgg[b] = { win: 0, lose: 0 };
-        if (d.isWin) beyAgg[b].win += 1;
-        else beyAgg[b].lose += 1;
-      }
-    });
-    const kimariteRowsHtml = kimKeys.map(k => {
-      const w = kimStats[k].win;
-      const l = kimStats[k].lose;
-      const m = w + l;
-      const r = m ? ((w / m) * 100) : 0;
-      const colorClass = (k === 'SF') ? 'fill-blue' : (k === 'BF') ? 'fill-green' : (k === 'OF') ? 'fill-pink' : 'fill-green';
-      return `
-        <div class="winrate-row">
-          <div class="winrate-row-label">${k}</div>
-          <div class="winrate-track">
-            <div class="winrate-fill ${colorClass}" style="width:${Math.min(r, 100).toFixed(2)}%"></div>
-          </div>
-          <div class="winrate-pct" style="min-width:76px;text-align:right;">${m ? r.toFixed(1) + '%' : '--'} <span style="opacity:.7;font-size:.8em">(${w}-${l})</span></div>
-        </div>`;
-    }).join('');
-    const topBeyByMatches = Object.entries(beyAgg)
-      .map(([b, s]) => ({ bey: b, win: s.win, lose: s.lose, matches: s.win + s.lose }))
-      .sort((a, b) => b.matches - a.matches)
-      .slice(0, 5);
-    const beyRowsHtml = topBeyByMatches.length ? topBeyByMatches.map(x => {
-      const r = x.matches ? (x.win / x.matches) * 100 : 0;
-      return `
-        <div class="winrate-row" style="grid-template-columns: 1.2fr 2.5fr 0.9fr;">
-          <div class="winrate-row-label" style="width:auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${x.bey}">${x.bey}</div>
-          <div class="winrate-track">
-            <div class="winrate-fill fill-green" style="width:${Math.min(r, 100).toFixed(2)}%"></div>
-          </div>
-          <div class="winrate-pct" style="min-width:76px;text-align:right;">${x.matches ? r.toFixed(1) + '%' : '--'} <span style="opacity:.7;font-size:.8em">(${x.win}-${x.lose})</span></div>
-        </div>`;
-    }).join('') : `<div style="opacity:.7;font-size:.9rem;">（記録がまだありません）</div>`;
-    const kimariteBlockHtml = `
-      <div class="winrate-section" style="margin-top:1rem;">
-        <div class="winrate-label">
-          <span><i class="fa fa-flag-checkered"></i> 決まり手別 勝率</span>
-        </div>
-        <div class="winrate-bars">
-          ${kimariteRowsHtml}
-        </div>
-      </div>`;
-    const beyWinrateBlockHtml = `
-      <div class="winrate-section" style="margin-top:1rem;">
-        <div class="winrate-label">
-          <span><i class="fa fa-compact-disc"></i> 使用ベイ別 勝率（TOP5）</span>
-        </div>
-        <div class="winrate-bars">
-          ${beyRowsHtml}
-        </div>
-      </div>`;
-
     // ── Rival HTML ──
     let rivalHtml = '';
     const rivalEmpty = !rival || rival === '－' || rival === '-';
@@ -1777,7 +1728,8 @@ function renderResults(players) {
     let historyLogHtml = '';
     const histEmpty = !historyLog || historyLog === '－' || historyLog === '-';
     if (!histEmpty) {
-      const histFormatted = historyLog
+      const histEnriched = enrichParticipationHistory(name, historyLog);
+      const histFormatted = histEnriched
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/\n/g, '<br>');
       historyLogHtml = `
@@ -1852,8 +1804,6 @@ function renderResults(players) {
         </div>
 
         ${topBeysHtml}
-        ${kimariteBlockHtml}
-        ${beyWinrateBlockHtml}
 
         ${rivalHtml}
         ${awardsLogHtml}
