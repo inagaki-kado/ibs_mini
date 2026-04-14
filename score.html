@@ -665,6 +665,9 @@
             } else if (winPointMode === '2') {
                 winPointMode = '2+';
                 winScoreLimit = 99; // 実質無制限だが2点で勝利判定
+            } else if (winPointMode === '2+') {
+                winPointMode = '3';
+                winScoreLimit = 3;
             } else {
                 winPointMode = '4';
                 winScoreLimit = 4;
