@@ -61,7 +61,7 @@
         #p1-wrapper { left: max(11px, calc(var(--safe-left) + 11px)); align-items: flex-start; }
         #p2-wrapper { right: max(11px, calc(var(--safe-right) + 11px)); align-items: flex-end; }
         
-        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: clamp(15px, 2.8vw, 24px); font-style: italic; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: clamp(200px, 30vw, 340px); text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
+        .name-input { font-family: 'Chakra Petch', sans-serif !important; font-size: clamp(15px, 2.8vw, 24px); font-style: normal; font-weight: bold; color: var(--bx-green); text-shadow: 2px 2px 0px black; background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; padding: 3px 10px; width: auto; min-width: 64px; max-width: clamp(200px, 30vw, 340px); text-overflow: ellipsis; outline: none; margin-bottom: 5px; box-sizing: border-box; text-align: left; }
         #name2 { text-align: right; }
         .score { font-family: 'DSEG7 Classic', monospace !important; font-weight: bold !important; font-style: italic !important; font-size: 85px !important; line-height: 1; color: white; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 3px 3px 0px black; cursor: default; margin: 0; min-width: 60px; text-align: center; }
         
@@ -227,9 +227,9 @@
         #next-battle-overlay.hidden { display: none !important; }
         /* 次戦予告（📢）背景ロゴ（トーナメント表・結果画面の TV オーバーレイと同様、約80%スケール） */
         #next-battle-logo {
-            position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh; object-fit: cover;
+            position: absolute; top: 50%; left: 50%; width: 80vw; height: 80vh; max-width: 900px; object-fit: contain;
             opacity: 0.18; pointer-events: none; z-index: 0;
-            transform: translate(-50%, -50%) scale(0.8);
+            transform: translate(-50%, -50%);
             transform-origin: center center;
         }
         #next-battle-content { position: relative; z-index: 1; width: 100%; }
@@ -330,7 +330,7 @@
 
     <div id="main-hud">
         <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
-        <div id="tournament-title-area"><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"><img id="tournament-logo-img" src="" alt="" style="display:none; max-height:48px; max-width:100%; opacity:0.5; object-fit:contain; pointer-events:none;"></div>
+        <div id="tournament-title-area"><img id="tournament-logo-img" src="" alt="" style="display:none; max-height:48px; max-width:100%; opacity:0.75; object-fit:contain; pointer-events:none;"><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
 
         <div id="p1-wrapper" class="player-wrapper">
             <input type="text" id="name1" class="name-input" value="BLADER 1">
@@ -862,12 +862,14 @@
 
                         const tournamentLogoImg = document.getElementById('tournament-logo-img');
                         if (tournamentLogoImg) {
-                            if (data.logoSrc) {
+                            if (data.logoSrc && data.logoSrc !== 'none') {
                                 tournamentLogoImg.src = data.logoSrc;
                                 tournamentLogoImg.style.display = 'block';
+                                document.getElementById('tournament-name-1').style.display = 'none';
                             } else {
-                                tournamentLogoImg.removeAttribute('src');
                                 tournamentLogoImg.style.display = 'none';
+                                tournamentLogoImg.src = '';
+                                document.getElementById('tournament-name-1').style.display = '';
                             }
                         }
 
