@@ -2032,7 +2032,7 @@ function shareBladerStats(name, rankStr, bp, wrPct) {
   const wrText = (wrPct && wrPct > 0) ? `勝率 ${wrPct.toFixed(1)}%` : '';
   const bpText = (bp && bp !== '--') ? `BP ${bp}` : '';
   const statsText = [bpText, wrText].filter(Boolean).join(' / ');
-  const tweetText = `【板橋ベイブレード会】${name} の戦績 ${rankStr ? '(' + rankStr + ')' : ''}\n${statsText}\n${shareUrl}\n#BeybladX #板橋ベイブレード会`;
+  const tweetText = `【BLADER STATS】${name} の戦績 ${rankStr ? '(' + rankStr + ')' : ''}\n${statsText}\n${shareUrl}\n#ベイブレードX #板橋ベイブレード会`;
 
   // モーダル表示
   const modal = document.createElement('div');
