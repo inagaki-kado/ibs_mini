@@ -899,7 +899,6 @@ nav {
   fill: currentColor;
   flex-shrink: 0;
 }
-
 /* ─── シェアトースト ─── */
 #shareToast {
   position: fixed;
@@ -1992,7 +1991,16 @@ function renderResults(players) {
         </div>
 
         <div class="share-row">
-          <button class="btn-share-stats" onclick="shareBladerStats(this.dataset)" data-name="${name}" data-rank-str="${rankStr}" data-bp="${bp}" data-wr="${wrPct}" data-wins="${details ? details.filter(d=>d.isWin).length : 0}" data-total="${details ? details.length : 0}" data-tournaments="${parseInt(tournaments)||0}" data-beys="${[bey1,bey2,bey3,bey4,bey5].filter(b=>b&&b!=='－'&&b!=='-').join('|')}" data-awards="${awardsCount||''}">
+          <button class="btn-share-stats" onclick="shareBladerStats(this.dataset)"
+            data-name="${name}"
+            data-rank-str="${rankStr}"
+            data-bp="${bp}"
+            data-wr="${wrPct}"
+            data-wins="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].filter(d=>d.isWin).length : 0}"
+            data-total="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].length : 0}"
+            data-tournaments="${parseInt(tournaments)||0}"
+            data-beys="${[bey1,bey2,bey3,bey4,bey5].filter(b=>b&&b!=='－'&&b!=='-').join('|')}"
+            data-awards="${awardsCount||''}">
             <svg class="share-icon-x" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             この戦績をシェア
           </button>
@@ -2023,7 +2031,11 @@ function toggleAbout() {
   arrow.classList.toggle('open');
 }
 
-// ─── SHARE ───────────────────────────────────────────────
+// ─── KEYBOARD ────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
 // ─── SHARE CARD CANVAS ───────────────────────────────────
 const SHARE_RANK_COLORS = {
   'rank-low':    { color: '#ffffff', glow: 'rgba(255,255,255,0.6)' },
@@ -2083,8 +2095,7 @@ async function _generateShareCardBlob(data) {
   for (let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
   // ヘッダーバー
-  ctx.fillStyle = 'rgba(0,255,136,0.04)';
-  ctx.fillRect(0, 0, W, 38);
+  ctx.fillStyle = 'rgba(0,255,136,0.04)'; ctx.fillRect(0, 0, W, 38);
   ctx.strokeStyle = 'rgba(0,255,136,0.12)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0,38); ctx.lineTo(W,38); ctx.stroke();
   ctx.font = '500 11px Orbitron, monospace'; ctx.textAlign = 'left';
@@ -2104,22 +2115,22 @@ async function _generateShareCardBlob(data) {
   // BEY POWER（右上）
   ctx.textAlign = 'right'; ctx.font = '500 10px Orbitron, monospace'; ctx.fillStyle = '#475569';
   ctx.fillText('BEY POWER', W-PAD, 60);
-  _shareGlowText(ctx, data.bp, W-PAD, 112, '#0ea5e9', 'rgba(14,165,233,0.6)', 44, '900', 'right');
+  _shareGlowText(ctx, data.bp||'--', W-PAD, 112, '#0ea5e9', 'rgba(14,165,233,0.6)', 44, '900', 'right');
 
   // 区切り線
   ctx.strokeStyle = 'rgba(0,255,136,0.12)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(PAD,148); ctx.lineTo(W-PAD,148); ctx.stroke();
 
-  // 統計グリッド：階層 / WIN-TOTAL / 大会数
-  const rankClass = getRankClass(data.rankStr);
-  const rankColor = SHARE_RANK_COLORS[rankClass];
-  const rankDisplay = (data.rankStr||'').toUpperCase() === 'XF' ? 'XF' : (data.rankStr||'--');
+  // 統計グリッド：S.I.T.X TOWER / WIN-TOTAL / 大会数
+  const rankClass = getRankClass(getRankNum(data.rankStr));
+  const rankColor = SHARE_RANK_COLORS[rankClass] || SHARE_RANK_COLORS['rank-low'];
+  const rankDisplay = (data.rankStr||'--').toUpperCase() === 'XF' ? 'XF' : (data.rankStr||'--');
   const statsY = 165;
   const cellW = (W - PAD*2) / 3;
   const statsDef = [
-    { label: 'S.I.T.X TOWER', value: rankDisplay, color: rankColor.color, glow: rankColor.glow, size: 26 },
-    { label: 'WIN / TOTAL',   value: `${data.wins} / ${data.total}`, color: '#00ff88', glow: 'rgba(0,255,136,0.5)', size: 26 },
-    { label: 'TOURNAMENTS',   value: `${data.tournaments}`, color: '#00ff88', glow: 'rgba(0,255,136,0.4)', size: 26 },
+    { label: 'S.I.T.X TOWER', value: rankDisplay,                      color: rankColor.color, glow: rankColor.glow, size: 26 },
+    { label: 'WIN / TOTAL',   value: `${data.wins} / ${data.total}`,   color: '#00ff88', glow: 'rgba(0,255,136,0.5)', size: 26 },
+    { label: 'TOURNAMENTS',   value: `${data.tournaments}`,            color: '#00ff88', glow: 'rgba(0,255,136,0.4)', size: 26 },
   ];
   statsDef.forEach((s, i) => {
     const cx = PAD + cellW*i + cellW/2;
@@ -2132,25 +2143,27 @@ async function _generateShareCardBlob(data) {
   });
 
   // 勝率バー
+  const wr = parseFloat(data.wr) || 0;
   const wrY = 248;
   ctx.textAlign = 'left'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#475569';
   ctx.fillText('WIN RATE', PAD, wrY);
   ctx.textAlign = 'right'; ctx.font = '900 28px Orbitron, monospace';
   ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,255,136,0.25)'; ctx.shadowBlur = 12;
-  ctx.fillText(`${(data.wr||0).toFixed(1)}%`, W-PAD, wrY+2); ctx.shadowBlur = 0;
+  ctx.fillText(`${wr.toFixed(1)}%`, W-PAD, wrY+2); ctx.shadowBlur = 0;
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
   _shareRoundRect(ctx, PAD, wrY+10, W-PAD*2, 6, 3); ctx.fill();
   const grad = ctx.createLinearGradient(PAD,0,W-PAD,0);
   grad.addColorStop(0,'#00ff88'); grad.addColorStop(1,'#0ea5e9');
   ctx.fillStyle = grad; ctx.shadowColor = 'rgba(0,255,136,0.4)'; ctx.shadowBlur = 6;
-  _shareRoundRect(ctx, PAD, wrY+10, (W-PAD*2)*Math.min((data.wr||0)/100,1), 6, 3); ctx.fill(); ctx.shadowBlur = 0;
+  _shareRoundRect(ctx, PAD, wrY+10, (W-PAD*2)*Math.min(wr/100,1), 6, 3); ctx.fill(); ctx.shadowBlur = 0;
 
   // 入賞バッジ
+  const awardsObj = parseAwards(data.awards||'');
   const awardsY = 298;
   const pillDefs = [];
-  if (data.awards && data.awards.p1 > 0) pillDefs.push({text:`🥇 1位 ×${data.awards.p1}`, bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.5)', color:'#f59e0b'});
-  if (data.awards && data.awards.p2 > 0) pillDefs.push({text:`🥈 2位 ×${data.awards.p2}`, bg:'rgba(148,163,184,0.1)', border:'rgba(148,163,184,0.4)', color:'#94a3b8'});
-  if (data.awards && data.awards.p3 > 0) pillDefs.push({text:`🥉 3位 ×${data.awards.p3}`, bg:'rgba(180,83,9,0.1)', border:'rgba(180,83,9,0.4)', color:'#b45309'});
+  if (awardsObj.p1>0) pillDefs.push({text:`🥇 1位 ×${awardsObj.p1}`, bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.5)', color:'#f59e0b'});
+  if (awardsObj.p2>0) pillDefs.push({text:`🥈 2位 ×${awardsObj.p2}`, bg:'rgba(148,163,184,0.1)', border:'rgba(148,163,184,0.4)', color:'#94a3b8'});
+  if (awardsObj.p3>0) pillDefs.push({text:`🥉 3位 ×${awardsObj.p3}`, bg:'rgba(180,83,9,0.1)', border:'rgba(180,83,9,0.4)', color:'#b45309'});
   let pillX = PAD;
   ctx.font = '600 12px Orbitron, monospace';
   pillDefs.forEach(p => {
@@ -2167,8 +2180,9 @@ async function _generateShareCardBlob(data) {
   ctx.fillText('FAVORITE BEYBLADE', PAD, beyY);
   const beyFont = '600 11px Orbitron, monospace';
   ctx.font = beyFont;
+  const beyList = (data.beys||'').split('|').filter(Boolean);
   let tagX = PAD, tagRow = 0;
-  (data.beys || []).slice(0, 5).forEach((bey, i) => {
+  beyList.slice(0,5).forEach((bey, i) => {
     const maxTw = 190;
     const tw = ctx.measureText(bey).width;
     const pw = Math.min(tw, maxTw) + 20;
@@ -2202,26 +2216,26 @@ async function _generateShareCardBlob(data) {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
-async function shareBladerStats(dataObj) {
-  // data属性から受け取る
-  const name     = dataObj.name     || '';
-  const rankStr  = dataObj.rankStr  || dataObj['rankStr']  || dataObj.rank_str || '--';
-  const bp       = dataObj.bp       || '--';
-  const wr       = parseFloat(dataObj.wr) || 0;
-  const wins     = parseInt(dataObj.wins) || 0;
-  const total    = parseInt(dataObj.total) || 0;
-  const tournaments = parseInt(dataObj.tournaments) || 0;
-  const beys     = (dataObj.beys || '').split('|').filter(Boolean);
-  const awards   = parseAwards(dataObj.awards || '');
+async function shareBladerStats(dataset) {
+  const name        = dataset.name     || '';
+  const rankStr     = dataset.rankStr  || '--';
+  const bp          = dataset.bp       || '--';
+  const wr          = parseFloat(dataset.wr) || 0;
+  const wins        = parseInt(dataset.wins) || 0;
+  const total       = parseInt(dataset.total) || 0;
+  const tournaments = parseInt(dataset.tournaments) || 0;
+  const beys        = dataset.beys || '';
+  const awards      = dataset.awards || '';
   const data = { name, rankStr, bp, wr, wins, total, tournaments, beys, awards };
-  const baseUrl = location.href.split('?')[0];
-  const shareUrl = baseUrl + '?player=' + encodeURIComponent(name);
-  const wrText  = (wr && wr > 0) ? `勝率 ${wr.toFixed(1)}%` : '';
-  const bpText  = (bp && bp !== '--') ? `BP ${bp}` : '';
+
+  const baseUrl   = location.href.split('?')[0];
+  const shareUrl  = baseUrl + '?player=' + encodeURIComponent(name);
+  const wrText    = wr > 0 ? `勝率 ${wr.toFixed(1)}%` : '';
+  const bpText    = (bp && bp !== '--') ? `BP ${bp}` : '';
   const statsText = [bpText, wrText].filter(Boolean).join(' / ');
   const tweetText = `【BLADER STATS】${name} の戦績 ${rankStr ? '('+rankStr+')' : ''}\n${statsText}\n${shareUrl}\n#ベイブレードX #板橋ベイブレード会`;
 
-  // 生成中はモーダルでローディング表示
+  // ローディングモーダル
   const modal = document.createElement('div');
   modal.id = 'shareModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -2236,58 +2250,29 @@ async function shareBladerStats(dataObj) {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 
-  let blob;
-  try {
-    blob = await _generateShareCardBlob(data);
-  } catch(e) {
-    console.error('Canvas generation failed:', e);
-    blob = null;
-  }
+  let blob = null;
+  try { blob = await _generateShareCardBlob(data); } catch(e) { console.error('Canvas error:', e); }
 
   // iOS Web Share API（画像対応）
   const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-  if (isIOS && navigator.share && blob) {
+  if (isIOS && blob && navigator.share) {
     const file = new File([blob], 'blader_stats.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       modal.remove();
-      try {
-        await navigator.share({ files: [file], text: tweetText });
-      } catch(e) {
-        if (e.name !== 'AbortError') console.warn('Share failed:', e);
-      }
+      try { await navigator.share({ files: [file], text: tweetText }); } catch(e) { if (e.name !== 'AbortError') console.warn(e); }
       return;
     }
   }
 
-  // フォールバック：モーダルにプレビュー＋ボタン表示
+  // フォールバック：プレビュー＋ボタン
   const previewUrl = blob ? URL.createObjectURL(blob) : null;
   const body = document.getElementById('shareModalBody');
   body.innerHTML = `
     ${previewUrl ? `<img src="${previewUrl}" style="width:100%;border-radius:6px;margin-bottom:12px;border:1px solid rgba(0,255,136,0.15);">` : ''}
     <div style="display:flex;gap:8px;flex-direction:column;">
-      ${previewUrl ? `
-      <button onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='blader_stats_${encodeURIComponent(name)}.png';a.click();})()" style="
-        display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;
-        font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
-        border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);
-        touch-action:manipulation;width:100%;">
-        <i class="fa fa-image"></i> 画像を保存
-      </button>` : ''}
-      <button onclick="copyShareUrl('${shareUrl}')" style="
-        display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;
-        font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
-        border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);
-        touch-action:manipulation;width:100%;">
-        <i class="fa fa-link"></i> URLをコピー
-      </button>
-      <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" style="
-        display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;
-        font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
-        border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);
-        color:#fff;text-decoration:none;touch-action:manipulation;">
-        <svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        Xに投稿
-      </a>
+      ${previewUrl ? `<button onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='blader_stats_${encodeURIComponent(name)}.png';a.click();})()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);touch-action:manipulation;width:100%;"><i class="fa fa-image"></i> 画像を保存</button>` : ''}
+      <button onclick="copyShareUrl('${shareUrl}')" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);touch-action:manipulation;width:100%;"><i class="fa fa-link"></i> URLをコピー</button>
+      <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);color:#fff;text-decoration:none;touch-action:manipulation;"><svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Xに投稿</a>
     </div>`;
 }
 
@@ -2295,35 +2280,26 @@ function copyShareUrl(url) {
   navigator.clipboard.writeText(url).then(() => {
     showShareToast('🔗 URLをコピーしました');
   }).catch(() => {
-    // フォールバック
     const ta = document.createElement('textarea');
-    ta.value = url;
-    ta.style.cssText = 'position:fixed;opacity:0;';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
+    ta.value = url; ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     showShareToast('🔗 URLをコピーしました');
   });
 }
 
 function showShareToast(msg) {
   const toast = document.getElementById('shareToast');
+  if (!toast) return;
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2200);
 }
 
-// ─── KEYBOARD ────────────────────────────────────────────
-document.getElementById('searchInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSearch();
-});
-
 // ─── INIT ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   buildTower();
 
-  // トースト要素をbodyに追加
+  // トースト要素追加
   const toast = document.createElement('div');
   toast.id = 'shareToast';
   document.body.appendChild(toast);
@@ -2335,7 +2311,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('searchInput');
     input.value = playerParam;
     setState('loading');
-    // データ取得後に検索実行
     fetchPlayers().then(players => {
       const matched = players.filter(r => r[0].includes(playerParam));
       if (matched.length === 0) {
@@ -2346,18 +2321,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderResults(matched);
         const firstRank = getRankNum(matched[0][2]);
         highlightTower(firstRank);
-        // 検索結果へスクロール
         setTimeout(() => {
           document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
       }
     }).catch(e => {
-      console.error(e);
       setState('error', 'データの取得に失敗しました: ' + e.message);
     });
   } else {
     setState('idle');
-    // Prefetch in background
     fetchPlayers().catch(() => {});
   }
 });
