@@ -865,6 +865,66 @@ nav {
 /* Util */
 .hidden { display: none !important; }
 
+/* ─── シェアボタン ─── */
+.share-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 0 2px;
+  border-top: 1px solid rgba(0,255,136,0.08);
+  margin-top: 4px;
+}
+.btn-share-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1px solid rgba(0,255,136,0.35);
+  background: rgba(0,255,136,0.06);
+  color: var(--neon-green);
+  touch-action: manipulation;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-share-stats:hover {
+  background: rgba(0,255,136,0.13);
+  box-shadow: 0 0 12px rgba(0,255,136,0.18);
+}
+.share-icon-x {
+  width: 13px; height: 13px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* ─── シェアトースト ─── */
+#shareToast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(8,13,26,0.95);
+  border: 1px solid rgba(0,255,136,0.4);
+  border-radius: 8px;
+  padding: 12px 22px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  color: var(--neon-green);
+  box-shadow: 0 0 20px rgba(0,255,136,0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 9000;
+  white-space: nowrap;
+}
+#shareToast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ─── BP推移グラフ ─── */
 .bp-chart-section {
   margin-top: 1.5rem;
@@ -1093,7 +1153,8 @@ const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 // 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
 // B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
-const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:L');
+// M=決まり手（カンマ区切り）, N=P1使用ベイ, O=P2使用ベイ（決まり手集計用）
+const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:O');
 const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1101,6 +1162,7 @@ let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
 let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履歴から生成
 /** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
+let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1280,6 +1342,7 @@ async function fetchPlayers() {
     const matchRows = json3.values || [];
     const playerMap = {}; // { 選手名: { date: {date, names:Set, bp} } }
     tournamentStatsByPlayer = {};
+    matchDetailsByPlayer = {};
 
     matchRows.forEach(row => {
       if (row.length < 11) return;
@@ -1288,6 +1351,7 @@ async function fetchPlayers() {
       const p2    = (row[2] || '').trim();
       const bp2a  = parseFloat((row[7] || '').replace(/,/g, ''));
       const winner = (row[4] || '').trim();
+      const round  = (row[8] || '').trim();
       const tName = (row[9]  || '').trim();
       const date  = (row[10] || '').trim();
       if (!date) return;
@@ -1324,6 +1388,29 @@ async function fetchPlayers() {
         if (winner === p1) tournamentStatsByPlayer[p1][statKey].wins += 1;
         if (winner === p2) tournamentStatsByPlayer[p2][statKey].wins += 1;
       }
+
+      // 決まり手詳細（M列以降: row[11]=決まり手, row[12]=P1使用ベイ, row[13]=P2使用ベイ）
+      const kimarite = (row[11] || '').trim();
+      const p1Bey = (row[12] || '').trim();
+      const p2Bey = (row[13] || '').trim();
+      const pushDetail = (name, opp, isWin, bey) => {
+        if (!name) return;
+        if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
+        matchDetailsByPlayer[name].push({
+          date,
+          tName,
+          round,
+          opp,
+          isWin: !!isWin,
+          kimarite,
+          bey,
+          score: '',
+        });
+      };
+      if (p1 && p2) {
+        pushDetail(p1, p2, winner && winner === p1, p1Bey);
+        pushDetail(p2, p1, winner && winner === p2, p2Bey);
+      }
     });
 
     // Map → 日付昇順の配列に変換（names を配列化）
@@ -1336,6 +1423,7 @@ async function fetchPlayers() {
   } catch(e) {
     bpHistory = {}; // 取得失敗時はグラフ非表示
     tournamentStatsByPlayer = {};
+    matchDetailsByPlayer = {};
   }
 
   return allPlayers;
@@ -1375,6 +1463,39 @@ function enrichParticipationHistory(playerName, rawHistory) {
     }
     return line;
   }).join('\n');
+}
+
+/**
+ * 選手名を受け取り、決まり手ごとのフィニッシュ回数・割合を返す
+ * @param {string} playerName
+ * @returns {{ total: number, counts: {XF:number, BF:number, OF:number, SF:number}, pct: {XF:number, BF:number, OF:number, SF:number} } | null}
+ */
+function calcKimariteStat(playerName) {
+  const details = matchDetailsByPlayer && matchDetailsByPlayer[playerName];
+  if (!details || details.length === 0) return null;
+
+  const counts = { XF: 0, BF: 0, OF: 0, SF: 0 };
+  let total = 0;
+
+  details.forEach(d => {
+    if (!d || !d.kimarite) return;
+    const items = d.kimarite.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    items.forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(counts, k)) {
+        counts[k] += 1;
+        total += 1;
+      }
+    });
+  });
+
+  if (total === 0) return null;
+
+  const pct = {};
+  Object.keys(counts).forEach(k => {
+    pct[k] = Math.round((counts[k] / total) * 100);
+  });
+
+  return { total, counts, pct };
 }
 
 // ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
@@ -1739,6 +1860,52 @@ function renderResults(players) {
         </div>`;
     }
 
+    // ── FINISH TYPE (決まり手) ──
+    let finishTypeHtml = '';
+    const ft = calcKimariteStat(name);
+    if (ft && ft.total > 0) {
+      const rows = [
+        { k: 'XF', label: 'XF', color: '#ff0055' },
+        { k: 'BF', label: 'BF', color: '#ffd700' },
+        { k: 'OF', label: 'OF', color: '#ffaa00' },
+        { k: 'SF', label: 'SF', color: '#0ea5e9' },
+      ].filter(x => (ft.counts[x.k] || 0) > 0);
+
+      if (rows.length) {
+        const rowsHtml = rows.map(x => {
+          const c = ft.counts[x.k] || 0;
+          const p = ft.pct[x.k] || 0;
+          return `
+            <div style="display:grid;grid-template-columns:48px 1fr 110px;align-items:center;gap:10px;">
+              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${x.color};text-shadow:0 0 12px ${x.color};">${x.label}</div>
+              <div style="height:10px;background:#111827;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">
+                <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${x.color};box-shadow:0 0 18px ${x.color};"></div>
+              </div>
+              <div style="text-align:right;font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;">
+                ${c}回 <span style="opacity:.75;">(${p}%)</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        finishTypeHtml = `
+          <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">
+                FINISH TYPE
+              </div>
+              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">
+                TOTAL ${ft.total}
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              ${rowsHtml}
+            </div>
+          </div>
+        `;
+      }
+    }
+
     card.innerHTML = `
       <div class="card-header">
         <div class="player-rank-icon ${rankClass}">${displayRankHtml}</div>
@@ -1805,6 +1972,8 @@ function renderResults(players) {
 
         ${topBeysHtml}
 
+        ${finishTypeHtml}
+
         ${rivalHtml}
         ${awardsLogHtml}
         ${historyLogHtml}
@@ -1820,6 +1989,13 @@ function renderResults(players) {
               <canvas class="bp-chart-canvas"></canvas>
             </div>
           </div>
+        </div>
+
+        <div class="share-row">
+          <button class="btn-share-stats" onclick="shareBladerStats('${name}', '${rankStr}', '${bp}', ${wrPct})">
+            <svg class="share-icon-x" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            この戦績をシェア
+          </button>
         </div>
 
       </div>
@@ -1847,6 +2023,97 @@ function toggleAbout() {
   arrow.classList.toggle('open');
 }
 
+// ─── SHARE ───────────────────────────────────────────────
+function shareBladerStats(name, rankStr, bp, wrPct) {
+  const baseUrl = location.href.split('?')[0];
+  const shareUrl = baseUrl + '?player=' + encodeURIComponent(name);
+
+  // X投稿テキスト
+  const wrText = (wrPct && wrPct > 0) ? `勝率 ${wrPct.toFixed(1)}%` : '';
+  const bpText = (bp && bp !== '--') ? `BP ${bp}` : '';
+  const statsText = [bpText, wrText].filter(Boolean).join(' / ');
+  const tweetText = `【板橋ベイブレード会】${name} の戦績 ${rankStr ? '(' + rankStr + ')' : ''}\n${statsText}\n${shareUrl}\n#BeybladX #板橋ベイブレード会`;
+
+  // モーダル表示
+  const modal = document.createElement('div');
+  modal.id = 'shareModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  `;
+  modal.innerHTML = `
+    <div style="
+      background:#080d1a;border:1px solid rgba(0,255,136,0.3);border-radius:12px;
+      padding:24px 22px;max-width:360px;width:100%;position:relative;
+      box-shadow:0 0 40px rgba(0,255,136,0.1);
+    ">
+      <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--neon-green);margin-bottom:14px;">SHARE BLADER STATS</div>
+      <div style="font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#e2e8f0;margin-bottom:16px;">
+        <strong style="font-size:16px;">${name}</strong> さんの戦績ページを共有
+      </div>
+
+      <div style="
+        background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,136,0.15);border-radius:6px;
+        padding:10px 12px;font-family:'Orbitron',sans-serif;font-size:10px;
+        color:#94a3b8;word-break:break-all;margin-bottom:16px;line-height:1.6;
+      ">${shareUrl}</div>
+
+      <div style="display:flex;gap:8px;flex-direction:column;">
+        <button onclick="copyShareUrl('${shareUrl}')" style="
+          display:flex;align-items:center;justify-content:center;gap:8px;
+          padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
+          border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);
+          color:var(--neon-green);touch-action:manipulation;width:100%;
+        ">
+          <i class="fa fa-link"></i> URLをコピー
+        </button>
+        <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" style="
+          display:flex;align-items:center;justify-content:center;gap:8px;
+          padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
+          border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);
+          color:#fff;text-decoration:none;touch-action:manipulation;
+        ">
+          <svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Xに投稿
+        </a>
+      </div>
+
+      <button onclick="document.getElementById('shareModal').remove()" style="
+        position:absolute;top:12px;right:14px;background:none;border:none;
+        color:#475569;font-size:18px;cursor:pointer;touch-action:manipulation;
+        line-height:1;padding:4px;
+      ">✕</button>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function copyShareUrl(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    showShareToast('🔗 URLをコピーしました');
+  }).catch(() => {
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showShareToast('🔗 URLをコピーしました');
+  });
+}
+
+function showShareToast(msg) {
+  const toast = document.getElementById('shareToast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
 // ─── KEYBOARD ────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSearch();
@@ -1855,10 +2122,44 @@ document.getElementById('searchInput').addEventListener('keydown', e => {
 // ─── INIT ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   buildTower();
-  setState('idle');
 
-  // Prefetch in background
-  fetchPlayers().catch(() => {});
+  // トースト要素をbodyに追加
+  const toast = document.createElement('div');
+  toast.id = 'shareToast';
+  document.body.appendChild(toast);
+
+  // ?player=xxx の自動検索
+  const urlParams = new URLSearchParams(location.search);
+  const playerParam = urlParams.get('player');
+  if (playerParam) {
+    const input = document.getElementById('searchInput');
+    input.value = playerParam;
+    setState('loading');
+    // データ取得後に検索実行
+    fetchPlayers().then(players => {
+      const matched = players.filter(r => r[0].includes(playerParam));
+      if (matched.length === 0) {
+        setState('empty');
+        highlightTower(null);
+      } else {
+        setState('results');
+        renderResults(matched);
+        const firstRank = getRankNum(matched[0][2]);
+        highlightTower(firstRank);
+        // 検索結果へスクロール
+        setTimeout(() => {
+          document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    }).catch(e => {
+      console.error(e);
+      setState('error', 'データの取得に失敗しました: ' + e.message);
+    });
+  } else {
+    setState('idle');
+    // Prefetch in background
+    fetchPlayers().catch(() => {});
+  }
 });
 </script>
 </body>
