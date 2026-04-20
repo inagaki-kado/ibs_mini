@@ -2101,7 +2101,7 @@ async function _generateShareCardBlob(data) {
   ctx.font = '500 11px Orbitron, monospace'; ctx.textAlign = 'left';
   ctx.fillStyle = 'rgba(0,255,136,0.6)';
   ctx.fillText('BLADER STATS', PAD, 24);
-  ctx.textAlign = 'right'; ctx.fillStyle = '#475569'; ctx.font = '400 11px Orbitron, monospace';
+  ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '400 11px Orbitron, monospace';
   ctx.fillText(new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}).replace('/','.'), W-PAD, 24);
 
   // 名前
@@ -2113,7 +2113,7 @@ async function _generateShareCardBlob(data) {
   ctx.fillText('BLADER PROFILE', PAD, 128);
 
   // BEY POWER（右上）
-  ctx.textAlign = 'right'; ctx.font = '500 10px Orbitron, monospace'; ctx.fillStyle = '#475569';
+  ctx.textAlign = 'right'; ctx.font = '500 10px Orbitron, monospace'; ctx.fillStyle = '#94a3b8';
   ctx.fillText('BEY POWER', W-PAD, 60);
   _shareGlowText(ctx, data.bp||'--', W-PAD, 112, '#0ea5e9', 'rgba(14,165,233,0.6)', 44, '900', 'right');
 
@@ -2137,7 +2137,7 @@ async function _generateShareCardBlob(data) {
     ctx.strokeStyle = 'rgba(0,255,136,0.1)'; ctx.lineWidth = 1;
     _shareRoundRect(ctx, PAD+cellW*i+(i>0?4:0), statsY-4, cellW-(i<2?8:0), 58, 6);
     ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.015)'; ctx.fill();
-    ctx.textAlign = 'center'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#475569';
+    ctx.textAlign = 'center'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#94a3b8';
     ctx.fillText(s.label, cx, statsY+14);
     _shareGlowText(ctx, s.value, cx, statsY+44, s.color, s.glow, s.size, '900', 'center');
   });
@@ -2145,7 +2145,7 @@ async function _generateShareCardBlob(data) {
   // 勝率バー
   const wr = parseFloat(data.wr) || 0;
   const wrY = 248;
-  ctx.textAlign = 'left'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#475569';
+  ctx.textAlign = 'left'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#94a3b8';
   ctx.fillText('WIN RATE', PAD, wrY);
   ctx.textAlign = 'right'; ctx.font = '900 28px Orbitron, monospace';
   ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,255,136,0.25)'; ctx.shadowBlur = 12;
@@ -2176,7 +2176,7 @@ async function _generateShareCardBlob(data) {
 
   // お気に入りベイ（最大5個・2行折り返し）
   const beyY = 345;
-  ctx.textAlign = 'left'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#475569';
+  ctx.textAlign = 'left'; ctx.font = '400 9px Orbitron, monospace'; ctx.fillStyle = '#94a3b8';
   ctx.fillText('FAVORITE BEYBLADE', PAD, beyY);
   const beyFont = '600 11px Orbitron, monospace';
   ctx.font = beyFont;
@@ -2204,7 +2204,7 @@ async function _generateShareCardBlob(data) {
   ctx.strokeStyle = 'rgba(0,255,136,0.08)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0,footY); ctx.lineTo(W,footY); ctx.stroke();
   ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, footY, W, H-footY);
-  ctx.textAlign = 'left'; ctx.font = '400 10px Orbitron, monospace'; ctx.fillStyle = '#334155';
+  ctx.textAlign = 'left'; ctx.font = '400 10px Orbitron, monospace'; ctx.fillStyle = '#94a3b8';
   ctx.fillText('player_stats.html', PAD, footY+24);
   ctx.fillStyle = '#00ff88';
   ctx.fillText(`?player=${encodeURIComponent(data.name)}`, PAD+148, footY+24);
