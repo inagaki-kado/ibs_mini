@@ -90,6 +90,10 @@
 
     <div class="flex bg-cyber-dark shadow-md border-b border-cyber-table-border shrink-0">
       <button onclick="switchTab('participants')" id="tab-participants" class="flex-1 py-3 text-center font-bold border-b-4 border-cyber-blue text-cyber-blue transition-colors">👤 参加者管理・受付</button>
+      <button onclick="switchTab('walkin')" id="tab-walkin"
+        class="flex-1 py-3 text-center font-bold border-b-4 border-transparent text-cyber-text transition-colors">
+        🎲 当日参加
+      </button>
       <button onclick="switchTab('tournament')" id="tab-tournament" class="flex-1 py-3 text-center font-bold border-b-4 border-transparent text-cyber-text transition-colors">🏆 トーナメント進行</button>
     </div>
 
@@ -144,76 +148,6 @@
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
-          <!-- ▼ EVO 当日枠抽選パネル（折りたたみ） -->
-          <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border mb-4 shrink-0">
-            <button type="button" onclick="toggleEvoLotteryPanel()" class="w-full flex items-center justify-between px-4 py-3 bg-[#0d131f] hover:bg-[#111827] transition-colors border-b border-cyber-table-border">
-              <span class="font-bold text-cyber-orange font-sf tracking-widest">🎲 当日枠抽選</span>
-              <span id="evo-lottery-chevron" class="text-cyber-orange font-sf">▼</span>
-            </button>
-
-            <div id="evo-lottery-body" class="hidden p-4">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="bg-cyber-bg border border-cyber-table-border rounded-lg p-4">
-                  <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-2">INPUT</div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <label class="flex flex-col gap-1">
-                      <span class="text-[10px] font-sf text-cyber-text opacity-70">D（当日枠）</span>
-                      <input id="evoLotteryD" type="text" inputmode="numeric" class="w-full bg-cyber-bg border border-cyber-orange text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-green transition-colors font-sf" placeholder="例: 16">
-                    </label>
-                    <label class="flex flex-col gap-1">
-                      <span class="text-[10px] font-sf text-cyber-text opacity-70">N（希望者数）</span>
-                      <input id="evoLotteryN" type="text" inputmode="numeric" class="w-full bg-cyber-bg border border-cyber-table-border text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-orange transition-colors font-sf" placeholder="自動/手動">
-                    </label>
-                  </div>
-                  <div class="mt-2 text-[10px] text-cyber-text opacity-60">
-                    ※Nは <span class="text-gray-300 font-bold">当日参加者（未抽選）</span> の人数を自動反映（手動上書き可）
-                  </div>
-                </div>
-
-                <div class="bg-cyber-bg border border-cyber-table-border rounded-lg p-4">
-                  <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-2">CALC</div>
-                  <div id="evo-lottery-calc" class="text-sm font-sf text-cyber-text opacity-80 whitespace-pre-line">モード: --\n抽選枠: -- 名  /  1Pマッチ: -- 名</div>
-                  <div id="evo-lottery-allin" class="hidden mt-3 p-3 rounded border border-cyber-green bg-cyber-dark/40 neon-green">
-                    <div class="text-cyber-green font-sf font-bold">✅ 全員確定（N ≤ D）</div>
-                    <div class="text-[10px] text-cyber-text opacity-70 mt-1">「全員参加確定」ボタンで反映</div>
-                  </div>
-                </div>
-
-                <div class="bg-cyber-bg border border-cyber-table-border rounded-lg p-4">
-                  <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-2">WALK-IN</div>
-                  <button type="button" onclick="openEvoWalkInModal()" class="w-full bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 当日参加者を追加</button>
-                  <div class="mt-3 flex gap-2">
-                    <button id="evo-btn-confirm-allin" type="button" onclick="confirmEvoAllIn()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-3 py-2 rounded font-bold shadow text-xs transition-colors hidden">✅ 全員参加確定</button>
-                    <button id="evo-btn-run-lottery" type="button" onclick="runEvoLotteryWithEffect()" class="flex-1 bg-cyber-orange hover:bg-[#ea580c] text-cyber-bg px-3 py-2 rounded font-bold shadow-[0_0_10px_#ffaa00] text-xs transition-transform active:scale-95 hidden">🎲 抽選実行</button>
-                  </div>
-                  <button id="evo-btn-reset-lottery" type="button" onclick="resetEvoLottery()" class="mt-2 w-full bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors hidden">↩ 抽選をやり直す</button>
-                </div>
-              </div>
-
-              <div class="mt-4 bg-[#0d131f] border border-cyber-table-border rounded-lg p-4">
-                <div class="flex items-center justify-between gap-2">
-                  <div class="text-[10px] font-sf text-cyber-orange tracking-widest">SHUFFLE</div>
-                  <div id="evo-lottery-effect-state" class="text-[10px] font-sf text-cyber-text opacity-70">待機中</div>
-                </div>
-                <div class="mt-2 text-center">
-                  <div id="evo-shuffle-name" class="text-lg md:text-xl font-bold text-cyber-orange font-sf text-neon-orange">--</div>
-                  <div id="evo-shuffle-sub" class="text-[10px] text-cyber-text opacity-60 mt-1">抽選実行でシャッフル演出（0.8〜1.2秒）</div>
-                </div>
-              </div>
-
-              <div id="evo-match-area" class="hidden mt-4 bg-[#0d131f] border border-cyber-table-border rounded-lg p-4">
-                <div class="flex items-center justify-between gap-2 mb-3">
-                  <div class="text-[10px] font-sf text-cyber-orange tracking-widest">1P MATCH</div>
-                  <div id="evo-match-state" class="text-[10px] font-sf text-cyber-text opacity-70">未生成</div>
-                </div>
-                <button id="evo-btn-generate-match" type="button" onclick="generateEvoWalkInPairs()" class="w-full md:w-auto bg-cyber-orange hover:bg-[#ea580c] text-cyber-bg px-4 py-2 rounded font-bold font-sf shadow-[0_0_10px_#ffaa00] transition-transform active:scale-95 text-xs md:text-sm">🥊 1Pマッチ 組み合わせ生成</button>
-                <div id="evo-pairs-wrap" class="mt-3 space-y-3"></div>
-                <div id="evo-match-done" class="hidden mt-3 text-center text-cyber-green font-sf font-bold">1Pマッチ完了 🎉</div>
-              </div>
-            </div>
-          </div>
-          <!-- ▲ EVO 当日枠抽選パネル -->
-
           <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border flex-1 min-h-0 flex flex-col">
             <div class="overflow-y-auto flex-1">
               <table class="w-full text-left border-collapse">
@@ -268,6 +202,109 @@
           </div>
         </div>
       </div>
+
+      <div id="view-walkin" class="hidden flex-col">
+        <div class="max-w-5xl mx-auto space-y-4">
+          <!-- SECTION 1: 人数入力 -->
+          <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border p-4">
+            <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-3">SECTION 1: 人数入力</div>
+            <div class="flex items-center justify-between bg-cyber-bg border border-cyber-blue rounded-lg px-4 py-3 mb-4">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] font-sf text-cyber-blue tracking-widest">大会定員</span>
+                <span class="text-lg font-bold font-sf text-cyber-text" id="wi-capacity-total">--</span>
+              </div>
+              <div class="text-cyber-table-border font-sf text-xl">－</div>
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] font-sf text-cyber-blue tracking-widest">予約参加者数</span>
+                <span class="text-lg font-bold font-sf text-cyber-text" id="wi-reserved-count">--</span>
+              </div>
+              <div class="text-cyber-table-border font-sf text-xl">=</div>
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] font-sf text-cyber-orange tracking-widest">残り枠数</span>
+                <span class="text-2xl font-bold font-sf text-cyber-orange" id="wi-remaining-slots">--</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <label class="flex flex-col gap-1">
+                <span class="text-[10px] font-sf text-cyber-text opacity-70">当日受付人数</span>
+                <input id="wi-total" type="text" inputmode="numeric" oninput="updateWalkInCalc()"
+                  class="w-full bg-cyber-bg border border-cyber-blue text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-green transition-colors font-sf" placeholder="例: 24">
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-[10px] font-sf text-cyber-text opacity-70">①当選</span>
+                <input id="wi-win" type="text" inputmode="numeric" oninput="updateWalkInCalc()"
+                  class="w-full bg-cyber-bg border border-cyber-green text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-green transition-colors font-sf" placeholder="例: 12">
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-[10px] font-sf text-cyber-text opacity-70">②１ベイ対決</span>
+                <input id="wi-match" type="text" inputmode="numeric" oninput="updateWalkInCalc()"
+                  class="w-full bg-cyber-bg border border-cyber-orange text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-orange transition-colors font-sf" placeholder="例: 8">
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-[10px] font-sf text-cyber-text opacity-70">③落選</span>
+                <input id="wi-lose" type="text" readonly
+                  class="w-full bg-cyber-bg border border-cyber-table-border text-cyber-text px-3 py-2 rounded font-bold outline-none font-sf opacity-80" value="0">
+              </label>
+            </div>
+            <div id="wi-validation" class="mt-3 text-[12px] font-sf"></div>
+          </div>
+
+          <!-- SECTION 2: 抽選実行 -->
+          <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border p-4">
+            <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-3">SECTION 2: 抽選実行</div>
+            <button id="wi-btn-lottery" type="button" onclick="runWalkInLottery()"
+              class="w-full bg-cyber-orange hover:bg-[#ea580c] text-cyber-bg px-4 py-3 rounded font-bold font-sf shadow-[0_0_10px_#ffaa00] transition-transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+              🎲 抽選を実行する
+            </button>
+            <button id="wi-btn-reset" type="button" onclick="resetWalkInLottery()"
+              class="hidden mt-2 w-full bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 px-4 py-2 rounded font-bold shadow text-xs transition-colors">
+              ↩ やり直す
+            </button>
+          </div>
+
+          <!-- SECTION 3: 抽選結果 -->
+          <div id="wi-result-area" class="hidden bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-sf text-cyber-orange tracking-widest">SECTION 3: 抽選結果</div>
+              <div class="flex gap-2">
+                <button id="wi-tv-btn" type="button" onclick="toggleWalkInTv()"
+                  class="w-9 h-9 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-base transition-all hover:shadow-[0_0_10px_#0ea5e9]"
+                  style="touch-action: manipulation;" title="モニター出力">📺</button>
+                <span id="wi-tv-scroll-btns" class="hidden items-center gap-1">
+                  <button type="button" onclick="scrollRemote(-200)" style="touch-action: manipulation;"
+                    class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors">🔼</button>
+                  <button type="button" onclick="scrollRemote(200)" style="touch-action: manipulation;"
+                    class="w-8 h-8 rounded-full border border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-sm hover:bg-cyber-blue hover:text-white transition-colors">🔽</button>
+                </span>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="bg-cyber-bg border border-cyber-green rounded-lg p-4">
+                <div class="text-[10px] font-sf text-cyber-green tracking-widest mb-2">①当選</div>
+                <div id="wi-result-win" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div class="bg-cyber-bg border border-cyber-orange rounded-lg p-4">
+                <div class="text-[10px] font-sf text-cyber-orange tracking-widest mb-2">②１ベイ対決</div>
+                <div id="wi-result-match" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div class="bg-cyber-bg border border-cyber-table-border rounded-lg p-4">
+                <div class="text-[10px] font-sf text-gray-300 tracking-widest mb-2">③落選</div>
+                <div id="wi-result-lose" class="flex flex-wrap gap-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: 1ベイ対決マッチ -->
+          <div id="wi-match-area" class="hidden bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div class="text-[10px] font-sf text-cyber-orange tracking-widest">SECTION 4: 1ベイ対決マッチ</div>
+              <div id="wi-match-state" class="text-[10px] font-sf text-cyber-text opacity-70">--</div>
+            </div>
+            <div id="wi-pairs-wrap" class="space-y-3"></div>
+            <div id="wi-match-done" class="hidden mt-3 text-center text-cyber-green font-sf font-bold">1ベイ対決 完了 🎉</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="pasteModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-80 flex-col items-center justify-center z-50 p-4">
@@ -282,29 +319,6 @@
         <div class="flex gap-4">
           <button onclick="closePasteModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-3 rounded border border-cyber-table-border font-sf transition-colors">CANCEL</button>
           <button onclick="processPasteData()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf">IMPORT</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="evoWalkInModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-50 p-4">
-      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-orange neon-orange flex flex-col">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xl font-sf text-cyber-orange">＋ 当日参加者を追加</h2>
-          <button type="button" onclick="closeEvoWalkInModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors">✖</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          <label class="flex flex-col gap-1">
-            <span class="text-[10px] font-sf text-cyber-orange tracking-widest">受付番号（自動）</span>
-            <div id="evoWalkInIdDisplay" class="w-full bg-cyber-bg border border-cyber-orange text-cyber-orange px-3 py-2 rounded font-bold font-sf text-center text-lg tracking-widest">--</div>
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-[10px] font-sf text-cyber-orange tracking-widest">名前</span>
-            <input id="evoWalkInName" type="text" class="w-full bg-cyber-bg border border-cyber-table-border text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-orange transition-colors" placeholder="例: EVO太郎">
-          </label>
-        </div>
-        <div class="flex gap-3">
-          <button type="button" onclick="closeEvoWalkInModal()" class="flex-1 py-2 bg-transparent border border-gray-500 text-gray-300 font-bold font-sf rounded hover:bg-gray-700 transition">キャンセル</button>
-          <button type="button" onclick="addEvoWalkInParticipant()" class="flex-1 py-2 bg-cyber-orange text-cyber-bg font-bold font-sf rounded hover:brightness-110 transition">追加</button>
         </div>
       </div>
     </div>
@@ -403,7 +417,7 @@
         </div>
         <div class="flex flex-col flex-1 min-h-0 overflow-y-auto gap-4">
           <div id="beybladeList" class="space-y-3"></div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div id="addBeybladeWrap" class="flex items-center gap-2 shrink-0">
             <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
               ＋ ベイブレードを追加
             </button>
@@ -421,12 +435,13 @@
           </button>
         </div>
 
-        <!-- 参加者向け確認オーバーレイ（通常は非表示） -->
-        <div id="beybladeConfirmOverlay" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 z-[200] flex-col items-center justify-center gap-8">
-          <p class="text-cyber-text font-sf text-xl tracking-widest opacity-70">ベイブレードを確認してください</p>
+        <!-- 確認ビュー（確認依頼中のみ表示・カードの回転を打ち消して正立させる） -->
+        <div id="beybladeConfirmView" class="hidden flex-col items-center gap-6 py-4">
+          <p class="text-cyber-orange font-sf text-lg tracking-widest">登録ベイブレードを確認してください</p>
+          <div id="beybladeConfirmList" class="w-full space-y-3"></div>
           <button
             onclick="endBeybladeConfirm()"
-            class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-16 py-6 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
+            class="w-full bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-6 py-5 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
             style="touch-action: manipulation;"
           >
             ✅ OK
@@ -939,11 +954,11 @@
     // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
 
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
-    // EVO 当日枠抽選（参加者管理タブ上部パネル）
-    let evoLotteryD = '';
-    let evoLotteryN = '';
-    let evoIsLotteryAnimating = false;
-    let evoWalkInPairs = []; // [{p1Id,p2Id,winnerId:null|number}]
+    // 🎲 当日参加（独立抽選）
+    let wiTotal = 0, wiWin = 0, wiMatch = 0;
+    let wiLotteryResult = null; // { win:number[], match:number[], lose:number[] } | null
+    let wiMatchPairs = []; // [{ n1:number, n2:number, winner:number|null }, ...]
+    let isWalkInTvMode = false;
     const colors = ['slot1', 'slot2', 'slot3', 'slot4'];
     const colorCodes = {
       'slot1': 'bg-cyber-blue',
@@ -1491,27 +1506,8 @@
         blockMap[c] = slotLabels[c].blocks[0];
       });
       if (loadState()) { showResumeBanner(); }
-
-      // EVO 当日枠抽選パネル（入力復元＋イベント）
-      try {
-        evoLotteryD = localStorage.getItem('evo_lottery_D') || '';
-        evoLotteryN = localStorage.getItem('evo_lottery_N') || '';
-      } catch {}
-      const dEl = document.getElementById('evoLotteryD');
-      const nEl = document.getElementById('evoLotteryN');
-      if (dEl) dEl.value = evoLotteryD || '';
-      if (nEl) nEl.value = evoLotteryN || '';
-      if (dEl) dEl.addEventListener('input', () => {
-        evoLotteryD = normalizeNumStr(dEl.value);
-        try { localStorage.setItem('evo_lottery_D', evoLotteryD); } catch {}
-        updateEvoLotteryUI();
-      });
-      if (nEl) nEl.addEventListener('input', () => {
-        evoLotteryN = normalizeNumStr(nEl.value);
-        try { localStorage.setItem('evo_lottery_N', evoLotteryN); } catch {}
-        updateEvoLotteryUI();
-      });
-      updateEvoLotteryUI();
+      // 当日参加 初期表示
+      updateWalkInCalc();
     }
 
     let setupDebounce = false;
@@ -1599,7 +1595,7 @@
     }
 
     function switchTab(tabId) {
-      ['participants', 'tournament'].forEach(id => {
+      ['participants', 'tournament', 'walkin'].forEach(id => {
         document.getElementById(`view-${id}`).classList.add('hidden');
         document.getElementById(`tab-${id}`).classList.replace('border-cyber-blue', 'border-transparent');
         document.getElementById(`tab-${id}`).classList.replace('text-cyber-blue', 'text-cyber-text');
@@ -1609,6 +1605,7 @@
       document.getElementById(`tab-${tabId}`).classList.replace('border-transparent', 'border-cyber-blue');
       document.getElementById(`tab-${tabId}`).classList.replace('text-cyber-text', 'text-cyber-blue');
       if (tabId === 'tournament') { isSetupSwapMode = false; setupSwapPending = null; renderTournament(); }
+      if (tabId === 'walkin') { updateWalkInCalc(); }
     }
 
     // ==========================================
@@ -1715,7 +1712,7 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved' }); count++;
+            beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
@@ -1727,7 +1724,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved' });
+          beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null });
       renderParticipants();
       void syncToSheets();
     }
@@ -1736,7 +1733,6 @@
       if(isTournamentStarted) return showAlert("開始後は削除できません"); if(!await showConfirm("削除しますか？")) return;
       const p = participants.find(x => x.id === id); if(p && p.bracketBlock != null) blockData[p.bracketBlock][p.position] = null;
       participants = participants.filter(x => x.id !== id); renderParticipants();
-      updateEvoLotteryUI();
       void syncToSheets();
     }
     
@@ -1815,6 +1811,10 @@
           ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-red text-cyber-red ml-2 opacity-80">落選</span>`
           : (p.walkInStatus === 'walk_in_match')
             ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-orange text-cyber-orange ml-2 opacity-90">1Pマッチ</span>`
+            : (p.walkInStatus === 'pending_confirm')
+              ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-orange text-cyber-orange ml-2 opacity-90">⏳ 確認待ち</span>`
+              : (p.walkInStatus === 'confirmed')
+                ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-green text-cyber-green ml-2 opacity-95">🏆 参加確定</span>`
             : '';
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = `<span class="text-[10px] text-cyber-green font-mono font-normal opacity-80 ml-1">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
@@ -1843,7 +1843,8 @@
         const hasPhoto = hasBayPhoto(p.name);
         const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const photoLabel = hasPhoto ? '📷✅' : '📷';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
+        const walkInSeqText = (p.walkInSeq != null) ? `<div class="text-[10px] font-sf text-cyber-text opacity-50 leading-none mt-0.5">当日 ${String(p.walkInSeq).padStart(2, '0')}</div>` : '';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm leading-none"><div>${originalNo}${walkInSeqText}</div></td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1856,287 +1857,236 @@
     }
 
     // ==========================================
-    // EVO 当日枠抽選パネル
+    // 数値入力ユーティリティ
     // ==========================================
-    function toggleEvoLotteryPanel() {
-      const body = document.getElementById('evo-lottery-body');
-      const chev = document.getElementById('evo-lottery-chevron');
-      const open = body.classList.contains('hidden');
-      if (open) { body.classList.remove('hidden'); chev.innerText = '▲'; }
-      else { body.classList.add('hidden'); chev.innerText = '▼'; }
-    }
-
     function normalizeNumStr(s) {
       return String(s || '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).trim();
     }
 
-    function calcEvoLottery(D, N) {
-      if (!D || !N || N <= 0 || D <= 0) return null;
-      if (N <= D) return { mode: 'ALL_IN', lotterySlots: N, M: 0 };
-      const surplus = N - D;
-      const M_raw = Math.min(surplus, D);
-      const M = M_raw % 2 === 1 ? M_raw + 1 : M_raw;
-      const lotterySlots = D - M / 2;
-      if (N >= 2 * D) return { mode: 'PRELIM_LOTTERY', lotterySlots, M };
-      return { mode: 'NORMAL', lotterySlots, M };
+    // ==========================================
+    // 🎲 当日参加（独立抽選）
+    // ==========================================
+    function parseIntSafe(v) {
+      const n = parseInt(normalizeNumStr(v), 10);
+      return Number.isFinite(n) ? n : 0;
     }
 
-    function getEvoWalkInUnsettled() {
-      return participants.filter(p => p.entryType === null);
+    function pad2(n) {
+      return String(n).padStart(2, '0');
     }
 
-    function updateEvoLotteryInputsAuto() {
-      const nEl = document.getElementById('evoLotteryN');
-      if (!nEl) return;
-      const current = normalizeNumStr(nEl.value);
-      if (current === '' || current === normalizeNumStr(evoLotteryN)) {
-        nEl.value = String(getEvoWalkInUnsettled().length);
+    function shuffleArray(a) {
+      const arr = [...a];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+      return arr;
     }
 
-    function updateEvoLotteryUI() {
-      const dEl = document.getElementById('evoLotteryD');
-      const nEl = document.getElementById('evoLotteryN');
-      const calcEl = document.getElementById('evo-lottery-calc');
-      const allInBanner = document.getElementById('evo-lottery-allin');
-      const btnAllIn = document.getElementById('evo-btn-confirm-allin');
-      const btnRun = document.getElementById('evo-btn-run-lottery');
-      const btnReset = document.getElementById('evo-btn-reset-lottery');
+    function updateWalkInCalc() {
+      const capacity = globalBlockSize * 8;
+      const reserved = participants.length;
+      const remaining = capacity - reserved;
+      const capEl = document.getElementById('wi-capacity-total');
+      const resEl = document.getElementById('wi-reserved-count');
+      const remEl = document.getElementById('wi-remaining-slots');
+      if (capEl) capEl.textContent = String(capacity);
+      if (resEl) resEl.textContent = String(reserved);
+      if (remEl) remEl.textContent = String(remaining >= 0 ? remaining : 0);
 
-      if (!dEl || !nEl) return;
+      const totalEl = document.getElementById('wi-total');
+      const winEl = document.getElementById('wi-win');
+      const matchEl = document.getElementById('wi-match');
+      const loseEl = document.getElementById('wi-lose');
+      const valEl = document.getElementById('wi-validation');
+      const btn = document.getElementById('wi-btn-lottery');
+      if (!totalEl || !winEl || !matchEl || !loseEl || !valEl || !btn) return false;
 
-      updateEvoLotteryInputsAuto();
+      wiTotal = parseIntSafe(totalEl.value);
+      wiWin = parseIntSafe(winEl.value);
+      wiMatch = parseIntSafe(matchEl.value);
 
-      evoLotteryD = normalizeNumStr(dEl.value);
-      evoLotteryN = normalizeNumStr(nEl.value);
+      const lose = wiTotal - wiWin - wiMatch;
+      loseEl.value = String(Math.max(0, lose));
 
-      const D = parseInt(evoLotteryD, 10);
-      const N = parseInt(evoLotteryN, 10);
-      const res = calcEvoLottery(D, N);
+      const remainingSlots = (globalBlockSize * 8) - participants.length;
+      const wiLose = wiTotal - wiWin - wiMatch;
 
-      const hasAnyProcessed = participants.some(p => p.entryType === 'walk_in_won' || p.entryType === 'walk_in_match_won' || p.walkInStatus === 'walk_in_match' || p.walkInStatus === 'walk_in_lost');
-      btnReset.classList.toggle('hidden', !hasAnyProcessed);
-
-      if (!res) {
-        calcEl.innerText = `モード: --\n抽選枠: -- 名  /  1Pマッチ: -- 名`;
-        allInBanner.classList.add('hidden');
-        btnAllIn.classList.add('hidden');
-        btnRun.classList.add('hidden');
-        return;
+      let ok = true;
+      let reason = '';
+      if (wiTotal <= 0) {
+        ok = false; reason = '当日受付人数は1以上にしてください';
+      } else if (wiWin < 0 || wiMatch < 0) {
+        ok = false; reason = '①当選/②１ベイ対決は0以上にしてください';
+      } else if (wiMatch % 2 !== 0) {
+        ok = false; reason = '②１ベイ対決は偶数にしてください';
+      } else if (wiWin + wiMatch > wiTotal) {
+        ok = false; reason = '①当選 + ②１ベイ対決 が 当日受付人数を超えています';
+      } else if (wiWin + wiMatch / 2 !== remainingSlots) {
+        ok = false;
+        reason = `①当選(${wiWin}) + ②÷2(${wiMatch / 2}) = ${wiWin + wiMatch / 2} が 残り枠数(${remainingSlots}) と一致していません`;
+      } else if (wiLose < 0) {
+        ok = false; reason = '③落選がマイナスになっています';
       }
 
-      const modeLabel = (res.mode === 'ALL_IN') ? '全員確定' : (res.mode === 'NORMAL') ? '通常抽選' : '2倍超抽選';
-      calcEl.innerText = `モード: ${modeLabel}\n抽選枠: ${res.lotterySlots} 名  /  1Pマッチ: ${res.M} 名`;
-      allInBanner.classList.toggle('hidden', res.mode !== 'ALL_IN');
-
-      const canOperate = getEvoWalkInUnsettled().length > 0 && !evoIsLotteryAnimating;
-      btnAllIn.classList.toggle('hidden', !(res.mode === 'ALL_IN' && canOperate));
-      btnRun.classList.toggle('hidden', !(res.mode !== 'ALL_IN' && canOperate));
+      if (ok) {
+        valEl.className = 'mt-3 text-[12px] font-sf text-cyber-green';
+        valEl.textContent = '✅ OK';
+        btn.disabled = false;
+      } else {
+        valEl.className = 'mt-3 text-[12px] font-sf text-cyber-red';
+        valEl.textContent = `❌ ${reason}`;
+        btn.disabled = true;
+      }
+      return ok;
     }
 
-    function openEvoWalkInModal() {
-      if (isTournamentStarted) return showAlert('開始後は追加できません');
-      const modal = document.getElementById('evoWalkInModal');
-      const nextId = participants.reduce((max, p) => Math.max(max, p.id), 0) + 1;
-      const padded = String(nextId).padStart(2, '0');
-      document.getElementById('evoWalkInIdDisplay').textContent = padded;
-      document.getElementById('evoWalkInName').value = '';
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      setTimeout(() => document.getElementById('evoWalkInName').focus(), 60);
-    }
-
-    function closeEvoWalkInModal() {
-      const modal = document.getElementById('evoWalkInModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    function addEvoWalkInParticipant() {
-      if (isTournamentStarted) return;
-      const idStr = normalizeNumStr(document.getElementById('evoWalkInIdDisplay').textContent);
-      const name = String(document.getElementById('evoWalkInName').value || '').trim();
-      const id = parseInt(idStr, 10);
-      if (!id || id <= 0) return showAlert('受付番号の取得に失敗しました。モーダルを開き直してください');
-      if (!name) return showAlert('名前を入力してください');
-      if (participants.some(p => p.id === id)) return showAlert('同じ番号が既に登録されています');
-
-      participants.push({
-        id,
-        name,
-        memo1: '',
-        rank: '--',
-        initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
-        currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-        beyblades: [],
-        color: null,
-        position: null,
-        bracketBlock: null,
-        entryType: null,
-        walkInStatus: null
-      });
-      participants.sort((a, b) => a.id - b.id);
-      closeEvoWalkInModal();
-      evoWalkInPairs = [];
-      updateEvoLotteryUI();
-      renderParticipants();
-      saveState();
-      void syncToSheets();
-    }
-
-    async function confirmEvoAllIn() {
-      const dEl = document.getElementById('evoLotteryD');
-      const nEl = document.getElementById('evoLotteryN');
-      const D = parseInt(normalizeNumStr(dEl.value), 10);
-      const N = parseInt(normalizeNumStr(nEl.value), 10);
-      const res = calcEvoLottery(D, N);
-      if (!res || res.mode !== 'ALL_IN') return;
-      const targets = getEvoWalkInUnsettled();
-      if (targets.length === 0) return showAlert('未抽選の当日参加者がいません');
-      if (!await showConfirm('✅ 全員参加確定として反映しますか？')) return;
-      targets.forEach(p => { p.entryType = 'walk_in_won'; p.walkInStatus = null; });
-      evoWalkInPairs = [];
-      updateEvoLotteryUI();
-      renderParticipants();
-      saveState();
-      showAlert('全員を当日枠（抽選当選）として確定しました');
-      void syncToSheets();
-    }
-
-    function setEvoAnimating(on) {
-      evoIsLotteryAnimating = on;
-      const st = document.getElementById('evo-lottery-effect-state');
-      const btnRun = document.getElementById('evo-btn-run-lottery');
-      if (st) st.innerText = on ? '抽選中...' : '待機中';
-      if (btnRun) btnRun.disabled = on;
-    }
-
-    function pickN(arr, n) {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-      return a.slice(0, Math.max(0, n));
-    }
-
-    async function runEvoLotteryWithEffect() {
-      const dEl = document.getElementById('evoLotteryD');
-      const nEl = document.getElementById('evoLotteryN');
-      const D = parseInt(normalizeNumStr(dEl.value), 10);
-      const N = parseInt(normalizeNumStr(nEl.value), 10);
-      const res = calcEvoLottery(D, N);
-      if (!res || res.mode === 'ALL_IN') return;
-      if (evoIsLotteryAnimating) return;
-
-      const targets = getEvoWalkInUnsettled();
-      if (targets.length === 0) return showAlert('未抽選の当日参加者がいません');
+    async function runWalkInLottery() {
+      if (!updateWalkInCalc()) return;
       if (!await showConfirm('🎲 抽選を実行しますか？\n※結果は上書きされます')) return;
 
-      // 既存の当日枠結果を一旦戻す（予約は触らない）
-      participants.forEach(p => {
-        if (p.entryType === 'walk_in_won' || p.entryType === 'walk_in_match_won' || p.walkInStatus === 'walk_in_match' || p.walkInStatus === 'walk_in_lost') {
-          if (p.entryType !== 'reserved') { p.entryType = null; p.walkInStatus = null; }
-        }
-      });
-      evoWalkInPairs = [];
+      const nums = shuffleArray(Array.from({ length: wiTotal }, (_, i) => i + 1));
+      const win = nums.slice(0, wiWin);
+      const match = nums.slice(wiWin, wiWin + wiMatch);
+      const lose = nums.slice(wiWin + wiMatch);
+      wiLotteryResult = { win, match, lose };
 
-      // shuffle演出
-      setEvoAnimating(true);
-      const nameEl = document.getElementById('evo-shuffle-name');
-      const subEl = document.getElementById('evo-shuffle-sub');
-      const names = targets.map(p => p.name);
-      const duration = 800 + Math.floor(Math.random() * 401);
-      const start = performance.now();
-      let idx = 0;
-      subEl.innerText = '抽選中...（シャッフル演出）';
-      const tick = () => {
-        const now = performance.now();
-        if (now - start >= duration) return;
-        nameEl.innerText = names[idx % Math.max(1, names.length)] || '--';
-        idx++;
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-      await new Promise(r => setTimeout(r, duration));
-
-      // 抽選
-      const candidateIds = getEvoWalkInUnsettled().map(p => p.id);
-      const pickedLotteryIds = new Set(pickN(candidateIds, res.lotterySlots));
-      const remaining = candidateIds.filter(id => !pickedLotteryIds.has(id));
-      const pickedMatchIds = new Set(pickN(remaining, res.M));
-
-      participants.forEach(p => {
-        if (p.entryType !== null) return;
-        if (pickedLotteryIds.has(p.id)) { p.entryType = 'walk_in_won'; p.walkInStatus = null; }
-        else if (pickedMatchIds.has(p.id)) { p.walkInStatus = 'walk_in_match'; }
-        else { p.walkInStatus = 'walk_in_lost'; }
-      });
-
-      subEl.innerText = '抽選結果を確定しました';
-      setEvoAnimating(false);
-      updateEvoLotteryUI();
-      renderParticipants();
-      saveState();
-      void syncToSheets();
-
-      const hasMatch = participants.some(p => p.walkInStatus === 'walk_in_match');
-      document.getElementById('evo-match-area').classList.toggle('hidden', !hasMatch);
-      if (hasMatch) renderEvoPairs();
-    }
-
-    async function resetEvoLottery() {
-      const hasAnyProcessed = participants.some(p => p.entryType === 'walk_in_won' || p.entryType === 'walk_in_match_won' || p.walkInStatus === 'walk_in_match' || p.walkInStatus === 'walk_in_lost');
-      if (!hasAnyProcessed) return;
-      if (!await showConfirm('抽選結果をリセットしてやり直しますか？')) return;
-      participants.forEach(p => {
-        if (p.entryType === 'walk_in_won' || p.entryType === 'walk_in_match_won' || p.walkInStatus === 'walk_in_match' || p.walkInStatus === 'walk_in_lost') {
-          p.entryType = null;
-          p.walkInStatus = null;
-        }
-      });
-      evoWalkInPairs = [];
-      document.getElementById('evo-match-area').classList.add('hidden');
-      updateEvoLotteryUI();
-      renderParticipants();
-      saveState();
-      void syncToSheets();
-    }
-
-    function generateEvoWalkInPairs() {
-      const players = participants.filter(p => p.walkInStatus === 'walk_in_match');
-      if (players.length < 2) return;
-      const ids = pickN(players.map(p => p.id), players.length);
-      const pairs = [];
-      for (let i = 0; i < ids.length; i += 2) {
-        if (!ids[i + 1]) break;
-        pairs.push({ p1Id: ids[i], p2Id: ids[i + 1], winnerId: null });
+      const mm = shuffleArray(match);
+      wiMatchPairs = [];
+      for (let i = 0; i < mm.length; i += 2) {
+        if (mm[i + 1] == null) break;
+        wiMatchPairs.push({ n1: mm[i], n2: mm[i + 1], winner: null });
       }
-      evoWalkInPairs = pairs;
-      renderEvoPairs();
+
+      renderWalkInResult();
+      renderWalkInPairs();
       saveState();
-      void syncToSheets();
     }
 
-    function renderEvoPairs() {
-      const wrap = document.getElementById('evo-pairs-wrap');
-      const stateEl = document.getElementById('evo-match-state');
-      const doneEl = document.getElementById('evo-match-done');
+    function renderNumberBadges(containerId, list, tone) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = '';
+      (list || []).slice().sort((a, b) => a - b).forEach(n => {
+        const b = document.createElement('span');
+        const base = 'inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold font-mono border';
+        if (tone === 'win') b.className = `${base} border-cyber-green text-cyber-green bg-cyber-dark/40`;
+        else if (tone === 'match') b.className = `${base} border-cyber-orange text-cyber-orange bg-cyber-dark/40`;
+        else b.className = `${base} border-cyber-table-border text-cyber-text opacity-80 bg-cyber-dark/40`;
+        b.textContent = pad2(n);
+        el.appendChild(b);
+      });
+    }
+
+    function renderWalkInResult() {
+      if (!wiLotteryResult) return;
+      document.getElementById('wi-result-area')?.classList.remove('hidden');
+      document.getElementById('wi-match-area')?.classList.remove('hidden');
+      document.getElementById('wi-btn-reset')?.classList.remove('hidden');
+
+      renderNumberBadges('wi-result-win', wiLotteryResult.win, 'win');
+      renderNumberBadges('wi-result-match', wiLotteryResult.match, 'match');
+      renderNumberBadges('wi-result-lose', wiLotteryResult.lose, 'lose');
+    }
+
+    function toggleWalkInTv() {
+      isWalkInTvMode = !isWalkInTvMode;
+      const btn = document.getElementById('wi-tv-btn');
+      const scrollBtns = document.getElementById('wi-tv-scroll-btns');
+
+      if (isWalkInTvMode) {
+        btn.classList.add('shadow-[0_0_15px_#0ea5e9]', 'bg-cyber-blue/20');
+        if (scrollBtns) { scrollBtns.classList.remove('hidden'); scrollBtns.classList.add('flex'); }
+        if (conn && conn.open) conn.send({ type: 'SHOW_OVERLAY', html: buildWalkInTvHtml() });
+      } else {
+        btn.classList.remove('shadow-[0_0_15px_#0ea5e9]', 'bg-cyber-blue/20');
+        if (scrollBtns) { scrollBtns.classList.add('hidden'); scrollBtns.classList.remove('flex'); }
+        if (conn && conn.open) conn.send({ type: 'HIDE_OVERLAY' });
+      }
+    }
+
+    function buildWalkInTvHtml() {
+      const C = {
+        bg: '#0a0e17', card: '#0d131f', border: '#1e293b',
+        blue: '#0ea5e9', green: '#22c55e', orange: '#ffaa00',
+        gray: '#475569', text: '#e2e8f0', yellow: '#facc15'
+      };
+
+      if (!wiLotteryResult) return `<div style="background:${C.bg};color:${C.text};font-family:'Orbitron',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;font-size:24px;">NO DATA</div>`;
+
+      const S = `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
+          * { box-sizing: border-box; }
+          .wi-wrap { background:${C.bg}; min-height:100vh; padding:clamp(16px,3vw,32px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+          .wi-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.6vw,15px); color:${C.orange}; text-align:center; letter-spacing:4px; margin-bottom:clamp(12px,2vw,20px); text-shadow:0 0 10px ${C.orange}; }
+          .wi-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(8px,1.5vw,16px); }
+          .wi-card { border-radius:10px; overflow:hidden; padding:clamp(12px,2vw,20px); }
+          .wi-card-win { border:2px solid ${C.green}; background:rgba(34,197,94,0.05); }
+          .wi-card-match { border:2px solid ${C.orange}; background:rgba(255,170,0,0.05); }
+          .wi-card-lose { border:2px solid ${C.border}; background:rgba(255,255,255,0.02); }
+          .wi-card-label { font-family:'Orbitron',sans-serif; font-size:clamp(9px,1.2vw,12px); letter-spacing:3px; margin-bottom:clamp(8px,1.5vw,14px); font-weight:900; }
+          .wi-card-win .wi-card-label { color:${C.green}; text-shadow:0 0 8px ${C.green}; }
+          .wi-card-match .wi-card-label { color:${C.orange}; text-shadow:0 0 8px ${C.orange}; }
+          .wi-card-lose .wi-card-label { color:${C.gray}; }
+          .wi-badges { display:flex; flex-wrap:wrap; gap:clamp(5px,1vw,10px); }
+          .wi-badge { display:inline-flex; align-items:center; justify-content:center; width:clamp(32px,4.5vw,52px); height:clamp(32px,4.5vw,52px); border-radius:50%; font-family:'Orbitron',sans-serif; font-weight:900; font-size:clamp(11px,1.5vw,16px); }
+          .wi-badge-win { border:2px solid ${C.green}; color:${C.green}; background:rgba(34,197,94,0.15); text-shadow:0 0 6px ${C.green}; }
+          .wi-badge-match { border:2px solid ${C.orange}; color:${C.orange}; background:rgba(255,170,0,0.15); text-shadow:0 0 6px ${C.orange}; }
+          .wi-badge-lose { border:1px solid ${C.border}; color:${C.gray}; background:transparent; }
+        </style>`;
+
+      const makeBadges = (list, cls) =>
+        [...list].sort((a, b) => a - b)
+          .map(n => `<span class="wi-badge ${cls}">${String(n).padStart(2,'0')}</span>`)
+          .join('');
+
+      const winBadges = makeBadges(wiLotteryResult.win, 'wi-badge-win');
+      const matchBadges = makeBadges(wiLotteryResult.match, 'wi-badge-match');
+      const loseBadges = makeBadges(wiLotteryResult.lose, 'wi-badge-lose');
+
+      const tName = tournamentName || '当日参加抽選';
+      return `${S}<div class="wi-wrap">
+        <div class="wi-title">${tName} — 当日参加抽選結果</div>
+        <div class="wi-grid">
+          <div class="wi-card wi-card-win">
+            <div class="wi-card-label">① 当選</div>
+            <div class="wi-badges">${winBadges}</div>
+          </div>
+          <div class="wi-card wi-card-match">
+            <div class="wi-card-label">② 1ベイ対決</div>
+            <div class="wi-badges">${matchBadges}</div>
+          </div>
+          <div class="wi-card wi-card-lose">
+            <div class="wi-card-label">③ 落選</div>
+            <div class="wi-badges">${loseBadges}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function renderWalkInPairs() {
+      const wrap = document.getElementById('wi-pairs-wrap');
+      const stateEl = document.getElementById('wi-match-state');
+      const doneEl = document.getElementById('wi-match-done');
+      if (!wrap || !stateEl || !doneEl) return;
+
       wrap.innerHTML = '';
-      if (!evoWalkInPairs || evoWalkInPairs.length === 0) {
-        stateEl.innerText = '未生成';
+      if (!wiMatchPairs || wiMatchPairs.length === 0) {
+        stateEl.textContent = '対象なし';
         doneEl.classList.add('hidden');
         return;
       }
-      const allDone = evoWalkInPairs.every(p => p.winnerId !== null);
-      stateEl.innerText = allDone ? '✅ 完了' : '進行中（勝者選択）';
+
+      const allDone = wiMatchPairs.every(p => p.winner != null);
+      stateEl.textContent = allDone ? '✅ 完了' : '進行中（勝者選択）';
       doneEl.classList.toggle('hidden', !allDone);
 
-      evoWalkInPairs.forEach((pair, idx) => {
-        const p1 = participants.find(p => p.id === pair.p1Id);
-        const p2 = participants.find(p => p.id === pair.p2Id);
-        const n1 = p1 ? p1.name : `#${pair.p1Id}`;
-        const n2 = p2 ? p2.name : `#${pair.p2Id}`;
-        const decided = pair.winnerId !== null;
-        const leftWon = decided && pair.winnerId === pair.p1Id;
-        const rightWon = decided && pair.winnerId === pair.p2Id;
+      wiMatchPairs.forEach((pair, idx) => {
+        const decided = pair.winner != null;
+        const leftWon = decided && pair.winner === pair.n1;
+        const rightWon = decided && pair.winner === pair.n2;
 
         const card = document.createElement('div');
         card.className = `p-3 rounded-lg border ${decided ? 'border-cyber-green bg-[#0d131f]' : 'border-cyber-table-border bg-[#111827]'} shadow-sm`;
@@ -2147,38 +2097,43 @@
           </div>
           <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
             <div class="p-3 rounded-lg border ${leftWon ? 'border-cyber-blue bg-cyber-blue/10' : (decided ? 'border-cyber-table-border opacity-60' : 'border-cyber-table-border')}">
-              <div class="font-bold text-cyber-text truncate">${n1}</div>
+              <div class="font-bold text-cyber-text truncate">番号${pad2(pair.n1)}</div>
             </div>
             <div class="text-xs font-sf text-cyber-orange opacity-70">VS</div>
             <div class="p-3 rounded-lg border ${rightWon ? 'border-cyber-blue bg-cyber-blue/10' : (decided ? 'border-cyber-table-border opacity-60' : 'border-cyber-table-border')}">
-              <div class="font-bold text-cyber-text truncate text-right">${n2}</div>
+              <div class="font-bold text-cyber-text truncate text-right">番号${pad2(pair.n2)}</div>
             </div>
           </div>
           <div class="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" ${decided ? 'disabled' : ''} onclick="chooseEvoPairWinner(${idx}, 'left')" class="py-3 rounded font-bold font-sf text-xs border ${decided ? 'opacity-40 cursor-not-allowed border-cyber-table-border text-cyber-text' : 'border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20'}">← 左の勝ち</button>
-            <button type="button" ${decided ? 'disabled' : ''} onclick="chooseEvoPairWinner(${idx}, 'right')" class="py-3 rounded font-bold font-sf text-xs border ${decided ? 'opacity-40 cursor-not-allowed border-cyber-table-border text-cyber-text' : 'border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20'}">右の勝ち →</button>
+            <button type="button" ${decided ? 'disabled' : ''} onclick="chooseWalkInWinner(${idx}, 'left')" class="py-3 rounded font-bold font-sf text-xs border ${decided ? 'opacity-40 cursor-not-allowed border-cyber-table-border text-cyber-text' : 'border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20'}">← 左の勝ち</button>
+            <button type="button" ${decided ? 'disabled' : ''} onclick="chooseWalkInWinner(${idx}, 'right')" class="py-3 rounded font-bold font-sf text-xs border ${decided ? 'opacity-40 cursor-not-allowed border-cyber-table-border text-cyber-text' : 'border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20'}">右の勝ち →</button>
           </div>
         `;
         wrap.appendChild(card);
       });
     }
 
-    function chooseEvoPairWinner(idx, side) {
-      const pair = evoWalkInPairs[idx];
-      if (!pair || pair.winnerId !== null) return;
-      const winnerId = (side === 'left') ? pair.p1Id : pair.p2Id;
-      const loserId = (side === 'left') ? pair.p2Id : pair.p1Id;
-      evoWalkInPairs[idx] = { ...pair, winnerId };
-
-      participants.forEach(p => {
-        if (p.id === winnerId) { p.entryType = 'walk_in_match_won'; p.walkInStatus = null; }
-        if (p.id === loserId) { p.walkInStatus = 'walk_in_lost'; }
-      });
-      renderEvoPairs();
-      updateEvoLotteryUI();
-      renderParticipants();
+    function chooseWalkInWinner(idx, side) {
+      const pair = wiMatchPairs[idx];
+      if (!pair || pair.winner != null) return;
+      pair.winner = (side === 'left') ? pair.n1 : pair.n2;
+      renderWalkInPairs();
       saveState();
-      void syncToSheets();
+    }
+
+    async function resetWalkInLottery() {
+      if (!wiLotteryResult && (!wiMatchPairs || wiMatchPairs.length === 0)) return;
+      if (!await showConfirm('↩ やり直しますか？')) return;
+      if (isWalkInTvMode) toggleWalkInTv();
+      wiLotteryResult = null;
+      wiMatchPairs = [];
+      document.getElementById('wi-result-area')?.classList.add('hidden');
+      document.getElementById('wi-match-area')?.classList.add('hidden');
+      document.getElementById('wi-btn-reset')?.classList.add('hidden');
+      document.getElementById('wi-match-done')?.classList.add('hidden');
+      const wrap = document.getElementById('wi-pairs-wrap'); if (wrap) wrap.innerHTML = '';
+      const st = document.getElementById('wi-match-state'); if (st) st.textContent = '--';
+      saveState();
     }
 
     // ==========================================
@@ -2503,8 +2458,10 @@
     // トーナメント進行
     // ==========================================
     async function startTournament() {
+      // 当選確認待ちの当日参加者はトーナメント対象外（予約参加者は対象）
+      purgeUnconfirmedWalkInFromBlocks();
       // ▼ オート抽選機能: 未抽選の参加者を自動配置
-      const unlotteryParticipants = participants.filter(p => p.color === null);
+      const unlotteryParticipants = participants.filter(p => p.color === null && !(p.entryType === 'walk_in_won' && p.walkInStatus === 'pending_confirm'));
       if (unlotteryParticipants.length > 0) {
         // 空いている枠をすべて取得
         const allEmptySlots = [];
@@ -2573,6 +2530,19 @@
       };
       updateAdvancements(); switchTab('tournament');
       void syncToSheets();
+    }
+
+    function purgeUnconfirmedWalkInFromBlocks() {
+      const targets = participants.filter(p => p.entryType === 'walk_in_won' && p.walkInStatus === 'pending_confirm');
+      if (targets.length === 0) return;
+      targets.forEach(p => {
+        if (p.bracketBlock && p.position != null && blockData[p.bracketBlock] && blockData[p.bracketBlock][p.position] && blockData[p.bracketBlock][p.position].id === p.id) {
+          blockData[p.bracketBlock][p.position] = null;
+        }
+        p.color = null;
+        p.position = null;
+        p.bracketBlock = null;
+      });
     }
 
     function toggleSwapMode() {
@@ -3096,9 +3066,7 @@
           blockActivePositions, blockMatches, finals, isEffectOn,
           letterCapsForBlocks,
           hudPreviewBackground,
-          evoLotteryD,
-          evoLotteryN,
-          evoWalkInPairs
+          wiTotal, wiWin, wiMatch, wiLotteryResult, wiMatchPairs
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
@@ -3123,6 +3091,7 @@
           delete p.bayChecked;
           if (p.entryType === undefined) p.entryType = 'reserved';
           if (p.walkInStatus === undefined) p.walkInStatus = null;
+          if (p.walkInSeq === undefined) p.walkInSeq = null;
           if (p.bracketBlock === undefined) p.bracketBlock = null;
         });
         participantSortMode = s.participantSortMode || 'id';
@@ -3140,13 +3109,11 @@
           ? s.hudPreviewBackground
           : 'evojlogo.png';
 
-        evoLotteryD = s.evoLotteryD || evoLotteryD || '';
-        evoLotteryN = s.evoLotteryN || evoLotteryN || '';
-        evoWalkInPairs = Array.isArray(s.evoWalkInPairs) ? s.evoWalkInPairs : [];
-        try {
-          localStorage.setItem('evo_lottery_D', evoLotteryD || '');
-          localStorage.setItem('evo_lottery_N', evoLotteryN || '');
-        } catch {}
+        wiTotal = Number.isFinite(Number(s.wiTotal)) ? Number(s.wiTotal) : 0;
+        wiWin = Number.isFinite(Number(s.wiWin)) ? Number(s.wiWin) : 0;
+        wiMatch = Number.isFinite(Number(s.wiMatch)) ? Number(s.wiMatch) : 0;
+        wiLotteryResult = (s.wiLotteryResult && typeof s.wiLotteryResult === 'object') ? s.wiLotteryResult : null;
+        wiMatchPairs = Array.isArray(s.wiMatchPairs) ? s.wiMatchPairs : [];
         ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(L => {
           const row = blockData[L];
           if (!row) return;
@@ -3159,6 +3126,20 @@
             if (par.color == null) par.color = slotKeyForBracketLetter(L);
           });
         });
+        // 当日参加タブの入力・表示を復元
+        try {
+          const tEl = document.getElementById('wi-total');
+          const wEl = document.getElementById('wi-win');
+          const mEl = document.getElementById('wi-match');
+          if (tEl) tEl.value = wiTotal ? String(wiTotal) : '';
+          if (wEl) wEl.value = wiWin ? String(wiWin) : '';
+          if (mEl) mEl.value = wiMatch ? String(wiMatch) : '';
+          updateWalkInCalc();
+          if (wiLotteryResult) {
+            renderWalkInResult();
+            renderWalkInPairs();
+          }
+        } catch {}
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -3363,23 +3344,69 @@
     }
 
     function startBeybladeConfirm() {
-      const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
-      if (!card || !overlay) return;
-      card.style.transition = 'none';
-      card.style.transform = 'rotate(180deg)';
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
+      const modal = document.getElementById('beybladeModal');
+      if (!modal) return;
+
+      // 操作者側UIを隠す
+      const hideIds = ['bayPhotoPreviewWrap', 'beybladeList', 'addBeybladeWrap',
+                       'beybladeFormArea', 'confirmRequestArea'];
+      hideIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      // 確認ビューを表示し、登録ベイ一覧を描画
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      const confirmList = document.getElementById('beybladeConfirmList');
+      confirmList.innerHTML = '';
+      if (participant && participant.beyblades && participant.beyblades.length > 0) {
+        participant.beyblades.forEach((bey, i) => {
+          const div = document.createElement('div');
+          div.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-4 text-center';
+          div.innerHTML = `<span class="text-cyber-blue font-sf font-bold">#${i + 1}</span>
+        <span class="text-cyber-text font-bold text-lg ml-3">${bey.name}</span>`;
+          confirmList.appendChild(div);
+        });
+      }
+
+      const confirmView = document.getElementById('beybladeConfirmView');
+      if (confirmView) {
+        confirmView.classList.remove('hidden');
+        confirmView.classList.add('flex');
+      }
+
+      // モーダル全体を180度回転（アニメーションなし）
+      modal.style.transition = 'none';
+      modal.style.transform = 'rotate(180deg)';
     }
 
     function endBeybladeConfirm() {
-      const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
-      if (!card || !overlay) return;
-      card.style.transition = 'none';
-      card.style.transform = 'rotate(0deg)';
-      overlay.classList.add('hidden');
-      overlay.classList.remove('flex');
+      const modal = document.getElementById('beybladeModal');
+      if (!modal) return;
+
+      // モーダルを元に戻す（アニメーションなし）
+      modal.style.transition = 'none';
+      modal.style.transform = 'rotate(0deg)';
+
+      // 確認ビューを隠す
+      const confirmView = document.getElementById('beybladeConfirmView');
+      if (confirmView) {
+        confirmView.classList.add('hidden');
+        confirmView.classList.remove('flex');
+      }
+
+      // 操作者側UIを再表示
+      const showIds = ['beybladeList', 'addBeybladeWrap', 'beybladeFormArea'];
+      showIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+      });
+
+      updateBayPhotoPreview(
+        (participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || ''
+      );
+
+      renderBeybladeList();
     }
 
     /**
@@ -3632,10 +3659,14 @@
      */
     function closeBeybladeModal() {
       // 確認依頼状態をリセット
-      const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
-      if (card) { card.style.transition = 'none'; card.style.transform = 'rotate(0deg)'; }
-      if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+      const modal = document.getElementById('beybladeModal');
+      if (modal) { modal.style.transition = 'none'; modal.style.transform = 'rotate(0deg)'; }
+      const confirmView = document.getElementById('beybladeConfirmView');
+      if (confirmView) { confirmView.classList.add('hidden'); confirmView.classList.remove('flex'); }
+      ['beybladeList', 'addBeybladeWrap', 'beybladeFormArea'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+      });
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
       updateBayPhotoPreview('');
@@ -3781,11 +3812,7 @@
         }
         const oldId = p.id;
         if (newId !== oldId) {
-          evoWalkInPairs = evoWalkInPairs.map(pair => ({
-            p1Id: pair.p1Id === oldId ? newId : pair.p1Id,
-            p2Id: pair.p2Id === oldId ? newId : pair.p2Id,
-            winnerId: pair.winnerId === oldId ? newId : pair.winnerId
-          }));
+          // （当日参加抽選は参加者IDとは独立して扱う）
         }
         p.id = newId;
       }

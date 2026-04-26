@@ -297,7 +297,7 @@
         </div>
 
         <!-- 確認ビュー（確認依頼中のみ表示・カードの回転を打ち消して正立させる） -->
-        <div id="beybladeConfirmView" class="hidden flex-col items-center gap-6 py-4" style="transform: rotate(180deg);">
+        <div id="beybladeConfirmView" class="hidden flex-col items-center gap-6 py-4">
           <p class="text-cyber-orange font-sf text-lg tracking-widest">登録ベイブレードを確認してください</p>
           <div id="beybladeConfirmList" class="w-full space-y-3"></div>
           <button
@@ -2684,8 +2684,8 @@
     }
 
     function startBeybladeConfirm() {
-      const card = document.getElementById('beybladeCard');
-      if (!card) return;
+      const modal = document.getElementById('beybladeModal');
+      if (!modal) return;
 
       // 操作者側UIを隠す
       const hideIds = ['bayPhotoPreviewWrap', 'beybladeList', 'addBeybladeWrap',
@@ -2695,7 +2695,7 @@
         if (el) el.classList.add('hidden');
       });
 
-      // 確認ビューを表示し、登録ベイ一覧をテキストで描画
+      // 確認ビューを表示し、登録ベイ一覧を描画
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       const confirmList = document.getElementById('beybladeConfirmList');
       confirmList.innerHTML = '';
@@ -2715,18 +2715,18 @@
         confirmView.classList.add('flex');
       }
 
-      // カードを180度回転（アニメーションなし）
-      card.style.transition = 'none';
-      card.style.transform = 'rotate(180deg)';
+      // モーダル全体を180度回転（アニメーションなし）
+      modal.style.transition = 'none';
+      modal.style.transform = 'rotate(180deg)';
     }
 
     function endBeybladeConfirm() {
-      const card = document.getElementById('beybladeCard');
-      if (!card) return;
+      const modal = document.getElementById('beybladeModal');
+      if (!modal) return;
 
-      // カードを元に戻す（アニメーションなし）
-      card.style.transition = 'none';
-      card.style.transform = 'rotate(0deg)';
+      // モーダルを元に戻す（アニメーションなし）
+      modal.style.transition = 'none';
+      modal.style.transform = 'rotate(0deg)';
 
       // 確認ビューを隠す
       const confirmView = document.getElementById('beybladeConfirmView');
@@ -2742,12 +2742,10 @@
         if (el) el.classList.remove('hidden');
       });
 
-      // bayPhotoPreviewWrapは写真がある時だけ再表示
       updateBayPhotoPreview(
         (participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || ''
       );
 
-      // confirmRequestAreaはrenderBeybladeListで制御されるので再描画
       renderBeybladeList();
     }
 
@@ -2998,9 +2996,9 @@
      */
     function closeBeybladeModal() {
       // 確認依頼状態をリセット
-      const card = document.getElementById('beybladeCard');
+      const modal = document.getElementById('beybladeModal');
+      if (modal) { modal.style.transition = 'none'; modal.style.transform = 'rotate(0deg)'; }
       const confirmView = document.getElementById('beybladeConfirmView');
-      if (card) { card.style.transition = 'none'; card.style.transform = 'rotate(0deg)'; }
       if (confirmView) { confirmView.classList.add('hidden'); confirmView.classList.remove('flex'); }
       ['beybladeList', 'addBeybladeWrap', 'beybladeFormArea'].forEach(id => {
         const el = document.getElementById(id);

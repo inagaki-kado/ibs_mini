@@ -880,8 +880,9 @@
             if (!pr || !pr.type) return bey.name || '';
             if (pr.type === 'BX')   return pr.BX || '';
             if (pr.type === 'UX')   return pr.UX || '';
-            if (pr.type === 'CX')   return (pr.RC || '') + (pr.CX || '') + (pr.AB || '');
-            if (pr.type === 'CXEX') return (pr.RC || '') + (pr.MB || '') + (pr.OB || '') + (pr.AB || '');
+            // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
+            if (pr.type === 'CX')   return (pr.RC || '') + (pr.CX || '');
+            if (pr.type === 'CXEX') return (pr.RC || '') + (pr.MB || '') + (pr.OB || '');
             return bey.name || '';
         }
         let text = '';

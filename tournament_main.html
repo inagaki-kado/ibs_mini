@@ -3054,8 +3054,9 @@
             if (!p || !p.type) return bey.name || '';
             if (p.type === 'BX')   return p.BX || '';
             if (p.type === 'UX')   return p.UX || '';
-            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '') + (p.AB || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '') + (p.AB || '');
+            // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
+            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
+            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '');
             return bey.name || '';
         }
 
