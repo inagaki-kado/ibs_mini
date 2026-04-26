@@ -254,7 +254,9 @@
       return list.map(p => ({
         name: (p && p.name) ? String(p.name) : '---',
         memo1: (p && p.memo1) ? String(p.memo1) : '',
-        bey: (Array.isArray(p?.beyblades) && p.beyblades.length) ? String(p.beyblades[0]?.selectionName || p.beyblades[0]?.name || '') : '',
+        rank: (p && p.rank) ? String(p.rank) : '--',
+        bp: (p && p.currentStats && p.currentStats.power != null) ? p.currentStats.power : 10000,
+        rate: (p && p.currentStats && p.currentStats.rate) ? String(p.currentStats.rate) : '0.00%',
       }));
     }
 
@@ -267,13 +269,19 @@
       }
       el.innerHTML = items.map((p) => {
         const memo = p.memo1 ? `<span class="ml-2 text-[11px] px-2 py-0.5 rounded-full border" style="border-color:rgba(14,165,233,0.25);background:rgba(14,165,233,0.06);color:rgba(14,165,233,0.95);">#${escapeHtml(p.memo1)}</span>` : '';
-        const bey = p.bey ? `<div class="text-[11px] mt-0.5 text-slate-400">使用ベイ: <span class="text-slate-200 font-semibold">${escapeHtml(p.bey)}</span></div>` : '';
+        const statsHtml = `
+    <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+      <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(14,165,233,0.15);color:#38bdf8;font-weight:600;font-family:monospace;">${escapeHtml(p.rank)}</span>
+      <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(34,197,94,0.15);color:#4ade80;font-weight:600;font-family:monospace;">BP ${Number(p.bp).toLocaleString()}</span>
+      <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(251,146,60,0.15);color:#fb923c;font-weight:600;font-family:monospace;">${escapeHtml(p.rate)}</span>
+    </div>
+  `;
         return `
           <div class="py-2.5 border-b" style="border-color:rgba(30,41,59,0.65)">
             <div class="flex items-center justify-between gap-2">
               <div class="min-w-0">
                 <div class="font-bold text-slate-100 truncate">${escapeHtml(p.name)}${memo}</div>
-                ${bey}
+                ${statsHtml}
               </div>
             </div>
           </div>
@@ -470,7 +478,7 @@
       <div class="card mt-4 p-4">
         <div class="flex items-center justify-between">
           <div class="stage-title">Participants</div>
-          <div class="text-[11px]" style="color:var(--muted);">名前 / 使用ベイ</div>
+          <div class="text-[11px]" style="color:var(--muted);">名前 / ランク・BP・勝率</div>
         </div>
         <div id="participants" class="mt-2"></div>
       </div>
