@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -123,6 +124,7 @@
             <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
+            <button onclick="downloadBayPhotosZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 ベイ写真をZIPダウンロード</button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
@@ -389,20 +391,45 @@
 
   <!-- ベイブレード登録モーダル -->
   <div id="beybladeModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8">
-      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3">
+    <div id="beybladeCard" class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8 max-h-[90vh] min-h-0">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
         <h2 class="text-xl md:text-2xl font-sf text-cyber-blue tracking-widest">BEYBLADE REGISTRATION</h2>
         <button onclick="closeBeybladeModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
       </div>
 
-      <div id="beybladeContent" class="flex flex-col gap-4">
-        <!-- ベイブレードリスト表示エリア -->
-        <div id="beybladeList" class="space-y-3"></div>
-        
-        <!-- 追加ボタン -->
-        <div class="flex items-center gap-2">
-          <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
-            ＋ ベイブレードを追加
+      <div id="beybladeContent" class="flex flex-col flex-1 min-h-0 gap-3">
+        <div id="bayPhotoPreviewWrap" class="hidden shrink-0 h-[45vh] min-h-[200px] max-h-[45vh] bg-cyber-bg border border-cyber-table-border rounded-lg overflow-hidden flex items-center justify-center">
+          <img id="bayPhotoPreviewImg" alt="ベイ確認写真" style="width:100%; max-height:45vh; min-height:200px; object-fit:contain; display:block;">
+        </div>
+        <div class="flex flex-col flex-1 min-h-0 overflow-y-auto gap-4">
+          <div id="beybladeList" class="space-y-3"></div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
+              ＋ ベイブレードを追加
+            </button>
+          </div>
+          <div id="beybladeFormArea" class="shrink-0"></div>
+        </div>
+        <!-- 確認依頼ボタン -->
+        <div id="confirmRequestArea" class="hidden mt-2">
+          <button
+            onclick="startBeybladeConfirm()"
+            class="w-full bg-cyber-orange hover:bg-cyber-orange/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors"
+            style="touch-action: manipulation;"
+          >
+            👁 確認依頼
+          </button>
+        </div>
+
+        <!-- 参加者向け確認オーバーレイ（通常は非表示） -->
+        <div id="beybladeConfirmOverlay" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 z-[200] flex-col items-center justify-center gap-8">
+          <p class="text-cyber-text font-sf text-xl tracking-widest opacity-70">ベイブレードを確認してください</p>
+          <button
+            onclick="endBeybladeConfirm()"
+            class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-16 py-6 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
+            style="touch-action: manipulation;"
+          >
+            ✅ OK
           </button>
         </div>
       </div>
@@ -431,6 +458,9 @@
       </div>
     </div>
   </div>
+
+  <!-- ベイ確認写真撮影用（iOS Safari対応） -->
+  <input id="bayPhotoInput" type="file" accept="image/*" capture="environment" style="display:none;">
 
 
 <style>
@@ -914,22 +944,28 @@
     let evoLotteryN = '';
     let evoIsLotteryAnimating = false;
     let evoWalkInPairs = []; // [{p1Id,p2Id,winnerId:null|number}]
-    const colors = ['赤', '青', '黄', '緑', '紫', '橙', '白', '灰'];
+    const colors = ['slot1', 'slot2', 'slot3', 'slot4'];
     const colorCodes = {
-      '赤': 'bg-cyber-pink',
-      '青': 'bg-cyber-blue',
-      '黄': 'bg-yellow-400 text-black',
-      '緑': 'bg-cyber-green',
-      '紫': 'bg-purple-500',
-      '橙': 'bg-cyber-orange text-cyber-bg',
-      '白': 'bg-gray-200 text-black',
-      '灰': 'bg-gray-500'
+      'slot1': 'bg-cyber-blue',
+      'slot2': 'bg-cyber-green',
+      'slot3': 'bg-cyber-orange text-cyber-bg',
+      'slot4': 'bg-purple-500',
+    };
+
+    // タイムスロット表示ラベル（ボタン用）
+    const slotLabels = {
+      'slot1': { line1: 'A / B Block', line2: '13:00〜', blocks: ['A', 'B'] },
+      'slot2': { line1: 'C / D Block', line2: '14:00〜', blocks: ['C', 'D'] },
+      'slot3': { line1: 'E / F Block', line2: '15:00〜', blocks: ['E', 'F'] },
+      'slot4': { line1: 'G / H Block', line2: '16:00〜', blocks: ['G', 'H'] },
     };
     
     let participantSortMode = 'id';
 
     let globalBlockSize = 8;
     let blockMap = {}; let blockData = {}; let blockCapacities = {}; let blockActivePositions = {};
+    /** A〜H 各ブロックの定員（抽選時の letter 割当に使用） */
+    let letterCapsForBlocks = {};
     let blockMatches = {}; let finals = {}; const BYE = { id: 'BYE', name: 'BYE (シード)' };
 
     // ベイブレード管理用変数
@@ -946,6 +982,47 @@
     let swapPending = null;
 
     let isEffectOn = true;
+
+    // ==========================================
+    // Google Sheets 同期（GAS Webアプリ）
+    // ==========================================
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxs6j8vOdWe6f5P616KV_wxpLUABL73xAcCFOMFEpKYpPdSAZkg0GVdHjo1ZTlkujmn/exec'; // Google Apps Script WebアプリURL（未設定なら同期しない）
+
+    function getTournamentPhase() {
+      if (!isSetupDone) return 'waiting';
+      if (!isTournamentStarted) return 'waiting';
+      const isFinished = !!(finals && finals.f && finals.third && finals.f.winner !== null && finals.third.winner !== null);
+      return isFinished ? 'finished' : 'ongoing';
+    }
+
+    function getBracketSnapshot() {
+      return {
+        globalBlockSize,
+        blockMap,
+        blockMatches,
+        finals,
+      };
+    }
+
+    async function syncToSheets() {
+      if (!SHEETS_API_URL) return;
+      try {
+        const payload = {
+          tournament_name: tournamentName || '',
+          phase: getTournamentPhase(),
+          bracket: getBracketSnapshot(),
+          participants,
+        };
+        await fetch(SHEETS_API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {
+        console.warn('syncToSheets failed:', e);
+      }
+    }
 
     function toggleEffectMode() {
         isEffectOn = !isEffectOn;
@@ -1409,8 +1486,10 @@
     // 基本セットアップ & タブ切り替え
     // ==========================================
     function initApp() {
-      const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].sort(() => Math.random() - 0.5);
-      colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(L => { blockData[L] = new Array(8).fill(null); });
+      colors.forEach((c) => {
+        blockMap[c] = slotLabels[c].blocks[0];
+      });
       if (loadState()) { showResumeBanner(); }
 
       // EVO 当日枠抽選パネル（入力復元＋イベント）
@@ -1460,18 +1539,31 @@
       let totalSize = parseInt(sizeStr);
       if (isNaN(totalSize) || totalSize < 8 || totalSize > 64) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
       if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
-      colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
       const baseSize = Math.floor(totalSize / 8);
       const remainder = totalSize % 8;
       const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize, 'E': baseSize, 'F': baseSize, 'G': baseSize, 'H': baseSize };
       const capOrder = ['A', 'C', 'E', 'G', 'B', 'D', 'F', 'H'];
       for (let i = 0; i < remainder; i++) caps[capOrder[i]]++;
-      colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
+      letterCapsForBlocks = { ...caps };
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(L => {
+        blockData[L] = new Array(globalBlockSize).fill(null);
+        blockActivePositions[L] = getFairPositions(caps[L], globalBlockSize);
+      });
+      const totalSlots = 4;
+      const basePerSlot = Math.floor(totalSize / totalSlots);
+      const remainderSlots = totalSize % totalSlots;
+      const slotCaps = { 'slot1': basePerSlot, 'slot2': basePerSlot, 'slot3': basePerSlot, 'slot4': basePerSlot };
+      const slotCapOrder = ['slot1', 'slot2', 'slot3', 'slot4'];
+      for (let i = 0; i < remainderSlots; i++) slotCaps[slotCapOrder[i]]++;
+      colors.forEach(c => {
+        blockCapacities[c] = slotCaps[c];
+      });
       isSetupDone = true;
       document.getElementById('setupSection').classList.add('hidden');
       document.getElementById('mainManagementSection').classList.remove('hidden');
       document.getElementById('mainManagementSection').classList.add('flex');
       renderParticipants();
+      void syncToSheets();
       syncHudPreviewBgSelect();
     }
 
@@ -1490,6 +1582,22 @@
       return [];
     }
 
+    function slotKeyForBracketLetter(L) {
+      return colors.find(sk => slotLabels[sk].blocks.includes(L));
+    }
+
+    function pickLetterInSlotWithSpace(slotKey) {
+      const letters = slotLabels[slotKey].blocks;
+      const avail = letters.filter(L => {
+        const row = blockData[L];
+        if (!row) return false;
+        const n = row.filter(x => x !== null).length;
+        return n < (letterCapsForBlocks[L] || 0);
+      });
+      if (avail.length === 0) return null;
+      return avail[Math.floor(Math.random() * avail.length)];
+    }
+
     function switchTab(tabId) {
       ['participants', 'tournament'].forEach(id => {
         document.getElementById(`view-${id}`).classList.add('hidden');
@@ -1506,6 +1614,93 @@
     // ==========================================
     // 参加者管理
     // ==========================================
+    let currentBayPhotoParticipantId = null;
+
+    function getBayPhotoStorageKey(name) {
+      return `bayPhoto_${encodeURIComponent(String(name || ''))}`;
+    }
+
+    function getBayPhotoDataUrlByName(name) {
+      const safeKey = getBayPhotoStorageKey(name);
+      const v1 = localStorage.getItem(safeKey);
+      if (v1) return v1;
+      const rawKey = `bayPhoto_${String(name || '')}`;
+      return localStorage.getItem(rawKey);
+    }
+
+    function hasBayPhoto(name) {
+      return !!getBayPhotoDataUrlByName(name);
+    }
+
+    function setBayPhotoDataUrlByName(name, dataUrl) {
+      localStorage.setItem(getBayPhotoStorageKey(name), dataUrl);
+    }
+
+    function startBayPhotoCapture(participantId) {
+      const p = participants.find(x => x.id === participantId);
+      if (!p) return;
+      currentBayPhotoParticipantId = participantId;
+      const input = document.getElementById('bayPhotoInput');
+      if (!input) return showAlert('写真入力が見つかりません');
+      input.value = '';
+      input.click();
+    }
+
+    function updateBayPhotoPreview(participantName) {
+      const wrap = document.getElementById('bayPhotoPreviewWrap');
+      const img = document.getElementById('bayPhotoPreviewImg');
+      if (!wrap || !img) return;
+      const dataUrl = getBayPhotoDataUrlByName(participantName);
+      if (dataUrl) {
+        img.src = dataUrl;
+        wrap.classList.remove('hidden');
+      } else {
+        img.removeAttribute('src');
+        wrap.classList.add('hidden');
+      }
+    }
+
+    function getYYMMDD() {
+      const d = new Date();
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}${mm}${dd}`;
+    }
+
+    function dataUrlToUint8Array(dataUrl) {
+      const base64 = String(dataUrl || '').split(',')[1] || '';
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    async function downloadBayPhotosZip() {
+      if (typeof JSZip === 'undefined') return showAlert('JSZipの読み込みに失敗しました');
+      const yymmdd = getYYMMDD();
+      const zip = new JSZip();
+      let added = 0;
+      participants.forEach(p => {
+        const dataUrl = getBayPhotoDataUrlByName(p.name);
+        if (!dataUrl) return;
+        zip.file(`${p.name}_${yymmdd}.jpg`, dataUrlToUint8Array(dataUrl), { binary: true });
+        added++;
+      });
+      if (added === 0) return showAlert("撮影済みの写真がありません");
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `bey_photos_${yymmdd}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 0);
+    }
+
     function openPasteModal() { if(isTournamentStarted) return showAlert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
@@ -1520,10 +1715,11 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            beyblades: [], color: null, position: null, entryType: 'reserved' }); count++;
+            beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved' }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
+      void syncToSheets();
     }
 
     function addParticipant(name = '', memo1 = '') {
@@ -1531,15 +1727,17 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          beyblades: [], color: null, position: null, entryType: 'reserved' });
+          beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved' });
       renderParticipants();
+      void syncToSheets();
     }
     
     async function removeParticipant(id) {
       if(isTournamentStarted) return showAlert("開始後は削除できません"); if(!await showConfirm("削除しますか？")) return;
-      const p = participants.find(x => x.id === id); if(p && p.color) blockData[p.color][p.position] = null;
+      const p = participants.find(x => x.id === id); if(p && p.bracketBlock != null) blockData[p.bracketBlock][p.position] = null;
       participants = participants.filter(x => x.id !== id); renderParticipants();
       updateEvoLotteryUI();
+      void syncToSheets();
     }
     
 
@@ -1558,15 +1756,17 @@
         if (setupSwapPending === pid) { setupSwapPending = null; }
         else {
           const p1 = participants.find(x => x.id === setupSwapPending); const p2 = participants.find(x => x.id === pid);
-          if (p1 && p2 && p1.color && p2.color) {
-            blockData[p1.color][p1.position] = p2; blockData[p2.color][p2.position] = p1;
-            let tempColor = p1.color; let tempPos = p1.position;
-            p1.color = p2.color; p1.position = p2.position; p2.color = tempColor; p2.position = tempPos;
+          if (p1 && p2 && p1.color && p2.color && p1.bracketBlock && p2.bracketBlock) {
+            blockData[p1.bracketBlock][p1.position] = p2; blockData[p2.bracketBlock][p2.position] = p1;
+            let tempColor = p1.color; let tempPos = p1.position; let tempLetter = p1.bracketBlock;
+            p1.color = p2.color; p1.position = p2.position; p1.bracketBlock = p2.bracketBlock;
+            p2.color = tempColor; p2.position = tempPos; p2.bracketBlock = tempLetter;
           }
           setupSwapPending = null;
         }
       }
       renderParticipants();
+      void syncToSheets();
     }
 
 
@@ -1581,8 +1781,8 @@
           if (!aHas && !bHas) return a.id - b.id;
           if (!aHas) return -1;
           if (!bHas) return 1;
-          const aName = blockMap[a.color] || a.color;
-          const bName = blockMap[b.color] || b.color;
+          const aName = a.bracketBlock || '';
+          const bName = b.bracketBlock || '';
           if (aName !== bName) return aName.localeCompare(bName);
           return a.position - b.position;
         });
@@ -1624,9 +1824,9 @@
             if (isSetupSwapMode) {
                 let isActive = setupSwapPending === p.id;
                 let activeClass = isActive ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-cyber-dark text-yellow-400 border-yellow-400 hover:bg-yellow-400/20';
-                lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${blockMap[p.color]}-${p.position + 1}</button>`;
+                lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${p.bracketBlock}-${p.position + 1}</button>`;
             } else {
-                lotteryHTML = `<button onclick="execReLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${blockMap[p.color]}-${p.position + 1} 🔄</button>`;
+                lotteryHTML = `<button onclick="execReLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${p.bracketBlock}-${p.position + 1} 🔄</button>`;
             }
         } else {
             if (isWalkInLost) {
@@ -1640,7 +1840,10 @@
         const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
         const beyDisabled = isSetupSwapMode || isWalkInLost;
         const editDisabled = isSetupSwapMode || isTournamentStarted;
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style=\"opacity:0.3\"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
+        const hasPhoto = hasBayPhoto(p.name);
+        const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
+        const photoLabel = hasPhoto ? '📷✅' : '📷';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1768,6 +1971,7 @@
         beyblades: [],
         color: null,
         position: null,
+        bracketBlock: null,
         entryType: null,
         walkInStatus: null
       });
@@ -1777,6 +1981,7 @@
       updateEvoLotteryUI();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     async function confirmEvoAllIn() {
@@ -1795,6 +2000,7 @@
       renderParticipants();
       saveState();
       showAlert('全員を当日枠（抽選当選）として確定しました');
+      void syncToSheets();
     }
 
     function setEvoAnimating(on) {
@@ -1869,6 +2075,7 @@
       updateEvoLotteryUI();
       renderParticipants();
       saveState();
+      void syncToSheets();
 
       const hasMatch = participants.some(p => p.walkInStatus === 'walk_in_match');
       document.getElementById('evo-match-area').classList.toggle('hidden', !hasMatch);
@@ -1890,6 +2097,7 @@
       updateEvoLotteryUI();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     function generateEvoWalkInPairs() {
@@ -1904,6 +2112,7 @@
       evoWalkInPairs = pairs;
       renderEvoPairs();
       saveState();
+      void syncToSheets();
     }
 
     function renderEvoPairs() {
@@ -1969,6 +2178,7 @@
       updateEvoLotteryUI();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     // ==========================================
@@ -1985,26 +2195,52 @@
       }
 
       const p = participants.find(x => x.id === id);
-      const counts = {}; colors.forEach(c => counts[c] = blockData[c].filter(x => x !== null).length);
-      let activeCounts = []; colors.forEach(col => { if(counts[col] < blockCapacities[col]) activeCounts.push(counts[col]); });
-      const minCount = activeCounts.length > 0 ? Math.min(...activeCounts) : 0;
+      const counts = {};
+      colors.forEach(c => { counts[c] = participants.filter(x => x.color === c).length; });
 
       const modalContent = document.getElementById('lotteryModalContent');
       modalContent.innerHTML = `
           <h2 class="text-2xl font-sf text-cyber-blue mb-2">TARGET: ${p.name}</h2>
-          <p class="mb-4 text-cyber-text font-bold">ブロック（色）を選んでください</p>
-          <div class="grid grid-cols-2 gap-4" id="modalColorButtons"></div>
-          <button onclick="closeLotteryModal()" class="mt-6 bg-cyber-bg text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-sf hover:bg-gray-800 transition-colors">CANCEL</button>
+          <p class="mb-1 text-cyber-text font-bold text-sm">参加するブロックを選んでください</p>
+          <p class="mb-3 text-cyber-text font-bold text-xs opacity-80">Please select the block you would like to participate in</p>
+          <div class="grid grid-cols-1 gap-3 mb-2" id="modalColorButtons"></div>
+          <button onclick="closeLotteryModal()" class="mt-4 bg-cyber-bg text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-sf hover:bg-gray-800 transition-colors text-sm">CANCEL</button>
       `;
 
       const container = document.getElementById('modalColorButtons');
       colors.forEach(c => {
-        const remain = blockCapacities[c] - counts[c]; const isDisabled = remain === 0 || (counts[c] > minCount);
-        const btn = document.createElement('button'); btn.className = `py-6 rounded-lg font-bold text-cyber-text shadow-lg text-2xl ${colorCodes[c]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform`;
-        btn.innerHTML = `${c} <br><span class="text-base">REMAIN: ${remain}</span>`;
-        if(!isDisabled) btn.onclick = () => doLotteryModal(c);
+        const remain = blockCapacities[c] - counts[c];
+        const isDisabled = remain === 0;
+        const label = slotLabels[c];
+        const btn = document.createElement('button');
+        btn.style.touchAction = 'manipulation';
+        btn.className = `py-4 px-4 rounded-lg font-bold text-cyber-text shadow-lg ${colorCodes[c]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+        btn.innerHTML = `
+    <span class="text-left">
+      <span class="block text-lg font-sf">${label.line1}</span>
+      <span class="block text-sm opacity-80 font-sf">${label.line2}</span>
+    </span>
+    <span class="text-sm font-sf opacity-80">REMAIN: ${remain}</span>
+  `;
+        if (!isDisabled) btn.onclick = () => doLotteryModal(c);
         container.appendChild(btn);
       });
+
+      const allActive = colors.filter(c => blockCapacities[c] - counts[c] > 0);
+      const isRandomDisabled = allActive.length === 0;
+      const randBtn = document.createElement('button');
+      randBtn.style.touchAction = 'manipulation';
+      randBtn.className = `py-4 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isRandomDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+      randBtn.innerHTML = `<span class="block text-lg font-sf">🎲 RANDOM</span>`;
+      if (!isRandomDisabled) {
+        randBtn.onclick = () => {
+          const minFilled = Math.min(...allActive.map(c => counts[c]));
+          const candidates = allActive.filter(c => counts[c] === minFilled);
+          const picked = candidates[Math.floor(Math.random() * candidates.length)];
+          doLotteryModal(picked);
+        };
+      }
+      container.appendChild(randBtn);
 
       document.getElementById('lotteryModal').classList.remove('hidden');
       document.getElementById('lotteryModal').classList.add('flex');
@@ -2012,43 +2248,51 @@
 
     function doLotteryModal(selectedColor) {
         const p = participants.find(x => x.id === currentLotteryId);
+        const assignLetter = pickLetterInSlotWithSpace(selectedColor);
+        if (!assignLetter) return showAlert("満員です");
         const emptyPositions = [];
-        blockActivePositions[selectedColor].forEach(idx => {
-            if(blockData[selectedColor][idx] === null) emptyPositions.push(idx);
+        blockActivePositions[assignLetter].forEach(idx => {
+            if(blockData[assignLetter][idx] === null) emptyPositions.push(idx);
         });
 
         if(emptyPositions.length === 0) return showAlert("満員です");
         const position = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
-        const finalSlotName = `${blockMap[selectedColor]}-${position + 1}`;
+        const finalSlotName = `${assignLetter}-${position + 1}`;
+
+        function applyLotteryAssignment() {
+            p.color = selectedColor;
+            p.bracketBlock = assignLetter;
+            p.position = position;
+            blockData[assignLetter][position] = p;
+        }
 
         // 演出OFFの場合：即座に結果をalertで表示して終了
         if (!isEffectOn) {
-            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
-            showAlert(`【 ${blockMap[selectedColor]} 】 ブロックの 【 ${position + 1}番 】に決定！`);
+            applyLotteryAssignment();
+            showAlert(`【 ${finalSlotName} 】に決定！`);
             closeLotteryModal();
             renderParticipants();
+            void syncToSheets();
             return;
         }
 
-        // 演出ONの場合：シンプルなテキストルーレット
         let totalCap = 0; let totalEmpty = 0; let allEmptySlots = [];
-        colors.forEach(c => {
-            totalCap += blockCapacities[c];
-            blockActivePositions[c].forEach(idx => {
-                if (blockData[c][idx] === null) {
-                    totalEmpty++; allEmptySlots.push(`${blockMap[c]}-${idx + 1}`);
+        ['A','B','C','D','E','F','G','H'].forEach(L => {
+            totalCap += letterCapsForBlocks[L] || 0;
+            (blockActivePositions[L] || []).forEach(idx => {
+                if (blockData[L][idx] === null) {
+                    totalEmpty++; allEmptySlots.push(`${L}-${idx + 1}`);
                 }
             });
         });
 
         // 最後の1枠なら即結果表示
         if (totalEmpty === 1) {
-            p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+            applyLotteryAssignment();
             showLotteryResultScreen(p.name, finalSlotName);
             return;
         }
 
-        // 演出ONの場合：シンプルなテキストルーレット表示
         const modalContent = document.getElementById('lotteryModalContent');
         modalContent.innerHTML = `
             <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
@@ -2056,20 +2300,29 @@
         `;
 
         const rDisplay = document.getElementById('rouletteDisplay');
-        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
-        // 残り枠の割合で演出時間を分岐（50%以上なら2秒、未満なら1秒）
-        const remainRatio = totalEmpty / totalCap;
-        const duration = remainRatio >= 0.5 ? 2000 : 1000;
+        let duration;
+        if (totalEmpty <= 8) {
+            duration = 0;
+        } else {
+            const remainRatio = totalEmpty / totalCap;
+            duration = remainRatio >= 0.5 ? 1000 : 500;
+        }
+
+        if (duration === 0) {
+            applyLotteryAssignment();
+            showLotteryResultScreen(p.name, finalSlotName);
+            return;
+        }
+
         let startTime = Date.now();
 
         let rInterval = setInterval(() => {
             let elapsed = Date.now() - startTime;
             if (elapsed > duration) {
                 clearInterval(rInterval);
-                p.color = selectedColor; p.position = position; blockData[selectedColor][position] = p;
+                applyLotteryAssignment();
                 showLotteryResultScreen(p.name, finalSlotName);
             } else {
-                // ランダムにスロット名をテキスト表示
                 let randomSlot = allEmptySlots[Math.floor(Math.random() * allEmptySlots.length)];
                 rDisplay.innerText = randomSlot;
             }
@@ -2104,6 +2357,7 @@
     function confirmLotteryResult() {
         closeLotteryModal();
         renderParticipants();
+        void syncToSheets();
     }
 
     function closeLotteryModal() {
@@ -2119,7 +2373,7 @@
 
     async function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
-      if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { blockData[p.color][p.position] = null; p.color = null; p.position = null; } renderParticipants(); openLotteryModal(id); }
+      if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { if(p.bracketBlock) blockData[p.bracketBlock][p.position] = null; p.color = null; p.position = null; p.bracketBlock = null; } renderParticipants(); void syncToSheets(); openLotteryModal(id); }
     }
 
     function exportParticipantsCSV() {
@@ -2254,10 +2508,10 @@
       if (unlotteryParticipants.length > 0) {
         // 空いている枠をすべて取得
         const allEmptySlots = [];
-        colors.forEach(c => {
-          blockActivePositions[c].forEach(idx => {
-            if (blockData[c][idx] === null) {
-              allEmptySlots.push({ color: c, position: idx });
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+          blockActivePositions[letter].forEach(idx => {
+            if (blockData[letter][idx] === null) {
+              allEmptySlots.push({ bracketBlock: letter, position: idx });
             }
           });
         });
@@ -2276,13 +2530,15 @@
         // 未抽選者を順番に配置
         unlotteryParticipants.forEach((p, i) => {
           const slot = allEmptySlots[i];
-          p.color = slot.color;
+          p.bracketBlock = slot.bracketBlock;
           p.position = slot.position;
-          blockData[slot.color][slot.position] = p;
+          p.color = slotKeyForBracketLetter(slot.bracketBlock);
+          blockData[slot.bracketBlock][slot.position] = p;
         });
 
         showAlert(`オート抽選完了！\n${unlotteryParticipants.length}名を自動配置しました。`);
         renderParticipants();
+        void syncToSheets();
       }
       // ▲ オート抽選機能ここまで
 
@@ -2296,7 +2552,7 @@
       document.getElementById('displayTournamentName').innerText = tournamentName;
       
       ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(bName => {
-        const color = colors.find(c => blockMap[c] === bName); const members = blockData[color]; let rounds = [];
+        const members = blockData[bName]; let rounds = [];
         if (globalBlockSize === 8) {
           let r1 = []; for(let i=0; i<8; i+=2) r1.push({ p1: members[i] || BYE, p2: members[i+1] || BYE, winner: null, score: null });
           rounds = [ r1, [ {p1:null,p2:null,winner:null,score:null}, {p1:null,p2:null,winner:null,score:null} ], [ {p1:null,p2:null,winner:null,score:null} ] ];
@@ -2316,6 +2572,7 @@
         f: { p1: null, p2: null, winner: null, score: null }
       };
       updateAdvancements(); switchTab('tournament');
+      void syncToSheets();
     }
 
     function toggleSwapMode() {
@@ -2337,6 +2594,7 @@
               if(playerSide === 1) m2.p1 = p1; else m2.p2 = p1;
               swapPending = null; m1.winner = null; m2.winner = null;
               autoProcessBye(m1); autoProcessBye(m2); updateAdvancements();
+              void syncToSheets();
           }
       }
       renderTournament();
@@ -2402,6 +2660,9 @@
       }
       
       updateAdvancements();
+      if (match.winner !== null) {
+        void syncToSheets();
+      }
     }
 
     function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
@@ -2786,6 +3047,7 @@
       document.getElementById('res1').innerText = getW(finals.f).name; document.getElementById('res2').innerText = getL(finals.f).name;
       document.getElementById('res3').innerText = getW(finals.third).name; document.getElementById('res4').innerText = getL(finals.third).name;
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
+      void syncToSheets();
     }
     function closeResults() {
       // TVモードがONの場合、自動的に終了
@@ -2824,7 +3086,7 @@
     // ==========================================
     // localStorage 自動保存・復元
     // ==========================================
-    const SAVE_KEY = 'tbh_tournament_evo_v1';
+    const SAVE_KEY = 'tbh_tournament_evo_v2';
 
     function saveState() {
       try {
@@ -2832,6 +3094,7 @@
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, blockMatches, finals, isEffectOn,
+          letterCapsForBlocks,
           hudPreviewBackground,
           evoLotteryD,
           evoLotteryN,
@@ -2860,12 +3123,16 @@
           delete p.bayChecked;
           if (p.entryType === undefined) p.entryType = 'reserved';
           if (p.walkInStatus === undefined) p.walkInStatus = null;
+          if (p.bracketBlock === undefined) p.bracketBlock = null;
         });
         participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
         blockData = s.blockData || {};
         blockCapacities = s.blockCapacities || {};
         blockActivePositions = s.blockActivePositions || {};
+        letterCapsForBlocks = s.letterCapsForBlocks && Object.keys(s.letterCapsForBlocks).length
+          ? s.letterCapsForBlocks
+          : letterCapsForBlocks;
         blockMatches = s.blockMatches || {};
         finals = s.finals || {};
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
@@ -2880,6 +3147,18 @@
           localStorage.setItem('evo_lottery_D', evoLotteryD || '');
           localStorage.setItem('evo_lottery_N', evoLotteryN || '');
         } catch {}
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(L => {
+          const row = blockData[L];
+          if (!row) return;
+          row.forEach((cell, idx) => {
+            if (!cell || typeof cell !== 'object' || !cell.id) return;
+            const par = participants.find(pp => pp.id === cell.id);
+            if (!par) return;
+            par.bracketBlock = L;
+            par.position = idx;
+            if (par.color == null) par.color = slotKeyForBracketLetter(L);
+          });
+        });
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -2916,6 +3195,7 @@
         switchTab('participants');
       }
       syncHudPreviewBgSelect();
+      void syncToSheets();
     }
 
     // ==========================================
@@ -3013,6 +3293,7 @@
       if (!participant.beyblades) {
         participant.beyblades = [];
       }
+      updateBayPhotoPreview(participant ? participant.name : '');
       
       renderBeybladeList();
       document.getElementById('beybladeModal').classList.remove('hidden');
@@ -3069,6 +3350,36 @@
       } else {
         addBtn.style.display = 'block';
       }
+
+      // 確認依頼ボタンはベイが1件以上登録されている時のみ表示
+      const confirmArea = document.getElementById('confirmRequestArea');
+      if (confirmArea) {
+        if (participant.beyblades && participant.beyblades.length > 0) {
+          confirmArea.classList.remove('hidden');
+        } else {
+          confirmArea.classList.add('hidden');
+        }
+      }
+    }
+
+    function startBeybladeConfirm() {
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (!card || !overlay) return;
+      card.style.transition = 'none';
+      card.style.transform = 'rotate(180deg)';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+    }
+
+    function endBeybladeConfirm() {
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (!card || !overlay) return;
+      card.style.transition = 'none';
+      card.style.transform = 'rotate(0deg)';
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
     }
 
     /**
@@ -3092,6 +3403,7 @@
         renderBeybladeList();
         renderParticipants();
         saveState();
+        void syncToSheets();
       }
     }
 
@@ -3115,6 +3427,7 @@
       renderBeybladeList();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     /**
@@ -3311,14 +3624,21 @@
       renderBeybladeList();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     /**
      * ベイブレード管理モーダルを閉じる
      */
     function closeBeybladeModal() {
+      // 確認依頼状態をリセット
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (card) { card.style.transition = 'none'; card.style.transform = 'rotate(0deg)'; }
+      if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
+      updateBayPhotoPreview('');
       currentBeybladeParticipantId = null;
       currentEditingBeybladeIndex = -1;
     }
@@ -3372,6 +3692,26 @@
       await loadPartsCSV();
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
+
+      const bayPhotoInput = document.getElementById('bayPhotoInput');
+      if (bayPhotoInput) {
+        bayPhotoInput.addEventListener('change', (e) => {
+          const file = e.target && e.target.files ? e.target.files[0] : null;
+          if (!file) return;
+          const p = participants.find(x => x.id === currentBayPhotoParticipantId);
+          if (!p) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+              setBayPhotoDataUrlByName(p.name, dataUrl);
+              renderParticipants();
+              if (currentBeybladeParticipantId === p.id) updateBayPhotoPreview(p.name);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
     });
 
 
@@ -3450,6 +3790,17 @@
         p.id = newId;
       }
 
+      const prevName = p.name;
+      if (prevName !== newName) {
+        const ph = getBayPhotoDataUrlByName(prevName);
+        if (ph) {
+          setBayPhotoDataUrlByName(newName, ph);
+          try {
+            localStorage.removeItem(getBayPhotoStorageKey(prevName));
+            localStorage.removeItem(`bayPhoto_${prevName}`);
+          } catch (_) {}
+        }
+      }
       p.name = newName;
       p.memo1 = newMemo;
 
@@ -3457,6 +3808,7 @@
       closeEditParticipantModal();
       renderParticipants();
       saveState();
+      void syncToSheets();
     }
 
     // ===== カスタム alert / confirm =====

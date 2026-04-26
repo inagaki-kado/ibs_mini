@@ -263,6 +263,7 @@
     function renderParticipants(list){
       const el = $('participants');
       const items = normalizeParticipants(list);
+      document.getElementById('participants-count').textContent = items.length + '人';
       if (items.length === 0){
         el.innerHTML = `<div class="text-sm text-slate-400">参加者データがありません</div>`;
         return;
@@ -287,6 +288,14 @@
           </div>
         `;
       }).join('');
+    }
+
+    function toggleParticipants() {
+      const body = document.getElementById('participants-body');
+      const hint = document.getElementById('participants-toggle-hint');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      hint.textContent = isOpen ? '▼ タップで展開' : '▲ タップで閉じる';
     }
 
     function renderMatch(match, sideLabelLeft, sideLabelRight){
@@ -322,7 +331,7 @@
       const blockMatches = bracket.blockMatches || {};
       const finals = bracket.finals || {};
 
-      const blockHtml = ['A','B','C','D'].map((bName) => {
+      const blockHtml = ['A','B','C','D','E','F','G','H'].map((bName) => {
         const rounds = blockMatches[bName];
         if (!Array.isArray(rounds) || rounds.length === 0) return '';
         const roundsHtml = rounds.map((round, i) => {
@@ -348,20 +357,44 @@
         `;
       }).filter(Boolean).join('');
 
+      const qf = Array.isArray(finals.qf) ? finals.qf : null;
       const sf = Array.isArray(finals.sf) ? finals.sf : null;
       const f = finals.f || null;
       const third = finals.third || null;
+
+      const qfLabels = [
+        ['A代表', 'B代表'],
+        ['C代表', 'D代表'],
+        ['E代表', 'F代表'],
+        ['G代表', 'H代表'],
+      ];
+
+      const qfSection = (qf && qf.length)
+        ? `
+            <div class="flex items-center justify-between gap-2">
+              <div class="round-label" style="color:rgba(56,189,248,0.95)">QUARTER FINAL</div>
+              <span class="pill" style="border-color:rgba(56,189,248,0.45);background:rgba(56,189,248,0.10);color:#38bdf8">QF</span>
+            </div>
+            <div class="bracket-wrap">
+              ${qf.map((m, i) => {
+                const labs = qfLabels[i] || ['', ''];
+                return renderMatch(m, labs[0], labs[1]);
+              }).join('')}
+            </div>
+          `
+        : '';
 
       const finalsHtml = `
         <div class="block" style="border-color:rgba(236,72,153,0.35)">
           <div class="block-header" style="color:var(--yellow);border-bottom-color:rgba(236,72,153,0.25);background:rgba(236,72,153,0.08)">FINAL STAGE</div>
           <div class="round">
+            ${qfSection ? `${qfSection}<div class="connector" style="border-left-color:rgba(56,189,248,0.25)"></div>` : ''}
             <div class="flex items-center justify-between gap-2">
               <div class="round-label" style="color:rgba(148,163,184,0.95)">SEMIFINALS</div>
               <span class="pill">SF</span>
             </div>
             <div class="bracket-wrap">
-              ${sf ? sf.map((m, i) => renderMatch(m, i === 0 ? 'A代表' : 'C代表', i === 0 ? 'B代表' : 'D代表')).join('') : `<div class="text-sm text-slate-400">未開始</div>`}
+              ${sf ? sf.map((m, i) => renderMatch(m, i === 0 ? 'WQF1' : 'WQF3', i === 0 ? 'WQF2' : 'WQF4')).join('') : `<div class="text-sm text-slate-400">未開始</div>`}
             </div>
             <div class="connector"></div>
             <div class="flex items-center justify-between gap-2 mt-1">
@@ -405,7 +438,7 @@
         $('tournamentName').textContent = '—';
         $('phase').textContent = '—';
         $('updatedAt').textContent = '—';
-        $('participants').innerHTML = '';
+        renderParticipants([]);
         $('bracket').innerHTML = '';
         return;
       }
@@ -476,11 +509,17 @@
       </div>
 
       <div class="card mt-4 p-4">
-        <div class="flex items-center justify-between">
-          <div class="stage-title">Participants</div>
-          <div class="text-[11px]" style="color:var(--muted);">名前 / ランク・BP・勝率</div>
+        <div id="participants-header" onclick="toggleParticipants()" style="cursor:pointer; touch-action:manipulation;" class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="stage-title">PARTICIPANTS</span>
+          <span id="participants-count">0人</span>
+          <span id="participants-toggle-hint" style="font-size:10px;">▼ タップで展開</span>
         </div>
-        <div id="participants" class="mt-2"></div>
+        <div id="participants-body" style="display:none;">
+          <div class="flex justify-end mt-2">
+            <div class="text-[11px]" style="color:var(--muted);">名前 / ランク・BP・勝率</div>
+          </div>
+          <div id="participants" class="mt-2"></div>
+        </div>
       </div>
 
       <div class="card mt-4 p-4">

@@ -264,23 +264,47 @@
 
   <!-- ベイブレード登録モーダル -->
   <div id="beybladeModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
-    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8">
-      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3">
+    <div id="beybladeCard" class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-blue neon-blue flex flex-col relative my-8 max-h-[90vh] min-h-0">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
         <h2 class="text-xl md:text-2xl font-sf text-cyber-blue tracking-widest">BEYBLADE REGISTRATION</h2>
         <button onclick="closeBeybladeModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
       </div>
 
-      <div id="beybladeContent" class="flex flex-col gap-4">
-        <div id="bayPhotoPreviewWrap" class="hidden bg-cyber-bg border border-cyber-table-border rounded-lg overflow-hidden">
-          <img id="bayPhotoPreviewImg" alt="ベイ確認写真" style="width:100%; max-height:200px; object-fit:contain; display:block;">
+      <div id="beybladeContent" class="flex flex-col flex-1 min-h-0 gap-3">
+        <!-- 上ペイン: 写真のみ（45vh 固定・写真なし時は hidden のまま） -->
+        <div id="bayPhotoPreviewWrap" class="hidden shrink-0 h-[45vh] min-h-[200px] max-h-[45vh] bg-cyber-bg border border-cyber-table-border rounded-lg overflow-hidden flex items-center justify-center">
+          <img id="bayPhotoPreviewImg" alt="ベイ確認写真" style="width:100%; max-height:45vh; min-height:200px; object-fit:contain; display:block;">
         </div>
-        <!-- ベイブレードリスト表示エリア -->
-        <div id="beybladeList" class="space-y-3"></div>
-        
-        <!-- 追加ボタン -->
-        <div class="flex items-center gap-2">
-          <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
-            ＋ ベイブレードを追加
+        <!-- 下ペイン: 一覧・追加・フォーム（スクロール） -->
+        <div class="flex flex-col flex-1 min-h-0 overflow-y-auto gap-4">
+          <div id="beybladeList" class="space-y-3"></div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
+              ＋ ベイブレードを追加
+            </button>
+          </div>
+          <div id="beybladeFormArea" class="shrink-0"></div>
+        </div>
+        <!-- 確認依頼ボタン -->
+        <div id="confirmRequestArea" class="hidden mt-2">
+          <button
+            onclick="startBeybladeConfirm()"
+            class="w-full bg-cyber-orange hover:bg-cyber-orange/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors"
+            style="touch-action: manipulation;"
+          >
+            👁 確認依頼
+          </button>
+        </div>
+
+        <!-- 参加者向け確認オーバーレイ（通常は非表示） -->
+        <div id="beybladeConfirmOverlay" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 z-[200] flex-col items-center justify-center gap-8">
+          <p class="text-cyber-text font-sf text-xl tracking-widest opacity-70">ベイブレードを確認してください</p>
+          <button
+            onclick="endBeybladeConfirm()"
+            class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-16 py-6 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
+            style="touch-action: manipulation;"
+          >
+            ✅ OK
           </button>
         </div>
       </div>
@@ -2646,6 +2670,36 @@
       } else {
         addBtn.style.display = 'block';
       }
+
+      // 確認依頼ボタンはベイが1件以上登録されている時のみ表示
+      const confirmArea = document.getElementById('confirmRequestArea');
+      if (confirmArea) {
+        if (participant.beyblades && participant.beyblades.length > 0) {
+          confirmArea.classList.remove('hidden');
+        } else {
+          confirmArea.classList.add('hidden');
+        }
+      }
+    }
+
+    function startBeybladeConfirm() {
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (!card || !overlay) return;
+      card.style.transition = 'none';
+      card.style.transform = 'rotate(180deg)';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+    }
+
+    function endBeybladeConfirm() {
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (!card || !overlay) return;
+      card.style.transition = 'none';
+      card.style.transform = 'rotate(0deg)';
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
     }
 
     /**
@@ -2894,6 +2948,11 @@
      * ベイブレード管理モーダルを閉じる
      */
     function closeBeybladeModal() {
+      // 確認依頼状態をリセット
+      const card = document.getElementById('beybladeCard');
+      const overlay = document.getElementById('beybladeConfirmOverlay');
+      if (card) { card.style.transition = 'none'; card.style.transform = 'rotate(0deg)'; }
+      if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
       updateBayPhotoPreview('');
