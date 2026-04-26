@@ -278,7 +278,7 @@
         <!-- 下ペイン: 一覧・追加・フォーム（スクロール） -->
         <div class="flex flex-col flex-1 min-h-0 overflow-y-auto gap-4">
           <div id="beybladeList" class="space-y-3"></div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div id="addBeybladeWrap" class="flex items-center gap-2 shrink-0">
             <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">
               ＋ ベイブレードを追加
             </button>
@@ -296,12 +296,13 @@
           </button>
         </div>
 
-        <!-- 参加者向け確認オーバーレイ（通常は非表示） -->
-        <div id="beybladeConfirmOverlay" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 z-[200] flex-col items-center justify-center gap-8">
-          <p class="text-cyber-text font-sf text-xl tracking-widest opacity-70">ベイブレードを確認してください</p>
+        <!-- 確認ビュー（確認依頼中のみ表示・カードの回転を打ち消して正立させる） -->
+        <div id="beybladeConfirmView" class="hidden flex-col items-center gap-6 py-4" style="transform: rotate(180deg);">
+          <p class="text-cyber-orange font-sf text-lg tracking-widest">登録ベイブレードを確認してください</p>
+          <div id="beybladeConfirmList" class="w-full space-y-3"></div>
           <button
             onclick="endBeybladeConfirm()"
-            class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-16 py-6 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
+            class="w-full bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-6 py-5 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
             style="touch-action: manipulation;"
           >
             ✅ OK
@@ -2684,22 +2685,70 @@
 
     function startBeybladeConfirm() {
       const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
-      if (!card || !overlay) return;
+      if (!card) return;
+
+      // 操作者側UIを隠す
+      const hideIds = ['bayPhotoPreviewWrap', 'beybladeList', 'addBeybladeWrap',
+                       'beybladeFormArea', 'confirmRequestArea'];
+      hideIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      // 確認ビューを表示し、登録ベイ一覧をテキストで描画
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      const confirmList = document.getElementById('beybladeConfirmList');
+      confirmList.innerHTML = '';
+      if (participant && participant.beyblades && participant.beyblades.length > 0) {
+        participant.beyblades.forEach((bey, i) => {
+          const div = document.createElement('div');
+          div.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-4 text-center';
+          div.innerHTML = `<span class="text-cyber-blue font-sf font-bold">#${i + 1}</span>
+        <span class="text-cyber-text font-bold text-lg ml-3">${bey.name}</span>`;
+          confirmList.appendChild(div);
+        });
+      }
+
+      const confirmView = document.getElementById('beybladeConfirmView');
+      if (confirmView) {
+        confirmView.classList.remove('hidden');
+        confirmView.classList.add('flex');
+      }
+
+      // カードを180度回転（アニメーションなし）
       card.style.transition = 'none';
       card.style.transform = 'rotate(180deg)';
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
     }
 
     function endBeybladeConfirm() {
       const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
-      if (!card || !overlay) return;
+      if (!card) return;
+
+      // カードを元に戻す（アニメーションなし）
       card.style.transition = 'none';
       card.style.transform = 'rotate(0deg)';
-      overlay.classList.add('hidden');
-      overlay.classList.remove('flex');
+
+      // 確認ビューを隠す
+      const confirmView = document.getElementById('beybladeConfirmView');
+      if (confirmView) {
+        confirmView.classList.add('hidden');
+        confirmView.classList.remove('flex');
+      }
+
+      // 操作者側UIを再表示
+      const showIds = ['beybladeList', 'addBeybladeWrap', 'beybladeFormArea'];
+      showIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+      });
+
+      // bayPhotoPreviewWrapは写真がある時だけ再表示
+      updateBayPhotoPreview(
+        (participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || ''
+      );
+
+      // confirmRequestAreaはrenderBeybladeListで制御されるので再描画
+      renderBeybladeList();
     }
 
     /**
@@ -2950,9 +2999,13 @@
     function closeBeybladeModal() {
       // 確認依頼状態をリセット
       const card = document.getElementById('beybladeCard');
-      const overlay = document.getElementById('beybladeConfirmOverlay');
+      const confirmView = document.getElementById('beybladeConfirmView');
       if (card) { card.style.transition = 'none'; card.style.transform = 'rotate(0deg)'; }
-      if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+      if (confirmView) { confirmView.classList.add('hidden'); confirmView.classList.remove('flex'); }
+      ['beybladeList', 'addBeybladeWrap', 'beybladeFormArea'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+      });
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
       updateBayPhotoPreview('');
