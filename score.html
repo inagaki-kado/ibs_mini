@@ -237,6 +237,113 @@
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
         #xtreme-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; opacity: 0; border-radius: 0; }
+        
+        /* BREAK overlay */
+        #break-overlay {
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          z-index: 998;
+          background: #0a0e17;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          overflow: hidden;
+        }
+        #break-overlay.hidden { display: none !important; }
+        
+        /* 背景ロゴ：#next-battle-logo と同一スタイルを流用 */
+        #break-bg-logo {
+          position: absolute; top: 50%; left: 50%;
+          width: 90vw; height: 90vh;
+          object-fit: contain;
+          opacity: 0.35;
+          pointer-events: none; z-index: 0;
+          transform: translate(-50%, -50%);
+        }
+        
+        /* 中央テキストエリア */
+        #break-center {
+          position: relative; z-index: 2;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          flex: 1; width: 100%;
+          gap: clamp(5px, 1vw, 14px);
+          padding-bottom: clamp(30px, 6vw, 60px);
+        }
+        
+        /* 「休憩中」メインタイトル */
+        #break-title {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(48px, 9vw, 100px);
+          font-weight: 900;
+          color: #fff;
+          letter-spacing: 0.12em;
+          text-align: center;
+          line-height: 1;
+          animation: breakGoldPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes breakGoldPulse {
+          0%,100% { text-shadow: 0 0 20px rgba(251,191,36,0.9), 0 0 55px rgba(251,191,36,0.5), 2px 2px 0 #000; }
+          50%      { text-shadow: 0 0 40px rgba(251,191,36,1),   0 0 100px rgba(251,191,36,0.7), 2px 2px 0 #000; }
+        }
+        
+        /* 区切りライン */
+        #break-divider {
+          width: clamp(120px, 35%, 300px);
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(251,191,36,0.5), transparent);
+          margin: clamp(3px, 0.5vw, 8px) 0;
+        }
+        
+        /* サブテキスト */
+        #break-sub {
+          font-family: 'Noto Sans JP', sans-serif;
+          font-size: clamp(11px, 1.8vw, 20px);
+          font-weight: 400;
+          color: rgba(255,255,255,0.55);
+          text-align: center;
+          letter-spacing: 0.08em;
+          line-height: 1.9;
+        }
+        
+        /* 次戦バー（最下段） */
+        #break-next-bar {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          z-index: 3;
+          background: rgba(0,0,0,0.80);
+          border-top: 1px solid rgba(255,255,255,0.08);
+          display: flex; align-items: center; justify-content: center;
+          gap: clamp(6px, 1.8vw, 22px);
+          padding: clamp(5px, 1vw, 12px) 4%;
+          backdrop-filter: blur(6px);
+        }
+        #break-next-bar.hidden { display: none !important; }
+        
+        #break-nb-label {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(8px, 1.1vw, 13px);
+          font-weight: 700; color: #64748b;
+          letter-spacing: 0.3em; white-space: nowrap; flex-shrink: 0;
+        }
+        #break-nb-p1 {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(12px, 2.2vw, 26px);
+          font-weight: 900; color: #fff;
+          text-shadow: 0 0 10px #0ea5e9, 0 0 25px #0ea5e9;
+          letter-spacing: 0.04em; white-space: nowrap;
+        }
+        #break-nb-vs {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(11px, 1.8vw, 20px);
+          font-weight: 900; font-style: italic;
+          color: #facc15; text-shadow: 0 0 12px #facc15;
+          flex-shrink: 0;
+        }
+        #break-nb-p2 {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(12px, 2.2vw, 26px);
+          font-weight: 900; color: #fff;
+          text-shadow: 0 0 10px #ec4899, 0 0 25px #ec4899;
+          letter-spacing: 0.04em; white-space: nowrap;
+        }
         @keyframes xtreme-glow {
             0%   { opacity: 0; box-shadow: inset 0 0 0px transparent; }
             15%  { opacity: 1; box-shadow: inset 0 0 120px 60px rgba(255,215,0,0.7), inset 0 0 300px 100px rgba(255,0,85,0.4); }
@@ -298,6 +405,28 @@
     
     <!-- Monitor overlay: receives HTML from admin apps via PeerJS -->
     <div id="remote-content-overlay" class="hidden"></div>
+
+    <!-- BREAK overlay -->
+    <div id="break-overlay" class="hidden">
+      <!-- 背景ロゴ（次戦予告の #next-battle-logo と同一仕様） -->
+      <img id="break-bg-logo" src="" alt="" style="display:none;">
+      <!-- 中央コンテンツ -->
+      <div id="break-center">
+        <div id="break-title">休憩中</div>
+        <div id="break-divider"></div>
+        <div id="break-sub">
+          大会の進行を一時休止しています<br>
+          再開までしばらくお待ちください
+        </div>
+      </div>
+      <!-- 次戦バー（最下段） -->
+      <div id="break-next-bar" class="hidden">
+        <div id="break-nb-label">NEXT BATTLE</div>
+        <div id="break-nb-p1"></div>
+        <div id="break-nb-vs">VS</div>
+        <div id="break-nb-p2"></div>
+      </div>
+    </div>
 
     <!-- NEXT BATTLE announcement overlay -->
     <div id="next-battle-overlay" class="hidden" onclick="hideNextBattle()">
@@ -851,6 +980,12 @@
                         // ★NEW: ベイブレード名受信処理
                         handleBeybladeSelection(data.data);
                     }
+                    else if (data.type === 'BREAK_START') {
+                        showBreakOverlay(data);
+                    }
+                    else if (data.type === 'BREAK_END') {
+                        hideBreakOverlay();
+                    }
                     else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;
                         document.getElementById('name2').value = data.p2;
@@ -950,6 +1085,54 @@
         }
         function hideNextBattle() {
             document.getElementById('next-battle-overlay').classList.add('hidden');
+        }
+
+        function showBreakOverlay(data) {
+            const overlay = document.getElementById('break-overlay');
+            const logo    = document.getElementById('break-bg-logo');
+
+            // 背景ロゴ処理：SHOW_PREVIEW の showNextBattle() と同一ロジックを流用
+            const logoDataUrl      = data.logoDataUrl || null;
+            const previewBackground = data.previewBackground || null;
+            const logoSrc          = data.logoSrc || null;
+            const showLogo         = data.showLogo || false;
+
+            if (logoDataUrl) {
+                logo.src = logoDataUrl;
+                logo.style.display = showLogo ? 'block' : 'none';
+            } else {
+                const bg = (previewBackground != null && previewBackground !== '')
+                    ? previewBackground : logoSrc;
+                if (!bg || bg === 'none' || bg === '') {
+                    logo.style.display = 'none';
+                } else {
+                    logo.src = bg;
+                    logo.style.display = showLogo ? 'block' : 'none';
+                }
+            }
+
+            // 次戦バー
+            const p1 = data.p1 || '';
+            const p2 = data.p2 || '';
+            const bar = document.getElementById('break-next-bar');
+            if (p1 && p2) {
+                document.getElementById('break-nb-p1').textContent = p1;
+                document.getElementById('break-nb-p2').textContent = p2;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+
+            overlay.classList.remove('hidden');
+        }
+
+        function hideBreakOverlay() {
+            const overlay = document.getElementById('break-overlay');
+            overlay.classList.add('hidden');
+            // ロゴをリセット
+            const logo = document.getElementById('break-bg-logo');
+            logo.src = '';
+            logo.style.display = 'none';
         }
 
         // ==========================================

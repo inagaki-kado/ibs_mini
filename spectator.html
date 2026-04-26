@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOURNAMENT SPECTATOR | 板橋ベイブレード会</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0e17;
+      --card:#0d131f;
+      --border:#1e293b;
+      --accent:#0ea5e9;
+      --text:#e2e8f0;
+      --muted:#94a3b8;
+      --pink:#ec4899;
+      --green:#22c55e;
+      --yellow:#facc15;
+      --orange:#f97316;
+    }
+    html,body{background:var(--bg); color:var(--text); font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji"; }
+    .font-orbitron{ font-family:"Orbitron", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .card{
+      background:rgba(13,19,31,0.8);
+      border:1px solid rgba(14,165,233,0.25);
+      border-radius:14px;
+      box-shadow: 0 0 22px rgba(14,165,233,0.08);
+    }
+    .scanline::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px);
+      z-index:50;
+    }
+    .spinner{
+      width:34px; height:34px;
+      border-radius:999px;
+      border:3px solid rgba(14,165,233,0.18);
+      border-top-color: var(--accent);
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Bracket visuals */
+    .bracket-wrap{ display:flex; flex-direction:column; gap:12px; }
+    .stage-title{
+      font-size:11px; letter-spacing:0.22em; text-transform:uppercase;
+      color:var(--accent);
+      text-shadow:0 0 14px rgba(14,165,233,0.35);
+    }
+    .block-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .block{
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(30,41,59,0.9);
+      border-radius: 12px;
+      overflow:hidden;
+    }
+    .block-header{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(14,165,233,0.25);
+      background: rgba(14,165,233,0.08);
+      font-weight:900;
+      letter-spacing:0.20em;
+      text-align:center;
+      color: var(--accent);
+      text-shadow: 0 0 12px rgba(14,165,233,0.4);
+    }
+    .round{
+      padding:10px 12px 12px;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .round-label{
+      font-size:11px;
+      letter-spacing:0.18em;
+      color: var(--muted);
+      font-family:"Orbitron", monospace;
+    }
+    .match{
+      position:relative;
+      background: rgba(13,19,31,0.7);
+      border:1px solid rgba(30,41,59,0.95);
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .match::after{
+      content:"";
+      position:absolute; left:0; top:0; bottom:0; width:3px;
+      background: linear-gradient(180deg, rgba(14,165,233,0.75), rgba(236,72,153,0.75));
+      opacity:0.55;
+    }
+    .p-row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:9px 10px 9px 12px;
+      font-weight:700;
+      line-height:1.15;
+    }
+    .p-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .p-meta{
+      flex-shrink:0;
+      font-family:"Orbitron", monospace;
+      font-size:10px;
+      letter-spacing:0.10em;
+      color: rgba(148,163,184,0.9);
+    }
+    .p-win{ color:#0ea5e9; text-shadow:0 0 10px rgba(14,165,233,0.4); }
+    .p-lose{ color:#64748b; text-decoration: line-through; }
+    .p-right.p-win{ color:#ec4899; text-shadow:0 0 10px rgba(236,72,153,0.35); }
+    .divider{ height:1px; background: rgba(30,41,59,0.85); }
+
+    .finals-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(14,165,233,0.35);
+      background: rgba(14,165,233,0.08);
+      color: var(--accent);
+      font-family:"Orbitron", monospace;
+      font-size:10px;
+      letter-spacing:0.18em;
+      white-space:nowrap;
+    }
+
+    /* small connector hint (visual line) */
+    .connector{
+      height:10px;
+      border-left:2px solid rgba(14,165,233,0.25);
+      margin-left:14px;
+    }
+
+    @media (min-width: 480px){
+      .block-grid{ grid-template-columns:1fr 1fr; }
+    }
+  </style>
+  <script>
+    const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKuink4ymzQKURvbWWZ5HhAkQ9ww-5u7rcDQDmUXqE9BUevkNCbA7HhO4nEEN9M7k9JIEsGNH99nBz/pub?gid=878276324&single=true&output=csv'; // Google Sheets CSV公開URL（空文字列で初期化）
+
+    const REFRESH_MS = 30_000;
+
+    function $(id){ return document.getElementById(id); }
+
+    function setLoading(isLoading){
+      $('loading').classList.toggle('hidden', !isLoading);
+      $('content').classList.toggle('opacity-40', isLoading);
+    }
+
+    function setMessage(kind, text){
+      const box = $('message');
+      const msg = $('messageText');
+      box.classList.remove('hidden');
+      msg.textContent = text;
+      box.dataset.kind = kind;
+      const border = kind === 'error' ? 'rgba(236,72,153,0.5)' : 'rgba(14,165,233,0.35)';
+      box.style.borderColor = border;
+    }
+
+    function clearMessage(){
+      $('message').classList.add('hidden');
+      $('messageText').textContent = '';
+    }
+
+    function formatPhase(phase){
+      if (phase === 'waiting') return '待機中';
+      if (phase === 'ongoing') return '進行中';
+      if (phase === 'finished') return '終了';
+      return '不明';
+    }
+
+    function safeJsonParse(str){
+      try {
+        if (str == null) return null;
+        const s = String(str).trim();
+        if (!s) return null;
+        return JSON.parse(s);
+      } catch { return null; }
+    }
+
+    // Minimal CSV parser with quoted fields
+    function parseCsv(text){
+      const rows = [];
+      let row = [];
+      let cur = '';
+      let i = 0;
+      let inQuotes = false;
+      while (i < text.length){
+        const ch = text[i];
+        if (inQuotes){
+          if (ch === '"'){
+            if (text[i+1] === '"'){ cur += '"'; i += 2; continue; }
+            inQuotes = false; i++; continue;
+          }
+          cur += ch; i++; continue;
+        }
+        if (ch === '"'){ inQuotes = true; i++; continue; }
+        if (ch === ','){ row.push(cur); cur = ''; i++; continue; }
+        if (ch === '\r'){
+          if (text[i+1] === '\n') i++;
+          row.push(cur); rows.push(row);
+          row = []; cur = ''; i++; continue;
+        }
+        if (ch === '\n'){
+          row.push(cur); rows.push(row);
+          row = []; cur = ''; i++; continue;
+        }
+        cur += ch; i++;
+      }
+      row.push(cur);
+      rows.push(row);
+      return rows.filter(r => r.some(c => String(c||'').trim() !== ''));
+    }
+
+    function pickLatestStateFromCsv(csvText){
+      const rows = parseCsv(csvText);
+      if (rows.length < 2) return null;
+      const header = rows[0].map(h => String(h||'').trim());
+      const last = rows[rows.length - 1];
+      const get = (key) => {
+        const idx = header.findIndex(h => h === key);
+        return idx >= 0 ? (last[idx] ?? '') : '';
+      };
+
+      // expected headers (recommended): tournament_name, phase, bracket, participants, updated_at
+      const tournament_name = get('tournament_name') || get('tournamentName') || get('大会名');
+      const phase = get('phase') || get('フェーズ');
+      const bracketRaw = get('bracket') || get('ブラケット');
+      const participantsRaw = get('participants') || get('参加者');
+      const updatedAt = get('updated_at') || get('updatedAt') || get('最終更新');
+
+      const bracket = safeJsonParse(bracketRaw) || safeJsonParse(decodeURIComponentSafe(bracketRaw)) || null;
+      const participants = safeJsonParse(participantsRaw) || safeJsonParse(decodeURIComponentSafe(participantsRaw)) || null;
+
+      return { tournament_name, phase, bracket, participants, updatedAt, _rows: rows.length };
+    }
+
+    function decodeURIComponentSafe(s){
+      try { return decodeURIComponent(String(s || '')); } catch { return String(s || ''); }
+    }
+
+    function normalizeParticipants(list){
+      if (!Array.isArray(list)) return [];
+      return list.map(p => ({
+        name: (p && p.name) ? String(p.name) : '---',
+        memo1: (p && p.memo1) ? String(p.memo1) : '',
+        bey: (Array.isArray(p?.beyblades) && p.beyblades.length) ? String(p.beyblades[0]?.selectionName || p.beyblades[0]?.name || '') : '',
+      }));
+    }
+
+    function renderParticipants(list){
+      const el = $('participants');
+      const items = normalizeParticipants(list);
+      if (items.length === 0){
+        el.innerHTML = `<div class="text-sm text-slate-400">参加者データがありません</div>`;
+        return;
+      }
+      el.innerHTML = items.map((p) => {
+        const memo = p.memo1 ? `<span class="ml-2 text-[11px] px-2 py-0.5 rounded-full border" style="border-color:rgba(14,165,233,0.25);background:rgba(14,165,233,0.06);color:rgba(14,165,233,0.95);">#${escapeHtml(p.memo1)}</span>` : '';
+        const bey = p.bey ? `<div class="text-[11px] mt-0.5 text-slate-400">使用ベイ: <span class="text-slate-200 font-semibold">${escapeHtml(p.bey)}</span></div>` : '';
+        return `
+          <div class="py-2.5 border-b" style="border-color:rgba(30,41,59,0.65)">
+            <div class="flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-bold text-slate-100 truncate">${escapeHtml(p.name)}${memo}</div>
+                ${bey}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMatch(match, sideLabelLeft, sideLabelRight){
+      if (!match || !match.p1 || !match.p2) return '';
+      const p1Name = match.p1.id === 'BYE' ? 'BYE' : (match.p1.name || '---');
+      const p2Name = match.p2.id === 'BYE' ? 'BYE' : (match.p2.name || '---');
+      const winner = match.winner;
+      const p1Class = winner === 1 ? 'p-win' : winner === 2 ? 'p-lose' : '';
+      const p2Class = winner === 2 ? 'p-win' : winner === 1 ? 'p-lose' : '';
+      const score = match.score ? `<span class="p-meta">${escapeHtml(match.score)}</span>` : `<span class="p-meta">VS</span>`;
+      return `
+        <div class="match">
+          <div class="p-row">
+            <div class="p-meta">${escapeHtml(sideLabelLeft || '')}</div>
+            <div class="p-name ${p1Class}">${escapeHtml(p1Name)}</div>
+          </div>
+          <div class="divider"></div>
+          <div class="p-row">
+            <div class="p-meta">${escapeHtml(sideLabelRight || '')}</div>
+            <div class="p-name p-right ${p2Class}">${escapeHtml(p2Name)}</div>
+            ${score}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBracket(bracket){
+      const el = $('bracket');
+      if (!bracket || typeof bracket !== 'object'){
+        el.innerHTML = `<div class="text-sm text-slate-400">ブラケットデータがありません</div>`;
+        return;
+      }
+      const blockMatches = bracket.blockMatches || {};
+      const finals = bracket.finals || {};
+
+      const blockHtml = ['A','B','C','D'].map((bName) => {
+        const rounds = blockMatches[bName];
+        if (!Array.isArray(rounds) || rounds.length === 0) return '';
+        const roundsHtml = rounds.map((round, i) => {
+          const label = (i === rounds.length - 1) ? 'BLOCK FINAL' : `ROUND ${i+1}`;
+          const lblColor = (i === rounds.length - 1) ? 'var(--pink)' : 'var(--green)';
+          const matchesHtml = (round || []).map((m, j) => {
+            const l1 = (i === 0) ? String(j * 2 + 1) : '';
+            const l2 = (i === 0) ? String(j * 2 + 2) : '';
+            return renderMatch(m, l1, l2);
+          }).join('');
+          return `
+            <div class="round">
+              <div class="round-label" style="color:${lblColor}">${escapeHtml(label)}</div>
+              <div class="bracket-wrap">${matchesHtml}</div>
+            </div>
+          `;
+        }).join('');
+        return `
+          <div class="block">
+            <div class="block-header">${bName} BLOCK</div>
+            ${roundsHtml}
+          </div>
+        `;
+      }).filter(Boolean).join('');
+
+      const sf = Array.isArray(finals.sf) ? finals.sf : null;
+      const f = finals.f || null;
+      const third = finals.third || null;
+
+      const finalsHtml = `
+        <div class="block" style="border-color:rgba(236,72,153,0.35)">
+          <div class="block-header" style="color:var(--yellow);border-bottom-color:rgba(236,72,153,0.25);background:rgba(236,72,153,0.08)">FINAL STAGE</div>
+          <div class="round">
+            <div class="flex items-center justify-between gap-2">
+              <div class="round-label" style="color:rgba(148,163,184,0.95)">SEMIFINALS</div>
+              <span class="pill">SF</span>
+            </div>
+            <div class="bracket-wrap">
+              ${sf ? sf.map((m, i) => renderMatch(m, i === 0 ? 'A代表' : 'C代表', i === 0 ? 'B代表' : 'D代表')).join('') : `<div class="text-sm text-slate-400">未開始</div>`}
+            </div>
+            <div class="connector"></div>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <div class="round-label" style="color:var(--yellow)">GRAND FINAL</div>
+              <span class="pill" style="border-color:rgba(250,204,21,0.4);background:rgba(250,204,21,0.08);color:var(--yellow)">F</span>
+            </div>
+            <div class="bracket-wrap">
+              ${f ? renderMatch(f, 'W1', 'W2') : `<div class="text-sm text-slate-400">未開始</div>`}
+            </div>
+            <div class="connector" style="border-left-color:rgba(249,115,22,0.25)"></div>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <div class="round-label" style="color:var(--orange)">3RD PLACE MATCH</div>
+              <span class="pill" style="border-color:rgba(249,115,22,0.35);background:rgba(249,115,22,0.08);color:var(--orange)">3RD</span>
+            </div>
+            <div class="bracket-wrap">
+              ${third ? renderMatch(third, 'L1', 'L2') : `<div class="text-sm text-slate-400">未開始</div>`}
+            </div>
+          </div>
+        </div>
+      `;
+
+      el.innerHTML = `
+        <div class="block-grid">${blockHtml}</div>
+        <div class="mt-3 finals-grid">${finalsHtml}</div>
+      `;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#39;");
+    }
+
+    async function fetchAndRender(){
+      if (!SHEETS_CSV_URL){
+        setLoading(false);
+        setMessage('info', '設定が必要です: SHEETS_CSV_URL を spectator.html 冒頭で設定してください。');
+        $('tournamentName').textContent = '—';
+        $('phase').textContent = '—';
+        $('updatedAt').textContent = '—';
+        $('participants').innerHTML = '';
+        $('bracket').innerHTML = '';
+        return;
+      }
+
+      setLoading(true);
+      clearMessage();
+      try {
+        const res = await fetch(SHEETS_CSV_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const csvText = await res.text();
+        const state = pickLatestStateFromCsv(csvText);
+        if (!state) throw new Error('CSVの形式が想定と異なります（ヘッダー行とデータ行が必要）');
+
+        $('tournamentName').textContent = state.tournament_name || '—';
+        $('phase').textContent = formatPhase(state.phase);
+        $('updatedAt').textContent = state.updatedAt
+          ? String(state.updatedAt)
+          : new Date().toLocaleString('ja-JP');
+
+        renderParticipants(state.participants);
+        renderBracket(state.bracket);
+      } catch (e) {
+        console.error(e);
+        setMessage('error', '取得に失敗しました。CSV公開URLとシートの公開設定を確認してください。');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchAndRender();
+      setInterval(fetchAndRender, REFRESH_MS);
+    });
+  </script>
+</head>
+<body class="scanline">
+  <div class="min-h-screen">
+    <div class="mx-auto px-4 py-5" style="max-width:480px;">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="font-orbitron text-xs tracking-[0.28em]" style="color:var(--accent);text-shadow:0 0 14px rgba(14,165,233,0.35);">SPECTATOR VIEW</div>
+          <div class="font-orbitron text-2xl font-black mt-1">TOURNAMENT <span style="color:var(--accent);">LIVE</span></div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] font-orbitron tracking-[0.2em]" style="color:var(--muted);">AUTO REFRESH</div>
+          <div class="text-xs font-orbitron" style="color:var(--accent);">30s</div>
+        </div>
+      </div>
+
+      <div id="message" class="card mt-4 p-4 border" style="border-color:rgba(14,165,233,0.35)">
+        <div class="text-sm" id="messageText"></div>
+      </div>
+
+      <div class="card mt-4 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-[10px] font-orbitron tracking-[0.22em]" style="color:var(--muted);">TOURNAMENT</div>
+            <div id="tournamentName" class="font-bold text-lg truncate">—</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] font-orbitron tracking-[0.22em]" style="color:var(--muted);">PHASE</div>
+            <div id="phase" class="font-orbitron font-black" style="color:var(--accent);">—</div>
+          </div>
+        </div>
+        <div class="mt-3 text-[11px]" style="color:var(--muted);">
+          最終更新: <span id="updatedAt" class="font-orbitron" style="color:rgba(226,232,240,0.95)">—</span>
+        </div>
+      </div>
+
+      <div class="card mt-4 p-4">
+        <div class="flex items-center justify-between">
+          <div class="stage-title">Participants</div>
+          <div class="text-[11px]" style="color:var(--muted);">名前 / 使用ベイ</div>
+        </div>
+        <div id="participants" class="mt-2"></div>
+      </div>
+
+      <div class="card mt-4 p-4">
+        <div class="stage-title">Bracket</div>
+        <div id="bracket" class="mt-3"></div>
+      </div>
+
+      <div id="loading" class="hidden fixed inset-0 z-[60] flex items-center justify-center">
+        <div class="card px-5 py-4 flex items-center gap-3">
+          <div class="spinner"></div>
+          <div>
+            <div class="font-orbitron text-xs tracking-[0.22em]" style="color:var(--accent);">UPDATING</div>
+            <div class="text-sm" style="color:var(--muted);">最新状態を取得中...</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="content"></div>
+    </div>
+  </div>
+</body>
+</html>
+

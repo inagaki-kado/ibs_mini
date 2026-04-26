@@ -248,6 +248,12 @@
               </span>
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
+              <button
+                id="btn-break"
+                onclick="toggleBreak()"
+                class="text-xs bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-1 rounded font-bold transition-colors"
+                style="touch-action: manipulation;"
+              >☕ 休憩</button>
             </div>
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
@@ -1009,6 +1015,7 @@
     let activeNextBattleId = null;
     const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
     let hudPreviewBackground = 'evojlogo.png';
+    let isBreakMode = false; // 休憩中フラグ
 
     function getShowPreviewHudFields() {
       const el = document.getElementById('hud-preview-bg');
@@ -2169,7 +2176,7 @@
             if (p.type === 'UX')   return p.UX || '';
             // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
             if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '');
+            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
             return bey.name || '';
         }
 
@@ -2454,6 +2461,67 @@
         if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: true, logoSrc: 'evojlogo.png', previewBackground: 'evojlogo.png', logoDataUrl: null });
         activeNextBattleId = matchKey;
       }
+    }
+
+    function sendBreakStart() {
+        if (!conn || !conn.open) return;
+        // 次戦予告と同じロゴ設定を流用
+        const hudFields = getShowPreviewHudFields();
+        // 現在の activeNextBattleId から次戦情報を取得（なければ空）
+        // ※ p1/p2 は呼び出し元から渡す設計にするため、ここでは空で送る
+        // （ボタンには別途 sendBreakStartWithNext(p1, p2) を使う）
+        conn.send({
+            type: 'BREAK_START',
+            p1: '',
+            p2: '',
+            ...hudFields
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakStartWithNext(p1, p2) {
+        if (!conn || !conn.open) return;
+        const hudFields = getShowPreviewHudFields();
+        conn.send({
+            type: 'BREAK_START',
+            p1: p1 || '',
+            p2: p2 || '',
+            ...hudFields
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakEnd() {
+        if (!conn || !conn.open) return;
+        conn.send({ type: 'BREAK_END' });
+        isBreakMode = false;
+        updateBreakButton();
+    }
+
+    function toggleBreak() {
+        if (isBreakMode) {
+            sendBreakEnd();
+        } else {
+            sendBreakStart();
+        }
+    }
+
+    function updateBreakButton() {
+        const btn = document.getElementById('btn-break');
+        if (!btn) return;
+        if (isBreakMode) {
+            btn.textContent = '▶ 再開';
+            btn.classList.remove('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+            btn.classList.add('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                              'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+        } else {
+            btn.textContent = '☕ 休憩';
+            btn.classList.remove('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                                 'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+            btn.classList.add('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+        }
     }
 
     function scrollRemote(amount) {

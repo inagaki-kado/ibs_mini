@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -123,6 +124,7 @@
             <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
+            <button onclick="downloadBayPhotosZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 ベイ写真をZIPダウンロード</button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
@@ -178,6 +180,12 @@
               </span>
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 R1 手動入替</button>
+              <button
+                id="btn-break"
+                onclick="toggleBreak()"
+                class="text-xs bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-1 rounded font-bold transition-colors"
+                style="touch-action: manipulation;"
+              >☕ 休憩</button>
             </div>
             <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
@@ -263,6 +271,9 @@
       </div>
 
       <div id="beybladeContent" class="flex flex-col gap-4">
+        <div id="bayPhotoPreviewWrap" class="hidden bg-cyber-bg border border-cyber-table-border rounded-lg overflow-hidden">
+          <img id="bayPhotoPreviewImg" alt="ベイ確認写真" style="width:100%; max-height:200px; object-fit:contain; display:block;">
+        </div>
         <!-- ベイブレードリスト表示エリア -->
         <div id="beybladeList" class="space-y-3"></div>
         
@@ -298,6 +309,9 @@
       </div>
     </div>
   </div>
+
+  <!-- ベイ確認写真撮影用（iOS Safari対応） -->
+  <input id="bayPhotoInput" type="file" accept="image/*" capture="environment" style="display:none;">
 
 
 <style>
@@ -775,6 +789,11 @@
 
     // iOS Safari タップ補完（select-none環境でのonclick誤認識対策）
 
+    // ==========================================
+    // Google Sheets 同期（GAS Webアプリ）
+    // ==========================================
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxs6j8vOdWe6f5P616KV_wxpLUABL73xAcCFOMFEpKYpPdSAZkg0GVdHjo1ZTlkujmn/exec'; // Google Apps Script WebアプリURL（未設定なら同期しない）
+
     let participants = []; let pidCounter = 1; let isSetupDone = false; let isTournamentStarted = false; let tournamentName = '';
     const colors = ['赤', '青', '黄', '緑']; const colorCodes = { '赤': 'bg-cyber-pink', '青': 'bg-cyber-blue', '黄': 'bg-yellow-400 text-black', '緑': 'bg-cyber-green' };
     
@@ -798,6 +817,41 @@
     let swapPending = null;
 
     let isEffectOn = true;
+
+    function getTournamentPhase() {
+      if (!isSetupDone) return 'waiting';
+      if (!isTournamentStarted) return 'waiting';
+      const isFinished = !!(finals && finals.f && finals.third && finals.f.winner !== null && finals.third.winner !== null);
+      return isFinished ? 'finished' : 'ongoing';
+    }
+
+    function getBracketSnapshot() {
+      return {
+        globalBlockSize,
+        blockMap,
+        blockMatches,
+        finals,
+      };
+    }
+
+    async function syncToSheets() {
+      if (!SHEETS_API_URL) return;
+      try {
+        const payload = {
+          tournament_name: tournamentName || '',
+          phase: getTournamentPhase(),
+          bracket: getBracketSnapshot(),
+          participants,
+        };
+        await fetch(SHEETS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {
+        console.warn('syncToSheets failed:', e);
+      }
+    }
 
     function toggleEffectMode() {
         isEffectOn = !isEffectOn;
@@ -866,6 +920,7 @@
     let activeNextBattleId = null;
     const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
     let hudPreviewBackground = 'maintitle_white.png';
+    let isBreakMode = false; // 休憩中フラグ
 
     function getShowPreviewHudFields() {
       const el = document.getElementById('hud-preview-bg');
@@ -1005,6 +1060,24 @@
         else {
             if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
             else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
+
+            // ▼ スコアボタンに対応する決まり手を自動追加
+            const kimariteCmdMap = {
+              'P1_X': 'XF', 'P2_X': 'XF',
+              'P1_B': 'BF', 'P2_B': 'BF',
+              'P1_O': 'OF', 'P2_O': 'OF',
+              'P1_S': 'SF', 'P2_S': 'SF',
+            };
+            const autoK = kimariteCmdMap[cmd];
+            if (autoK && KIMARITE_ORDER.includes(autoK)) {
+              remoteKimariteList.push(autoK);
+              updateRemoteKimariteUI();
+              if (currentRemoteMatch && currentRemoteMatch.match) {
+                currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
+                saveState();
+              }
+            }
+            // ▲ ここまで
         }
         updateRemoteScoreUI();
     }
@@ -1314,6 +1387,94 @@
     // ==========================================
     // 参加者管理
     // ==========================================
+    let currentBayPhotoParticipantId = null;
+
+    function getBayPhotoStorageKey(name) {
+      return `bayPhoto_${encodeURIComponent(String(name || ''))}`;
+    }
+
+    function getBayPhotoDataUrlByName(name) {
+      const safeKey = getBayPhotoStorageKey(name);
+      const v1 = localStorage.getItem(safeKey);
+      if (v1) return v1;
+      // 旧仕様（参加者名をそのままキー）で保存されていた場合の互換読み取り
+      const rawKey = `bayPhoto_${String(name || '')}`;
+      return localStorage.getItem(rawKey);
+    }
+
+    function hasBayPhoto(name) {
+      return !!getBayPhotoDataUrlByName(name);
+    }
+
+    function setBayPhotoDataUrlByName(name, dataUrl) {
+      localStorage.setItem(getBayPhotoStorageKey(name), dataUrl);
+    }
+
+    function startBayPhotoCapture(participantId) {
+      const p = participants.find(x => x.id === participantId);
+      if (!p) return;
+      currentBayPhotoParticipantId = participantId;
+      const input = document.getElementById('bayPhotoInput');
+      if (!input) return showAlert('写真入力が見つかりません');
+      input.value = '';
+      input.click();
+    }
+
+    function updateBayPhotoPreview(participantName) {
+      const wrap = document.getElementById('bayPhotoPreviewWrap');
+      const img = document.getElementById('bayPhotoPreviewImg');
+      if (!wrap || !img) return;
+      const dataUrl = getBayPhotoDataUrlByName(participantName);
+      if (dataUrl) {
+        img.src = dataUrl;
+        wrap.classList.remove('hidden');
+      } else {
+        img.removeAttribute('src');
+        wrap.classList.add('hidden');
+      }
+    }
+
+    function getYYMMDD() {
+      const d = new Date();
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}${mm}${dd}`;
+    }
+
+    function dataUrlToUint8Array(dataUrl) {
+      const base64 = String(dataUrl || '').split(',')[1] || '';
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    async function downloadBayPhotosZip() {
+      if (typeof JSZip === 'undefined') return showAlert('JSZipの読み込みに失敗しました');
+      const yymmdd = getYYMMDD();
+      const zip = new JSZip();
+      let added = 0;
+      participants.forEach(p => {
+        const dataUrl = getBayPhotoDataUrlByName(p.name);
+        if (!dataUrl) return;
+        zip.file(`${p.name}_${yymmdd}.jpg`, dataUrlToUint8Array(dataUrl), { binary: true });
+        added++;
+      });
+      if (added === 0) return showAlert("撮影済みの写真がありません");
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `bey_photos_${yymmdd}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 0);
+    }
+
     function openPasteModal() { if(isTournamentStarted) return showAlert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
@@ -1332,6 +1493,7 @@
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
+      void syncToSheets();
     }
 
     function addParticipant(name = '', memo1 = '') {
@@ -1341,12 +1503,14 @@
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
           beyblades: [], color: null, position: null });
       renderParticipants();
+      void syncToSheets();
     }
     
     async function removeParticipant(id) {
       if(isTournamentStarted) return showAlert("開始後は削除できません"); if(!await showConfirm("削除しますか？")) return;
       const p = participants.find(x => x.id === id); if(p && p.color) blockData[p.color][p.position] = null;
       participants = participants.filter(x => x.id !== id); renderParticipants();
+      void syncToSheets();
     }
     
 
@@ -1427,7 +1591,10 @@
         const beyCount = (p.beyblades || []).length;
         const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        const hasPhoto = hasBayPhoto(p.name);
+        const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
+        const photoLabel = hasPhoto ? '📷✅' : '📷';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1644,7 +1811,7 @@
             if (p.type === 'UX')   return p.UX || '';
             // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
             if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '') + (p.OB || '');
+            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
             return bey.name || '';
         }
 
@@ -1779,6 +1946,7 @@
       });
       finals = { sf: [{p1:null,p2:null,winner:null,score:null},{p1:null,p2:null,winner:null,score:null}], third: {p1:null,p2:null,winner:null,score:null}, f: {p1:null,p2:null,winner:null,score:null} };
       updateAdvancements(); switchTab('tournament');
+      void syncToSheets();
     }
 
     function toggleSwapMode() {
@@ -1845,6 +2013,9 @@
       }
       
       updateAdvancements();
+      if (match.winner !== null) {
+        void syncToSheets();
+      }
     }
 
     function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
@@ -1904,6 +2075,67 @@
         if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
         activeNextBattleId = matchKey;
       }
+    }
+
+    function sendBreakStart() {
+        if (!conn || !conn.open) return;
+        // 次戦予告と同じロゴ設定を流用
+        const hudFields = getShowPreviewHudFields();
+        // 現在の activeNextBattleId から次戦情報を取得（なければ空）
+        // ※ p1/p2 は呼び出し元から渡す設計にするため、ここでは空で送る
+        // （ボタンには別途 sendBreakStartWithNext(p1, p2) を使う）
+        conn.send({
+            type: 'BREAK_START',
+            p1: '',
+            p2: '',
+            ...hudFields
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakStartWithNext(p1, p2) {
+        if (!conn || !conn.open) return;
+        const hudFields = getShowPreviewHudFields();
+        conn.send({
+            type: 'BREAK_START',
+            p1: p1 || '',
+            p2: p2 || '',
+            ...hudFields
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakEnd() {
+        if (!conn || !conn.open) return;
+        conn.send({ type: 'BREAK_END' });
+        isBreakMode = false;
+        updateBreakButton();
+    }
+
+    function toggleBreak() {
+        if (isBreakMode) {
+            sendBreakEnd();
+        } else {
+            sendBreakStart();
+        }
+    }
+
+    function updateBreakButton() {
+        const btn = document.getElementById('btn-break');
+        if (!btn) return;
+        if (isBreakMode) {
+            btn.textContent = '▶ 再開';
+            btn.classList.remove('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+            btn.classList.add('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                              'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+        } else {
+            btn.textContent = '☕ 休憩';
+            btn.classList.remove('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                                 'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+            btn.classList.add('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+        }
     }
 
     function scrollRemote(amount) {
@@ -2143,6 +2375,8 @@
       document.getElementById('res1').innerText = getW(finals.f).name; document.getElementById('res2').innerText = getL(finals.f).name;
       document.getElementById('res3').innerText = getW(finals.third).name; document.getElementById('res4').innerText = getL(finals.third).name;
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
+      // 大会終了（結果確定）時にも同期
+      void syncToSheets();
     }
     function closeResults() {
       // TVモードがONの場合、自動的に終了
@@ -2354,6 +2588,7 @@
       if (!participant.beyblades) {
         participant.beyblades = [];
       }
+      updateBayPhotoPreview(participant ? participant.name : '');
       
       renderBeybladeList();
       document.getElementById('beybladeModal').classList.remove('hidden');
@@ -2660,6 +2895,7 @@
     function closeBeybladeModal() {
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
+      updateBayPhotoPreview('');
       currentBeybladeParticipantId = null;
       currentEditingBeybladeIndex = -1;
     }
@@ -2713,6 +2949,26 @@
       await loadPartsCSV();
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
+
+      const bayPhotoInput = document.getElementById('bayPhotoInput');
+      if (bayPhotoInput) {
+        bayPhotoInput.addEventListener('change', (e) => {
+          const file = e.target && e.target.files ? e.target.files[0] : null;
+          if (!file) return;
+          const p = participants.find(x => x.id === currentBayPhotoParticipantId);
+          if (!p) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+              setBayPhotoDataUrlByName(p.name, dataUrl);
+              renderParticipants();
+              if (currentBeybladeParticipantId === p.id) updateBayPhotoPreview(p.name);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
     });
 
 
