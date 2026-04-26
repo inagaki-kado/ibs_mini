@@ -235,8 +235,8 @@
       // expected headers (recommended): tournament_name, phase, bracket, participants, updated_at
       const tournament_name = get('tournament_name') || get('tournamentName') || get('大会名');
       const phase = get('phase') || get('フェーズ');
-      const bracketRaw = get('bracket') || get('ブラケット');
-      const participantsRaw = get('participants') || get('参加者');
+      const bracketRaw = get('bracket_json') || get('bracket') || get('ブラケット');
+      const participantsRaw = get('participants_json') || get('participants') || get('参加者');
       const updatedAt = get('updated_at') || get('updatedAt') || get('最終更新');
 
       const bracket = safeJsonParse(bracketRaw) || safeJsonParse(decodeURIComponentSafe(bracketRaw)) || null;
