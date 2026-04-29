@@ -72,6 +72,7 @@
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
+        <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
       </div>
 
       <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
@@ -478,6 +479,20 @@
   <!-- ベイ確認写真撮影用（iOS Safari対応） -->
   <input id="bayPhotoInput" type="file" accept="image/*" capture="environment" style="display:none;">
 
+  <!-- ベイ確認写真（常時参照用の固定プレビュー） -->
+  <div id="bayPhotoFloating" class="hidden fixed top-3 right-3 z-[300] select-none">
+    <div id="bayPhotoFloatingBox" class="relative bg-cyber-dark/90 border border-cyber-table-border rounded-lg overflow-hidden shadow-[0_0_18px_rgba(14,165,233,0.25)] backdrop-blur-sm">
+      <div class="absolute top-0 left-0 right-0 flex items-center justify-between gap-2 p-2 bg-black/40">
+        <div id="bayPhotoFloatingLabel" class="text-[10px] font-sf text-cyber-text opacity-80 truncate">写真</div>
+        <div class="flex items-center gap-1">
+          <button id="bayPhotoFloatingToggleBtn" type="button" onclick="toggleBayPhotoFloatingSize()" class="px-2 py-1 text-[10px] font-sf font-bold border border-cyber-blue text-cyber-blue rounded hover:bg-cyber-blue/20 transition-colors">拡大</button>
+          <button type="button" onclick="hideBayPhotoFloating()" class="px-2 py-1 text-[10px] font-sf font-bold border border-cyber-pink text-cyber-pink rounded hover:bg-cyber-pink/20 transition-colors">×</button>
+        </div>
+      </div>
+      <img id="bayPhotoFloatingImg" alt="ベイ確認写真（固定）" class="block w-full h-full object-contain bg-cyber-bg">
+    </div>
+  </div>
+
 
 <style>
 #cxChartModal {
@@ -515,6 +530,20 @@
   display:inline-flex; align-items:center; justify-content:center;
   width:26px; height:26px; border-radius:4px;
   font-family:'Orbitron',sans-serif; font-size:10px; font-weight:900;
+}
+
+/* ベイ確認写真（固定プレビュー） */
+#bayPhotoFloatingBox {
+  width: 180px;
+  height: 135px;
+}
+#bayPhotoFloatingBox.bay-photo-float--expanded {
+  width: min(92vw, 560px);
+  height: min(72vh, 560px);
+}
+#bayPhotoFloatingImg {
+  padding-top: 34px; /* ヘッダー分を確保 */
+  height: 100%;
 }
 .cxchart-badge.mb {
   background:rgba(14,165,233,.15); border:1px solid #0ea5e9; color:#0ea5e9;
@@ -1638,6 +1667,8 @@
     // 参加者管理
     // ==========================================
     let currentBayPhotoParticipantId = null;
+    let bayPhotoFloatingExpanded = false;
+    let bayPhotoFloatingHiddenByUser = false;
 
     function getBayPhotoStorageKey(name) {
       return `bayPhoto_${encodeURIComponent(String(name || ''))}`;
@@ -1681,6 +1712,53 @@
         img.removeAttribute('src');
         wrap.classList.add('hidden');
       }
+      updateBayPhotoFloating(participantName);
+    }
+
+    function isBeybladeFlowOpen() {
+      const m1 = document.getElementById('beybladeModal');
+      const m2 = document.getElementById('beybladeSelectModal');
+      const o1 = !!(m1 && !m1.classList.contains('hidden'));
+      const o2 = !!(m2 && !m2.classList.contains('hidden'));
+      return o1 || o2;
+    }
+
+    function updateBayPhotoFloating(participantName) {
+      const float = document.getElementById('bayPhotoFloating');
+      const box = document.getElementById('bayPhotoFloatingBox');
+      const img = document.getElementById('bayPhotoFloatingImg');
+      const label = document.getElementById('bayPhotoFloatingLabel');
+      if (!float || !box || !img || !label) return;
+
+      const dataUrl = getBayPhotoDataUrlByName(participantName);
+      const shouldShow = !!dataUrl && isBeybladeFlowOpen() && !bayPhotoFloatingHiddenByUser;
+      if (!shouldShow) {
+        img.removeAttribute('src');
+        float.classList.add('hidden');
+        return;
+      }
+
+      img.src = dataUrl;
+      label.textContent = participantName ? `写真: ${participantName}` : '写真';
+      float.classList.remove('hidden');
+      if (bayPhotoFloatingExpanded) box.classList.add('bay-photo-float--expanded');
+      else box.classList.remove('bay-photo-float--expanded');
+    }
+
+    function toggleBayPhotoFloatingSize() {
+      bayPhotoFloatingExpanded = !bayPhotoFloatingExpanded;
+      updateBayPhotoFloating((participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || '');
+      const btn = document.getElementById('bayPhotoFloatingToggleBtn');
+      if (btn) btn.textContent = bayPhotoFloatingExpanded ? '縮小' : '拡大';
+    }
+
+    function hideBayPhotoFloating() {
+      bayPhotoFloatingHiddenByUser = true;
+      updateBayPhotoFloating('');
+    }
+
+    function resetBayPhotoFloatingHidden() {
+      bayPhotoFloatingHiddenByUser = false;
     }
 
     function getYYMMDD() {
@@ -3420,6 +3498,7 @@
     function openBeybladeManager(participantId) {
       currentBeybladeParticipantId = participantId;
       const participant = participants.find(p => p.id === participantId);
+      resetBayPhotoFloatingHidden();
       
       // ベイブレード配列の初期化
       if (!participant.beyblades) {
@@ -3430,6 +3509,7 @@
       renderBeybladeList();
       document.getElementById('beybladeModal').classList.remove('hidden');
       document.getElementById('beybladeModal').classList.add('flex');
+      updateBayPhotoFloating(participant ? participant.name : '');
     }
 
     /**
@@ -3656,6 +3736,7 @@
       
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      updateBayPhotoFloating((participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || '');
     }
 
     /**
@@ -3746,6 +3827,7 @@
         btn.onclick = () => selectPart(categoryId, part);
         content.appendChild(btn);
       });
+      updateBayPhotoFloating((participants.find(p => p.id === currentBeybladeParticipantId) || {}).name || '');
     }
 
     /**
@@ -3834,6 +3916,10 @@
       updateBayPhotoPreview('');
       currentBeybladeParticipantId = null;
       currentEditingBeybladeIndex = -1;
+      bayPhotoFloatingExpanded = false;
+      resetBayPhotoFloatingHidden();
+      const btn = document.getElementById('bayPhotoFloatingToggleBtn');
+      if (btn) btn.textContent = '拡大';
     }
 
     /**

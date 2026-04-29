@@ -72,6 +72,7 @@
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
+        <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
       </div>
 
       <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
@@ -317,7 +318,7 @@
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-green neon-green flex flex-col relative my-8 max-h-[90vh]">
       <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
         <h2 class="text-xl md:text-2xl font-sf text-cyber-green tracking-widest" id="selectModalTitle">SELECT TYPE</h2>
-        <button onclick="closeBeybladeSelectModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
+        <button onclick="cancelBeybladeSelect()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
       </div>
 
       <div id="selectContent" class="flex-1 overflow-y-auto">
@@ -830,6 +831,8 @@
 
     // ベイブレード管理用変数
     let currentBeybladeParticipantId = null;
+    let beyChangeModeActive = false;
+    let beyChangeTargetIndex = -1;
     let currentBeybladeSelection = {};
     let beybladeSelectionStep = 0;
     let beybladeSelectionPath = [];
@@ -1034,7 +1037,7 @@
 
     function sendRemoteCmd(cmd) {
         if(!conn || !conn.open) {
-            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
+            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM' || cmd === 'SYS_HUD') return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
@@ -1527,7 +1530,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          beyblades: [], color: null, position: null });
+          beyblades: [], beyChangeUsed: false, beyChangeHistory: [], color: null, position: null });
       renderParticipants();
       void syncToSheets();
     }
@@ -1620,7 +1623,12 @@
         const hasPhoto = hasBayPhoto(p.name);
         const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const photoLabel = hasPhoto ? '📷✅' : '📷';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        const beyChangeBtnHTML = isTournamentStarted
+          ? (p.beyChangeUsed
+            ? '<button type="button" disabled class="bg-cyber-dark border border-gray-600 text-gray-500 px-2 py-1 rounded font-bold text-xs cursor-not-allowed opacity-50">✅ 変更済</button>'
+            : `<button type="button" onclick="openBeyChangeModal(${p.id})" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded font-bold text-xs transition-colors">🔄 ベイ変更</button>`)
+          : '';
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -2467,6 +2475,8 @@
         // 既存データにbeyblades配列がなければ追加
         participants.forEach(p => {
           if (!p.beyblades) p.beyblades = [];
+          if (p.beyChangeUsed === undefined) p.beyChangeUsed = false;
+          if (!p.beyChangeHistory) p.beyChangeHistory = [];
           delete p.bayImage;
           delete p.bayChecked;
         });
@@ -2621,6 +2631,76 @@
       document.getElementById('beybladeModal').classList.add('flex');
     }
 
+    function openBeyChangeModal(participantId) {
+      const participant = participants.find(p => p.id === participantId);
+      if (!participant) return;
+      if (participant.beyChangeUsed === true) {
+        return showAlert('ベイ変更はすでに使用済みです');
+      }
+      if (!participant.beyblades || participant.beyblades.length === 0) {
+        return showAlert('登録済みのベイがありません');
+      }
+      currentBeybladeParticipantId = participantId;
+      beyChangeModeActive = true;
+      openBeybladeManager(participantId);
+      const titleEl = document.querySelector('#beybladeModal h2');
+      if (titleEl) titleEl.textContent = participant.name + ' — ベイ変更';
+      const addBtn = document.getElementById('addBeybladeBtn');
+      if (addBtn) addBtn.classList.add('hidden');
+      renderBeybladeListForChange();
+    }
+
+    function renderBeybladeListForChange() {
+      const participant = participants.find(p => p.id === currentBeybladeParticipantId);
+      const listEl = document.getElementById('beybladeList');
+      const addBtn = document.getElementById('addBeybladeBtn');
+      if (!participant || !listEl) return;
+      listEl.innerHTML = '';
+      if (!participant.beyblades || participant.beyblades.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-cyber-text opacity-70 py-8">まだベイブレードが登録されていません</p>';
+      } else {
+        participant.beyblades.forEach((bey, index) => {
+          const div = document.createElement('div');
+          div.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-4 flex items-center gap-3';
+          div.innerHTML = `
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-cyber-blue font-sf font-bold">#${index + 1}</span>
+                <span class="text-cyber-text font-bold text-sm flex-1">${bey.name}</span>
+              </div>
+              <div class="text-[10px] text-cyber-text opacity-50 mt-1">${bey.type}</div>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" onclick="startBeyChange(${index})" class="bg-cyber-orange text-cyber-bg px-3 py-1 rounded font-sf font-bold text-xs hover:bg-cyber-orange/80 transition-colors">🔄 これを変更</button>
+            </div>
+          `;
+          listEl.appendChild(div);
+        });
+      }
+      if (addBtn) {
+        addBtn.classList.add('hidden');
+        addBtn.style.display = 'none';
+      }
+      const confirmArea = document.getElementById('confirmRequestArea');
+      if (confirmArea) {
+        if (participant.beyblades && participant.beyblades.length > 0) {
+          confirmArea.classList.remove('hidden');
+        } else {
+          confirmArea.classList.add('hidden');
+        }
+      }
+    }
+
+    function startBeyChange(replacedIndex) {
+      const pid = currentBeybladeParticipantId;
+      beyChangeTargetIndex = replacedIndex;
+      closeBeybladeModal();
+      currentBeybladeParticipantId = pid;
+      beyChangeModeActive = true;
+      beyChangeTargetIndex = replacedIndex;
+      startBeybladeRegistration();
+    }
+
     /**
      * ベイブレードリストを描画
      */
@@ -2628,6 +2708,7 @@
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       const listEl = document.getElementById('beybladeList');
       const addBtn = document.getElementById('addBeybladeBtn');
+      if (addBtn) addBtn.classList.remove('hidden');
       
       listEl.innerHTML = '';
       
@@ -2949,6 +3030,11 @@
      * ベイブレード選択をキャンセル
      */
     function cancelBeybladeSelect() {
+      if (beyChangeModeActive) {
+        beyChangeModeActive = false;
+        beyChangeTargetIndex = -1;
+        currentBeybladeParticipantId = null;
+      }
       closeBeybladeSelectModal();
     }
 
@@ -2983,6 +3069,26 @@
         parts: {...currentBeybladeSelection}
       };
       
+      if (beyChangeModeActive && beyChangeTargetIndex >= 0) {
+        const before = participant.beyblades[beyChangeTargetIndex];
+        if (!participant.beyChangeHistory) participant.beyChangeHistory = [];
+        participant.beyChangeHistory.push({
+          changedAt: Date.now(),
+          replacedIndex: beyChangeTargetIndex,
+          before: JSON.parse(JSON.stringify(before))
+        });
+        participant.beyblades[beyChangeTargetIndex] = beyblade;
+        participant.beyChangeUsed = true;
+        beyChangeModeActive = false;
+        beyChangeTargetIndex = -1;
+        closeBeybladeSelectModal();
+        renderBeybladeList();
+        renderParticipants();
+        saveState();
+        showAlert(`✅ ベイ変更完了！\n${before.name}\n　↓\n${beyblade.name}`);
+        return;
+      }
+
       participant.beyblades.push(beyblade);
       
       closeBeybladeSelectModal();
@@ -3006,9 +3112,15 @@
       });
       document.getElementById('beybladeModal').classList.add('hidden');
       document.getElementById('beybladeModal').classList.remove('flex');
+      const beyTitle = document.querySelector('#beybladeModal h2');
+      if (beyTitle) beyTitle.textContent = 'BEYBLADE REGISTRATION';
+      const addBeyBtn = document.getElementById('addBeybladeBtn');
+      if (addBeyBtn) addBeyBtn.classList.remove('hidden');
       updateBayPhotoPreview('');
       currentBeybladeParticipantId = null;
       currentEditingBeybladeIndex = -1;
+      beyChangeModeActive = false;
+      beyChangeTargetIndex = -1;
     }
 
     /**
