@@ -1293,8 +1293,16 @@
         if (conn && conn.open) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
         let match;
-        if (block === 'finals') { match = (roundIdx === 'sf') ? finals.sf[matchIdx] : finals[roundIdx]; }
-        else { match = blockMatches[block][roundIdx][matchIdx]; }
+        if (block === 'finals') {
+            // finals.qf / finals.sf は配列、finals.f / finals.third は単一オブジェクト
+            if (roundIdx === 'qf' || roundIdx === 'sf') {
+                match = finals[roundIdx]?.[matchIdx];
+            } else {
+                match = finals[roundIdx];
+            }
+        } else {
+            match = blockMatches[block][roundIdx][matchIdx];
+        }
         if (!match || !match.p1 || !match.p2) return;
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
@@ -2808,7 +2816,10 @@
 
       const stageInfo = (block === 'finals') ? 'FINAL STAGE' : block + ' BLOCK';
       const roundInfo = (block === 'finals')
-        ? (roundIdx === 'sf' ? 'SEMIFINALS' : roundIdx === 'f' ? 'GRAND FINAL' : '3RD PLACE MATCH')
+        ? (roundIdx === 'qf' ? 'QUARTER FINAL'
+          : roundIdx === 'sf' ? 'SEMIFINALS'
+          : roundIdx === 'f' ? 'GRAND FINAL'
+          : '3RD PLACE MATCH')
         : (blockMatches[block] && roundIdx === blockMatches[block].length - 1 ? 'BLOCK FINAL' : 'ROUND ' + (roundIdx + 1));
       const matchKey = `${block}-${roundIdx}-${matchIdx}`;
       const nextBtn = canSendToScore
@@ -2819,12 +2830,16 @@
     }
 
     function sendNextBattle(matchKey, p1, p2, stage, round) {
+      if (!conn || !conn.open) {
+        showAlert('⚠️ HUD（スコアアプリ）がリンクされていません。');
+        return;
+      }
       if (activeNextBattleId === matchKey) {
-        if (conn) conn.send({ type: 'HIDE_PREVIEW' });
+        conn.send({ type: 'HIDE_PREVIEW' });
         activeNextBattleId = null;
       } else {
         const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: true, logoSrc: 'evojlogo.png', previewBackground: 'evojlogo.png', logoDataUrl: null });
+        conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, showLogo: true, logoSrc: 'evojlogo.png', previewBackground: 'evojlogo.png', logoDataUrl: null });
         activeNextBattleId = matchKey;
       }
     }
@@ -2902,7 +2917,7 @@
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
           * { box-sizing: border-box; }
           .tv-wrap { position:relative; overflow:hidden; background:${C.bg}; min-height:100vh; padding:10px env(safe-area-inset-right,10px) 10px env(safe-area-inset-left,10px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
-          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; width:90vw; height:90vh; object-fit:contain; opacity:0.35; pointer-events:none; z-index:0; transform:translate(-50%,-50%); transform-origin:center center; }
           .tv-wrap > .tv-title, .tv-wrap > .tv-blocks, .tv-wrap > .tv-finals { position:relative; z-index:1; }
           .tv-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.8vw,16px); color:${C.blue}; text-align:center; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 10px ${C.blue}; }
           .tv-blocks { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
