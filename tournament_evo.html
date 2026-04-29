@@ -229,6 +229,7 @@
                 <span class="text-[10px] font-sf text-cyber-text opacity-70">当日受付人数</span>
                 <input id="wi-total" type="text" inputmode="numeric" oninput="updateWalkInCalc()"
                   class="w-full bg-cyber-bg border border-cyber-blue text-cyber-text px-3 py-2 rounded font-bold outline-none focus:border-cyber-green transition-colors font-sf" placeholder="例: 24">
+                <div id="wi-recommendation" class="text-xs font-sf text-cyber-green min-h-[1rem]"></div>
               </label>
               <label class="flex flex-col gap-1">
                 <span class="text-[10px] font-sf text-cyber-text opacity-70">①当選</span>
@@ -1917,6 +1918,21 @@
 
       const remainingSlots = (globalBlockSize * 8) - participants.length;
       const wiLose = wiTotal - wiWin - wiMatch;
+      const recEl = document.getElementById('wi-recommendation');
+      if (recEl) {
+        recEl.textContent = '';
+        if (remainingSlots > 0 && wiTotal > 0) {
+          const k = Math.min(remainingSlots, Math.floor(wiTotal / 2), wiTotal - remainingSlots);
+          if (k >= 0) {
+            const recWin = remainingSlots - k;
+            const recMatch = 2 * k;
+            const recLose = wiTotal - recWin - recMatch;
+            if (recWin >= 0) {
+              recEl.textContent = `💡 おすすめ：①当選 ${recWin}人 ／ ②1ベイ対決 ${recMatch}人 ／ 不参加 ${recLose}人`;
+            }
+          }
+        }
+      }
 
       let ok = true;
       let reason = '';
@@ -3599,6 +3615,12 @@
         btn.onclick = () => selectBeybladeType(type.id);
         content.appendChild(btn);
       });
+
+      const photoWrap = document.getElementById('bayPhotoPreviewWrap');
+      const photoImg = document.getElementById('bayPhotoPreviewImg');
+      if (photoWrap && photoImg && photoImg.getAttribute('src')) {
+        photoWrap.classList.remove('hidden');
+      }
       
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -3645,6 +3667,11 @@
       const title = document.getElementById('selectModalTitle');
       const content = document.getElementById('selectContent');
       const backBtn = document.getElementById('selectBackBtn');
+      const photoWrap = document.getElementById('bayPhotoPreviewWrap');
+      const photoImg = document.getElementById('bayPhotoPreviewImg');
+      if (photoWrap && photoImg && photoImg.getAttribute('src')) {
+        photoWrap.classList.remove('hidden');
+      }
       
       backBtn.style.display = beybladeSelectionStep > 0 ? 'block' : 'none';
       
