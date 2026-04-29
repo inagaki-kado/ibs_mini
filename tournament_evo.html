@@ -1698,7 +1698,7 @@
       }, 0);
     }
 
-    function openPasteModal() { if(isTournamentStarted) return showAlert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
+    function openPasteModal() { document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
     function processPasteData() {
@@ -1712,7 +1712,7 @@
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
-            beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null }); count++;
+            beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null, lateJoin: !!isTournamentStarted }); count++;
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！`);
@@ -1720,11 +1720,11 @@
     }
 
     function addParticipant(name = '', memo1 = '') {
-      if(isTournamentStarted) return showAlert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
+      if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null });
+          beyblades: [], color: null, position: null, bracketBlock: null, entryType: 'reserved', walkInStatus: null, walkInSeq: null, lateJoin: !!isTournamentStarted });
       renderParticipants();
       void syncToSheets();
     }
@@ -1817,6 +1817,7 @@
                 ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-green text-cyber-green ml-2 opacity-95">🏆 参加確定</span>`
             : '';
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
+        const lateJoinBadge = p.lateJoin ? `<span class="inline-block px-2 py-0.5 text-[10px] font-sf rounded-full border border-cyber-pink text-cyber-pink ml-2">途中参加</span>` : '';
         const statsDisplay = `<span class="text-[10px] text-cyber-green font-mono font-normal opacity-80 ml-1">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>`;
         let lotteryHTML = '';
         const isWalkInLost = p.walkInStatus === 'walk_in_lost';
@@ -1832,7 +1833,11 @@
             if (isWalkInLost) {
               lotteryHTML = `<span class="text-[10px] font-sf text-cyber-red opacity-80">落選</span>`;
             } else {
-              lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
+              if (isTournamentStarted && p.lateJoin) {
+                lotteryHTML = `<button onclick="openLateJoinLotteryModal(${p.id})" class="bg-cyber-pink hover:bg-pink-600 text-white w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="途中参加 抽選">🎲</button>`;
+              } else {
+                lotteryHTML = `<button onclick="openLotteryModal(${p.id})" class="bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg w-10 h-8 mx-auto flex items-center justify-center rounded text-lg shadow font-bold transition-transform active:scale-95" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="抽選">🎲</button>`;
+              }
             }
         }
         const beyCount = (p.beyblades || []).length;
@@ -1844,7 +1849,7 @@
         const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const photoLabel = hasPhoto ? '📷✅' : '📷';
         const walkInSeqText = (p.walkInSeq != null) ? `<div class="text-[10px] font-sf text-cyber-text opacity-50 leading-none mt-0.5">当日 ${String(p.walkInSeq).padStart(2, '0')}</div>` : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm leading-none"><div>${originalNo}${walkInSeqText}</div></td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm leading-none"><div>${originalNo}${walkInSeqText}</div></td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name}${entryBadge}${walkInStateBadge}${lateJoinBadge} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button><button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${beyDisabled ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><div class="flex items-center justify-center gap-1 flex-wrap"><button type="button" onclick="openEditParticipantModal(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue/20 px-2 py-1 rounded font-sf transition-colors" ${editDisabled ? 'disabled style="opacity:0.3"' : ''} title="編集">✏️</button><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></div></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -2163,6 +2168,22 @@
       `;
 
       const container = document.getElementById('modalColorButtons');
+      const allActive = colors.filter(c => blockCapacities[c] - counts[c] > 0);
+      const isRandomDisabled = allActive.length === 0;
+      const randBtn = document.createElement('button');
+      randBtn.style.touchAction = 'manipulation';
+      randBtn.className = `py-8 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isRandomDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+      randBtn.innerHTML = `<span class="block text-lg font-sf">🎲 抽選  LOTTERY</span>`;
+      if (!isRandomDisabled) {
+        randBtn.onclick = () => {
+          const minFilled = Math.min(...allActive.map(c => counts[c]));
+          const candidates = allActive.filter(c => counts[c] === minFilled);
+          const picked = candidates[Math.floor(Math.random() * candidates.length)];
+          doLotteryModal(picked);
+        };
+      }
+      container.prepend(randBtn);
+
       colors.forEach(c => {
         const remain = blockCapacities[c] - counts[c];
         const isDisabled = remain === 0;
@@ -2181,21 +2202,102 @@
         container.appendChild(btn);
       });
 
-      const allActive = colors.filter(c => blockCapacities[c] - counts[c] > 0);
-      const isRandomDisabled = allActive.length === 0;
-      const randBtn = document.createElement('button');
-      randBtn.style.touchAction = 'manipulation';
-      randBtn.className = `py-4 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isRandomDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
-      randBtn.innerHTML = `<span class="block text-lg font-sf">🎲 RANDOM</span>`;
-      if (!isRandomDisabled) {
-        randBtn.onclick = () => {
-          const minFilled = Math.min(...allActive.map(c => counts[c]));
-          const candidates = allActive.filter(c => counts[c] === minFilled);
-          const picked = candidates[Math.floor(Math.random() * candidates.length)];
-          doLotteryModal(picked);
+      document.getElementById('lotteryModal').classList.remove('hidden');
+      document.getElementById('lotteryModal').classList.add('flex');
+    }
+
+    function isBlockUnstarted(blockLetter) {
+      const rounds = blockMatches && blockMatches[blockLetter];
+      if (!rounds || !Array.isArray(rounds)) return true;
+      for (const round of rounds) {
+        if (!round || !Array.isArray(round)) continue;
+        for (const m of round) {
+          if (!m) continue;
+          if (m.winner !== null && m.winner !== undefined) return false;
+        }
+      }
+      return true;
+    }
+
+    function getBlockFilledCount(blockLetter) {
+      const row = blockData && blockData[blockLetter];
+      if (!row || !Array.isArray(row)) return 0;
+      return row.filter(x => x !== null).length;
+    }
+
+    function doLateJoinLotteryToLetter(blockLetter) {
+      const slotKey = slotKeyForBracketLetter(blockLetter);
+      if (!slotKey) return showAlert("ブロック設定が見つかりません");
+      const orig = slotLabels[slotKey]?.blocks ? [...slotLabels[slotKey].blocks] : null;
+      try {
+        if (slotLabels[slotKey]) slotLabels[slotKey].blocks = [blockLetter];
+        doLotteryModal(slotKey);
+      } finally {
+        if (orig && slotLabels[slotKey]) slotLabels[slotKey].blocks = orig;
+      }
+    }
+
+    function openLateJoinLotteryModal(id) {
+      if (!isTournamentStarted || isSetupSwapMode) return;
+      currentLotteryId = id;
+
+      // 演出ONの場合、即座に180度回転
+      if (isEffectOn) {
+        const wrapper = document.getElementById('app-wrapper');
+        wrapper.style.transform = 'rotate(180deg)';
+      }
+
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+
+      const letters = ['A','B','C','D','E','F','G','H'];
+      const unstarted = letters.filter(L => isBlockUnstarted(L));
+      const eligible = unstarted.filter(L => (letterCapsForBlocks[L] || 0) > getBlockFilledCount(L));
+
+      const modalContent = document.getElementById('lotteryModalContent');
+      modalContent.innerHTML = `
+        <h2 class="text-2xl font-sf text-cyber-pink mb-2">TARGET: ${p.name}</h2>
+        <p class="mb-1 text-cyber-text font-bold text-sm">途中参加の配置先を選んでください</p>
+        <p class="mb-3 text-cyber-text font-bold text-xs opacity-80">Only unstarted blocks are selectable</p>
+        <div class="grid grid-cols-1 gap-3 mb-2" id="modalColorButtons"></div>
+        <button onclick="closeLotteryModal()" class="mt-4 bg-cyber-bg text-cyber-text border border-cyber-table-border px-6 py-2 rounded-full font-sf hover:bg-gray-800 transition-colors text-sm">CANCEL</button>
+      `;
+
+      const container = document.getElementById('modalColorButtons');
+
+      const lotteryBtn = document.createElement('button');
+      lotteryBtn.style.touchAction = 'manipulation';
+      const isLotteryDisabled = eligible.length === 0;
+      lotteryBtn.className = `py-8 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isLotteryDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+      lotteryBtn.innerHTML = `<span class="block text-lg font-sf">🎲 抽選  LOTTERY</span>`;
+      if (!isLotteryDisabled) {
+        lotteryBtn.onclick = () => {
+          const picked = eligible[Math.floor(Math.random() * eligible.length)];
+          doLateJoinLotteryToLetter(picked);
         };
       }
-      container.appendChild(randBtn);
+      container.appendChild(lotteryBtn);
+
+      letters.forEach(L => {
+        const started = !isBlockUnstarted(L);
+        const remain = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
+        const noSpace = remain <= 0;
+        const disabled = started || noSpace;
+        const slotKey = slotKeyForBracketLetter(L);
+        const baseColor = slotKey ? (colorCodes[slotKey] || 'bg-cyber-dark') : 'bg-cyber-dark';
+        const btn = document.createElement('button');
+        btn.style.touchAction = 'manipulation';
+        btn.className = `py-4 px-4 rounded-lg font-bold text-cyber-text shadow-lg ${baseColor} ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+        btn.innerHTML = `
+          <span class="text-left">
+            <span class="block text-lg font-sf">${L} BLOCK</span>
+            <span class="block text-sm opacity-80 font-sf">${started ? '試合開始済み' : '未開始'}</span>
+          </span>
+          <span class="text-sm font-sf opacity-80">REMAIN: ${Math.max(0, remain)}</span>
+        `;
+        if (!disabled) btn.onclick = () => doLateJoinLotteryToLetter(L);
+        container.appendChild(btn);
+      });
 
       document.getElementById('lotteryModal').classList.remove('hidden');
       document.getElementById('lotteryModal').classList.add('flex');
@@ -3093,6 +3195,7 @@
           if (p.walkInStatus === undefined) p.walkInStatus = null;
           if (p.walkInSeq === undefined) p.walkInSeq = null;
           if (p.bracketBlock === undefined) p.bracketBlock = null;
+          if (p.lateJoin === undefined) p.lateJoin = false;
         });
         participantSortMode = s.participantSortMode || 'id';
         blockMap = s.blockMap || {};
