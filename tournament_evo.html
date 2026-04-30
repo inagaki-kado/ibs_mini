@@ -2362,13 +2362,7 @@
     function doLateJoinLotteryToLetter(blockLetter) {
       const slotKey = slotKeyForBracketLetter(blockLetter);
       if (!slotKey) return showAlert("ブロック設定が見つかりません");
-      const orig = slotLabels[slotKey]?.blocks ? [...slotLabels[slotKey].blocks] : null;
-      try {
-        if (slotLabels[slotKey]) slotLabels[slotKey].blocks = [blockLetter];
-        doLotteryModal(slotKey);
-      } finally {
-        if (orig && slotLabels[slotKey]) slotLabels[slotKey].blocks = orig;
-      }
+      doLotteryModal(slotKey, blockLetter);
     }
 
     function openLateJoinLotteryModal(id) {
@@ -2385,8 +2379,11 @@
       if (!p) return;
 
       const letters = ['A','B','C','D','E','F','G','H'];
-      const unstarted = letters.filter(L => isBlockUnstarted(L));
-      const eligible = unstarted.filter(L => (letterCapsForBlocks[L] || 0) > getBlockFilledCount(L));
+      const allEligibleLetters = letters.filter(L => {
+        if (!isBlockUnstarted(L)) return false;
+        const remain = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
+        return remain > 0;
+      });
 
       const modalContent = document.getElementById('lotteryModalContent');
       modalContent.innerHTML = `
@@ -2401,35 +2398,45 @@
 
       const lotteryBtn = document.createElement('button');
       lotteryBtn.style.touchAction = 'manipulation';
-      const isLotteryDisabled = eligible.length === 0;
+      const isLotteryDisabled = allEligibleLetters.length === 0;
       lotteryBtn.className = `py-8 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isLotteryDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
       lotteryBtn.innerHTML = `<span class="block text-lg font-sf">🎲 抽選  LOTTERY</span>`;
       if (!isLotteryDisabled) {
         lotteryBtn.onclick = () => {
-          const picked = eligible[Math.floor(Math.random() * eligible.length)];
+          const picked = allEligibleLetters[Math.floor(Math.random() * allEligibleLetters.length)];
           doLateJoinLotteryToLetter(picked);
         };
       }
-      container.appendChild(lotteryBtn);
+      container.prepend(lotteryBtn);
 
-      letters.forEach(L => {
-        const started = !isBlockUnstarted(L);
-        const remain = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
-        const noSpace = remain <= 0;
-        const disabled = started || noSpace;
-        const slotKey = slotKeyForBracketLetter(L);
-        const baseColor = slotKey ? (colorCodes[slotKey] || 'bg-cyber-dark') : 'bg-cyber-dark';
+      colors.forEach(slotKey => {
+        const label = slotLabels[slotKey];
+        const eligibleBlocksInSlot = (label?.blocks || []).filter(L => {
+          if (!isBlockUnstarted(L)) return false;
+          const remain = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
+          return remain > 0;
+        });
+        const remain = eligibleBlocksInSlot.reduce((sum, L) => {
+          const r = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
+          return sum + Math.max(0, r);
+        }, 0);
+        const isDisabled = eligibleBlocksInSlot.length === 0;
         const btn = document.createElement('button');
         btn.style.touchAction = 'manipulation';
-        btn.className = `py-4 px-4 rounded-lg font-bold text-cyber-text shadow-lg ${baseColor} ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
+        btn.className = `py-4 px-4 rounded-lg font-bold text-cyber-text shadow-lg ${colorCodes[slotKey]} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
         btn.innerHTML = `
           <span class="text-left">
-            <span class="block text-lg font-sf">${L} BLOCK</span>
-            <span class="block text-sm opacity-80 font-sf">${started ? '試合開始済み' : '未開始'}</span>
+            <span class="block text-lg font-sf">${label.line1}</span>
+            <span class="block text-sm opacity-80 font-sf">${label.line2}</span>
           </span>
-          <span class="text-sm font-sf opacity-80">REMAIN: ${Math.max(0, remain)}</span>
+          <span class="text-sm font-sf opacity-80">REMAIN: ${remain}</span>
         `;
-        if (!disabled) btn.onclick = () => doLateJoinLotteryToLetter(L);
+        if (!isDisabled) {
+          btn.onclick = () => {
+            const picked = eligibleBlocksInSlot[Math.floor(Math.random() * eligibleBlocksInSlot.length)];
+            doLateJoinLotteryToLetter(picked);
+          };
+        }
         container.appendChild(btn);
       });
 
@@ -2443,9 +2450,15 @@
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
-    function doLotteryModal(selectedColor) {
+    function doLotteryModal(selectedColor, forcedBlockLetter) {
         const p = participants.find(x => x.id === currentLotteryId);
-        const assignLetter = pickLetterInSlotWithSpace(selectedColor);
+        const assignLetter = (() => {
+          if (!forcedBlockLetter) return pickLetterInSlotWithSpace(selectedColor);
+          const row = blockData && blockData[forcedBlockLetter];
+          if (!row) return null;
+          const n = row.filter(x => x !== null).length;
+          return n < (letterCapsForBlocks[forcedBlockLetter] || 0) ? forcedBlockLetter : null;
+        })();
         if (!assignLetter) return showAlert("満員です");
         const emptyPositions = [];
         blockActivePositions[assignLetter].forEach(idx => {
