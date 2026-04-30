@@ -153,8 +153,10 @@
     function $(id){ return document.getElementById(id); }
 
     function setLoading(isLoading){
-      $('loading').classList.toggle('hidden', !isLoading);
-      $('content').classList.toggle('opacity-40', isLoading);
+      const loading = $('loading');
+      if (loading) loading.classList.toggle('hidden', !isLoading);
+      const content = $('content');
+      if (content) content.classList.toggle('opacity-40', isLoading);
     }
 
     function setMessage(kind, text){
@@ -518,12 +520,13 @@
     }
 
     function escapeHtml(s){
+      // replaceAll 非対応環境向けに正規表現でエスケープ
       return String(s ?? '')
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'","&#39;");
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
     }
 
     async function fetchAndRender(){
@@ -581,7 +584,7 @@
 </head>
 <body class="scanline">
   <div class="min-h-screen">
-    <div class="mx-auto px-4 py-5" style="max-width:480px;">
+    <div id="content" class="mx-auto px-4 py-5" style="max-width:480px;">
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="font-orbitron text-xs tracking-[0.28em]" style="color:var(--accent);text-shadow:0 0 14px rgba(14,165,233,0.35);">SPECTATOR VIEW</div>
@@ -593,7 +596,7 @@
         </div>
       </div>
 
-      <div id="message" class="card mt-4 p-4 border" style="border-color:rgba(14,165,233,0.35)">
+      <div id="message" class="hidden card mt-4 p-4 border" style="border-color:rgba(14,165,233,0.35)">
         <div class="text-sm" id="messageText"></div>
       </div>
 
@@ -651,7 +654,6 @@
         </div>
       </div>
 
-      <div id="content"></div>
     </div>
   </div>
 </body>

@@ -549,6 +549,9 @@
         let isFinished = false, isCountingDown = false, timerInterval = null;
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let chunks = [], effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
+        let bufferInterval = null;
+        let recordingMime = '';
+        let replayObjectUrl = '';
         
         let currentScale = parseFloat(localStorage.getItem('tbh_cam_scale')) || 1;
         let currentTranslateX = parseFloat(localStorage.getItem('tbh_cam_tx')) || 0;
@@ -609,12 +612,49 @@
         }
 
         function startBuffering(stream) {
-            if (mediaRecorder) try { mediaRecorder.stop(); } catch(e){}
-            const mime = MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' : 'video/mp4';
-            mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-            mediaRecorder.start(1000); 
-            setInterval(() => { if (!isReplayMode && chunks.length > 20) { mediaRecorder.stop(); setTimeout(() => { chunks = []; mediaRecorder.start(1000); }, 10); } }, 20000);
+            if (!('MediaRecorder' in window)) {
+                console.warn('MediaRecorder is not supported in this browser.');
+                return;
+            }
+
+            if (bufferInterval) { clearInterval(bufferInterval); bufferInterval = null; }
+            if (mediaRecorder) { try { mediaRecorder.stop(); } catch(e){} }
+
+            const candidates = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm',
+                'video/mp4;codecs=avc1',
+                'video/mp4',
+            ];
+            recordingMime = candidates.find(t => MediaRecorder.isTypeSupported(t)) || '';
+            const opts = recordingMime ? { mimeType: recordingMime } : undefined;
+
+            try {
+                mediaRecorder = new MediaRecorder(stream, opts);
+            } catch (e) {
+                console.error('Failed to create MediaRecorder', e);
+                return;
+            }
+
+            chunks = [];
+            mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+            try { mediaRecorder.start(1000); } catch (e) { console.error(e); return; }
+
+            bufferInterval = setInterval(() => {
+                if (isReplayMode) return;
+                if (!mediaRecorder) return;
+                if (chunks.length <= 20) return;
+                try {
+                    if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+                } catch (e) { /* ignore */ }
+                setTimeout(() => {
+                    chunks = [];
+                    try {
+                        if (mediaRecorder && mediaRecorder.state !== 'recording') mediaRecorder.start(1000);
+                    } catch (e) { /* ignore */ }
+                }, 10);
+            }, 20000);
         }
 
         function updateStatusMsg(msg, duration = 0) {
@@ -624,8 +664,12 @@
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
-                isReplayMode = true; const blob = new Blob(chunks, { type: 'video/mp4' });
-                replayVideo.src = URL.createObjectURL(blob);
+                if (!chunks.length) { updateStatusMsg("NO REPLAY", 1500); return; }
+                isReplayMode = true;
+                const blob = new Blob(chunks, { type: recordingMime || 'video/webm' });
+                if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
+                replayObjectUrl = URL.createObjectURL(blob);
+                replayVideo.src = replayObjectUrl;
                 replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block'; hud.style.display = 'none';
                 // リプレイ中はベイブレード名を非表示
                 document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
@@ -633,6 +677,7 @@
                 replayVideo.oncanplay = () => { replayVideo.currentTime = Math.max(0, replayVideo.duration - 15); replayVideo.playbackRate = 1.0; replayVideo.play(); };
             } else {
                 isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none'; hud.style.display = 'block';
+                if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
                 // リプレイ終了後、👁️ONかつベイ名があれば再表示
                 if (isStatsVisible) {
                     document.querySelectorAll('.beyblade-box').forEach(b => {

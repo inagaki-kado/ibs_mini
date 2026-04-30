@@ -1363,15 +1363,15 @@
             leftNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
             rightNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
             adjustRemoteNameFontSize('remote-left-name'); adjustRemoteNameFontSize('remote-right-name');
-            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
-            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            leftWinBtn.textContent = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            rightWinBtn.textContent = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
         } else {
             leftNameEl.innerText = m.p1.name; rightNameEl.innerText = m.p2.name;
             leftNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
             rightNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
             adjustRemoteNameFontSize('remote-left-name'); adjustRemoteNameFontSize('remote-right-name');
-            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
-            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            leftWinBtn.textContent = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            rightWinBtn.textContent = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
         }
     }
 
@@ -4149,11 +4149,8 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-alert-modal');
         document.getElementById('custom-alert-msg').innerText = msg;
-        if (isEffectOn) {
-          modal.style.transform = 'rotate(180deg)';
-        } else {
-          modal.style.transform = 'rotate(0deg)';
-        }
+        // 運営が読むダイアログは反転しない
+        modal.style.transform = 'rotate(0deg)';
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-alert-ok');
         const handler = () => {
@@ -4169,11 +4166,8 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
         document.getElementById('custom-confirm-msg').innerText = msg;
-        if (isEffectOn) {
-          modal.style.transform = 'rotate(180deg)';
-        } else {
-          modal.style.transform = 'rotate(0deg)';
-        }
+        // 運営が読むダイアログは反転しない
+        modal.style.transform = 'rotate(0deg)';
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-confirm-ok');
         const cancelBtn = document.getElementById('custom-confirm-cancel');
