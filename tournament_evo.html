@@ -1931,7 +1931,16 @@
                 let activeClass = isActive ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-cyber-dark text-yellow-400 border-yellow-400 hover:bg-yellow-400/20';
                 lotteryHTML = `<button onclick="handleSetupSwap(${p.id})" class="px-3 py-1 text-sm font-bold border rounded shadow-sm font-sf transition-colors whitespace-nowrap ${activeClass}">${p.bracketBlock}-${p.position + 1}</button>`;
             } else {
-                lotteryHTML = `<button onclick="execReLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${p.bracketBlock}-${p.position + 1} 🔄</button>`;
+                if (!isTournamentStarted && p.bracketBlock != null) {
+                  lotteryHTML = `
+                    <div class="flex items-center gap-2 justify-center">
+                      <button onclick="execReLottery(${p.id})" style="touch-action: manipulation;" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${p.bracketBlock}-${p.position + 1} 🔄</button>
+                      <button onclick="execClearLottery(${p.id})" style="touch-action: manipulation;" class="px-3 py-1 text-sm font-bold text-cyber-red border border-cyber-red rounded shadow-sm font-sf hover:bg-cyber-red/10 transition-colors whitespace-nowrap">✕</button>
+                    </div>
+                  `;
+                } else {
+                  lotteryHTML = `<button onclick="execReLottery(${p.id})" class="px-3 py-1 text-sm font-bold text-cyber-blue border border-cyber-blue rounded shadow-sm font-sf hover:bg-cyber-blue/10 transition-colors whitespace-nowrap">${p.bracketBlock}-${p.position + 1} 🔄</button>`;
+                }
             }
         } else {
             if (isWalkInLost) {
@@ -2322,6 +2331,12 @@
       });
 
       document.getElementById('lotteryModal').classList.remove('hidden');
+      const lModal = document.getElementById('lotteryModal');
+      if (isEffectOn) {
+        lModal.style.transform = 'rotate(180deg)';
+      } else {
+        lModal.style.transform = 'rotate(0deg)';
+      }
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
@@ -2419,6 +2434,12 @@
       });
 
       document.getElementById('lotteryModal').classList.remove('hidden');
+      const lModal = document.getElementById('lotteryModal');
+      if (isEffectOn) {
+        lModal.style.transform = 'rotate(180deg)';
+      } else {
+        lModal.style.transform = 'rotate(0deg)';
+      }
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
@@ -2537,6 +2558,7 @@
     }
 
     function closeLotteryModal() {
+        document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
         document.getElementById('lotteryModal').classList.add('hidden');
         document.getElementById('lotteryModal').classList.remove('flex');
         const opBox = document.getElementById('operatorViewBox');
@@ -2550,6 +2572,20 @@
     async function reLottery(id) {
       if(isTournamentStarted || isSetupSwapMode) return;
       if(await showConfirm("抽選をやり直しますか？")) { const p = participants.find(x => x.id === id); if(p.color) { if(p.bracketBlock) blockData[p.bracketBlock][p.position] = null; p.color = null; p.position = null; p.bracketBlock = null; } renderParticipants(); void syncToSheets(); openLotteryModal(id); }
+    }
+
+    async function execClearLottery(id) {
+      if (await showConfirm("このブロック配置を取り消しますか？")) {
+        const p = participants.find(x => x.id === id);
+        if (p && p.bracketBlock != null) {
+          blockData[p.bracketBlock][p.position] = null;
+          p.color = null;
+          p.position = null;
+          p.bracketBlock = null;
+          renderParticipants();
+          void syncToSheets();
+        }
+      }
     }
 
     function exportParticipantsCSV() {
@@ -2774,19 +2810,31 @@
       renderTournament();
     }
 
-    function handleSwapClick(block, matchIdx, playerSide) {
-      if (!swapPending) { swapPending = { block, matchIdx, playerSide }; }
-      else {
-          if (swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === playerSide) { swapPending = null; }
-          else {
-              let m1 = blockMatches[swapPending.block][0][swapPending.matchIdx]; let m2 = blockMatches[block][0][matchIdx];
-              let p1 = swapPending.playerSide === 1 ? m1.p1 : m1.p2; let p2 = playerSide === 1 ? m2.p1 : m2.p2;
-              if(swapPending.playerSide === 1) m1.p1 = p2; else m1.p2 = p2;
-              if(playerSide === 1) m2.p1 = p1; else m2.p2 = p1;
-              swapPending = null; m1.winner = null; m2.winner = null;
-              autoProcessBye(m1); autoProcessBye(m2); updateAdvancements();
-              void syncToSheets();
-          }
+    function handleSwapClick(block, roundIdx, matchIdx, playerSide) {
+      if (!swapPending) {
+        swapPending = { block, roundIdx, matchIdx, playerSide };
+      } else {
+        if (
+          swapPending.block === block &&
+          swapPending.roundIdx === roundIdx &&
+          swapPending.matchIdx === matchIdx &&
+          swapPending.playerSide === playerSide
+        ) {
+          swapPending = null;
+        } else {
+          let m1 = blockMatches[swapPending.block][swapPending.roundIdx][swapPending.matchIdx];
+          let m2 = blockMatches[block][roundIdx][matchIdx];
+          let p1 = swapPending.playerSide === 1 ? m1.p1 : m1.p2;
+          let p2 = playerSide === 1 ? m2.p1 : m2.p2;
+          if (swapPending.playerSide === 1) m1.p1 = p2; else m1.p2 = p2;
+          if (playerSide === 1) m2.p1 = p1; else m2.p2 = p1;
+          swapPending = null;
+          // 両試合の勝者を再評価（BYE相手の不戦勝を再処理）
+          m1.winner = null; m2.winner = null;
+          autoProcessBye(m1); autoProcessBye(m2);
+          updateAdvancements();
+          void syncToSheets();
+        }
       }
       renderTournament();
     }
@@ -2866,11 +2914,21 @@
       else { p1Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; p2Class += canSelect ? "bg-cyber-bg text-cyber-text hover:bg-cyber-dark border border-cyber-table-border" : "bg-transparent text-gray-500"; }
       if (isP1Bye) p1Class += " italic opacity-40"; if (isP2Bye) p2Class += " italic opacity-40";
 
-      if (roundIdx === 0 && isSwapMode && match.winner === null) {
-          let active1 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 1) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
-          let active2 = (swapPending && swapPending.block === block && swapPending.matchIdx === matchIdx && swapPending.playerSide === 2) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
-          let btnHtml1 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 1)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-left flex items-center gap-1 ${active1} ${isP1Bye ? 'italic opacity-40' : ''}"><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>`;
-          let btnHtml2 = `<button onclick="handleSwapClick('${block}', ${matchIdx}, 2)" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-right flex items-center justify-end gap-1 ${active2} ${isP2Bye ? 'italic opacity-40' : ''}"><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button>`;
+      // 以下の条件を全て満たす場合に swap ボタンを表示する
+      // - isSwapMode が true
+      // - match に p1 または p2 が存在する（TBD でない）
+      // - finals ブロックではない（block !== 'finals'）
+      const isSwappable =
+        isSwapMode &&
+        block !== 'finals' &&
+        (match.p1 || match.p2) &&
+        !(match.p1?.id === 'BYE' && match.p2?.id === 'BYE');
+
+      if (isSwappable) {
+          let active1 = (swapPending && swapPending.block === block && swapPending.roundIdx === roundIdx && swapPending.matchIdx === matchIdx && swapPending.playerSide === 1) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
+          let active2 = (swapPending && swapPending.block === block && swapPending.roundIdx === roundIdx && swapPending.matchIdx === matchIdx && swapPending.playerSide === 2) ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-[#1f2937] text-cyber-text hover:bg-[#374151] border-cyber-table-border';
+          let btnHtml1 = `<button onclick="handleSwapClick('${block}', ${roundIdx}, ${matchIdx}, 1)" style="touch-action: manipulation;" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-left flex items-center gap-1 ${active1} ${isP1Bye ? 'italic opacity-40' : ''}"><span class="text-[10px] opacity-70 font-sf">R${roundIdx+1}</span><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>`;
+          let btnHtml2 = `<button onclick="handleSwapClick('${block}', ${roundIdx}, ${matchIdx}, 2)" style="touch-action: manipulation;" class="flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-sm font-sans text-right flex items-center justify-end gap-1 ${active2} ${isP2Bye ? 'italic opacity-40' : ''}"><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span><span class="text-[10px] opacity-70 font-sf">R${roundIdx+1}</span></button>`;
           return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${btnHtml1}<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>${btnHtml2}</div>`;
       }
 
@@ -4091,10 +4149,16 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-alert-modal');
         document.getElementById('custom-alert-msg').innerText = msg;
+        if (isEffectOn) {
+          modal.style.transform = 'rotate(180deg)';
+        } else {
+          modal.style.transform = 'rotate(0deg)';
+        }
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-alert-ok');
         const handler = () => {
           modal.classList.add('hidden');
+          modal.style.transform = 'rotate(0deg)';
           okBtn.removeEventListener('click', handler);
           resolve();
         };
@@ -4105,11 +4169,16 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
         document.getElementById('custom-confirm-msg').innerText = msg;
+        if (isEffectOn) {
+          modal.style.transform = 'rotate(180deg)';
+        } else {
+          modal.style.transform = 'rotate(0deg)';
+        }
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-confirm-ok');
         const cancelBtn = document.getElementById('custom-confirm-cancel');
-        const onOk = () => { modal.classList.add('hidden'); cleanup(); resolve(true); };
-        const onCancel = () => { modal.classList.add('hidden'); cleanup(); resolve(false); };
+        const onOk = () => { modal.classList.add('hidden'); modal.style.transform = 'rotate(0deg)'; cleanup(); resolve(true); };
+        const onCancel = () => { modal.classList.add('hidden'); modal.style.transform = 'rotate(0deg)'; cleanup(); resolve(false); };
         const cleanup = () => { okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); };
         okBtn.addEventListener('click', onOk);
         cancelBtn.addEventListener('click', onCancel);

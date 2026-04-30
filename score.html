@@ -202,8 +202,8 @@
         #remote-content-overlay { 
             position: fixed; 
             top: 0; 
-            left: 0; 
-            width: 100vw; 
+            left: max(44px, calc(env(safe-area-inset-left) + 44px));
+            width: calc(100vw - max(44px, calc(env(safe-area-inset-left) + 44px)));
             height: 100vh; 
             z-index: 999; 
             background: #0a0e17; 
@@ -220,6 +220,16 @@
             cursor: default !important; 
             max-width: 100%;
             box-sizing: border-box;
+            font-size: clamp(10px, 2.8vw, 18px);
+        }
+        #remote-content-overlay .player-name,
+        #remote-content-overlay [class*="name"],
+        #remote-content-overlay [class*="player"] {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 100% !important;
+            font-size: clamp(10px, 2vw, inherit) !important;
         }
         /* オーバーレイ内のボタンとボーダーを非表示 */
         #remote-content-overlay button,
