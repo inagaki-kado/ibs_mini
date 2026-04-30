@@ -2331,12 +2331,12 @@
       });
 
       document.getElementById('lotteryModal').classList.remove('hidden');
-      document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
-      const lModalContent = document.getElementById('lotteryModalContent');
+      document.getElementById('lotteryModalContent').style.transform = 'rotate(0deg)';
+      const lModal = document.getElementById('lotteryModal');
       if (isEffectOn) {
-        lModalContent.style.transform = 'rotate(180deg)';
+        lModal.style.transform = 'rotate(180deg)';
       } else {
-        lModalContent.style.transform = 'rotate(0deg)';
+        lModal.style.transform = 'rotate(0deg)';
       }
       document.getElementById('lotteryModal').classList.add('flex');
     }
@@ -2442,12 +2442,12 @@
       });
 
       document.getElementById('lotteryModal').classList.remove('hidden');
-      document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
-      const lModalContent = document.getElementById('lotteryModalContent');
+      document.getElementById('lotteryModalContent').style.transform = 'rotate(0deg)';
+      const lModal2 = document.getElementById('lotteryModal');
       if (isEffectOn) {
-        lModalContent.style.transform = 'rotate(180deg)';
+        lModal2.style.transform = 'rotate(180deg)';
       } else {
-        lModalContent.style.transform = 'rotate(0deg)';
+        lModal2.style.transform = 'rotate(0deg)';
       }
       document.getElementById('lotteryModal').classList.add('flex');
     }
@@ -2510,7 +2510,7 @@
             <h2 class="text-xl font-sf text-cyber-blue mb-6">TARGET: ${p.name}</h2>
             <div id="rouletteDisplay" class="text-6xl md:text-7xl font-bold font-sf text-yellow-400 drop-shadow-[0_0_15px_#facc15] h-32 flex items-center justify-center tracking-widest"></div>
         `;
-        document.getElementById('lotteryModalContent').style.transform = isEffectOn ? 'rotate(180deg)' : 'rotate(0deg)';
+        // lotteryModal全体がrotateされているため、lotteryModalContentのrotateは不要
 
         const rDisplay = document.getElementById('rouletteDisplay');
         let duration;
@@ -2575,7 +2575,6 @@
 
     function closeLotteryModal() {
         document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
-        document.getElementById('lotteryModalContent').style.transform = 'rotate(0deg)';
         document.getElementById('lotteryModal').classList.add('hidden');
         document.getElementById('lotteryModal').classList.remove('flex');
         const opBox = document.getElementById('operatorViewBox');
