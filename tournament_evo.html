@@ -3459,6 +3459,16 @@
 
     async function clearSave() {
       if (!await showConfirm("セーブデータを削除して最初からやり直しますか？\n※この操作は元に戻せません")) return;
+      // 「ベイチェック写真」は名前キーで別途 localStorage に残るため、新規開始では必ず全削除する
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (k.startsWith('bayPhoto_')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      } catch (_) {}
       localStorage.removeItem(SAVE_KEY);
       location.reload();
     }
