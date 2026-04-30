@@ -2296,18 +2296,25 @@
       `;
 
       const container = document.getElementById('modalColorButtons');
-      const allActive = colors.filter(c => blockCapacities[c] - counts[c] > 0);
-      const isRandomDisabled = allActive.length === 0;
+      const lettersAll = ['A','B','C','D','E','F','G','H'];
+      const eligibleLetters = lettersAll.filter(L => {
+        const remain = (letterCapsForBlocks[L] || 0) - getBlockFilledCount(L);
+        return remain > 0;
+      });
+      const isRandomDisabled = eligibleLetters.length === 0;
       const randBtn = document.createElement('button');
       randBtn.style.touchAction = 'manipulation';
       randBtn.className = `py-8 px-4 rounded-lg font-bold shadow-lg bg-cyber-pink text-white ${isRandomDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-80 active:scale-95'} font-sf transition-transform flex items-center justify-between`;
       randBtn.innerHTML = `<span class="block text-lg font-sf">🎲 抽選  LOTTERY</span>`;
       if (!isRandomDisabled) {
         randBtn.onclick = () => {
-          const minFilled = Math.min(...allActive.map(c => counts[c]));
-          const candidates = allActive.filter(c => counts[c] === minFilled);
-          const picked = candidates[Math.floor(Math.random() * candidates.length)];
-          doLotteryModal(picked);
+          // 各ブロック人数が均等になるよう「いちばん少ないブロック」を優先して抽選
+          const filledByLetter = eligibleLetters.map(L => ({ L, filled: getBlockFilledCount(L) }));
+          const minFilled = Math.min(...filledByLetter.map(x => x.filled));
+          const candidates = filledByLetter.filter(x => x.filled === minFilled).map(x => x.L);
+          const pickedLetter = candidates[Math.floor(Math.random() * candidates.length)];
+          const slotKey = slotKeyForBracketLetter(pickedLetter);
+          doLotteryModal(slotKey, pickedLetter);
         };
       }
       container.prepend(randBtn);
@@ -2332,12 +2339,8 @@
 
       document.getElementById('lotteryModal').classList.remove('hidden');
       document.getElementById('lotteryModalContent').style.transform = 'rotate(0deg)';
-      const lModal = document.getElementById('lotteryModal');
-      if (isEffectOn) {
-        lModal.style.transform = 'rotate(180deg)';
-      } else {
-        lModal.style.transform = 'rotate(0deg)';
-      }
+      // 演出ON時は app-wrapper 側の180°回転に追従させる（ここで打ち消し回転しない）
+      document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
@@ -2348,7 +2351,11 @@
         if (!round || !Array.isArray(round)) continue;
         for (const m of round) {
           if (!m) continue;
-          if (m.winner !== null && m.winner !== undefined) return false;
+          // BYE（不戦勝）の自動処理でwinnerが入っていても「開始済み」扱いにしない
+          if (m.winner !== null && m.winner !== undefined) {
+            const isByeMatch = (m.p1 && m.p1.id === 'BYE') || (m.p2 && m.p2.id === 'BYE');
+            if (!isByeMatch) return false;
+          }
         }
       }
       return true;
@@ -2404,7 +2411,11 @@
       lotteryBtn.innerHTML = `<span class="block text-lg font-sf">🎲 抽選  LOTTERY</span>`;
       if (!isLotteryDisabled) {
         lotteryBtn.onclick = () => {
-          const picked = allEligibleLetters[Math.floor(Math.random() * allEligibleLetters.length)];
+          // 途中参加でも、できるだけ各ブロック人数が均等になるようにする
+          const filledByLetter = allEligibleLetters.map(L => ({ L, filled: getBlockFilledCount(L) }));
+          const minFilled = Math.min(...filledByLetter.map(x => x.filled));
+          const candidates = filledByLetter.filter(x => x.filled === minFilled).map(x => x.L);
+          const picked = candidates[Math.floor(Math.random() * candidates.length)];
           doLateJoinLotteryToLetter(picked);
         };
       }
@@ -2443,12 +2454,8 @@
 
       document.getElementById('lotteryModal').classList.remove('hidden');
       document.getElementById('lotteryModalContent').style.transform = 'rotate(0deg)';
-      const lModal2 = document.getElementById('lotteryModal');
-      if (isEffectOn) {
-        lModal2.style.transform = 'rotate(180deg)';
-      } else {
-        lModal2.style.transform = 'rotate(0deg)';
-      }
+      // 演出ON時は app-wrapper 側の180°回転に追従させる（ここで打ち消し回転しない）
+      document.getElementById('lotteryModal').style.transform = 'rotate(0deg)';
       document.getElementById('lotteryModal').classList.add('flex');
     }
 
