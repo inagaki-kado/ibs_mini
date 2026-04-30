@@ -1084,8 +1084,14 @@
                             document.getElementById('p2-val-bp').innerText = '----';
                             document.getElementById('p2-val-wr').innerHTML = formatRate('--%');
                         }
-                        
-                        resetGame(); 
+
+                        resetGame();
+                        if (typeof data.p1BeyText === 'string' && data.p1BeyText.trim()) {
+                            updateBeybladeBar(1, data.p1BeyText.trim());
+                        }
+                        if (typeof data.p2BeyText === 'string' && data.p2BeyText.trim()) {
+                            updateBeybladeBar(2, data.p2BeyText.trim());
+                        } 
                     }
                 });
                 

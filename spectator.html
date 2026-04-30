@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOURNAMENT SPECTATOR | 板橋ベイブレード会</title>
+  <title>SPECTATOR | 板橋ベイブレード会</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,10 +316,111 @@
       `;
     }
 
+    const TAG_FINALS_LABELS = {
+      qf1: 'QF-1', qf2: 'QF-2', qf3: 'QF-3', qf4: 'QF-4',
+      sf1: 'SF-1', sf2: 'SF-2', f: 'FINAL', third: '3RD',
+    };
+
+    function renderTagMatchRow(m){
+      if (!m) return '';
+      const w = m.winnerTeam;
+      const p1Class = w === 1 ? 'p-win' : w === 2 ? 'p-lose' : '';
+      const p2Class = w === 2 ? 'p-win' : w === 1 ? 'p-lose' : '';
+      const meta = m.score
+        ? `<span class="p-meta">${escapeHtml(m.score)}</span>`
+        : `<span class="p-meta">${w ? '終了' : 'VS'}</span>`;
+      const lid = m.id ? String(m.id) : '';
+      return `
+        <div class="match">
+          <div class="p-row">
+            <div class="p-meta">${escapeHtml(lid)}</div>
+            <div class="p-name ${p1Class}">${escapeHtml(m.p1 || '—')}</div>
+          </div>
+          <div class="divider"></div>
+          <div class="p-row">
+            <div class="p-meta"></div>
+            <div class="p-name p-right ${p2Class}">${escapeHtml(m.p2 || '—')}</div>
+            ${meta}
+          </div>
+        </div>`;
+    }
+
+    function renderTagRoundSection(title, matches, accentVar){
+      if (!matches || !matches.length) return '';
+      const inner = matches.map(renderTagMatchRow).join('');
+      return `
+        <div class="block" style="border-color:rgba(14,165,233,0.35)">
+          <div class="block-header" style="color:${accentVar || 'var(--accent)'}">${escapeHtml(title)}</div>
+          <div class="round"><div class="bracket-wrap">${inner}</div></div>
+        </div>`;
+    }
+
+    function renderTagBracket(tag){
+      const el = $('bracket');
+      if (!tag || tag.type !== 'tag'){
+        el.innerHTML = `<div class="text-sm text-slate-400">タッグの試合データがありません</div>`;
+        return;
+      }
+      const swissHtml = [
+        renderTagRoundSection('SWISS / R1', tag.r1, 'var(--green)'),
+        renderTagRoundSection('SWISS / R2', tag.r2, 'var(--accent)'),
+        renderTagRoundSection('SWISS / R3', tag.r3, 'var(--pink)'),
+      ].filter(Boolean).join('');
+
+      const finals = tag.finals || {};
+      const finalsOrder = ['qf1', 'qf2', 'qf3', 'qf4', 'sf1', 'sf2', 'f', 'third'];
+      let finalsBlocks = '';
+      finalsOrder.forEach((k) => {
+        if (!finals[k]) return;
+        const lab = TAG_FINALS_LABELS[k] || k;
+        finalsBlocks += `
+          <div class="block" style="border-color:rgba(236,72,153,0.35)">
+            <div class="block-header" style="color:var(--yellow);border-bottom-color:rgba(236,72,153,0.25);background:rgba(236,72,153,0.08)">${escapeHtml(lab)}</div>
+            <div class="round"><div class="bracket-wrap">${renderTagMatchRow(finals[k])}</div></div>
+          </div>`;
+      });
+
+      const standings = Array.isArray(tag.standings) ? tag.standings : [];
+      let standingsHtml = '';
+      if (standings.length){
+        standingsHtml = `
+          <div class="mt-3 block" style="border-color:rgba(34,197,94,0.35)">
+            <div class="block-header" style="color:var(--green);border-bottom-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.08)">TEAM STANDINGS（途中）</div>
+            <div class="round">
+              <div class="text-[11px] mb-2" style="color:var(--muted)">勝数 / 得点 / 失点 / 得失</div>
+              ${standings.map((s) => `
+                <div class="flex items-center justify-between gap-2 py-2 border-b" style="border-color:rgba(30,41,59,0.65)">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="font-orbitron text-[10px]" style="color:var(--accent)">${s.rank}</span>
+                    <span class="font-bold truncate">${escapeHtml(s.name || '—')}</span>
+                  </div>
+                  <div class="flex gap-2 flex-shrink-0 font-orbitron text-[10px]" style="color:var(--muted)">
+                    <span>${escapeHtml(String(s.wins ?? ''))}勝</span>
+                    <span>${escapeHtml(String(s.pts ?? ''))}</span>
+                    <span>${escapeHtml(String(s.lost ?? ''))}</span>
+                    <span style="color:var(--yellow)">${s.diff > 0 ? '+' : ''}${escapeHtml(String(s.diff ?? ''))}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }
+
+      el.innerHTML = `
+        <div class="block-grid">${swissHtml || `<div class="text-sm text-slate-400">予選の試合がありません</div>`}</div>
+        ${finalsBlocks ? `<div class="mt-3 finals-grid">${finalsBlocks}</div>` : ''}
+        ${standingsHtml}
+      `;
+    }
+
     function renderBracket(bracket){
       const el = $('bracket');
       if (!bracket || typeof bracket !== 'object'){
         el.innerHTML = `<div class="text-sm text-slate-400">ブラケットデータがありません</div>`;
+        return;
+      }
+      if (bracket.type === 'tag'){
+        renderTagBracket(bracket);
         return;
       }
       const blockMatches = bracket.blockMatches || {};
@@ -452,6 +553,16 @@
           ? String(state.updatedAt)
           : new Date().toLocaleString('ja-JP');
 
+        const tagMode = state.bracket && state.bracket.type === 'tag';
+        const liveEl = document.getElementById('spectatorLiveTitle');
+        if (liveEl) {
+          liveEl.innerHTML = tagMode
+            ? 'TAG LEAGUE <span style="color:var(--accent);">LIVE</span>'
+            : 'TOURNAMENT <span style="color:var(--accent);">LIVE</span>';
+        }
+        const bracketCardTitle = document.getElementById('bracket-section-title');
+        if (bracketCardTitle) bracketCardTitle.textContent = tagMode ? 'Matches & Standings' : 'Bracket';
+
         renderParticipants(state.participants);
         renderBracket(state.bracket);
       } catch (e) {
@@ -474,7 +585,7 @@
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="font-orbitron text-xs tracking-[0.28em]" style="color:var(--accent);text-shadow:0 0 14px rgba(14,165,233,0.35);">SPECTATOR VIEW</div>
-          <div class="font-orbitron text-2xl font-black mt-1">TOURNAMENT <span style="color:var(--accent);">LIVE</span></div>
+          <div id="spectatorLiveTitle" class="font-orbitron text-2xl font-black mt-1">TOURNAMENT <span style="color:var(--accent);">LIVE</span></div>
         </div>
         <div class="text-right">
           <div class="text-[10px] font-orbitron tracking-[0.2em]" style="color:var(--muted);">AUTO REFRESH</div>
@@ -517,7 +628,7 @@
       </div>
 
       <div class="card mt-4 p-4">
-        <div class="stage-title">Bracket</div>
+        <div id="bracket-section-title" class="stage-title">Bracket</div>
         <div id="bracket" class="mt-3"></div>
       </div>
 
