@@ -2152,7 +2152,7 @@
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
           * { box-sizing: border-box; }
-          .wi-wrap { background:${C.bg}; min-height:100vh; padding:clamp(16px,3vw,32px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+          .wi-wrap { background:${C.bg}; min-height:100vh; min-height:100dvh; padding:clamp(16px,3vw,32px) clamp(16px,3vw,32px) clamp(16px,3vw,32px) max(clamp(16px,3vw,32px), env(safe-area-inset-left, 16px)); font-family:'Chakra Petch',sans-serif; color:${C.text}; box-sizing:border-box; }
           .wi-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.6vw,15px); color:${C.orange}; text-align:center; letter-spacing:4px; margin-bottom:clamp(12px,2vw,20px); text-shadow:0 0 10px ${C.orange}; }
           .wi-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(8px,1.5vw,16px); }
           .wi-card { border-radius:10px; overflow:hidden; padding:clamp(12px,2vw,20px); }
@@ -2180,7 +2180,7 @@
       const loseBadges = makeBadges(wiLotteryResult.lose, 'wi-badge-lose');
 
       const tName = tournamentName || '当日参加抽選';
-      return `${S}<div class="wi-wrap">
+      return `${S}<div class="wi-wrap" style="padding-left:max(clamp(16px,3vw,32px), env(safe-area-inset-left, 20px)); padding-bottom:max(clamp(16px,3vw,32px), env(safe-area-inset-bottom, 16px));">
         <div class="wi-title">${tName} — 当日参加抽選結果</div>
         <div class="wi-grid">
           <div class="wi-card wi-card-win">
@@ -3164,10 +3164,10 @@
             min-height: 100vh;
             background: linear-gradient(160deg, #0a1628 0%, #0a0e17 50%, #0d0a1e 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 16px env(safe-area-inset-right,16px) 16px env(safe-area-inset-left,16px);
+            padding: max(16px, env(safe-area-inset-top,16px)) max(16px, env(safe-area-inset-right,16px)) max(16px, env(safe-area-inset-bottom,16px)) max(20px, env(safe-area-inset-left,20px));
             position: relative; overflow: hidden;
           }
-          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; max-width:90vw; max-height:90vh; width:auto; height:auto; object-fit:contain; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%); transform-origin:center center; }
           .tv-res-ghost {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
             font-family: 'Chakra Petch', sans-serif; font-style: italic; font-weight: 700;

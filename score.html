@@ -202,10 +202,10 @@
         #remote-content-overlay { 
             position: fixed; 
             top: 0; 
-            left: max(44px, calc(env(safe-area-inset-left) + 44px));
-            width: calc(100vw - max(44px, calc(env(safe-area-inset-left) + 44px)));
+            left: 0;
+            width: 100vw;
             height: 100vh; 
-            z-index: 999; 
+            z-index: 9999; 
             background: #0a0e17; 
             overflow-y: auto; 
             overflow-x: hidden; 
@@ -213,14 +213,14 @@
             padding: 0; 
             font-size: clamp(14px, 3.5vw, 18px);
             box-sizing: border-box;
+            isolation: isolate;
+            display: block;
         }
         #remote-content-overlay.hidden { display: none !important; }
         #remote-content-overlay * { 
             pointer-events: none !important; 
             cursor: default !important; 
-            max-width: 100%;
             box-sizing: border-box;
-            font-size: clamp(10px, 2.8vw, 18px);
         }
         #remote-content-overlay .player-name,
         #remote-content-overlay [class*="name"],
