@@ -2461,10 +2461,66 @@ async function shareBladerStats(dataset) {
 
   const baseUrl   = location.href.split('?')[0];
   const shareUrl  = baseUrl + '?player=' + encodeURIComponent(name);
-  const wrText    = wr > 0 ? `勝率 ${wr.toFixed(1)}%` : '';
-  const bpText    = (bp && bp !== '--') ? `BP ${bp}` : '';
-  const statsText = [bpText, wrText].filter(Boolean).join(' / ');
-  const tweetText = `【BLADER STATS】${name} の戦績 ${rankStr ? '('+rankStr+')' : ''}\n${statsText}\n${shareUrl}\n#ベイブレードX #板橋ベイブレード会`;
+
+  // 2行目：RANK／BP
+  const rankPart = (rankStr && rankStr !== '--') ? `RANK：${rankStr}` : '';
+  const bpPart   = (bp && bp !== '--') ? `BP：${bp}` : '';
+  const line2    = [rankPart, bpPart].filter(Boolean).join('／');
+
+  // 3行目：最新参加大会＋戦績＋入賞バッジ（historyLog の先頭行を使用）
+  let line3 = '';
+  if (historyLog && historyLog.trim()) {
+    // historyLog は "日付 大会名\n日付 大会名\n..." または enriched "日付 大会名 【N戦N勝】\n..."
+    // 日付降順にソートして最新1件を取り出す
+    const histLines = historyLog.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    histLines.sort((a, b) => {
+      const da = a.match(/^(\d{4}\/\d{2}\/\d{2})/);
+      const db = b.match(/^(\d{4}\/\d{2}\/\d{2})/);
+      return (da && db) ? db[1].localeCompare(da[1]) : 0;
+    });
+    const latest = histLines[0];
+    if (latest) {
+      // "2026/05/02 EVOJAPAN2026（26年5月） 【6戦6勝】" のパターンに対応
+      const m = latest.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+?)(?:\s+(【\d+戦\d+勝】))?$/);
+      if (m) {
+        const date      = m[1];
+        const tourName  = m[2].trim();
+        const record    = m[3] || '';
+
+        // awardsLog から最新大会の入賞情報を取得
+        let awardBadge = '';
+        if (awardsLog && awardsLog.trim()) {
+          const awardMap = [
+            { re: /🏆|優勝|1位/, badge: '🏆優勝' },
+            { re: /🥈|準優勝|2位/, badge: '🥈準優勝' },
+            { re: /🥉|3位/,       badge: '🥉3位入賞' },
+            { re: /🎖|4位/,       badge: '🎖4位入賞' },
+          ];
+          let curRank = null;
+          for (const l of awardsLog.split(/\r?\n/)) {
+            const t = l.trim();
+            if (!t) continue;
+            const found = awardMap.find(k => k.re.test(t));
+            if (found) { curRank = found.badge; continue; }
+            if (curRank) {
+              // 大会名の部分一致チェック（"日付 大会名" の形式に対応）
+              const namePart = t.replace(/^\d{4}\/\d{2}\/\d{2}\s+/, '').trim();
+              if (namePart === tourName || namePart.includes(tourName) || tourName.includes(namePart)) {
+                awardBadge = curRank;
+                break;
+              }
+            }
+          }
+        }
+        line3 = `${date} ${tourName}${record ? ' ' + record : ''}${awardBadge ? awardBadge : ''}`;
+      } else {
+        line3 = latest;
+      }
+    }
+  }
+
+  const tweetLines = [`【BLADER STATS】${name} の戦績`, line2, line3, shareUrl, '#ベイブレードX #板橋ベイブレード会'];
+  const tweetText  = tweetLines.filter(Boolean).join('\n');
 
   // ローディングモーダル
   const modal = document.createElement('div');
@@ -2497,13 +2553,21 @@ async function shareBladerStats(dataset) {
 
   // フォールバック：プレビュー＋ボタン
   const previewUrl = blob ? URL.createObjectURL(blob) : null;
+  // blob を window スコープに退避（ボタンのonclick から参照するため）
+  window._shareBlob = blob || null;
+  window._shareTweetText = tweetText;
+  window._shareFileName = `blader_stats_${encodeURIComponent(name)}.png`;
   const body = document.getElementById('shareModalBody');
+  const btnStyle = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:\'Orbitron\',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;touch-action:manipulation;width:100%;';
+  const btnGreen = btnStyle + 'border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);';
+  const btnWhite = btnStyle + 'border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);color:#fff;text-decoration:none;';
   body.innerHTML = `
     ${previewUrl ? `<img src="${previewUrl}" style="width:100%;border-radius:6px;margin-bottom:12px;border:1px solid rgba(0,255,136,0.15);">` : ''}
     <div style="display:flex;gap:8px;flex-direction:column;">
-      ${previewUrl ? `<button onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='blader_stats_${encodeURIComponent(name)}.png';a.click();})()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);touch-action:manipulation;width:100%;"><i class="fa fa-image"></i> 画像を保存</button>` : ''}
-      <button onclick="copyShareUrl('${shareUrl}')" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);touch-action:manipulation;width:100%;"><i class="fa fa-link"></i> URLをコピー</button>
-      <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);color:#fff;text-decoration:none;touch-action:manipulation;"><svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Xに投稿</a>
+      ${previewUrl ? `<button onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='${window._shareFileName}';a.click();})()" style="${btnGreen}"><i class="fa fa-image"></i> 画像を保存</button>` : ''}
+      ${previewUrl ? `<button id="btnCopyImg" onclick="copyShareImage()" style="${btnGreen}"><i class="fa fa-copy"></i> 画像をコピー</button>` : ''}
+      <button onclick="copyShareUrl('${shareUrl}')" style="${btnGreen}"><i class="fa fa-link"></i> URLをコピー</button>
+      <button id="btnTweetWithImg" onclick="tweetWithImage('${encodeURIComponent(tweetText)}')" style="${btnWhite}"><svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Xに投稿</button>
     </div>`;
 }
 
@@ -2516,6 +2580,51 @@ function copyShareUrl(url) {
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     showShareToast('🔗 URLをコピーしました');
   });
+}
+
+// 画像をクリップボードにコピー
+async function copyShareImage() {
+  const blob = window._shareBlob;
+  if (!blob) { showShareToast('⚠ 画像データがありません'); return; }
+  const btn = document.getElementById('btnCopyImg');
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      if (btn) { btn.textContent = '✓ コピーしました'; btn.style.opacity = '0.7'; }
+      showShareToast('📋 画像をクリップボードにコピーしました');
+    } else {
+      // フォールバック：保存を促す
+      showShareToast('⚠ このブラウザは画像コピー非対応です。「画像を保存」をお使いください');
+    }
+  } catch(e) {
+    // 権限エラー時は保存にフォールバック
+    showShareToast('⚠ コピー権限がありません。「画像を保存」をお使いください');
+  }
+}
+
+// 画像をクリップボードにコピーしてからX投稿画面を開く
+async function tweetWithImage(encodedText) {
+  const blob = window._shareBlob;
+  const btn  = document.getElementById('btnTweetWithImg');
+  const xUrl = 'https://twitter.com/intent/tweet?text=' + encodedText;
+
+  if (blob && navigator.clipboard && window.ClipboardItem) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      if (btn) {
+        btn.innerHTML = btn.innerHTML.replace('Xに投稿', '画像コピー済 → 投稿画面へ');
+        btn.style.borderColor = 'rgba(0,255,136,0.5)';
+      }
+      showShareToast('📋 画像をコピーしました！投稿画面で Ctrl+V / 長押しで貼り付けてください');
+      // 少し待ってからX投稿画面を開く（トーストを読む時間を確保）
+      setTimeout(() => { window.open(xUrl, '_blank'); }, 800);
+      return;
+    } catch(e) {
+      // コピー失敗時はそのままX投稿画面へ
+    }
+  }
+  // クリップボードAPI非対応 or 失敗 → そのままX投稿画面を開く
+  window.open(xUrl, '_blank');
 }
 
 function showShareToast(msg) {
