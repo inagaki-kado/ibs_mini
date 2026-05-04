@@ -2122,27 +2122,39 @@ async function _generateShareCardBlob(data) {
     awardsLogParsed.p4.forEach(n => { placeMap[n] = 4; });
 
     const lines = rawHist.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    // 日付降順にソート（新しい順）
     lines.sort((a, b) => {
       const da = a.match(/^(\d{4}\/\d{2}\/\d{2})/);
       const db = b.match(/^(\d{4}\/\d{2}\/\d{2})/);
       if (da && db) return db[1].localeCompare(da[1]);
       return 0;
     });
+    // matchDetailsByPlayer から選手の試合詳細を取得（グローバル変数参照）
+    const playerDetails = (typeof matchDetailsByPlayer !== 'undefined' && matchDetailsByPlayer)
+      ? (matchDetailsByPlayer[data.name] || []) : [];
     return lines.slice(0, 3).map(line => {
-      // "2026/04/27 第14回板橋杯 【3戦2勝】" をパース
       const m = line.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+?)(?:\s+【(\d+)戦(\d+)勝】)?$/);
       if (!m) return null;
-      const date = m[1];
-      const name = m[2].trim();
-      const matches = m[3] ? parseInt(m[3]) : null;
-      const wins    = m[4] ? parseInt(m[4]) : null;
-      // placeMapで大会名に一致する順位を探す（部分一致も考慮）
+      const date   = m[1];
+      const tName  = m[2].trim();
+      let matches  = m[3] ? parseInt(m[3]) : null;
+      let wins     = m[4] ? parseInt(m[4]) : null;
+      // 生データで戦績なし → matchDetailsByPlayer から補完
+      if ((matches === null || wins === null) && playerDetails.length > 0) {
+        const rel = playerDetails.filter(d => {
+          if (!d || !d.tName) return false;
+          const tn = d.tName.trim();
+          return tn === tName || tn.includes(tName) || tName.includes(tn);
+        });
+        if (rel.length > 0) {
+          matches = rel.length;
+          wins    = rel.filter(d => d.isWin).length;
+        }
+      }
       let place = null;
       for (const [k, v] of Object.entries(placeMap)) {
-        if (name === k || name.includes(k) || k.includes(name)) { place = v; break; }
+        if (tName === k || tName.includes(k) || k.includes(tName)) { place = v; break; }
       }
-      return { date, name, matches, wins, place };
+      return { date, name: tName, matches, wins, place };
     }).filter(Boolean);
   }
 
@@ -2371,32 +2383,36 @@ async function _generateShareCardBlob(data) {
       ctx.textAlign = 'left'; ctx.font = '400 10px Orbitron, monospace'; ctx.fillStyle = '#475569';
       ctx.fillText(h.date, PAD+12, ry+13);
 
-      // 大会名
+      // ── 右端：WIN/GAME バッジ（固定）──
+      const wText = (h.wins !== null && h.matches !== null) ? `${h.wins}WIN / ${h.matches} GAME` : (h.matches !== null ? `${h.matches} GAME` : '-- GAME');
+      ctx.font = '700 11px Orbitron, monospace';
+      const gameBW = ctx.measureText(wText).width + 20;
+      const gameX  = W - PAD - gameBW;
+      ctx.fillStyle = 'rgba(0,255,136,0.07)'; _shareRoundRect(ctx, gameX, ry+8, gameBW, 18, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,255,136,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#00ff88'; ctx.textAlign = 'left'; ctx.fillText(wText, gameX+10, ry+21);
+
+      // ── 大会名（左側）──
       ctx.font = '500 12px "Noto Sans JP", "Noto Sans", sans-serif'; ctx.fillStyle = '#e2e8f0';
       ctx.fillText(h.name, PAD+12, ry+28);
 
-      // 右側：WIN/GAME バッジ → 入賞バッジ（右から左へ積む）
-      const wText = h.wins !== null ? `${h.wins}WIN / ${h.matches} GAME` : `${h.matches} GAME`;
-      ctx.font = '700 11px Orbitron, monospace';
-      const gameBW = ctx.measureText(wText).width + 20;
-      let rightX = W - PAD;
-
-      // WIN/GAME バッジ
-      rightX -= gameBW;
-      ctx.fillStyle = 'rgba(0,255,136,0.07)'; _shareRoundRect(ctx, rightX, ry+8, gameBW, 18, 4); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,255,136,0.25)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#00ff88'; ctx.textAlign = 'left'; ctx.fillText(wText, rightX+10, ry+21);
-
-      // 入賞バッジ（入賞した場合のみ）
+      // ── 入賞バッジ（大会名の右隣）──
       if (h.place && placeDefs[h.place]) {
         const p = placeDefs[h.place];
         const placeText = `${p.icon} ${p.label}`;
-        ctx.font = '700 11px Orbitron, monospace';
-        const placeBW = ctx.measureText(placeText).width + 18;
-        rightX -= placeBW + 6;
-        ctx.fillStyle = p.bg; _shareRoundRect(ctx, rightX, ry+8, placeBW, 18, 4); ctx.fill();
-        ctx.strokeStyle = p.border; ctx.lineWidth = 1; ctx.stroke();
-        ctx.fillStyle = p.color; ctx.textAlign = 'left'; ctx.fillText(placeText, rightX+9, ry+21);
+        ctx.font = '700 10px Orbitron, monospace';
+        // 大会名の幅を測って右隣に配置
+        ctx.font = '500 12px "Noto Sans JP", "Noto Sans", sans-serif';
+        const nameW   = ctx.measureText(h.name).width;
+        ctx.font = '700 10px Orbitron, monospace';
+        const placeBW = ctx.measureText(placeText).width + 14;
+        const placeX  = PAD + 12 + nameW + 8;
+        // はみ出し防止（WIN/GAMEバッジとの衝突チェック）
+        if (placeX + placeBW < gameX - 6) {
+          ctx.fillStyle = p.bg; _shareRoundRect(ctx, placeX, ry+19, placeBW, 16, 4); ctx.fill();
+          ctx.strokeStyle = p.border; ctx.lineWidth = 1; ctx.stroke();
+          ctx.fillStyle = p.color; ctx.textAlign = 'left'; ctx.fillText(placeText, placeX+7, ry+30);
+        }
       }
 
       curY += 42;
