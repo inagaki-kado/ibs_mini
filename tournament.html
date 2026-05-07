@@ -1059,6 +1059,10 @@
     let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
     /** 選択中の決まり手（出現順を保持。同一略称の重複も可＝例: SF,SF,BF） */
     let remoteKimariteList = [];
+    /** P1が取った決まり手リスト（スコアボタン自動記録） */
+    let remoteKimariteP1 = [];
+    /** P2が取った決まり手リスト（スコアボタン自動記録） */
+    let remoteKimariteP2 = [];
     const KIMARITE_ORDER = ['SF', 'BF', 'OF', 'XF'];
     function parseKimariteStored(val) {
       if (val == null || val === '') return [];
@@ -1099,19 +1103,31 @@
             if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
             else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
 
-            // ▼ スコアボタンに対応する決まり手を自動追加
+            // ▼ スコアボタンに対応する決まり手を自動追加（P1/P2別）
             const kimariteCmdMap = {
-              'P1_X': 'XF', 'P2_X': 'XF',
-              'P1_B': 'BF', 'P2_B': 'BF',
-              'P1_O': 'OF', 'P2_O': 'OF',
-              'P1_S': 'SF', 'P2_S': 'SF',
+              'P1_X': { k: 'XF', who: 'p1' }, 'P2_X': { k: 'XF', who: 'p2' },
+              'P1_B': { k: 'BF', who: 'p1' }, 'P2_B': { k: 'BF', who: 'p2' },
+              'P1_O': { k: 'OF', who: 'p1' }, 'P2_O': { k: 'OF', who: 'p2' },
+              'P1_S': { k: 'SF', who: 'p1' }, 'P2_S': { k: 'SF', who: 'p2' },
             };
-            const autoK = kimariteCmdMap[cmd];
-            if (autoK && KIMARITE_ORDER.includes(autoK)) {
-              remoteKimariteList.push(autoK);
+            const autoKEntry = kimariteCmdMap[cmd];
+            if (autoKEntry && KIMARITE_ORDER.includes(autoKEntry.k)) {
+              // P1_X/P2_X 等の cmd 名はスワップに関係なく「実際のP1/P2」を示す
+              // isRemoteSwapped を考慮して実際のP1/P2に振り分ける
+              const actualWho = (isRemoteSwapped)
+                ? (autoKEntry.who === 'p1' ? 'p2' : 'p1')
+                : autoKEntry.who;
+              if (actualWho === 'p1') {
+                remoteKimariteP1.push(autoKEntry.k);
+              } else {
+                remoteKimariteP2.push(autoKEntry.k);
+              }
+              // 既存の全体リスト（手動UI用）にも追加（表示のため）
+              remoteKimariteList.push(autoKEntry.k);
               updateRemoteKimariteUI();
               if (currentRemoteMatch && currentRemoteMatch.match) {
-                currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
+                currentRemoteMatch.match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+                currentRemoteMatch.match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
                 saveState();
               }
             }
@@ -1134,6 +1150,8 @@
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
         remoteKimariteList = parseKimariteStored(match && match.kimarite != null ? match.kimarite : '');
+        remoteKimariteP1 = parseKimariteStored(match && match.kimarite_p1 != null ? match.kimarite_p1 : '');
+        remoteKimariteP2 = parseKimariteStored(match && match.kimarite_p2 != null ? match.kimarite_p2 : '');
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
@@ -1298,10 +1316,19 @@
 
     function undoRemoteKimariteLast() {
       if (!remoteKimariteList.length) return;
+      // 全体リストから最後の要素を取得
+      const lastK = remoteKimariteList[remoteKimariteList.length - 1];
       remoteKimariteList.pop();
+      // P1/P2リストの末尾に同じ値があれば削除（後入れ先出し）
+      if (remoteKimariteP1.length > 0 && remoteKimariteP1[remoteKimariteP1.length - 1] === lastK) {
+        remoteKimariteP1.pop();
+      } else if (remoteKimariteP2.length > 0 && remoteKimariteP2[remoteKimariteP2.length - 1] === lastK) {
+        remoteKimariteP2.pop();
+      }
       updateRemoteKimariteUI();
       if (currentRemoteMatch && currentRemoteMatch.match) {
-        currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
+        currentRemoteMatch.match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+        currentRemoteMatch.match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
         saveState();
       }
     }
@@ -1323,6 +1350,8 @@
         // スコアを "4-2" 形式で保存
         match.score = `${scoreP1}-${scoreP2}`;
         match.kimarite = serializeKimariteList(remoteKimariteList);
+        match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+        match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
         // ▲ スコア保存処理ここまで
         
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -2484,15 +2513,47 @@
 
     function openExportModal() {
       let exportText = "";
-      const addMatch = (m) => {
+      const getRoundLabel = (block, roundIdx) => {
+        if (block === 'finals') {
+          if (roundIdx === 'sf') return '準決勝';
+          if (roundIdx === 'f') return '決勝';
+          if (roundIdx === 'third') return '3位決定戦';
+          return 'FINAL';
+        }
+        if (blockMatches[block]) {
+          const totalRounds = blockMatches[block].length;
+          if (roundIdx === totalRounds - 1) return `${block}ブロック最終`;
+          return `${block}ブロック${roundIdx + 1}回戦`;
+        }
+        return '';
+      };
+      const addMatch = (m, block, roundIdx) => {
         if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
-          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+          const p1Name = m.p1.name;
+          const p2Name = m.p2.name;
+          const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+          const score = m.score || '';
+          const round = getRoundLabel(block, roundIdx);
+          const kp1 = m.kimarite_p1 || '';
+          const kp2 = m.kimarite_p2 || '';
+          const bey1 = m.p1BeyUsed || '';
+          const bey2 = m.p2BeyUsed || '';
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t${score}\t${round}\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
         }
       };
-      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
-      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
-      document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        if (blockMatches[bName]) {
+          blockMatches[bName].forEach((round, roundIdx) => {
+            round.forEach(match => addMatch(match, bName, roundIdx));
+          });
+        }
+      });
+      if (finals.sf) finals.sf.forEach(match => addMatch(match, 'finals', 'sf'));
+      if (finals.third) addMatch(finals.third, 'finals', 'third');
+      if (finals.f) addMatch(finals.f, 'finals', 'f');
+      document.getElementById('exportArea').value = exportText;
+      document.getElementById('exportModal').classList.remove('hidden');
+      document.getElementById('exportModal').classList.add('flex');
     }
 
     function closeExportModal() { document.getElementById('exportModal').classList.add('hidden'); document.getElementById('exportModal').classList.remove('flex'); }

@@ -1153,7 +1153,7 @@ const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 // 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
 // B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
 // M=決まり手（カンマ区切り）, N=P1使用ベイ, O=P2使用ベイ（決まり手集計用）
-const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:O');
+const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:P');
 const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1388,11 +1388,13 @@ async function fetchPlayers() {
         if (winner === p2) tournamentStatsByPlayer[p2][statKey].wins += 1;
       }
 
-      // 決まり手詳細（M列以降: row[11]=決まり手, row[12]=P1使用ベイ, row[13]=P2使用ベイ）
-      const kimarite = (row[11] || '').trim();
+      // 決まり手詳細
+      // row[11]=M列(P1決まり手), row[12]=N列(P1使用ベイ), row[13]=O列(P2使用ベイ), row[14]=P列(P2決まり手)
+      const kp1 = (row[11] || '').trim();
       const p1Bey = (row[12] || '').trim();
       const p2Bey = (row[13] || '').trim();
-      const pushDetail = (name, opp, isWin, bey) => {
+      const kp2 = (row[14] || '').trim();
+      const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived) => {
         if (!name) return;
         if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
         matchDetailsByPlayer[name].push({
@@ -1401,14 +1403,15 @@ async function fetchPlayers() {
           round,
           opp,
           isWin: !!isWin,
-          kimarite,
+          kimarite: kimariteDone,
+          kimarite_received: kimariteReceived,
           bey,
           score: '',
         });
       };
       if (p1 && p2) {
-        pushDetail(p1, p2, winner && winner === p1, p1Bey);
-        pushDetail(p2, p1, winner && winner === p2, p2Bey);
+        pushDetail(p1, p2, winner && winner === p1, p1Bey, kp1, kp2);
+        pushDetail(p2, p1, winner && winner === p2, p2Bey, kp2, kp1);
       }
     });
 
@@ -1473,28 +1476,33 @@ function calcKimariteStat(playerName) {
   const details = matchDetailsByPlayer && matchDetailsByPlayer[playerName];
   if (!details || details.length === 0) return null;
 
-  const counts = { XF: 0, BF: 0, OF: 0, SF: 0 };
-  let total = 0;
+  const counts    = { XF: 0, BF: 0, OF: 0, SF: 0 };
+  const countsRcv = { XF: 0, BF: 0, OF: 0, SF: 0 };
+  let total = 0, totalRcv = 0;
 
   details.forEach(d => {
-    if (!d || !d.kimarite) return;
-    const items = d.kimarite.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-    items.forEach(k => {
-      if (Object.prototype.hasOwnProperty.call(counts, k)) {
-        counts[k] += 1;
-        total += 1;
-      }
-    });
+    if (!d) return;
+    if (d.kimarite) {
+      d.kimarite.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(counts, k)) { counts[k]++; total++; }
+      });
+    }
+    if (d.kimarite_received) {
+      d.kimarite_received.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(countsRcv, k)) { countsRcv[k]++; totalRcv++; }
+      });
+    }
   });
 
-  if (total === 0) return null;
+  if (total === 0 && totalRcv === 0) return null;
 
-  const pct = {};
+  const pct = {}, pctRcv = {};
   Object.keys(counts).forEach(k => {
-    pct[k] = Math.round((counts[k] / total) * 100);
+    pct[k]    = total    > 0 ? Math.round((counts[k]    / total)    * 100) : 0;
+    pctRcv[k] = totalRcv > 0 ? Math.round((countsRcv[k] / totalRcv) * 100) : 0;
   });
 
-  return { total, counts, pct };
+  return { total, counts, pct, totalRcv, countsRcv, pctRcv };
 }
 
 // ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
@@ -1859,50 +1867,58 @@ function renderResults(players) {
         </div>`;
     }
 
-    // ── FINISH TYPE (決まり手) ──
+    // ── FINISH TYPE (決まり手 & 被決まり手) ──
     let finishTypeHtml = '';
     const ft = calcKimariteStat(name);
-    if (ft && ft.total > 0) {
-      const rows = [
-        { k: 'XF', label: 'XF', color: '#ff0055' },
-        { k: 'BF', label: 'BF', color: '#ffd700' },
-        { k: 'OF', label: 'OF', color: '#ffaa00' },
-        { k: 'SF', label: 'SF', color: '#0ea5e9' },
-      ].filter(x => (ft.counts[x.k] || 0) > 0);
-
-      if (rows.length) {
-        const rowsHtml = rows.map(x => {
-          const c = ft.counts[x.k] || 0;
-          const p = ft.pct[x.k] || 0;
+    if (ft && (ft.total > 0 || ft.totalRcv > 0)) {
+      const FINISH_DEFS = [
+        { k: 'XF', color: '#ff0055' },
+        { k: 'BF', color: '#ffd700' },
+        { k: 'OF', color: '#ffaa00' },
+        { k: 'SF', color: '#0ea5e9' },
+      ];
+      const buildRows = (countsObj, pctObj, alpha) =>
+        FINISH_DEFS.filter(x => (countsObj[x.k] || 0) > 0).map(x => {
+          const c = countsObj[x.k] || 0;
+          const p = pctObj[x.k]    || 0;
+          const barColor  = alpha < 1 ? x.color + '80' : x.color;
+          const textColor = alpha < 1 ? x.color + 'b3' : x.color;
           return `
             <div style="display:grid;grid-template-columns:48px 1fr 110px;align-items:center;gap:10px;">
-              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${x.color};text-shadow:0 0 12px ${x.color};">${x.label}</div>
+              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${textColor};">${x.k}</div>
               <div style="height:10px;background:#111827;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">
-                <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${x.color};box-shadow:0 0 18px ${x.color};"></div>
+                <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${barColor};"></div>
               </div>
-              <div style="text-align:right;font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;">
+              <div style="text-align:right;font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};">
                 ${c}回 <span style="opacity:.75;">(${p}%)</span>
               </div>
             </div>
           `;
         }).join('');
 
-        finishTypeHtml = `
-          <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-              <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">
-                FINISH TYPE
-              </div>
-              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">
-                TOTAL ${ft.total}
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              ${rowsHtml}
-            </div>
+      const doneRows = ft.total    > 0 ? buildRows(ft.counts,    ft.pct,    1.0) : '';
+      const rcvRows  = ft.totalRcv > 0 ? buildRows(ft.countsRcv, ft.pctRcv, 0.7) : '';
+
+      const rcvSection = rcvRows ? `
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;">
+          <div style="flex:1;height:1px;background:#1f2937;"></div>
+          <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:10px;">RECEIVED</div>
+          <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:10px;">TOTAL ${ft.totalRcv}</div>
+          <div style="flex:1;height:1px;background:#1f2937;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">${rcvRows}</div>
+      ` : '';
+
+      finishTypeHtml = `
+        <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">FINISH TYPE</div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">TOTAL ${ft.total}</div>
           </div>
-        `;
-      }
+          ${doneRows ? `<div style="display:flex;flex-direction:column;gap:10px;">${doneRows}</div>` : ''}
+          ${rcvSection}
+        </div>
+      `;
     }
 
     card.innerHTML = `
