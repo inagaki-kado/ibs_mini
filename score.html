@@ -977,6 +977,9 @@
                     const tempBey = beybladeP1; beybladeP1 = beybladeP2; beybladeP2 = tempBey;
                     updateBeybladeBar(1, beybladeP1);
                     updateBeybladeBar(2, beybladeP2);
+                    // ★ 名前入れ替え後にフォントサイズを再計算する
+                    adjustNameFontSize('name1');
+                    adjustNameFontSize('name2');
                 }
                 
                 if (cmd === 'P1_X') addScore(1, 3, 'XTREME');

@@ -1111,21 +1111,30 @@
     }
 
     function recalculateAllStats() {
+        // participants を initialStats でリセット
         participants.forEach(p => {
             if (p.initialStats) {
                 p.currentStats = { power: p.initialStats.power, matches: p.initialStats.matches, wins: p.initialStats.wins, loses: p.initialStats.loses, rate: calculateRate(p.initialStats.wins, p.initialStats.matches) };
             }
         });
         if (!isTournamentStarted) return;
+        // loadState後はmatch.p1/p2がparticipantsと別オブジェクトになるため
+        // 全matchのp1/p2をparticipantsの最新オブジェクトに再同期してからリセット
+        const pMap = {};
+        participants.forEach(p => { pMap[p.id] = p; });
+        const syncMatch = (match) => {
+            if (match && match.p1 && match.p1.id !== 'BYE' && pMap[match.p1.id]) match.p1 = pMap[match.p1.id];
+            if (match && match.p2 && match.p2.id !== 'BYE' && pMap[match.p2.id]) match.p2 = pMap[match.p2.id];
+        };
         let maxRounds = 0;
         ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName].length > maxRounds) maxRounds = blockMatches[bName].length; });
         for (let r = 0; r < maxRounds; r++) {
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName][r]) { blockMatches[bName][r].forEach(processMatchForStats); } });
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(bName => { if (blockMatches[bName] && blockMatches[bName][r]) { blockMatches[bName][r].forEach(syncMatch); blockMatches[bName][r].forEach(processMatchForStats); } });
         }
-        if (finals.qf) finals.qf.forEach(processMatchForStats);
-        if (finals.sf) finals.sf.forEach(processMatchForStats);
-        if (finals.third) processMatchForStats(finals.third);
-        if (finals.f) processMatchForStats(finals.f);
+        if (finals.qf) { finals.qf.forEach(syncMatch); finals.qf.forEach(processMatchForStats); }
+        if (finals.sf) { finals.sf.forEach(syncMatch); finals.sf.forEach(processMatchForStats); }
+        if (finals.third) { syncMatch(finals.third); processMatchForStats(finals.third); }
+        if (finals.f) { syncMatch(finals.f); processMatchForStats(finals.f); }
     }
 
     // ==========================================
