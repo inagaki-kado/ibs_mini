@@ -1504,7 +1504,7 @@
       }, 0);
     }
 
-    function openPasteModal() { if(isTournamentStarted) return showAlert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
+    function openPasteModal() { document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
     function processPasteData() {
@@ -1526,7 +1526,7 @@
     }
 
     function addParticipant(name = '', memo1 = '') {
-      if(isTournamentStarted) return showAlert("開始後は追加できません"); if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
+      if(!name) { name = prompt("参加者名を入力"); if(!name) return; }
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
@@ -2634,7 +2634,10 @@
         }
       }
       
-      parts.sort((a, b) => a.selectionName.localeCompare(b.selectionName, 'ja'));
+      parts.sort((a, b) => {
+        if (a.isFrequent !== b.isFrequent) return a.isFrequent ? -1 : 1;
+        return a.selectionName.localeCompare(b.selectionName, 'ja');
+      });
       
       return parts;
     }
@@ -3173,6 +3176,8 @@
       currentEditingBeybladeIndex = -1;
       beyChangeModeActive = false;
       beyChangeTargetIndex = -1;
+      // リモコン画面が開いている場合、ベイボタンを更新
+      if (currentRemoteMatch) updateRemoteBeybladeButtons();
     }
 
     /**
@@ -3261,11 +3266,7 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-alert-modal');
         document.getElementById('custom-alert-msg').innerText = msg;
-        if (isEffectOn) {
-          modal.style.transform = 'rotate(180deg)';
-        } else {
-          modal.style.transform = 'rotate(0deg)';
-        }
+        modal.style.transform = '';
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-alert-ok');
         const handler = () => {
@@ -3281,11 +3282,7 @@
       return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
         document.getElementById('custom-confirm-msg').innerText = msg;
-        if (isEffectOn) {
-          modal.style.transform = 'rotate(180deg)';
-        } else {
-          modal.style.transform = 'rotate(0deg)';
-        }
+        modal.style.transform = '';
         modal.classList.remove('hidden');
         const okBtn = document.getElementById('custom-confirm-ok');
         const cancelBtn = document.getElementById('custom-confirm-cancel');
