@@ -1424,18 +1424,20 @@
     }
 
     function getFairPositions(count, blockSize) {
-      if (blockSize === 8) {
-        switch(count) {
-          case 8: return [0,1,2,3,4,5,6,7]; case 7: return [0,2,3,4,5,6,7]; case 6: return [0,2,3,4,5,7];
-          case 5: return [0,2,4,5,7]; case 4: return [0,2,4,6]; case 3: return [0,1,4];
-          case 2: return [0,4]; case 1: return [0]; default: return [];
+      if (count === 0) return [];
+      if (count === 1) return [0];
+      const maxByeMatches = blockSize / 2 - 1;
+      if (count <= 2 + maxByeMatches) {
+        // P1-P2が対戦し、P3以降は各自BYEと対戦（偶数スロットに配置）
+        const positions = [0, 1];
+        for (let k = 3; k <= count; k++) {
+          positions.push(2 * (k - 2));
         }
-      } else if (blockSize === 4) {
-        switch(count) { case 4: return [0,1,2,3]; case 3: return [0,1,2]; case 2: return [0,2]; case 1: return [0]; default: return []; }
-      } else if (blockSize === 2) {
-        switch(count) { case 2: return [0,1]; case 1: return [0]; default: return []; }
+        return positions;
+      } else {
+        // P1-P2, P3-P4... と前から詰めて全員対戦
+        return Array.from({ length: count }, (_, i) => i);
       }
-      return [];
     }
 
     function switchTab(tabId) {
