@@ -1150,10 +1150,10 @@ const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/val
 // ベイ集計シート（相棒ベイTOP5取得用）
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
-// 全対戦履歴シート（BP推移グラフ用 — 試合ごとのBP変動データ）
-// B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
-// M=決まり手（カンマ区切り）, N=P1使用ベイ, O=P2使用ベイ（決まり手集計用）
-const RANGE_HISTORY = encodeURIComponent('📜 全対戦履歴!B3:P');
+// 対戦入力シート（BP推移グラフ・決まり手データ用）
+// A=選手1, B=BP1(現在), C=選手2, D=BP2(現在), E=勝者名, F=変動BP, G=BP1(新), H=BP2(新)
+// I=回戦, J=大会名, K=日付, L=行種別, M=スタジアム, N=決まり手P1, O=決まり手P2, P=P1使用ベイ, Q=P2使用ベイ
+const RANGE_HISTORY = encodeURIComponent("'⚔️ 対戦入力'!A3:Q");
 const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
@@ -1335,7 +1335,6 @@ async function fetchPlayers() {
   });
 
   // 全対戦履歴からBP推移データを生成し、大会別の対戦数・勝数も集計
-  // B=選手1, C=BP1前, D=選手2, E=BP2前, F=勝者, G=変動BP, H=BP1後, I=BP2後, J=回戦, K=大会名, L=日付
   try {
     const json3 = await res3.json();
     const matchRows = json3.values || [];
@@ -1345,6 +1344,9 @@ async function fetchPlayers() {
 
     matchRows.forEach(row => {
       if (row.length < 11) return;
+      // A=選手1(0), B=BP1現在(1), C=選手2(2), D=BP2現在(3), E=勝者(4), F=変動BP(5)
+      // G=BP1新(6), H=BP2新(7), I=回戦(8), J=大会名(9), K=日付(10)
+      // L=行種別(11), M=スタジアム(12), N=決まり手P1(13), O=決まり手P2(14), P=P1ベイ(15), Q=P2ベイ(16)
       const p1    = (row[0] || '').trim();
       const bp1a  = parseFloat((row[6] || '').replace(/,/g, ''));
       const p2    = (row[2] || '').trim();
@@ -1353,7 +1355,12 @@ async function fetchPlayers() {
       const round  = (row[8] || '').trim();
       const tName = (row[9]  || '').trim();
       const date  = (row[10] || '').trim();
+      const rowType = (row[11] || '').trim();
       if (!date) return;
+      // 行種別が「対戦」以外（ボーナス行・参加行等）は決まり手処理をスキップ
+      if (rowType && rowType !== '対戦') {
+        // BP推移・大会別勝率のみ処理、決まり手は記録しない
+      }
       // キーを date のみにすることで、同日の予選・決勝・ボーナス行を1エントリに統合
       // スプレッドシートの行順通りに上書きするため、末尾のボーナス行のBPが最終値になる
       const key = date;
@@ -1388,12 +1395,15 @@ async function fetchPlayers() {
         if (winner === p2) tournamentStatsByPlayer[p2][statKey].wins += 1;
       }
 
-      // 決まり手詳細
-      // row[11]=M列(P1決まり手), row[12]=N列(P2決まり手), row[13]=O列(P1使用ベイ), row[14]=P列(P2使用ベイ)
-      const kp1 = (row[11] || '').trim();
-      const kp2 = (row[12] || '').trim();
-      const p1Bey = (row[13] || '').trim();
-      const p2Bey = (row[14] || '').trim();
+      // 決まり手詳細（対戦入力シート直接参照）
+      // row[13]=N列(P1決まり手), row[14]=O列(P2決まり手), row[15]=P列(P1使用ベイ), row[16]=Q列(P2使用ベイ)
+      const kp1 = (row[13] || '').trim();
+      const kp2 = (row[14] || '').trim();
+      const p1Bey = (row[15] || '').trim();
+      const p2Bey = (row[16] || '').trim();
+
+      // 行種別が「対戦」以外は決まり手を記録しない
+      const skipKimarite = rowType && rowType !== '対戦';
       const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived) => {
         if (!name) return;
         if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
@@ -1410,8 +1420,10 @@ async function fetchPlayers() {
         });
       };
       if (p1 && p2) {
-        pushDetail(p1, p2, winner && winner === p1, p1Bey, kp1, kp2);
-        pushDetail(p2, p1, winner && winner === p2, p2Bey, kp2, kp1);
+        const dk1 = skipKimarite ? '' : kp1;
+        const dk2 = skipKimarite ? '' : kp2;
+        pushDetail(p1, p2, winner && winner === p1, p1Bey, dk1, dk2);
+        pushDetail(p2, p1, winner && winner === p2, p2Bey, dk2, dk1);
       }
     });
 
