@@ -1696,12 +1696,6 @@
       if(isTournamentStarted || isSetupSwapMode) return;
       currentLotteryId = id;
 
-      // 演出ONの場合、即座に180度回転
-      if (isEffectOn) {
-          const wrapper = document.getElementById('app-wrapper');
-          wrapper.style.transform = 'rotate(180deg)';
-      }
-
       const p = participants.find(x => x.id === id);
       const counts = {}; colors.forEach(c => counts[c] = blockData[c].filter(x => x !== null).length);
       let activeCounts = []; colors.forEach(col => { if(counts[col] < blockCapacities[col]) activeCounts.push(counts[col]); });
@@ -1837,9 +1831,6 @@
         const opBox = document.getElementById('operatorViewBox');
         if(opBox) { opBox.classList.add('hidden'); opBox.classList.remove('flex'); }
         currentLotteryId = null;
-        // 画面回転を元に戻す
-        const wrapper = document.getElementById('app-wrapper');
-        wrapper.style.transform = '';
     }
 
     async function reLottery(id) {
