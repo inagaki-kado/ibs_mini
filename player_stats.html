@@ -1389,11 +1389,11 @@ async function fetchPlayers() {
       }
 
       // 決まり手詳細
-      // row[11]=M列(P1決まり手), row[12]=N列(P1使用ベイ), row[13]=O列(P2使用ベイ), row[14]=P列(P2決まり手)
+      // row[11]=M列(P1決まり手), row[12]=N列(P2決まり手), row[13]=O列(P1使用ベイ), row[14]=P列(P2使用ベイ)
       const kp1 = (row[11] || '').trim();
-      const p1Bey = (row[12] || '').trim();
-      const p2Bey = (row[13] || '').trim();
-      const kp2 = (row[14] || '').trim();
+      const kp2 = (row[12] || '').trim();
+      const p1Bey = (row[13] || '').trim();
+      const p2Bey = (row[14] || '').trim();
       const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived) => {
         if (!name) return;
         if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
