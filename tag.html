@@ -220,7 +220,11 @@
           </span>
           <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4">QUALIFYING RESULTS</h2>
         </div>
-        <button id="btn-gen-finals" onclick="generateFinals()" class="hidden bg-yellow-500 text-black px-4 py-2 rounded-full font-bold font-sf shadow-[0_0_15px_#facc15] active:scale-95 text-sm md:text-base">GENERATE FINALS 🏆</button>
+        <div class="flex flex-wrap gap-2 items-center justify-end">
+          <button onclick="exportTagBladeText()" ontouchend="handleTouch(event,exportTagBladeText)" class="bg-cyber-dark border border-purple-400 text-purple-400 hover:bg-purple-400/20 px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">🔩 予選ブレード</button>
+          <button onclick="exportQualBeyFullText()" ontouchend="handleTouch(event,exportQualBeyFullText)" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">📋 予選ベイ（全）</button>
+          <button id="btn-gen-finals" onclick="generateFinals()" class="hidden bg-yellow-500 text-black px-4 py-2 rounded-full font-bold font-sf shadow-[0_0_15px_#facc15] active:scale-95 text-sm md:text-base">GENERATE FINALS 🏆</button>
+        </div>
       </div>
       <div class="bg-cyber-dark border border-cyber-pink rounded-lg overflow-hidden flex flex-col min-h-0 flex-1 max-w-4xl mx-auto w-full">
         <div class="text-center font-sf font-bold text-cyber-pink py-2 border-b border-cyber-table-border">SWISS 総合順位（8チーム以上→決勝は上位8／7チーム以下→2戦スイス＋決勝は上位4）</div>
@@ -228,7 +232,7 @@
           <table class="w-full text-center border-collapse text-sm">
             <thead class="sticky top-0 bg-[#111827] z-10 text-cyber-pink font-sf text-[10px] md:text-xs border-b border-cyber-table-border shadow-md">
               <tr>
-                <th class="p-2">R</th><th class="p-2 text-left">TEAM</th><th class="p-2 text-cyber-green font-bold">W</th><th class="p-2 opacity-70">IW</th><th class="p-2">PTS</th><th class="p-2 text-cyber-pink">L</th><th class="p-2 text-yellow-400">D</th><th class="p-2 text-purple-400">OPP</th><th class="p-2">ADJ</th>
+                <th id="rank-th-r" class="p-2 cursor-pointer hover:text-cyber-green transition-colors text-cyber-green" onclick="toggleRankingSort('rank')" ontouchend="handleTouch(event,()=>toggleRankingSort('rank'))" style="touch-action:manipulation;">R 🔽</th><th id="rank-th-name" class="p-2 text-left cursor-pointer hover:text-cyber-green transition-colors" onclick="toggleRankingSort('name')" ontouchend="handleTouch(event,()=>toggleRankingSort('name'))" style="touch-action:manipulation;">TEAM</th><th class="p-2 text-cyber-green font-bold">W</th><th class="p-2 opacity-70">IW</th><th class="p-2">PTS</th><th class="p-2 text-cyber-pink">L</th><th class="p-2 text-yellow-400">D</th><th class="p-2 text-purple-400">OPP</th><th class="p-2">ADJ</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -361,9 +365,10 @@
         <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
       </div>
       
-      <div class="flex justify-center gap-4 mt-4 md:mt-6">
-        <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-        <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]">CLOSE</button>
+      <div class="flex flex-wrap justify-center gap-3 mt-4 md:mt-6">
+        <button id="results-export-csv-btn" onclick="openExportModal()" ontouchend="handleTouch(event,openExportModal)" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors" style="touch-action:manipulation;">📋 EXPORT CSV</button>
+        <button onclick="exportTagBladeText()" ontouchend="handleTouch(event,exportTagBladeText)" class="bg-cyber-bg border-2 border-purple-400 text-purple-400 hover:bg-purple-400/20 px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors" style="touch-action:manipulation;">🔩 予選ブレード</button>
+        <button onclick="closeResults()" ontouchend="handleTouch(event,closeResults)" class="bg-cyber-pink text-white px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#ec4899]" style="touch-action:manipulation;">CLOSE</button>
       </div>
     </div>
   </div>
@@ -377,8 +382,9 @@
       <p id="final-bey-modal-hint" class="text-xs text-cyber-text opacity-80 mb-3"></p>
       <div id="final-bey-modal-body" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
       <div class="flex gap-2 mt-4 pt-3 border-t border-cyber-table-border shrink-0 flex-wrap">
-        <button type="button" onclick="downloadFinalBeyZip()" class="flex-1 min-w-[140px] bg-cyber-orange text-cyber-bg py-3 rounded font-bold font-sf">📦 ZIP DL</button>
-        <button type="button" onclick="closeFinalBeyModal()" class="flex-1 min-w-[100px] bg-cyber-dark border border-cyber-table-border py-3 rounded font-sf">CLOSE</button>
+        <button type="button" onclick="downloadFinalBeyZip()" class="flex-1 min-w-[140px] bg-cyber-orange text-cyber-bg py-3 rounded font-bold font-sf" style="touch-action:manipulation;">📦 ZIP DL</button>
+        <button type="button" onclick="exportFinalBladeText()" class="flex-1 min-w-[140px] bg-cyber-dark border border-purple-400 text-purple-400 hover:bg-purple-400/20 py-3 rounded font-bold font-sf transition-colors" style="touch-action:manipulation;">🔩 ブレード出力</button>
+        <button type="button" onclick="closeFinalBeyModal()" class="flex-1 min-w-[100px] bg-cyber-dark border border-cyber-table-border py-3 rounded font-sf" style="touch-action:manipulation;">CLOSE</button>
       </div>
     </div>
   </div>
@@ -551,6 +557,7 @@
 
     let participants = [], pidCounter = 1, selectedForTeam = [];
     let participantSortMode = 'id';
+    let rankingSortMode = 'rank'; // 'rank' | 'name'
 
     let teams = [], tidCounter = 1;
     let testMode = false;
@@ -1755,6 +1762,7 @@
       if (teams.length === 0) { alert('チームがありません。'); return; }
 
       function getLabel(p) {
+        // qualBeyParts がある場合（新規登録データ）はそこからブレード部分のみ抽出
         const parts = p.qualBeyParts;
         if (parts && parts.type) {
           if (parts.type === 'BX')   return parts.BX || '';
@@ -1762,9 +1770,14 @@
           if (parts.type === 'CX')   return (parts.RC || '') + (parts.CX || '');
           if (parts.type === 'CXEX') return (parts.RC || '') + (parts.MB || '');
         }
-        // partsがない場合（テキスト手入力・写真のみ）はフル文字列をそのまま返す
+        // qualBeyParts がない場合（旧データ・手入力・写真）は
+        // qualBeyText の末尾にあるラチェット+ビットパターンを除去してブレード名を推定する
+        // ラチェット: 数字-数字（例: 3-60 / 5-70 / 9-80）
+        // ビット: 英字1〜4文字（例: F / GF / HF / LF / HBS / BS）
         const tx = p.qualBeyText && String(p.qualBeyText).trim();
-        return tx || '（未登録）';
+        if (!tx) return '（未登録）';
+        const stripped = tx.replace(/\d+-\d+[A-Za-z]{0,4}$/, '').trim();
+        return stripped || tx;
       }
 
       let text = '';
@@ -1776,6 +1789,26 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
           .then(() => alert('🔩 ブレードデータをクリップボードにコピーしました！'))
+          .catch(() => showTagCsvModal(text));
+      } else {
+        showTagCsvModal(text);
+      }
+    }
+
+    function exportQualBeyFullText() {
+      if (teams.length === 0) { alert('チームがありません。'); return; }
+
+      let text = '';
+      teams.forEach(t => {
+        const bey1 = (t.p1.qualBeyText && String(t.p1.qualBeyText).trim()) ? String(t.p1.qualBeyText).trim() : '（未登録）';
+        const bey2 = (t.p2.qualBeyText && String(t.p2.qualBeyText).trim()) ? String(t.p2.qualBeyText).trim() : '（未登録）';
+        text += `${t.p1.name}\t${bey1}\n`;
+        text += `${t.p2.name}\t${bey2}\n`;
+      });
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => alert('📋 予選ベイデータをクリップボードにコピーしました！'))
           .catch(() => showTagCsvModal(text));
       } else {
         showTagCsvModal(text);
@@ -2255,18 +2288,19 @@
       tbody.innerHTML = '';
       const advCap = teams.length <= 7 ? 4 : 8;
       standings.forEach((st, i) => {
+        const rankNo = st.rank != null ? st.rank : i + 1;
         let rc, badge = '';
-        if(i === 0) {
+        if(rankNo === 1) {
           rc = "text-yellow-300 font-bold";
           badge = `<span class="text-[9px] bg-yellow-400 text-black px-1 rounded font-bold ml-1">1位</span>`;
-        } else if(i < advCap) {
+        } else if(rankNo <= advCap) {
           rc = "text-cyber-green font-bold";
           badge = `<span class="text-[9px] bg-cyber-pink/20 text-cyber-pink px-1 rounded ml-1">決勝</span>`;
         } else {
           rc = "text-cyber-text";
         }
         tbody.innerHTML += `<tr class="border-b border-cyber-table-border hover:bg-[#1a2333]">
-          <td class="p-2 font-sf ${rc}">${i+1}</td>
+          <td class="p-2 font-sf ${rc}">${rankNo}</td>
           <td class="p-2 text-left font-bold text-cyber-text text-[10px] md:text-xs max-w-[120px] truncate">${st.name}${badge}</td>
           <td class="p-2 font-sf text-cyber-green font-bold">${st.wins}</td>
           <td class="p-2 font-sf opacity-70 text-[10px]">${st.indivW}</td>
@@ -2279,9 +2313,25 @@
       });
     }
 
+    function toggleRankingSort(mode) {
+      rankingSortMode = mode;
+      const thR    = document.getElementById('rank-th-r');
+      const thName = document.getElementById('rank-th-name');
+      if (thR)    thR.innerHTML    = 'R'    + (rankingSortMode === 'rank' ? ' 🔽' : '');
+      if (thR)    thR.classList.toggle('text-cyber-green', rankingSortMode === 'rank');
+      if (thName) thName.innerHTML = 'TEAM' + (rankingSortMode === 'name' ? ' 🔽' : '');
+      if (thName) thName.classList.toggle('text-cyber-green', rankingSortMode === 'name');
+      renderRanking();
+    }
+
     function renderRanking() {
       calcStandings();
-      renderRankingBody('rankingBody', standings);
+      // 順位順のインデックス（1始まり）を各エントリに付与してからソート
+      let displayStandings = standings.map((st, i) => ({ ...st, rank: i + 1 }));
+      if (rankingSortMode === 'name') {
+        displayStandings.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+      }
+      renderRankingBody('rankingBody', displayStandings);
       document.getElementById('btn-gen-finals').classList.toggle('hidden', !isQualifiersComplete());
       if (isTvMode_rank) {
         if (conn) conn.send({ type: 'SHOW_OVERLAY', html: wrapTvMonitorHtml(document.getElementById('view-rank').innerHTML) });
@@ -2948,6 +2998,38 @@
       document.getElementById('finalBeyModal').classList.add('hidden');
       document.getElementById('finalBeyModal').classList.remove('flex');
     }
+
+    function exportFinalBladeText() {
+      const adv = getFinalsAdvanceEightTeams();
+      if (adv.length === 0) { alert('決勝進出チームがありません。'); return; }
+
+      function getFinalBladeLabel(p) {
+        const parts = p.finalBeyParts;
+        if (parts && parts.type) {
+          if (parts.type === 'BX')   return parts.BX || '';
+          if (parts.type === 'UX')   return parts.UX || '';
+          if (parts.type === 'CX')   return (parts.RC || '') + (parts.CX || '');
+          if (parts.type === 'CXEX') return (parts.RC || '') + (parts.MB || '');
+        }
+        const tx = p.finalBeyText && String(p.finalBeyText).trim();
+        return tx || '（未登録）';
+      }
+
+      let text = '';
+      adv.forEach(t => {
+        text += `${t.p1.name}\t${getFinalBladeLabel(t.p1)}\n`;
+        text += `${t.p2.name}\t${getFinalBladeLabel(t.p2)}\n`;
+      });
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => alert('🔩 決勝ブレードデータをクリップボードにコピーしました！'))
+          .catch(() => showTagCsvModal(text));
+      } else {
+        showTagCsvModal(text);
+      }
+    }
+
     async function downloadFinalBeyZip() {
       if (typeof JSZip === 'undefined') return alert("ZIPライブラリが読み込まれていません。");
       const adv = getFinalsAdvanceEightTeams();
@@ -2991,30 +3073,47 @@
 
     function openExportModal() {
       let exportText = "";
-      const addMatch = (m) => {
-        if (m && m.team1 && m.team2 && m.team1.id !== 'BYE' && m.team2.id !== 'BYE' && m.team1.name !== 'TBD' && m.team2.name !== 'TBD' && m.winnerTeam !== null) {
-          m.battles.forEach(b => {
-             if(b.p1Id !== null && b.p2Id !== null && b.winner !== null) {
-                 const p1 = participants.find(p => p.id === b.p1Id);
-                 const p2 = participants.find(p => p.id === b.p2Id);
-                 if (p1 && p2) {
-                     const p1Name = p1.name;
-                     const p2Name = p2.name;
-                     const winnerName = b.winner === 1 ? p1Name : (b.winner === 2 ? p2Name : "");
-                     exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
-                 }
-             }
-          });
-        }
+
+      const getRoundLabel = (roundId) => {
+        const labelMap = {
+          'r1': '予選R1', 'r2': '予選R2', 'r3': '予選R3',
+          'QF-1': 'QF', 'QF-2': 'QF', 'QF-3': 'QF', 'QF-4': 'QF',
+          'SF-1': 'SEMI-FINAL', 'SF-2': 'SEMI-FINAL',
+          'BF-1': 'BLOCK-FINAL', 'BF-2': 'BLOCK-FINAL',
+          '3RD': '3RD PLACE', 'FINAL': 'FINAL'
+        };
+        return labelMap[roundId] || roundId || '';
       };
 
-      r1Matches.forEach(addMatch);
-      r2Matches.forEach(addMatch);
-      r3Matches.forEach(addMatch);
-      if (finalsMatches.qf1) { addMatch(finalsMatches.qf1); addMatch(finalsMatches.qf2); addMatch(finalsMatches.qf3); if(finalsMatches.qf4) addMatch(finalsMatches.qf4); }
-      if (finalsMatches.sf1) { addMatch(finalsMatches.sf1); addMatch(finalsMatches.sf2); }
-      if (finalsMatches.third) addMatch(finalsMatches.third);
-      if (finalsMatches.f) addMatch(finalsMatches.f);
+      const addMatch = (m, roundId) => {
+        if (!m || !m.team1 || !m.team2) return;
+        if (m.team1.id === 'BYE' || m.team2.id === 'BYE') return;
+        if (m.team1.name === 'TBD' || m.team2.name === 'TBD') return;
+        if (m.winnerTeam === null) return;
+        const round = getRoundLabel(roundId || m.id);
+        const kp1 = m.kimarite_p1 || '';
+        const kp2 = m.kimarite_p2 || '';
+        m.battles.forEach(b => {
+          if (b.p1Id !== null && b.p2Id !== null && b.winner !== null) {
+            const p1 = participants.find(p => p.id === b.p1Id);
+            const p2 = participants.find(p => p.id === b.p2Id);
+            if (p1 && p2) {
+              const p1Name = p1.name;
+              const p2Name = p2.name;
+              const winnerName = b.winner === 1 ? p1Name : (b.winner === 2 ? p2Name : '');
+              const score = (b.s1 != null && b.s2 != null) ? `${b.s1}-${b.s2}` : '';
+              exportText += `${p1Name}\t${p2Name}\t${winnerName}\t${score}\t${round}\t${kp1}\t${kp2}\n`;
+            }
+          }
+        });
+      };
+
+      r1Matches.forEach(m => addMatch(m, 'r1'));
+      r2Matches.forEach(m => addMatch(m, 'r2'));
+      r3Matches.forEach(m => addMatch(m, 'r3'));
+      ['qf1','qf2','qf3','qf4','sf1','sf2','bf1','bf2','third','f'].forEach(k => {
+        if (finalsMatches[k]) addMatch(finalsMatches[k], finalsMatches[k].id);
+      });
 
       document.getElementById('exportArea').value = exportText;
       document.getElementById('exportModal').classList.remove('hidden');
