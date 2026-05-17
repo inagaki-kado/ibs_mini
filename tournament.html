@@ -301,13 +301,22 @@
         <div id="beybladeConfirmView" class="hidden flex-col items-center gap-6 py-4">
           <p class="text-cyber-orange font-sf text-lg tracking-widest">登録ベイブレードを確認してください</p>
           <div id="beybladeConfirmList" class="w-full space-y-3"></div>
-          <button
-            onclick="endBeybladeConfirm()"
-            class="w-full bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-6 py-5 rounded-full font-bold font-sf text-2xl shadow-lg transition-colors"
-            style="touch-action: manipulation;"
-          >
-            ✅ OK
-          </button>
+          <div class="flex gap-4 w-full">
+            <button
+              onclick="endBeybladeConfirm()"
+              class="flex-1 bg-cyber-bg border-2 border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-4 py-5 rounded-full font-bold font-sf text-xl shadow-lg transition-colors"
+              style="touch-action: manipulation;"
+            >
+              ❎ NG
+            </button>
+            <button
+              onclick="confirmBeybladeOk()"
+              class="flex-1 bg-cyber-bg border-2 border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-4 py-5 rounded-full font-bold font-sf text-xl shadow-lg transition-colors"
+              style="touch-action: manipulation;"
+            >
+              ☑ OK
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2946,6 +2955,17 @@
       );
 
       renderBeybladeList();
+    }
+
+    function confirmBeybladeOk() {
+      // 回転を解除してモーダルを閉じ、参加者一覧タブに移動する
+      const modal = document.getElementById('beybladeModal');
+      if (modal) {
+        modal.style.transition = 'none';
+        modal.style.transform = 'rotate(0deg)';
+      }
+      closeBeybladeModal();
+      switchTab('participants');
     }
 
     /**

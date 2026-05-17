@@ -1144,6 +1144,15 @@
                         }
 
                         resetGame();
+                        if (data.winMode) {
+                            const modeMap = { '1':1, '2':2, '3':3, '4':4 };
+                            const lim = modeMap[data.winMode];
+                            if (lim) {
+                                winPointMode = data.winMode;
+                                winScoreLimit = lim;
+                                document.getElementById('btn-winpoint').innerText = winPointMode;
+                            }
+                        }
                         if (typeof data.p1BeyText === 'string' && data.p1BeyText.trim()) {
                             updateBeybladeBar(1, data.p1BeyText.trim());
                         }
