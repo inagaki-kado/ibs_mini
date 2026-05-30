@@ -1251,6 +1251,45 @@
       }
     }
 
+    function showAlert(msg, cb) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#111827;border:2px solid #ec4899;border-radius:10px;padding:24px 28px;max-width:360px;width:90%;display:flex;flex-direction:column;gap:16px;';
+      const txt = document.createElement('p');
+      txt.style.cssText = 'color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-wrap;';
+      txt.textContent = msg;
+      const btn = document.createElement('button');
+      btn.textContent = 'OK';
+      btn.style.cssText = 'background:#ec4899;color:white;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;touch-action:manipulation;';
+      btn.onclick = () => { document.body.removeChild(overlay); if (cb) cb(); };
+      box.appendChild(txt); box.appendChild(btn);
+      overlay.appendChild(box); document.body.appendChild(overlay);
+    }
+
+    function showConfirm(msg, onOk, onCancel) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#111827;border:2px solid #ec4899;border-radius:10px;padding:24px 28px;max-width:360px;width:90%;display:flex;flex-direction:column;gap:16px;';
+      const txt = document.createElement('p');
+      txt.style.cssText = 'color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-wrap;';
+      txt.textContent = msg;
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:10px;';
+      const btnOk = document.createElement('button');
+      btnOk.textContent = 'OK';
+      btnOk.style.cssText = 'flex:1;background:#ec4899;color:white;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;touch-action:manipulation;';
+      btnOk.onclick = () => { document.body.removeChild(overlay); if (onOk) onOk(); };
+      const btnCan = document.createElement('button');
+      btnCan.textContent = 'キャンセル';
+      btnCan.style.cssText = 'flex:1;background:#374151;color:#e2e8f0;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;touch-action:manipulation;';
+      btnCan.onclick = () => { document.body.removeChild(overlay); if (onCancel) onCancel(); };
+      btnRow.appendChild(btnOk); btnRow.appendChild(btnCan);
+      box.appendChild(txt); box.appendChild(btnRow);
+      overlay.appendChild(box); document.body.appendChild(overlay);
+    }
+
     function removeParticipant(pid) {
       const p = participants.find(x => x.id === pid);
       if (!p) return;
