@@ -1250,7 +1250,21 @@
           renderParticipants();
       }
     }
-    
+
+    function removeParticipant(pid) {
+      const p = participants.find(x => x.id === pid);
+      if (!p) return;
+      if (p.teamId) {
+        showAlert('このブレーダーはチームに所属しています。先にチームを解散してください。');
+        return;
+      }
+      showConfirm(`「${p.name}」を参加者リストから削除しますか？`, () => {
+        participants = participants.filter(x => x.id !== pid);
+        selectedForTeam = selectedForTeam.filter(x => x !== pid);
+        renderParticipants();
+        saveState();
+      });
+    }
 
 
     function getSortedParticipants() {
@@ -1290,7 +1304,7 @@
         const memoBadge = p.memo1 ? `<span class="memo-badge">${p.memo1}</span>` : '';
         const statsDisplay = p.currentStats ? `<br><span class="text-[10px] text-cyber-green font-mono font-normal opacity-80">BP:${p.currentStats.power} | ${p.currentStats.wins}W-${p.currentStats.loses}L (${p.currentStats.rate})</span>` : '';
         
-        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap leading-tight">${p.name} ${memoBadge}${statsDisplay} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td>`;
+        tr.innerHTML = `<td class="p-3 w-8 text-center text-cyber-pink">${isSelected ? '☑' : '☐'}</td><td class="p-3 font-bold text-cyber-text whitespace-nowrap leading-tight">${p.name} ${memoBadge}${statsDisplay} <span class="text-xs opacity-50 ml-2">${p.rank}</span></td><td class="p-3 text-center w-12"><button type="button" onclick="event.stopPropagation(); removeParticipant(${p.id})" class="text-cyber-pink border border-cyber-pink px-2 py-1 rounded text-[10px] hover:bg-cyber-pink hover:text-white transition-colors" style="touch-action:manipulation;">🗑</button></td>`;
         tbody.appendChild(tr);
       });
       const btn = document.getElementById('btn-form-team');
