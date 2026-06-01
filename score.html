@@ -757,11 +757,11 @@
 
         function startMainCall() {
             const sequence = [ 
-                { text: "3", delay: 700, style: "call-number-style" }, 
-                { text: "2", delay: 700, style: "call-number-style" }, 
-                { text: "1", delay: 700, style: "call-number-style" }, 
-                { text: "GO", delay: 700, style: "call-text-go-style" }, 
-                { text: "SHOOT!!", delay: 700, style: "call-text-shoot-style" } 
+                { text: "3", delay: 800, style: "call-number-style" }, 
+                { text: "2", delay: 800, style: "call-number-style" }, 
+                { text: "1", delay: 800, style: "call-number-style" }, 
+                { text: "GO", delay: 800, style: "call-text-go-style" }, 
+                { text: "SHOOT!!", delay: 800, style: "call-text-shoot-style" } 
             ];
             
             let step = 0;
@@ -949,6 +949,37 @@
         function executeCommand(cmd) {
             // ★修正：タッグ戦アプリからの "reset" コマンドも許容するように変更
             if (cmd === 'SYS_RESET' || cmd === 'reset') { resetGame(); return; }
+            if (cmd === 'P1_WIN') {
+              // 決まり手エフェクト表示中（2秒）は遅延してWIN表示する
+              const winEl = document.getElementById('win-display');
+              const alreadyShowing = winEl && winEl.classList.contains('show-win');
+              if (!alreadyShowing) {
+                setTimeout(() => finishGame(1), 2200);
+              } else {
+                finishGame(1);
+              }
+              return;
+            }
+            if (cmd === 'P2_WIN') {
+              const winEl = document.getElementById('win-display');
+              const alreadyShowing = winEl && winEl.classList.contains('show-win');
+              if (!alreadyShowing) {
+                setTimeout(() => finishGame(2), 2200);
+              } else {
+                finishGame(2);
+              }
+              return;
+            }
+            if (cmd === 'SYS_HIDE_WIN') {
+              document.getElementById('win-display').classList.remove('show-win');
+              return;
+            }
+            if (cmd === 'SYS_WIN_MODE_2') {
+              winPointMode = '2';
+              winScoreLimit = 2;
+              document.getElementById('btn-winpoint').innerText = winPointMode;
+              return;
+            }
             if (cmd === 'REPLAY_TOGGLE') { toggleReplayMode(); return; }
             if (cmd === 'SYS_HUD') { toggleHudVisibility(); return; }
             
@@ -1073,11 +1104,21 @@
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
                         // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground);
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || []);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
                         hideNextBattle();
+                    }
+                    else if (data.type === 'SHOW_SCORE_VIEW') {
+                        hideNextBattle();
+                        const breakOv = document.getElementById('break-overlay');
+                        if (breakOv) breakOv.classList.add('hidden');
+                        const contentOv = document.getElementById('remote-content-overlay');
+                        if (contentOv && !contentOv.classList.contains('hidden')) {
+                            contentOv.classList.add('hidden');
+                            contentOv.innerHTML = '';
+                        }
                     }
                     else if (data.type === 'NEXT_BATTLE_CALL') {
                         // 旧形式との互換性維持
@@ -1143,7 +1184,10 @@
                             document.getElementById('p2-val-wr').innerHTML = formatRate('--%');
                         }
 
-                        resetGame();
+                        // resetScore が明示的に false の場合はスコアリセットしない（メンバー名だけ更新）
+                        if (data.resetScore !== false) {
+                            resetGame();
+                        }
                         if (data.winMode) {
                             const modeMap = { '1':1, '2':2, '3':3, '4':4 };
                             const lim = modeMap[data.winMode];
@@ -1177,9 +1221,9 @@
         }
         initPeer();
 
-        const DEFAULT_NEXT_BATTLE_LOGO = 'maintitle_white.png';
+        const DEFAULT_NEXT_BATTLE_LOGO = 'torabo_logo.png';
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = []) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
             if (logoDataUrl) {
@@ -1209,8 +1253,14 @@
             }
             
             document.getElementById('nb-stage-round').textContent = stageText;
-            document.getElementById('nb-p1').textContent = p1;
-            document.getElementById('nb-p2').textContent = p2;
+            const mkPlayerHtml = (name, members, color) => {
+              const memberLine = members && members.length > 0
+                ? `<div style="font-size:clamp(10px,1.4vw,18px);font-weight:400;opacity:0.7;margin-top:0.3em;letter-spacing:0.05em;">${members.join('　/　')}</div>`
+                : '';
+              return `<div style="font-size:clamp(26px,6vw,90px);font-weight:900;line-height:1.15;letter-spacing:0.05em;">${name}</div>${memberLine}`;
+            };
+            document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members, '#0ea5e9');
+            document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members, '#ec4899');
             overlay.classList.remove('hidden');
         }
         function hideNextBattle() {
