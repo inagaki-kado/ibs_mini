@@ -1030,14 +1030,15 @@ nav {
   letter-spacing: .14em;
   margin-bottom: 10px;
 }
-.ts-rank-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid #1f2937;
-}
-.ts-rank-row:last-child { border-bottom: none; }
+  .ts-rank-row {
+    display: grid;
+    grid-template-columns: 20px 1fr auto auto;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0;
+    border-bottom: 1px solid #1f2937;
+  }
+  .ts-rank-row:last-child { border-bottom: none; }
 .ts-rank-num {
   font-family: 'Orbitron', monospace;
   font-size: 10px;
@@ -1067,13 +1068,13 @@ nav {
 .ts-rank-green { color: #22c55e; background: #22c55e18; }
 .ts-rank-blue  { color: #0ea5e9; background: #0ea5e918; }
 .ts-rank-white { color: #94a3b8; background: #1f2937; }
-.ts-rank-bp {
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  color: #0ea5e9;
-  min-width: 52px;
-  text-align: right;
-}
+  .ts-rank-bp {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: #0ea5e9;
+    text-align: right;
+    white-space: nowrap;
+  }
 .ts-mover-event {
   font-family: 'Noto Sans JP', sans-serif;
   font-size: 10px;
@@ -1471,9 +1472,10 @@ async function fetchPlayers() {
   });
 
   // 全対戦履歴からBP推移データを生成し、大会別の対戦数・勝数も集計
+  let matchRows = [];
   try {
     const json3 = await res3.json();
-    const matchRows = json3.values || [];
+    matchRows = json3.values || [];
     const playerMap = {}; // { 選手名: { date: {date, names:Set, bp} } }
     tournamentStatsByPlayer = {};
     matchDetailsByPlayer = {};
@@ -1576,29 +1578,23 @@ async function fetchPlayers() {
     matchDetailsByPlayer = {};
   }
 
-  // RECENT MOVERS 集計：最終大会を特定し、ブレーダー別 変動BP合計（プラスのみ）を計算
+  // RECENT MOVERS 集計：res3（対戦入力シート）を再利用して最終大会のBP上昇者を集計
   try {
-    // 全行から最も新しい大会名を特定
-    const matchRowsAll = (await (await fetch(HISTORY_URL)).json()).values || [];
-    // すでに res3 が取得済みなので matchRows を再利用できないため、bpHistory 完成後に tournamentStatsByPlayer から最終大会を取る
-    // 変動BPは row[5]（F列）、大会名は row[9]（J列）
-    const tNameCounts = {};
-    const lastDateMap = {}; // tName -> 最終日付
-    matchRowsAll.forEach(row => {
-      const tName = (row[9] || '').trim();
-      const date  = (row[10] || '').trim();
-      if (!tName || !date) return;
-      if (!lastDateMap[tName] || date > lastDateMap[tName]) lastDateMap[tName] = date;
-    });
-    // 最も新しい日付の大会名を特定
-    let latestDate = '';
+    const json3b = await res3.clone ? res3 : res3; // res3はPromise.allで取得済み
+    // matchRows は既にこのスコープで定義されているので直接使う
+    // 日付はシリアル値（数値）の場合があるため数値として比較する
+    let latestDateNum = -Infinity;
     let latestTName = '';
-    Object.entries(lastDateMap).forEach(([tName, date]) => {
-      if (date > latestDate) { latestDate = date; latestTName = tName; }
+    matchRows.forEach(row => {
+      const tName = (row[9] || '').trim();
+      const rawDate = row[10];
+      const dateNum = parseFloat(String(rawDate || '').replace(/,/g, ''));
+      if (!tName || isNaN(dateNum)) return;
+      if (dateNum > latestDateNum) { latestDateNum = dateNum; latestTName = tName; }
     });
-    // その大会の行を抽出し、ブレーダー別に変動BPを合算
+    // その大会の対戦行のみ集計
     const moverMap = {};
-    matchRowsAll.forEach(row => {
+    matchRows.forEach(row => {
       const tName   = (row[9]  || '').trim();
       const rowType = (row[11] || '').trim();
       if (tName !== latestTName) return;
@@ -1607,11 +1603,10 @@ async function fetchPlayers() {
       const p2    = (row[2] || '').trim();
       const delta = parseFloat((row[5] || '').replace(/,/g, ''));
       if (!p1 || !p2 || isNaN(delta)) return;
-      // 変動BPはp1側の変動（正負あり）。p2は符号反転
-      if (p1) moverMap[p1] = (moverMap[p1] || 0) + delta;
-      if (p2) moverMap[p2] = (moverMap[p2] || 0) + (-delta);
+      moverMap[p1] = (moverMap[p1] || 0) + delta;
+      moverMap[p2] = (moverMap[p2] || 0) + (-delta);
     });
-    // プラスのみ・降順で上位5名
+    // プラスのみ・降順・上位5名
     const movers = Object.entries(moverMap)
       .filter(([, d]) => d > 0)
       .sort(([, a], [, b]) => b - a)
@@ -1846,7 +1841,7 @@ function renderTopStats(players) {
   })();
 
   // TOP 5
-  const top5 = players.slice(0, 5);
+  const top10 = players.slice(0, 10);
 
   // RECENT MOVERS
   const moversHtml = recentMovers && recentMovers.movers.length > 0 ? `
@@ -1880,7 +1875,7 @@ function renderTopStats(players) {
     <div class="ts-grid2">
       <div class="ts-card">
         <div class="ts-card-title">TOP BLADERS</div>
-        ${top5.map((row, i) => {
+          ${top10.map((row, i) => {
           const name = (row[0] || '').trim();
           const rankStr = (row[2] || '').trim();
           const bp = (row[3] || '').trim();
