@@ -1012,11 +1012,11 @@ nav {
   color: #64748b;
   margin-left: 3px;
 }
-.ts-grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
+  .ts-grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
 .ts-card {
   background: #111827;
   border: 1px solid #1f2937;
@@ -1031,29 +1031,33 @@ nav {
   margin-bottom: 10px;
 }
   .ts-rank-row {
-    display: grid;
-    grid-template-columns: 20px 1fr auto auto;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     padding: 5px 0;
     border-bottom: 1px solid #1f2937;
   }
   .ts-rank-row:last-child { border-bottom: none; }
-.ts-rank-num {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px;
-  color: #475569;
-  width: 16px;
-  text-align: center;
-}
-.ts-rank-name {
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 12px;
-  color: #e2e8f0;
-  flex: 1;
-  cursor: pointer;
-  touch-action: manipulation;
-}
+  .ts-rank-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: #475569;
+    width: 18px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .ts-rank-name {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: #e2e8f0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
 .ts-rank-name:hover { color: #0ea5e9; text-decoration: underline; }
 .ts-rank-badge {
   font-family: 'Orbitron', monospace;
@@ -1070,43 +1074,11 @@ nav {
 .ts-rank-white { color: #94a3b8; background: #1f2937; }
   .ts-rank-bp {
     font-family: 'Orbitron', monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: #0ea5e9;
-    text-align: right;
     white-space: nowrap;
+    flex-shrink: 0;
   }
-.ts-mover-event {
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 10px;
-  color: #475569;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ts-mover-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid #1f2937;
-}
-.ts-mover-row:last-child { border-bottom: none; }
-.ts-mover-name {
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 12px;
-  color: #e2e8f0;
-  flex: 1;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.ts-mover-name:hover { color: #0ea5e9; text-decoration: underline; }
-.ts-mover-delta {
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: #22c55e;
-}
 .ts-empty {
   font-family: 'Noto Sans JP', sans-serif;
   font-size: 12px;
@@ -1298,8 +1270,6 @@ let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履
 /** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
 let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
-let recentMovers = null; // { tName: string, movers: [{name, delta}] } 最終大会の上昇ランカー
-
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
   if (rankNum === 100) return 'zone-xf';
@@ -1578,45 +1548,6 @@ async function fetchPlayers() {
     matchDetailsByPlayer = {};
   }
 
-  // RECENT MOVERS 集計：res3（対戦入力シート）を再利用して最終大会のBP上昇者を集計
-  try {
-    const json3b = await res3.clone ? res3 : res3; // res3はPromise.allで取得済み
-    // matchRows は既にこのスコープで定義されているので直接使う
-    // 日付はシリアル値（数値）の場合があるため数値として比較する
-    let latestDateNum = -Infinity;
-    let latestTName = '';
-    matchRows.forEach(row => {
-      const tName = (row[9] || '').trim();
-      const rawDate = row[10];
-      const dateNum = parseFloat(String(rawDate || '').replace(/,/g, ''));
-      if (!tName || isNaN(dateNum)) return;
-      if (dateNum > latestDateNum) { latestDateNum = dateNum; latestTName = tName; }
-    });
-    // その大会の対戦行のみ集計
-    const moverMap = {};
-    matchRows.forEach(row => {
-      const tName   = (row[9]  || '').trim();
-      const rowType = (row[11] || '').trim();
-      if (tName !== latestTName) return;
-      if (rowType && rowType !== '対戦') return;
-      const p1    = (row[0] || '').trim();
-      const p2    = (row[2] || '').trim();
-      const delta = parseFloat((row[5] || '').replace(/,/g, ''));
-      if (!p1 || !p2 || isNaN(delta)) return;
-      moverMap[p1] = (moverMap[p1] || 0) + delta;
-      moverMap[p2] = (moverMap[p2] || 0) + (-delta);
-    });
-    // プラスのみ・降順・上位5名
-    const movers = Object.entries(moverMap)
-      .filter(([, d]) => d > 0)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([name, delta]) => ({ name, delta: Math.round(delta) }));
-    recentMovers = { tName: latestTName, movers };
-  } catch(e) {
-    recentMovers = null;
-  }
-
   return allPlayers;
 }
 
@@ -1841,21 +1772,10 @@ function renderTopStats(players) {
   })();
 
   // TOP 5
-  const top10 = players.slice(0, 10);
-
-  // RECENT MOVERS
-  const moversHtml = recentMovers && recentMovers.movers.length > 0 ? `
-    <div class="ts-card-title">RECENT MOVERS</div>
-    <div class="ts-mover-event">${recentMovers.tName || ''}</div>
-    ${recentMovers.movers.map(m => `
-      <div class="ts-mover-row">
-        <span class="ts-mover-name" onclick="jumpToRival('${m.name.replace(/'/g,"\\'")}')">
-          ${m.name}
-        </span>
-        <span class="ts-mover-delta">▲ +${m.delta.toLocaleString()}</span>
-      </div>
-    `).join('')}
-  ` : '<div class="ts-card-title">RECENT MOVERS</div><div class="ts-empty">データなし</div>';
+  const top30 = players.slice(0, 30);
+  const col1 = top30.slice(0, 10);
+  const col2 = top30.slice(10, 20);
+  const col3 = top30.slice(20, 30);
 
   el.innerHTML = `
     <div class="ts-summary">
@@ -1872,35 +1792,35 @@ function renderTopStats(players) {
         <div class="ts-stat-val">${totalEvents}</div>
       </div>
     </div>
-    <div class="ts-grid2">
-      <div class="ts-card">
-        <div class="ts-card-title">TOP BLADERS</div>
-          ${top10.map((row, i) => {
-          const name = (row[0] || '').trim();
-          const rankStr = (row[2] || '').trim();
-          const bp = (row[3] || '').trim();
-          const rankNum = getRankNum(rankStr);
-          const rankClass = rankNum >= 100 ? 'ts-rank-xf'
-            : rankNum >= 90 ? 'ts-rank-red'
-            : rankNum >= 80 ? 'ts-rank-purple'
-            : rankNum >= 60 ? 'ts-rank-green'
-            : rankNum >= 40 ? 'ts-rank-blue'
-            : 'ts-rank-white';
-          return `
-            <div class="ts-rank-row">
-              <span class="ts-rank-num">${i + 1}</span>
-              <span class="ts-rank-name" onclick="jumpToRival('${name.replace(/'/g,"\\'")}')">
-                ${name}
-              </span>
-              <span class="ts-rank-badge ${rankClass}">${rankStr}</span>
-              <span class="ts-rank-bp">${parseInt(bp.replace(/,/g,'')).toLocaleString()}</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-      <div class="ts-card">
-        ${moversHtml}
-      </div>
+    <div class="ts-grid3">
+      ${[col1, col2, col3].map((col, colIdx) => `
+        <div class="ts-card">
+          ${colIdx === 0 ? '<div class="ts-card-title">TOP BLADERS</div>' : '<div class="ts-card-title">&nbsp;</div>'}
+          ${col.map((row, i) => {
+            const idx = colIdx * 10 + i;
+            const name = (row[0] || '').trim();
+            const rankStr = (row[2] || '').trim();
+            const bp = (row[3] || '').trim();
+            const rankNum = getRankNum(rankStr);
+            const rankClass = rankNum >= 100 ? 'ts-rank-xf'
+              : rankNum >= 90 ? 'ts-rank-red'
+              : rankNum >= 80 ? 'ts-rank-purple'
+              : rankNum >= 60 ? 'ts-rank-green'
+              : rankNum >= 40 ? 'ts-rank-blue'
+              : 'ts-rank-white';
+            return `
+              <div class="ts-rank-row">
+                <span class="ts-rank-num">${idx + 1}</span>
+                <span class="ts-rank-name" onclick="jumpToRival('${name.replace(/'/g,"\\'")}')">
+                  ${name}
+                </span>
+                <span class="ts-rank-badge ${rankClass}">${rankStr}</span>
+                <span class="ts-rank-bp">${parseInt(bp.replace(/,/g,'')).toLocaleString()}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `).join('')}
     </div>
   `;
 }
