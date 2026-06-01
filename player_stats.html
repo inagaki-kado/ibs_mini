@@ -980,6 +980,138 @@ nav {
   position: relative;
   height: 220px;
 }
+/* ── TOP PAGE STATS ── */
+#topStats { margin-bottom: 1.5rem; }
+.ts-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ts-stat-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ts-stat-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: #475569;
+  letter-spacing: .14em;
+  margin-bottom: 6px;
+}
+.ts-stat-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: #e2e8f0;
+}
+.ts-stat-unit {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 3px;
+}
+.ts-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ts-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ts-card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: #475569;
+  letter-spacing: .14em;
+  margin-bottom: 10px;
+}
+.ts-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.ts-rank-row:last-child { border-bottom: none; }
+.ts-rank-num {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: #475569;
+  width: 16px;
+  text-align: center;
+}
+.ts-rank-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  color: #e2e8f0;
+  flex: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ts-rank-name:hover { color: #0ea5e9; text-decoration: underline; }
+.ts-rank-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.ts-rank-xf    { color: #f59e0b; background: #f59e0b18; }
+.ts-rank-red   { color: #ef4444; background: #ef444418; }
+.ts-rank-purple{ color: #a855f7; background: #a855f718; }
+.ts-rank-green { color: #22c55e; background: #22c55e18; }
+.ts-rank-blue  { color: #0ea5e9; background: #0ea5e918; }
+.ts-rank-white { color: #94a3b8; background: #1f2937; }
+.ts-rank-bp {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: #0ea5e9;
+  min-width: 52px;
+  text-align: right;
+}
+.ts-mover-event {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 10px;
+  color: #475569;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ts-mover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.ts-mover-row:last-child { border-bottom: none; }
+.ts-mover-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  color: #e2e8f0;
+  flex: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ts-mover-name:hover { color: #0ea5e9; text-decoration: underline; }
+.ts-mover-delta {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #22c55e;
+}
+.ts-empty {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  color: #475569;
+  padding: 8px 0;
+}
 </style>
 </head>
 
@@ -1123,9 +1255,12 @@ nav {
       <div class="spinner"></div>
       <span>データを取得中...</span>
     </div>
-    <div class="state-msg hidden" id="stateIdle">
-      <div class="state-icon">🔍</div>
-      <span>選手名を入力して検索してください</span>
+    <div class="hidden" id="stateIdle">
+      <div id="topStats"></div>
+      <div class="state-msg" style="margin-top:1.5rem;">
+        <div class="state-icon">🔍</div>
+        <span>選手名を入力して検索してください</span>
+      </div>
     </div>
     <div class="state-msg hidden" id="stateEmpty">
       <div class="state-icon">📭</div>
@@ -1162,6 +1297,7 @@ let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履
 /** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
 let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
+let recentMovers = null; // { tName: string, movers: [{name, delta}] } 最終大会の上昇ランカー
 
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
@@ -1440,6 +1576,52 @@ async function fetchPlayers() {
     matchDetailsByPlayer = {};
   }
 
+  // RECENT MOVERS 集計：最終大会を特定し、ブレーダー別 変動BP合計（プラスのみ）を計算
+  try {
+    // 全行から最も新しい大会名を特定
+    const matchRowsAll = (await (await fetch(HISTORY_URL)).json()).values || [];
+    // すでに res3 が取得済みなので matchRows を再利用できないため、bpHistory 完成後に tournamentStatsByPlayer から最終大会を取る
+    // 変動BPは row[5]（F列）、大会名は row[9]（J列）
+    const tNameCounts = {};
+    const lastDateMap = {}; // tName -> 最終日付
+    matchRowsAll.forEach(row => {
+      const tName = (row[9] || '').trim();
+      const date  = (row[10] || '').trim();
+      if (!tName || !date) return;
+      if (!lastDateMap[tName] || date > lastDateMap[tName]) lastDateMap[tName] = date;
+    });
+    // 最も新しい日付の大会名を特定
+    let latestDate = '';
+    let latestTName = '';
+    Object.entries(lastDateMap).forEach(([tName, date]) => {
+      if (date > latestDate) { latestDate = date; latestTName = tName; }
+    });
+    // その大会の行を抽出し、ブレーダー別に変動BPを合算
+    const moverMap = {};
+    matchRowsAll.forEach(row => {
+      const tName   = (row[9]  || '').trim();
+      const rowType = (row[11] || '').trim();
+      if (tName !== latestTName) return;
+      if (rowType && rowType !== '対戦') return;
+      const p1    = (row[0] || '').trim();
+      const p2    = (row[2] || '').trim();
+      const delta = parseFloat((row[5] || '').replace(/,/g, ''));
+      if (!p1 || !p2 || isNaN(delta)) return;
+      // 変動BPはp1側の変動（正負あり）。p2は符号反転
+      if (p1) moverMap[p1] = (moverMap[p1] || 0) + delta;
+      if (p2) moverMap[p2] = (moverMap[p2] || 0) + (-delta);
+    });
+    // プラスのみ・降順で上位5名
+    const movers = Object.entries(moverMap)
+      .filter(([, d]) => d > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([name, delta]) => ({ name, delta: Math.round(delta) }));
+    recentMovers = { tName: latestTName, movers };
+  } catch(e) {
+    recentMovers = null;
+  }
+
   return allPlayers;
 }
 
@@ -1634,6 +1816,98 @@ function buildBpGraph(playerName, cardEl) {
       chartInstance.update();
     });
   });
+}
+
+// ─── TOP PAGE STATS ──────────────────────────────────────
+function renderTopStats(players) {
+  const el = document.getElementById('topStats');
+  if (!el || !players || players.length === 0) return;
+
+  // サマリー数値
+  const totalPlayers = players.length;
+  const totalBattles = (() => {
+    if (!tournamentStatsByPlayer) return '--';
+    let sum = 0;
+    Object.values(tournamentStatsByPlayer).forEach(obj => {
+      Object.values(obj).forEach(s => { sum += (s.matches || 0); });
+    });
+    return Math.round(sum / 2).toLocaleString();
+  })();
+  const totalEvents = (() => {
+    if (!tournamentStatsByPlayer) return '--';
+    const keys = new Set();
+    Object.values(tournamentStatsByPlayer).forEach(obj => {
+      Object.keys(obj).forEach(k => {
+        const sep = k.indexOf('|');
+        if (sep >= 0) keys.add(k.slice(sep + 1));
+      });
+    });
+    return keys.size;
+  })();
+
+  // TOP 5
+  const top5 = players.slice(0, 5);
+
+  // RECENT MOVERS
+  const moversHtml = recentMovers && recentMovers.movers.length > 0 ? `
+    <div class="ts-card-title">RECENT MOVERS</div>
+    <div class="ts-mover-event">${recentMovers.tName || ''}</div>
+    ${recentMovers.movers.map(m => `
+      <div class="ts-mover-row">
+        <span class="ts-mover-name" onclick="jumpToRival('${m.name.replace(/'/g,"\\'")}')">
+          ${m.name}
+        </span>
+        <span class="ts-mover-delta">▲ +${m.delta.toLocaleString()}</span>
+      </div>
+    `).join('')}
+  ` : '<div class="ts-card-title">RECENT MOVERS</div><div class="ts-empty">データなし</div>';
+
+  el.innerHTML = `
+    <div class="ts-summary">
+      <div class="ts-stat-card">
+        <div class="ts-stat-label">REGISTERED</div>
+        <div class="ts-stat-val">${totalPlayers}<span class="ts-stat-unit">名</span></div>
+      </div>
+      <div class="ts-stat-card">
+        <div class="ts-stat-label">TOTAL BATTLES</div>
+        <div class="ts-stat-val">${totalBattles}</div>
+      </div>
+      <div class="ts-stat-card">
+        <div class="ts-stat-label">EVENTS HELD</div>
+        <div class="ts-stat-val">${totalEvents}</div>
+      </div>
+    </div>
+    <div class="ts-grid2">
+      <div class="ts-card">
+        <div class="ts-card-title">TOP BLADERS</div>
+        ${top5.map((row, i) => {
+          const name = (row[0] || '').trim();
+          const rankStr = (row[2] || '').trim();
+          const bp = (row[3] || '').trim();
+          const rankNum = getRankNum(rankStr);
+          const rankClass = rankNum >= 100 ? 'ts-rank-xf'
+            : rankNum >= 90 ? 'ts-rank-red'
+            : rankNum >= 80 ? 'ts-rank-purple'
+            : rankNum >= 60 ? 'ts-rank-green'
+            : rankNum >= 40 ? 'ts-rank-blue'
+            : 'ts-rank-white';
+          return `
+            <div class="ts-rank-row">
+              <span class="ts-rank-num">${i + 1}</span>
+              <span class="ts-rank-name" onclick="jumpToRival('${name.replace(/'/g,"\\'")}')">
+                ${name}
+              </span>
+              <span class="ts-rank-badge ${rankClass}">${rankStr}</span>
+              <span class="ts-rank-bp">${parseInt(bp.replace(/,/g,'')).toLocaleString()}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="ts-card">
+        ${moversHtml}
+      </div>
+    </div>
+  `;
 }
 
 // ─── RIVAL JUMP ──────────────────────────────────────────
@@ -2714,7 +2988,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     setState('idle');
-    fetchPlayers().catch(() => {});
+    fetchPlayers().then(players => {
+      renderTopStats(players);
+    }).catch(() => {});
   }
 });
 </script>
