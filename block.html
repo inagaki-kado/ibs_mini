@@ -137,6 +137,10 @@
         <p class="text-xs text-cyber-text opacity-60 font-sf" id="bracket-sub">第1部 予選</p>
       </div>
       <div class="flex gap-2">
+        <button type="button" onclick="toggleBlockSwapMode()" id="btn-block-swap"
+          class="hidden bg-cyber-dark border border-cyber-green text-cyber-green px-4 py-2 rounded-full font-bold font-sf text-xs shadow-[0_0_5px_#22c55e] active:scale-95" style="touch-action:manipulation">
+          🔄 R1 手動入替
+        </button>
         <button onclick="copyBlockResult()" id="btn-copy-block-result"
           class="hidden bg-cyber-orange text-cyber-bg px-4 py-2 rounded-full font-bold font-sf text-xs shadow-[0_0_8px_#ffaa00] active:scale-95" style="touch-action:manipulation">
           📋 結果をコピー
@@ -317,7 +321,9 @@ let teams=[],tidCounter=1;
 let bracketRounds=[];
 let isTournamentStarted=false;
 let sfMatch={t1:null,t2:null,winner:null,score:null,kimarite:null};
+let thirdPlaceMatch={t1:null,t2:null,winner:null,score:null,kimarite:null};
 let isSfMode=false;
+let isBlockSwapMode=false;let blockSwapPending=null;
 let blockMatchRef=null;
 let battleScoreLeft=0,battleScoreRight=0;
 let teamWinsLeft=0,teamWinsRight=0;
@@ -463,6 +469,9 @@ function buildBlockResultPayload(){
     }))),
     sfResult:sfMatch.winner!==null?{
       t1:sfMatch.t1?.name||null,t2:sfMatch.t2?.name||null,winner:sfMatch.winner,score:sfMatch.score,kimarite:sfMatch.kimarite||null
+    }:null,
+    thirdResult:thirdPlaceMatch.winner!==null?{
+      t1:thirdPlaceMatch.t1?.name||null,t2:thirdPlaceMatch.t2?.name||null,winner:thirdPlaceMatch.winner,score:thirdPlaceMatch.score,kimarite:thirdPlaceMatch.kimarite||null
     }:null
   };
 }
@@ -538,6 +547,7 @@ function startTournament(){
   const tms=[...teams];
   bracketRounds=[];
   isTournamentStarted=true;
+  thirdPlaceMatch={t1:null,t2:null,winner:null,score:null,kimarite:null};
   if(tms.length===4){
     bracketRounds=[
       [{t1:tms[0],t2:tms[3],winner:null,score:null},{t1:tms[1],t2:tms[2],winner:null,score:null}],
@@ -566,6 +576,8 @@ function startTournament(){
 function renderBracket(){
   if(!isTournamentStarted)return;
   const area=document.getElementById('bracket-area');area.innerHTML='';
+  const swapBtn=document.getElementById('btn-block-swap');
+  if(swapBtn){const hasR1=bracketRounds.length>0&&bracketRounds[0].length>0;swapBtn.classList.toggle('hidden',!hasR1);}
   bracketRounds.forEach((round,ri)=>{
     const lbl=document.createElement('div');
     lbl.className='round-label '+(ri===bracketRounds.length-1?'text-cyber-pink':'text-cyber-green');
@@ -573,6 +585,13 @@ function renderBracket(){
     area.appendChild(lbl);
     round.forEach((match,mi)=>area.appendChild(buildMatchCard(match,ri,mi,'bracket')));
   });
+  if(thirdPlaceMatch.t1&&thirdPlaceMatch.t2){
+    const tlbl=document.createElement('div');
+    tlbl.className='round-label text-cyber-orange';
+    tlbl.textContent='🥉 3位決定戦';
+    area.appendChild(tlbl);
+    area.appendChild(buildMatchCard(thirdPlaceMatch,0,0,'third'));
+  }
   const rep=getBlockRep();
   document.getElementById('rep-banner').classList.toggle('hidden',!rep);
   if(rep)document.getElementById('rep-team-name').textContent=rep.name;
@@ -583,6 +602,28 @@ function buildMatchCard(match,rIdx,mIdx,src){
   const card=document.createElement('div');card.className='match-card';
   const isBye=match.t2===null;
   const canSel=match.t1&&match.t2&&!isBye&&match.winner===null;
+  if(isBlockSwapMode&&src==='bracket'&&rIdx===0&&match.winner===null){
+    const p1Active=blockSwapPending&&blockSwapPending.mIdx===mIdx&&blockSwapPending.teamSide===1;
+    const p2Active=blockSwapPending&&blockSwapPending.mIdx===mIdx&&blockSwapPending.teamSide===2;
+    const mkSwap=(team,side,act)=>{
+      const b=document.createElement('button');
+      b.type='button';b.style.touchAction='manipulation';
+      b.className='flex-1 px-2 py-2 rounded font-bold truncate transition-colors text-xs font-sans text-left '+(act?'bg-yellow-400 text-black border border-yellow-400':'bg-[#1f2937] text-cyber-text border border-cyber-table-border hover:bg-[#374151]');
+      b.textContent=team?team.name:'?';
+      b.onclick=()=>handleBlockSwapClick(mIdx,side);
+      return b;
+    };
+    const swapRow=document.createElement('div');
+    swapRow.className='flex gap-1 w-full';
+    swapRow.appendChild(mkSwap(match.t1,1,p1Active));
+    const vsSp=document.createElement('span');
+    vsSp.className='text-cyber-text opacity-40 text-xs self-center px-1';
+    vsSp.textContent='VS';
+    swapRow.appendChild(vsSp);
+    swapRow.appendChild(mkSwap(match.t2,2,p2Active));
+    card.appendChild(swapRow);
+    return card;
+  }
   const mkBtn=(team,wv)=>{
     const b=document.createElement('button');
     b.className='team-btn'+(!team?' tbd':match.winner===wv?' winner':match.winner!==null?' loser':'');
@@ -604,17 +645,17 @@ function buildMatchCard(match,rIdx,mIdx,src){
   card.appendChild(mkBtn(match.t2,2));
   if(match.winner!==null&&!isBye){
     const u=document.createElement('button');u.textContent='↩';u.title='取消';u.className='text-xs text-cyber-pink px-1 shrink-0';
-    u.onclick=()=>{match.winner=null;match.score=null;match.kimarite=null;advanceBracket();saveState();src==='bracket'?renderBracket():renderSemiFinal();};
+    u.onclick=()=>{match.winner=null;match.score=null;match.kimarite=null;advanceBracket();saveState();src==='sf'?renderSemiFinal():renderBracket();};
     card.appendChild(u);
   }
   return card;
 }
 
 function doSetWinner(rIdx,mIdx,wv,src){
-  let match=src==='bracket'?bracketRounds[rIdx][mIdx]:sfMatch;
+  let match=src==='third'?thirdPlaceMatch:(src==='bracket'?bracketRounds[rIdx][mIdx]:sfMatch);
   if(!match||match.winner!==null)return;
   match.winner=wv;advanceBracket();saveState();
-  src==='bracket'?renderBracket():renderSemiFinal();
+  src==='sf'?renderSemiFinal():renderBracket();
 }
 
 function advanceBracket(){
@@ -622,7 +663,60 @@ function advanceBracket(){
     const r1=bracketRounds[0],r2=bracketRounds[1][0];
     if(r1[0].winner!==null)r2.t1=r1[0].winner===1?r1[0].t1:r1[0].t2;
     if(r1[1]&&r1[1].winner!==null)r2.t2=r1[1].winner===1?r1[1].t1:r1[1].t2;
+    const isFourTeam=r1.length===2&&r1[0]&&r1[0].t2&&r1[1]&&r1[1].t2&&r1[0].score!=='BYE'&&r1[1].score!=='BYE';
+    if(isFourTeam&&r1[0].winner!==null&&r1[1].winner!==null){
+      thirdPlaceMatch.t1=r1[0].winner===1?r1[0].t2:r1[0].t1;
+      thirdPlaceMatch.t2=r1[1].winner===1?r1[1].t2:r1[1].t1;
+    }else{
+      thirdPlaceMatch.t1=null;thirdPlaceMatch.t2=null;
+      thirdPlaceMatch.winner=null;thirdPlaceMatch.score=null;thirdPlaceMatch.kimarite=null;
+    }
   }
+}
+
+function toggleBlockSwapMode(){
+  isBlockSwapMode=!isBlockSwapMode;
+  blockSwapPending=null;
+  const btn=document.getElementById('btn-block-swap');
+  if(btn){
+    if(isBlockSwapMode){
+      btn.classList.replace('bg-cyber-dark','bg-yellow-500');
+      btn.classList.replace('text-cyber-green','text-black');
+      btn.classList.replace('border-cyber-green','border-yellow-500');
+      btn.classList.replace('shadow-[0_0_5px_#22c55e]','shadow-none');
+    }else{
+      btn.classList.replace('bg-yellow-500','bg-cyber-dark');
+      btn.classList.replace('text-black','text-cyber-green');
+      btn.classList.replace('border-yellow-500','border-cyber-green');
+      btn.classList.replace('shadow-none','shadow-[0_0_5px_#22c55e]');
+    }
+  }
+  renderBracket();
+}
+function handleBlockSwapClick(mIdx,teamSide){
+  if(!blockSwapPending){
+    blockSwapPending={mIdx,teamSide};
+  }else{
+    if(blockSwapPending.mIdx===mIdx&&blockSwapPending.teamSide===teamSide){
+      blockSwapPending=null;
+    }else{
+      const r1=bracketRounds[0];
+      if(!r1)return;
+      const m1=r1[blockSwapPending.mIdx];
+      const m2=r1[mIdx];
+      if(!m1||!m2)return;
+      const t1=blockSwapPending.teamSide===1?m1.t1:m1.t2;
+      const t2=teamSide===1?m2.t1:m2.t2;
+      if(blockSwapPending.teamSide===1)m1.t1=t2;else m1.t2=t2;
+      if(teamSide===1)m2.t1=t1;else m2.t2=t1;
+      m1.winner=null;m1.score=null;m1.kimarite=null;
+      m2.winner=null;m2.score=null;m2.kimarite=null;
+      blockSwapPending=null;
+      advanceBracket();
+      saveState();
+    }
+  }
+  renderBracket();
 }
 
 function getBlockRep(){
@@ -727,7 +821,7 @@ function blockSetCurrentMember(side,idx){
   updateBlockMatchModalUI();
 }
 function openBlockMatchModal(rIdx,mIdx,src){
-  const match=src==='bracket'?bracketRounds[rIdx][mIdx]:sfMatch;
+  const match=src==='third'?thirdPlaceMatch:(src==='bracket'?bracketRounds[rIdx][mIdx]:sfMatch);
   if(!match||!match.t1||!match.t2||match.winner!==null)return;
   blockMatchRef={match,rIdx,mIdx,src};
   const sc=match.score?String(match.score).split('-'):null;
@@ -831,7 +925,7 @@ function blockFinalizeTeamMatch(){
   const src=blockMatchRef.src;
   advanceBracket();saveState();
   closeBlockMatchModal();
-  src==='bracket'?renderBracket():renderSemiFinal();
+  src==='sf'?renderSemiFinal():renderBracket();
 }
 function undoBlockKimariteLast(){
   if(!blockKimariteList.length)return;
@@ -858,6 +952,7 @@ function startTournamentSilent(){
   const tms=[...teams];
   bracketRounds=[];
   isTournamentStarted=true;
+  thirdPlaceMatch={t1:null,t2:null,winner:null,score:null,kimarite:null};
   if(tms.length===4){
     bracketRounds=[
       [{t1:tms[0],t2:tms[3],winner:null,score:null},{t1:tms[1],t2:tms[2],winner:null,score:null}],
@@ -896,7 +991,7 @@ function startTournamentSilent(){
 
 // ── Save / Load ──
 function saveState(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({stadium,part,tournamentName,teams,tidCounter,bracketRounds,isTournamentStarted,sfMatch,isSfMode}));}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({stadium,part,tournamentName,teams,tidCounter,bracketRounds,isTournamentStarted,sfMatch,isSfMode,thirdPlaceMatch}));}
   catch(e){console.warn('save error',e);}
 }
 function loadState(){
@@ -907,6 +1002,7 @@ function loadState(){
     teams=s.teams||[];tidCounter=s.tidCounter||1;
     bracketRounds=s.bracketRounds||[];isTournamentStarted=s.isTournamentStarted;
     sfMatch=s.sfMatch||{t1:null,t2:null,winner:null,score:null};isSfMode=s.isSfMode||false;
+    thirdPlaceMatch=s.thirdPlaceMatch||{t1:null,t2:null,winner:null,score:null,kimarite:null};
     return true;
   }catch(e){return false;}
 }

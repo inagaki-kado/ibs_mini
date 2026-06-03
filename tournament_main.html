@@ -223,6 +223,20 @@
                 📥 一括登録
               </button>
             </div>
+            <div class="mt-3 border-t border-cyber-table-border pt-3">
+              <h4 class="text-xs font-sf text-cyber-green mb-1">📋 名簿を貼り付け（1行1名 · チーム/ブレーダー/メモ）</h4>
+              <p class="text-[10px] text-cyber-text opacity-60 mb-1 leading-relaxed">
+                1行1名形式：<span class="text-cyber-green">部 [タブ] チーム名 [タブ] ブレーダー名 [タブ] メモ</span>（部は第一部/第二部。省略時は3列形式もOK）<br>
+                同じチーム名の行を1チームに、チーム名が空欄は個人として登録。部情報付きの場合「開催部」でフィルタ（常に追記）。
+              </p>
+              <textarea id="roster-blader-bulk-input" rows="5"
+                class="w-full p-2 bg-cyber-bg border border-cyber-green rounded text-cyber-text text-xs font-sans mb-2 resize-none"
+                placeholder="例：&#10;デュエルゲーマーズ&#9;トラボ&#10;デュエルゲーマーズ&#9;ユウ&#10;&#9;姫"></textarea>
+              <button type="button" onclick="importRosterByBlader()" style="touch-action:manipulation"
+                class="w-full py-2 bg-cyber-green/20 border border-cyber-green text-cyber-green font-bold font-sf text-xs rounded hover:bg-cyber-green/30 active:scale-95 transition-all">
+                📥 名簿を取り込む
+              </button>
+            </div>
             <div id="block-formed-teams-list" class="space-y-1 text-sm"></div>
           </div>
         </div>
@@ -233,11 +247,13 @@
           <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3" id="block-assign-slots"></div>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">開催部</label>
-              <select id="block-master-part" onchange="onParentLocalPartChange()" class="w-full p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-text font-sf text-sm">
-                <option value="1">第1部</option>
-                <option value="2">第2部（一部終了後）</option>
-              </select>
+              <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">開催部（タブで切替）</label>
+              <div class="flex gap-1">
+                <button type="button" id="part-tab-1" onclick="switchToPart(1)" style="touch-action:manipulation"
+                  class="flex-1 py-2 rounded font-bold font-sf text-sm transition-colors bg-cyber-blue text-white shadow-[0_0_8px_#0ea5e9]">第1部</button>
+                <button type="button" id="part-tab-2" onclick="switchToPart(2)" style="touch-action:manipulation"
+                  class="flex-1 py-2 rounded font-bold font-sf text-sm transition-colors bg-cyber-dark border border-cyber-table-border text-cyber-text">第2部</button>
+              </div>
             </div>
             <div>
               <label class="text-xs text-cyber-text opacity-70 font-sf block mb-1">親機の自担当スタジアム</label>
@@ -1242,7 +1258,62 @@
     let parentLocalBracketRounds = [];
     let parentLocalBlockStarted = false;
     let parentLocalSfMatch = { t1: null, t2: null, winner: null, score: null };
+    let parentLocalThirdPlaceMatch = { t1: null, t2: null, winner: null, score: null, kimarite: null };
     let parentLocalSubTab = 'bracket';
+    let activePartNum = 1;
+    let partContexts = { 1: createDefaultPartContext(), 2: createDefaultPartContext() };
+    function createDefaultPartContext() {
+      return {
+        stadiumTeams: { A: [], B: [], C: [], D: [] },
+        bracketRounds: [],
+        blockStarted: false,
+        sfMatch: { t1: null, t2: null, winner: null, score: null },
+        thirdPlaceMatch: { t1: null, t2: null, winner: null, score: null, kimarite: null },
+        subTab: 'bracket',
+        importedResults: {},
+        parentSelectedPids: []
+      };
+    }
+    function switchToPart(newPart) {
+      if (newPart === activePartNum) return;
+      partContexts[activePartNum] = {
+        stadiumTeams: blockStadiumTeams,
+        bracketRounds: parentLocalBracketRounds,
+        blockStarted: parentLocalBlockStarted,
+        sfMatch: parentLocalSfMatch,
+        thirdPlaceMatch: parentLocalThirdPlaceMatch,
+        subTab: parentLocalSubTab,
+        importedResults: blockImportedResults,
+        parentSelectedPids: blockParentSelectedPids
+      };
+      activePartNum = newPart;
+      const ctx = partContexts[newPart] || createDefaultPartContext();
+      blockStadiumTeams = ctx.stadiumTeams || { A: [], B: [], C: [], D: [] };
+      ['A', 'B', 'C', 'D'].forEach(k => { if (!Array.isArray(blockStadiumTeams[k])) blockStadiumTeams[k] = []; });
+      parentLocalBracketRounds = ctx.bracketRounds || [];
+      parentLocalBlockStarted = !!ctx.blockStarted;
+      parentLocalSfMatch = ctx.sfMatch || { t1: null, t2: null, winner: null, score: null };
+      parentLocalThirdPlaceMatch = ctx.thirdPlaceMatch || { t1: null, t2: null, winner: null, score: null, kimarite: null };
+      parentLocalSubTab = ctx.subTab || 'bracket';
+      blockImportedResults = ctx.importedResults || {};
+      blockParentSelectedPids = ctx.parentSelectedPids || [];
+      isParentLocalSwapMode = false;
+      parentLocalSwapPending = null;
+      updatePartTabButtons();
+      renderBlockTeamPickList();
+      renderBlockFormedTeams();
+      renderBlockAssignSlots();
+      updateParentLocalBlockUiVisibility();
+      saveState();
+    }
+    function updatePartTabButtons() {
+      const b1 = document.getElementById('part-tab-1');
+      const b2 = document.getElementById('part-tab-2');
+      const active = 'flex-1 py-2 rounded font-bold font-sf text-sm transition-colors bg-cyber-blue text-white shadow-[0_0_8px_#0ea5e9]';
+      const inactive = 'flex-1 py-2 rounded font-bold font-sf text-sm transition-colors bg-cyber-dark border border-cyber-table-border text-cyber-text';
+      if (b1) b1.className = activePartNum === 1 ? active : inactive;
+      if (b2) b2.className = activePartNum === 2 ? active : inactive;
+    }
     let toraboRemoteScoreLeft = 0;
     let toraboRemoteScoreRight = 0;
     let toraboRemoteSwapped = false;
@@ -1375,6 +1446,7 @@
       const used = getParticipantIdsInEventBlockTeams();
       participants.forEach((p) => {
         if (used.has(p.id)) return;
+        if (p.part && String(p.part) !== String(getParentLocalPartNum())) return;
         const row = document.createElement('div');
         const sel = blockParentSelectedPids.includes(p.id);
         row.className = 'py-2 px-3 mb-1 rounded border cursor-pointer text-sm ' + (sel ? 'border-cyber-pink bg-cyber-pink/15 ring-1 ring-cyber-pink' : 'border-cyber-table-border bg-[#0a0e17] hover:border-cyber-blue');
@@ -1394,7 +1466,8 @@
         const names = (t.members || []).filter(Boolean).join(' / ') || t.name;
         const span = document.createElement('span');
         span.className = 'flex-1 truncate';
-        span.textContent = t.name + ' — ' + names;
+        const partLabel = t.part ? (String(t.part) === '1' ? '[第1部] ' : '[第2部] ') : '';
+        span.textContent = partLabel + t.name + ' — ' + names;
         const rnBtn = document.createElement('button');
         rnBtn.type = 'button';
         rnBtn.style.touchAction = 'manipulation';
@@ -1453,12 +1526,14 @@
       const members = ids.map((id) => participants.find((p) => p.id === id)).filter(Boolean);
       const names = [members[0] && members[0].name ? members[0].name : '', members[1] && members[1].name ? members[1].name : '', members[2] && members[2].name ? members[2].name : ''];
       const teamName = names.filter(Boolean).join(' / ') || ('チーム' + (eventBlockTeams.length + 1));
+      const teamPart = members[0] && members[0].part ? members[0].part : undefined;
       eventBlockTeams.push({
         id: blockTeamIdCounter++,
         name: teamName,
         memberIds: ids,
         members: names,
-        beyblades: []
+        beyblades: [],
+        part: teamPart
       });
       blockParentSelectedPids = [];
       renderBlockTeamPickList();
@@ -1510,6 +1585,73 @@
       updateParentLocalBlockUiVisibility();
       renderParticipants();
       showAlert('✅ ' + count + ' チームを登録しました');
+    }
+
+    function importRosterByBlader() {
+      if (isTournamentStarted) return showAlert('開始後は取り込めません');
+      const ta = document.getElementById('roster-blader-bulk-input');
+      if (!ta || !ta.value.trim()) return showAlert('名簿テキストを貼り付けてください');
+      const lines = ta.value.split(/\r\n|\n/);
+      const teamMap = {};
+      const teamOrder = [];
+      const counts = { '1': { teams: 0, indiv: 0, total: 0 }, '2': { teams: 0, indiv: 0, total: 0 }, none: { teams: 0, indiv: 0, total: 0 } };
+      lines.forEach((line) => {
+        if (!line.trim()) return;
+        const delimiter = line.includes('\t') ? '\t' : ',';
+        const cols = line.split(delimiter);
+        if (cols.some(c => /^(チーム名|ブレーダー名)$/.test(c.trim()))) return;
+        let part = null, teamName, bladerName, memo;
+        const c0 = (cols[0] || '').trim();
+        if (/^第[一1]部$/.test(c0)) {
+          part = '1'; teamName = (cols[1] || '').trim(); bladerName = (cols[2] || '').trim(); memo = (cols[3] || '').trim();
+        } else if (/^第[二2]部$/.test(c0)) {
+          part = '2'; teamName = (cols[1] || '').trim(); bladerName = (cols[2] || '').trim(); memo = (cols[3] || '').trim();
+        } else {
+          teamName = c0; bladerName = (cols[1] || '').trim(); memo = (cols[2] || '').trim();
+        }
+        if (!bladerName) return;
+        const p = {
+          id: pidCounter++, name: bladerName, memo1: memo, rank: '--',
+          initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
+          currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          beyblades: [], color: null, position: null
+        };
+        if (part) p.part = part;
+        participants.push(p);
+        const ck = part || 'none';
+        counts[ck].total++;
+        if (teamName) {
+          const key = (part || '') + '::' + teamName;
+          if (!teamMap[key]) { teamMap[key] = { ids: [], names: [], part: part, teamName: teamName }; teamOrder.push(key); }
+          teamMap[key].ids.push(p.id);
+          teamMap[key].names.push(bladerName);
+        } else {
+          counts[ck].indiv++;
+        }
+      });
+      teamOrder.forEach((key) => {
+        const t = teamMap[key];
+        const names = [t.names[0] || '', t.names[1] || '', t.names[2] || ''];
+        const team = {
+          id: blockTeamIdCounter++, name: t.teamName,
+          memberIds: t.ids.slice(), members: names, beyblades: []
+        };
+        if (t.part) team.part = t.part;
+        eventBlockTeams.push(team);
+        counts[t.part || 'none'].teams++;
+      });
+      ta.value = '';
+      renderParticipants();
+      renderBlockTeamPickList();
+      renderBlockFormedTeams();
+      renderBlockAssignSlots();
+      saveState();
+      updateParentLocalBlockUiVisibility();
+      const msgs = [];
+      if (counts['1'].total > 0) msgs.push('第1部: ' + counts['1'].teams + 'チーム / 個人' + counts['1'].indiv + '名 / 計' + counts['1'].total + '名');
+      if (counts['2'].total > 0) msgs.push('第2部: ' + counts['2'].teams + 'チーム / 個人' + counts['2'].indiv + '名 / 計' + counts['2'].total + '名');
+      if (counts.none.total > 0) msgs.push('部なし: ' + counts.none.teams + 'チーム / 個人' + counts.none.indiv + '名 / 計' + counts.none.total + '名');
+      showAlert('✅ 取り込み完了\n' + msgs.join('\n'));
     }
 
     async function renameEventBlockTeam(teamId) {
@@ -1702,9 +1844,12 @@
         sel.className = 'w-full text-[11px] p-1 bg-cyber-bg border border-cyber-table-border rounded';
         const unassigned = getUnassignedEventTeamIds();
         sel.appendChild(new Option('— チームを追加 —', ''));
+        const curPart = String(getParentLocalPartNum());
         unassigned.forEach((tid) => {
           const t = eventBlockTeams.find((x) => x.id === tid);
-          if (t) sel.appendChild(new Option(t.name, String(tid)));
+          if (!t) return;
+          if (t.part && String(t.part) !== curPart) return;
+          sel.appendChild(new Option(t.name, String(tid)));
         });
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -1866,6 +2011,9 @@
         if (data.sfResult && parentLocalSfMatch) {
           mergeImportedMatchData(parentLocalSfMatch, data.sfResult);
         }
+        if (data.thirdResult && parentLocalThirdPlaceMatch) {
+          mergeImportedMatchData(parentLocalThirdPlaceMatch, data.thirdResult);
+        }
         parentLocalRenderBracket();
         parentLocalRenderSemiFinal();
       }
@@ -1890,20 +2038,38 @@
     }
 
     function getParentLocalPartNum() {
-      const el = document.getElementById('block-master-part');
-      return parseInt((el && el.value) || '1', 10) || 1;
+      return activePartNum;
     }
 
     function parentLocalInvalidateBracket() {
       parentLocalBracketRounds = [];
       parentLocalBlockStarted = false;
       parentLocalSfMatch = { t1: null, t2: null, winner: null, score: null };
+      parentLocalThirdPlaceMatch = { t1: null, t2: null, winner: null, score: null, kimarite: null };
       parentLocalSubTab = 'bracket';
     }
 
     function parentLocalGetTeamsForLocalStadium() {
       const st = getParentLocalStadiumCode();
       if (!st) return [];
+      const ids = blockStadiumTeams[st] || [];
+      return ids
+        .map((id) => {
+          const t = eventBlockTeams.find((x) => x.id === id);
+          if (!t) return null;
+          const m = t.members || ['', '', ''];
+          return {
+            id: t.id,
+            name: t.name,
+            members: [m[0] || '', m[1] || '', m[2] || ''],
+            memberIds: (t.memberIds || []).slice(),
+            beyblades: getTeamBeybladesAggregated(t)
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function getBlockTeamsForStadium(st) {
       const ids = blockStadiumTeams[st] || [];
       return ids
         .map((id) => {
@@ -1941,8 +2107,13 @@
       if (sub) sub.textContent = '第' + part + '部 予選';
       const sfTitle = document.getElementById('parent-local-sf-title');
       const sfSub = document.getElementById('parent-local-sf-sub');
-      if (sfTitle) sfTitle.textContent = st + ' BLOCK 代表決定戦';
+      const sfPairMap = { A: 'B', B: 'A', C: 'D', D: 'C' };
+      const sfPaired = sfPairMap[st] || '';
+      const sfPairLabel = [st, sfPaired].sort().join(' vs ');
+      if (sfTitle) sfTitle.textContent = sfPairLabel + ' 代表決定戦';
       if (sfSub) sfSub.textContent = '第' + part + '部';
+      const sfTabBtn = document.getElementById('parent-local-tab-semifinal');
+      if (sfTabBtn) sfTabBtn.textContent = '⚔️ ' + sfPairLabel + ' 代表決定戦';
       if (parentLocalBlockStarted) {
         parentLocalSwitchSubTab(parentLocalSubTab === 'semifinal' ? 'semifinal' : 'bracket');
       }
@@ -1955,8 +2126,7 @@
     }
 
     function onParentLocalPartChange() {
-      saveState();
-      updateParentLocalBlockUiVisibility();
+      // 旧互換スタブ（部タブに移行済み）
     }
 
     function parentLocalStartBlockTournament() {
@@ -1964,6 +2134,7 @@
       if (tms.length < 2) return showAlert('自担当スタジアムに2チーム以上割り当ててください。');
       parentLocalBracketRounds = [];
       parentLocalBlockStarted = true;
+      parentLocalThirdPlaceMatch = { t1: null, t2: null, winner: null, score: null, kimarite: null };
       if (tms.length === 4) {
         parentLocalBracketRounds = [
           [
@@ -1996,6 +2167,14 @@
         const r2 = parentLocalBracketRounds[1][0];
         if (r1[0].winner !== null) r2.t1 = r1[0].winner === 1 ? r1[0].t1 : r1[0].t2;
         if (r1[1] && r1[1].winner !== null) r2.t2 = r1[1].winner === 1 ? r1[1].t1 : r1[1].t2;
+        const isFourTeam = r1.length === 2 && r1[0] && r1[0].t2 && r1[1] && r1[1].t2 && r1[0].score !== 'BYE' && r1[1].score !== 'BYE';
+        if (isFourTeam && r1[0].winner !== null && r1[1].winner !== null) {
+          parentLocalThirdPlaceMatch.t1 = r1[0].winner === 1 ? r1[0].t2 : r1[0].t1;
+          parentLocalThirdPlaceMatch.t2 = r1[1].winner === 1 ? r1[1].t2 : r1[1].t1;
+        } else {
+          parentLocalThirdPlaceMatch.t1 = null; parentLocalThirdPlaceMatch.t2 = null;
+          parentLocalThirdPlaceMatch.winner = null; parentLocalThirdPlaceMatch.score = null; parentLocalThirdPlaceMatch.kimarite = null;
+        }
       }
     }
 
@@ -2025,6 +2204,13 @@
         area.appendChild(lbl);
         round.forEach((match, mi) => area.appendChild(parentLocalBuildMatchCard(match, ri, mi, 'bracket')));
       });
+      if (parentLocalThirdPlaceMatch.t1 && parentLocalThirdPlaceMatch.t2) {
+        const tlbl = document.createElement('div');
+        tlbl.className = 'tb-round-label text-cyber-orange';
+        tlbl.textContent = '🥉 3位決定戦';
+        area.appendChild(tlbl);
+        area.appendChild(parentLocalBuildMatchCard(parentLocalThirdPlaceMatch, 99, 0, 'third'));
+      }
       const rep = parentLocalGetBlockRep();
       const ban = document.getElementById('parent-local-rep-banner');
       const tabSf = document.getElementById('parent-local-tab-semifinal');
@@ -2114,7 +2300,7 @@
           match.score = null;
           parentLocalAdvanceBracket();
           saveState();
-          src === 'bracket' ? parentLocalRenderBracket() : parentLocalRenderSemiFinal();
+          src === 'sf' ? parentLocalRenderSemiFinal() : parentLocalRenderBracket();
         };
         card.appendChild(u);
       }
@@ -2122,12 +2308,12 @@
     }
 
     function parentLocalDoSetWinner(rIdx, mIdx, wv, src) {
-      let m = src === 'bracket' ? parentLocalBracketRounds[rIdx][mIdx] : parentLocalSfMatch;
+      let m = src === 'third' ? parentLocalThirdPlaceMatch : (src === 'bracket' ? parentLocalBracketRounds[rIdx][mIdx] : parentLocalSfMatch);
       if (!m || m.winner !== null) return;
       m.winner = wv;
       parentLocalAdvanceBracket();
       saveState();
-      src === 'bracket' ? parentLocalRenderBracket() : parentLocalRenderSemiFinal();
+      src === 'sf' ? parentLocalRenderSemiFinal() : parentLocalRenderBracket();
     }
 
     function parentLocalSendNextBattle(match) {
@@ -2192,13 +2378,16 @@
       area.innerHTML = '';
       if (!parentLocalSfMatch.t1 && !parentLocalSfMatch.t2) {
         area.innerHTML =
-          '<p class="text-center text-cyber-text opacity-50 text-sm py-8 font-sf">代表戦の相手チームが未設定です<br>下の入力で対戦相手を設定するか、親機の SET_SF で子機へ送ってください</p>';
+          '<p class="text-center text-cyber-text opacity-50 text-sm py-8 font-sf">代表戦の相手チームが未設定です<br>下のプルダウンでペアブロックの代表を選んでください</p>';
         parentLocalRenderSfTeamInput(area);
         return;
       }
       const lbl = document.createElement('div');
       lbl.className = 'tb-round-label text-cyber-orange';
-      lbl.textContent = '代表決定戦';
+      const ownSt2 = getParentLocalStadiumCode();
+      const pm2 = { A: 'B', B: 'A', C: 'D', D: 'C' };
+      const pl2 = [ownSt2, pm2[ownSt2] || ''].sort().join(' vs ');
+      lbl.textContent = pl2 + ' 代表決定戦';
       area.appendChild(lbl);
       area.appendChild(parentLocalBuildMatchCard(parentLocalSfMatch, 0, 0, 'sf'));
       const finalist = parentLocalSfMatch.winner !== null ? (parentLocalSfMatch.winner === 1 ? parentLocalSfMatch.t1 : parentLocalSfMatch.t2) : null;
@@ -2211,32 +2400,77 @@
     function parentLocalRenderSfTeamInput(area) {
       const rep = parentLocalGetBlockRep();
       if (!rep) return;
+      const ownSt = getParentLocalStadiumCode();
+      const part = getParentLocalPartNum();
+      const pairMap = { A: 'B', B: 'A', C: 'D', D: 'C' };
+      const pairedSt = pairMap[ownSt] || '';
       const div = document.createElement('div');
-      div.className = 'bg-[#0d131f] border border-cyber-table-border rounded-lg p-4 mt-3';
-      div.innerHTML =
-        '<p class="font-sf text-cyber-orange text-sm mb-3">対戦相手チームを入力</p>' +
-        '<p class="text-xs text-cyber-text opacity-70 mb-1">自分のブロック代表: <span class="text-cyber-green font-bold">' +
-        rep.name +
-        '</span></p>' +
-        '<input id="parent-local-sf-opp-input" type="text" placeholder="相手チーム名" class="w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-text outline-none font-sf text-sm mb-3 focus:border-cyber-green">' +
-        '<button type="button" id="parent-local-sf-opp-btn" class="w-full bg-cyber-orange text-cyber-bg py-2 rounded font-bold font-sf text-sm active:scale-95">⚔️ 対戦設定</button>';
+      div.className = 'bg-[#0d131f] border border-cyber-orange rounded-lg p-4 mt-3';
+      const title = document.createElement('div');
+      title.className = 'font-sf text-cyber-orange text-sm mb-3';
+      const sfPl = [ownSt, pairedSt].sort().join(' vs ');
+      title.textContent = '⚔️ ' + sfPl + ' 代表決定戦 — 相手ブロックの代表を選択';
+      div.appendChild(title);
+      const repInfo = document.createElement('p');
+      repInfo.className = 'text-xs text-cyber-text opacity-70 mb-2';
+      repInfo.textContent = '自分のブロック代表（' + ownSt + '）: ';
+      const repSpan = document.createElement('span');
+      repSpan.className = 'text-cyber-green font-bold';
+      repSpan.textContent = rep.name;
+      repInfo.appendChild(repSpan);
+      div.appendChild(repInfo);
+      const sel = document.createElement('select');
+      sel.id = 'parent-local-sf-opp-select';
+      sel.className = 'w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-text outline-none font-sf text-sm mb-2 focus:border-cyber-green';
+      sel.appendChild(new Option('— 相手チームを選択 —', ''));
+      let preselectValue = '';
+      {
+        const teams = getBlockTeamsForStadium(pairedSt);
+        if (teams.length) {
+          const imp = blockImportedResults[pairedSt + '_' + part];
+          const repName = imp && imp.representative && imp.representative.name ? imp.representative.name : null;
+          const og = document.createElement('optgroup');
+          og.label = 'Block ' + pairedSt + (repName ? '（データ到着済み）' : '（データ未着）');
+          teams.forEach((t) => {
+            const isRep = repName && t.name === repName;
+            const opt = new Option((isRep ? '★ ' : '') + t.name + (isRep ? ' ＜代表＞' : ''), String(t.id));
+            og.appendChild(opt);
+            if (isRep) preselectValue = String(t.id);
+          });
+          sel.appendChild(og);
+        }
+      }
+      if (preselectValue) sel.value = preselectValue;
+      div.appendChild(sel);
+      const hint = document.createElement('p');
+      hint.className = 'text-[11px] text-cyber-orange opacity-75 mb-2';
+      hint.textContent = '★ = 子機から届いた最新の代表（初期選択）。運営ミス時はここで選び直せます。';
+      div.appendChild(hint);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'parent-local-sf-opp-btn';
+      btn.className = 'w-full bg-cyber-orange text-cyber-bg py-2 rounded font-bold font-sf text-sm active:scale-95';
+      btn.textContent = '⚔️ 対戦設定';
+      div.appendChild(btn);
       area.appendChild(div);
       document.getElementById('parent-local-sf-opp-btn')?.addEventListener('click', parentLocalSetSfOpponent);
     }
 
     function parentLocalSetSfOpponent() {
-      const inp = document.getElementById('parent-local-sf-opp-input');
-      if (!inp) return;
-      const name = inp.value.trim();
-      if (!name) return showAlert('チーム名を入力してください');
+      const sel = document.getElementById('parent-local-sf-opp-select');
+      if (!sel || !sel.value) return showAlert('相手ブロックの代表チームを選択してください');
       const rep = parentLocalGetBlockRep();
       if (!rep) return showAlert('先にブロック代表を決定してください');
-      parentLocalSfMatch = {
-        t1: rep,
-        t2: { id: 'ext_' + Date.now(), name: name, members: ['', '', ''], beyblades: [] },
-        winner: null,
-        score: null
-      };
+      const ownSt = getParentLocalStadiumCode();
+      let opp = null;
+      const setPairMap = { A: 'B', B: 'A', C: 'D', D: 'C' };
+      const setPairedSt = setPairMap[ownSt] || '';
+      if (setPairedSt) {
+        const found = getBlockTeamsForStadium(setPairedSt).find((t) => String(t.id) === String(sel.value));
+        if (found) opp = found;
+      }
+      if (!opp) return showAlert('選択したチームが見つかりません');
+      parentLocalSfMatch = { t1: rep, t2: opp, winner: null, score: null, kimarite: null };
       saveState();
       parentLocalRenderSemiFinal();
     }
@@ -2601,8 +2835,8 @@
       const src = toraboCurrentMatchRef.src;
       toraboCurrentMatchRef = null;
       closeToraboBlockRemote();
-      if (src === 'bracket') parentLocalRenderBracket();
-      else parentLocalRenderSemiFinal();
+      if (src === 'sf') parentLocalRenderSemiFinal();
+      else parentLocalRenderBracket();
     }
 
     function closeToraboBlockRemote() {
@@ -3887,20 +4121,26 @@
 
     function saveState() {
       try {
+        partContexts[activePartNum] = {
+          stadiumTeams: blockStadiumTeams,
+          bracketRounds: parentLocalBracketRounds,
+          blockStarted: parentLocalBlockStarted,
+          sfMatch: parentLocalSfMatch,
+          thirdPlaceMatch: parentLocalThirdPlaceMatch,
+          subTab: parentLocalSubTab,
+          importedResults: blockImportedResults,
+          parentSelectedPids: blockParentSelectedPids
+        };
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, blockMatches, finals, isEffectOn,
-          eventBlockTeams, blockStadiumTeams, blockTeamIdCounter, blockParentSelectedPids,
-          hudPreviewBackground
+          eventBlockTeams, blockTeamIdCounter,
+          hudPreviewBackground,
+          activePartNum, partContexts
         };
         const pls = document.getElementById('parent-local-block-stadium');
         if (pls) state.parentLocalBlockStadium = pls.value || '';
-        state.parentLocalBracketRounds = parentLocalBracketRounds;
-        state.parentLocalBlockStarted = parentLocalBlockStarted;
-        state.parentLocalSfMatch = parentLocalSfMatch;
-        state.parentLocalSubTab = parentLocalSubTab;
-        state.blockImportedResults = blockImportedResults;
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -3932,19 +4172,35 @@
         finals = s.finals || {};
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
         eventBlockTeams = s.eventBlockTeams || [];
-        blockStadiumTeams = s.blockStadiumTeams || { A: [], B: [], C: [], D: [] };
-        ['A', 'B', 'C', 'D'].forEach((k) => {
-          if (!Array.isArray(blockStadiumTeams[k])) blockStadiumTeams[k] = [];
-        });
         blockTeamIdCounter = s.blockTeamIdCounter || 1;
-        blockParentSelectedPids = s.blockParentSelectedPids || [];
         const pls = document.getElementById('parent-local-block-stadium');
         if (pls && s.parentLocalBlockStadium !== undefined) pls.value = s.parentLocalBlockStadium;
-        parentLocalBracketRounds = s.parentLocalBracketRounds || [];
-        parentLocalBlockStarted = !!s.parentLocalBlockStarted;
-        parentLocalSfMatch = s.parentLocalSfMatch || { t1: null, t2: null, winner: null, score: null };
-        parentLocalSubTab = s.parentLocalSubTab || 'bracket';
-        blockImportedResults = s.blockImportedResults || {};
+        if (s.partContexts) {
+          activePartNum = s.activePartNum || 1;
+          partContexts = s.partContexts;
+        } else {
+          activePartNum = 1;
+          partContexts = { 1: createDefaultPartContext(), 2: createDefaultPartContext() };
+          partContexts[1].stadiumTeams = s.blockStadiumTeams || { A: [], B: [], C: [], D: [] };
+          partContexts[1].bracketRounds = s.parentLocalBracketRounds || [];
+          partContexts[1].blockStarted = !!s.parentLocalBlockStarted;
+          partContexts[1].sfMatch = s.parentLocalSfMatch || { t1: null, t2: null, winner: null, score: null };
+          partContexts[1].thirdPlaceMatch = s.parentLocalThirdPlaceMatch || { t1: null, t2: null, winner: null, score: null, kimarite: null };
+          partContexts[1].subTab = s.parentLocalSubTab || 'bracket';
+          partContexts[1].importedResults = s.blockImportedResults || {};
+          partContexts[1].parentSelectedPids = s.blockParentSelectedPids || [];
+        }
+        const actx = partContexts[activePartNum] || createDefaultPartContext();
+        blockStadiumTeams = actx.stadiumTeams || { A: [], B: [], C: [], D: [] };
+        ['A', 'B', 'C', 'D'].forEach((k) => { if (!Array.isArray(blockStadiumTeams[k])) blockStadiumTeams[k] = []; });
+        parentLocalBracketRounds = actx.bracketRounds || [];
+        parentLocalBlockStarted = !!actx.blockStarted;
+        parentLocalSfMatch = actx.sfMatch || { t1: null, t2: null, winner: null, score: null };
+        parentLocalThirdPlaceMatch = actx.thirdPlaceMatch || { t1: null, t2: null, winner: null, score: null, kimarite: null };
+        parentLocalSubTab = actx.subTab || 'bracket';
+        blockImportedResults = actx.importedResults || {};
+        blockParentSelectedPids = actx.parentSelectedPids || [];
+        updatePartTabButtons();
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
