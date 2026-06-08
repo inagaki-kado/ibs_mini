@@ -60,6 +60,14 @@
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
         .btn-visibility { bottom: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #a78bfa; border-color: #a78bfa; font-size: 20px; box-shadow: 0 0 10px rgba(167,139,250,0.3); }
         .btn-visibility.active { background: rgba(167,139,250,0.2); box-shadow: 0 0 15px rgba(167,139,250,0.5); }
+        .btn-fps { top: 20px; left: max(130px, calc(var(--safe-left) + 130px)); color: #22c55e; border-color: #22c55e; font-size: 11px; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+        .btn-fps.active { background: rgba(34,197,94,0.2); box-shadow: 0 0 15px rgba(34,197,94,0.5); }
+        .btn-stats { bottom: 20px; right: max(140px, calc(var(--safe-right) + 130px)); color: #0ea5e9; border-color: #0ea5e9; font-size: 20px; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .btn-stats.active { background: rgba(14,165,233,0.2); box-shadow: 0 0 15px rgba(14,165,233,0.5); }
+        #cam-debug { position: fixed; z-index: 81; top: 76px; left: max(20px, calc(var(--safe-left) + 20px)); display: none; background: rgba(0,0,0,0.72); border: 1.5px solid #22c55e; border-radius: 8px; padding: 9px 13px; line-height: 1.5; color: #e2e8f0; font-size: 13px; font-family: 'Orbitron', monospace; }
+        #cam-debug .cd-title { color: #22c55e; font-weight: 500; letter-spacing: 1px; margin-bottom: 4px; }
+        body.pro-mode #cam-debug { display: none !important; }
+        body.hud-hidden #cam-debug { display: none !important; }
         body.pro-mode .system-btn { display: none !important; }
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
@@ -543,6 +551,9 @@
     <div class="system-btn btn-hud active" onclick="executeCommand('SYS_HUD')" id="btn-hud">📹</div>
 <div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">📝</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
+<div class="system-btn btn-fps" onclick="toggleFps()" id="btn-fps">FPS</div>
+<div class="system-btn btn-stats active" onclick="toggleStatsDisplay()" id="btn-stats">📊</div>
+<div id="cam-debug"><div class="cd-title">CAM DEBUG</div><div>RES&nbsp;&nbsp;<span id="cd-res">--</span></div><div>SET&nbsp;&nbsp;<span id="cd-set">--</span> fps</div><div>REAL <span id="cd-real">--</span> fps</div></div>
 
     <script>
         let s1 = 0, s2 = 0, winScoreLimit = 4, winPointMode = '4', battleCount = 1, timerDuration = 10;
@@ -608,6 +619,7 @@
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }, audio: withMic });
                 camVideo.srcObject = currentStream; camVideo.muted = !withMic; startBuffering(currentStream);
+                if (fpsDebugOn) updateCamDebugSettings();
             } catch (err) { console.error(err); }
         }
 
@@ -700,9 +712,48 @@
         function toggleStatsDisplay() {
             blurFocus();
             // 戦績ブロックの表示切替のみ
+            let anyVisible = false;
             document.querySelectorAll('.player-stats-block').forEach(block => {
                 block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
+                if (block.style.display !== 'none') anyVisible = true;
             });
+            const sbtn = document.getElementById('btn-stats');
+            if (sbtn) sbtn.classList.toggle('active', anyVisible);
+        }
+
+        // ===== FPS計測オーバーレイ =====
+        let fpsDebugOn = false, fpsFrameCount = 0, fpsLastTime = 0;
+        function toggleFps() {
+            blurFocus();
+            fpsDebugOn = !fpsDebugOn;
+            document.getElementById('cam-debug').style.display = fpsDebugOn ? 'block' : 'none';
+            document.getElementById('btn-fps').classList.toggle('active', fpsDebugOn);
+            if (fpsDebugOn) { updateCamDebugSettings(); startFpsMeasure(); }
+        }
+        function updateCamDebugSettings() {
+            try {
+                const track = currentStream && currentStream.getVideoTracks()[0];
+                if (!track) return;
+                const s = track.getSettings();
+                document.getElementById('cd-res').innerText = (s.width || '--') + '×' + (s.height || '--');
+                document.getElementById('cd-set').innerText = s.frameRate ? s.frameRate.toFixed(1) : '--';
+            } catch (e) {}
+        }
+        function startFpsMeasure() {
+            fpsFrameCount = 0; fpsLastTime = performance.now();
+            const tick = (now) => {
+                fpsFrameCount++;
+                if (now - fpsLastTime >= 1000) {
+                    const real = (fpsFrameCount * 1000 / (now - fpsLastTime)).toFixed(1);
+                    const el = document.getElementById('cd-real'); if (el) el.innerText = real;
+                    fpsFrameCount = 0; fpsLastTime = now;
+                }
+                if (!fpsDebugOn) return;
+                if (camVideo.requestVideoFrameCallback) camVideo.requestVideoFrameCallback(tick);
+                else requestAnimationFrame(tick);
+            };
+            if (camVideo.requestVideoFrameCallback) camVideo.requestVideoFrameCallback(tick);
+            else requestAnimationFrame(tick);
         }
 
         function toggleVisibility() {
@@ -891,6 +942,9 @@
             } else if (winPointMode === '2+') {
                 winPointMode = '3';
                 winScoreLimit = 3;
+            } else if (winPointMode === '3') {
+                winPointMode = '10';
+                winScoreLimit = 10;
             } else {
                 winPointMode = '4';
                 winScoreLimit = 4;
@@ -1032,41 +1086,35 @@
         window.addEventListener('keydown', e => {
             if (document.activeElement.tagName === 'INPUT') return;
             const key = e.key;
-            if (key === '-') { e.preventDefault(); location.reload(); return; }
-            
             if (isReplayMode) {
-                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                // 中央列: リプレイ操作
                 if (key === '5') executeCommand('REPLAY_PLAY');
-                if (key === '6') executeCommand('REPLAY_SLOW');
-                if (key === '4') executeCommand('REPLAY_REV');
-                if (key === 'Enter') executeCommand('REPLAY_LATEST');
+                if (key === '8') executeCommand('REPLAY_REV');
+                if (key === '2') executeCommand('REPLAY_SLOW');
+                if (key === 'Enter') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_LATEST'); }
+                // 左右列: スコア入力 → リプレイ強制終了して加点
+                const scoreMap = { '7':'P1_X','4':'P1_B','1':'P1_O','0':'P1_S','9':'P2_X','6':'P2_B','3':'P2_O','.':'P2_S' };
+                if (scoreMap[key]) { executeCommand('REPLAY_TOGGLE'); executeCommand(scoreMap[key]); }
             } else {
-                if (key === 'Tab') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
                 if (key === 'Backspace') executeCommand('SYS_PRO');
                 if (key === 'r' || key === 'R' || key === '/') executeCommand('SYS_RESET');
-                if (key === '+') executeCommand('SYS_HUD');
-                if (key === '*') executeCommand('SYS_STATS');
-                if (key === 'Enter') { e.preventDefault(); executeCommand('CALL'); }
+                if (key === '+') executeCommand('CALL');
+                if (key === '-') executeCommand('TIMER');
+                if (key === '*') { e.preventDefault(); location.reload(); }
+                if (key === 'Enter') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
                 if (key === '5') executeCommand('SYS_SWAP');
 
-                if (key === '0') {
-                    zeroCount++;
-                    if (zeroCount === 1) {
-                        zeroTimeout = setTimeout(() => { executeCommand('P1_S'); zeroCount = 0; }, 50);
-                    } else if (zeroCount === 2) {
-                        clearTimeout(zeroTimeout); executeCommand('TIMER'); zeroCount = 0;
-                    }
-                } else {
-                    if (key === '7') executeCommand('P1_X'); 
-                    if (key === '4') executeCommand('P1_B'); 
-                    if (key === '1') executeCommand('P1_O'); 
-                    if (key === '9') executeCommand('P2_X'); 
-                    if (key === '6') executeCommand('P2_B'); 
-                    if (key === '3') executeCommand('P2_O'); 
-                    if (key === '.') executeCommand('P2_S');
-                    if (key === '8') executeCommand('P1_MINUS');
-                    if (key === '2') executeCommand('P2_MINUS');
-                }
+                if (key === '7') executeCommand('P1_X');
+                if (key === '4') executeCommand('P1_B');
+                if (key === '1') executeCommand('P1_O');
+                if (key === '0') executeCommand('P1_S');
+                if (key === '9') executeCommand('P2_X');
+                if (key === '6') executeCommand('P2_B');
+                if (key === '3') executeCommand('P2_O');
+                if (key === '.') executeCommand('P2_S');
+                if (key === '8') executeCommand('P1_MINUS');
+                if (key === '2') executeCommand('P2_MINUS');
             }
         });
 
