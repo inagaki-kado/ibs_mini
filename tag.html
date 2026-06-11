@@ -79,7 +79,7 @@
 
     <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
       <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
-      <input type="text" id="linkCodeInput" placeholder="CODE" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
+      <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
       <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 text-[10px] md:text-xs font-sf font-bold rounded">CONN</button>
       <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
       <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
@@ -516,7 +516,14 @@
           <button onclick="sendRemoteCmd('REPLAY_LATEST')" class="col-span-2 py-6 bg-cyber-pink hover:bg-cyber-pink/80 text-white font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_15px_#ec4899]">🔥 LATEST HIGHLIGHT (Enter)</button>
           <button onclick="sendRemoteCmd('REPLAY_REV')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">⏪ -5 SEC</button>
           <button onclick="sendRemoteCmd('REPLAY_PLAY')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">▶ / ⏸ PLAY / PAUSE</button>
-          <button onclick="sendRemoteCmd('REPLAY_SLOW')" class="col-span-2 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">🐢 SLOW (0.1x)</button>
+          <button onclick="sendRemoteCmd('REPLAY_FRAME_REV')" class="py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange/20 transition-colors text-lg">◀ 1F</button>
+          <button onclick="sendRemoteCmd('REPLAY_FRAME_FWD')" class="py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange/20 transition-colors text-lg">1F ▶</button>
+          <button onclick="sendRemoteCmd('REPLAY_SLOW')" class="col-span-2 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">🐢 SLOW (0.5→0.25→0.1x)</button>
+          <button onclick="sendRemoteCmd('REPLAY_LOOP')" class="py-4 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">🔁 LOOP (4s)</button>
+          <button onclick="sendRemoteCmd('REPLAY_ZOOM')" class="py-4 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf font-bold rounded hover:bg-cyber-green/20 transition-colors text-lg">🔍 2x ZOOM</button>
+          <button onclick="sendRemoteCmd('REPLAY_SEEK_REV')" class="py-4 bg-[#0a0e17] border border-gray-500 text-gray-300 font-sf font-bold rounded hover:bg-gray-500/20 transition-colors text-lg">⏪ -1s</button>
+          <button onclick="sendRemoteCmd('REPLAY_SEEK_FWD')" class="py-4 bg-[#0a0e17] border border-gray-500 text-gray-300 font-sf font-bold rounded hover:bg-gray-500/20 transition-colors text-lg">+1s ⏩</button>
+          <button onclick="sendRemoteCmd('REPLAY_LOOP_LEN')" class="col-span-2 py-4 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">📏 LOOP 3→4→5s</button>
         </div>
       </div>
 
@@ -775,15 +782,21 @@
     }
     function connectLink() {
       if(conn && conn.open) { conn.close(); resetLinkUI(); return; }
-      const code = document.getElementById('linkCodeInput').value;
-      if(!code || code.length !== 4) return alert("iPhoneのLINK CODEを入力");
+      const code = document.getElementById('linkCodeInput').value || '0511';
       const btn = document.getElementById('btn-connect'); btn.innerText = "WAIT...";
-      if(!peer || peer.destroyed) initPeer();
       if (conn) conn.close();
       if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
       _retryCount = 0; _retryTarget = code;
-      conn = peer.connect('itabashi-link-' + code, { reliable: true });
-      _attachConnHandlers(conn);
+      if (!peer || peer.destroyed) {
+        initPeer();
+        peer.once('open', () => {
+          conn = peer.connect('itabashi-link-' + code, { reliable: true });
+          _attachConnHandlers(conn);
+        });
+      } else {
+        conn = peer.connect('itabashi-link-' + code, { reliable: true });
+        _attachConnHandlers(conn);
+      }
     }
     
     // HUDへコマンドを送信する基幹関数
