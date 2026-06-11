@@ -62,6 +62,8 @@
         .btn-visibility.active { background: rgba(167,139,250,0.2); box-shadow: 0 0 15px rgba(167,139,250,0.5); }
         .btn-fps { top: 20px; left: max(130px, calc(var(--safe-left) + 130px)); color: #22c55e; border-color: #22c55e; font-size: 11px; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .btn-fps.active { background: rgba(34,197,94,0.2); box-shadow: 0 0 15px rgba(34,197,94,0.5); }
+        .btn-cammode { top: 20px; left: max(185px, calc(var(--safe-left) + 185px)); color: #ffaa00; border-color: #ffaa00; font-size: 11px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
+        .btn-cammode.active { background: rgba(255,170,0,0.2); box-shadow: 0 0 15px rgba(255,170,0,0.5); }
         .btn-stats { bottom: 20px; right: max(140px, calc(var(--safe-right) + 130px)); color: #0ea5e9; border-color: #0ea5e9; font-size: 20px; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
         .btn-stats.active { background: rgba(14,165,233,0.2); box-shadow: 0 0 15px rgba(14,165,233,0.5); }
         #cam-debug { position: fixed; z-index: 81; top: 76px; left: max(20px, calc(var(--safe-left) + 20px)); display: none; background: rgba(0,0,0,0.72); border: 1.5px solid #22c55e; border-radius: 8px; padding: 9px 13px; line-height: 1.5; color: #e2e8f0; font-size: 13px; font-family: 'Orbitron', monospace; }
@@ -610,6 +612,7 @@
 <div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">📝</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 <div class="system-btn btn-fps" onclick="toggleFps()" id="btn-fps">FPS</div>
+<div class="system-btn btn-cammode" onclick="toggleCamMode()" id="btn-cammode">60</div>
 <div class="system-btn btn-stats active" onclick="toggleStatsDisplay()" id="btn-stats">📊</div>
 <div id="cam-debug"><div class="cd-title">CAM DEBUG</div><div>RES&nbsp;&nbsp;<span id="cd-res">--</span></div><div>SET&nbsp;&nbsp;<span id="cd-set">--</span> fps</div><div>REAL <span id="cd-real">--</span> fps</div></div>
 
@@ -860,14 +863,26 @@
             }
         }, { passive: false });
 
+        let camMode = 'fps'; // 'fps' = 60fps優先 / 'hq' = 画質優先
+        function toggleCamMode() {
+            blurFocus();
+            camMode = camMode === 'fps' ? 'hq' : 'fps';
+            const btn = document.getElementById('btn-cammode');
+            btn.textContent = camMode === 'fps' ? '60' : 'HQ';
+            btn.classList.toggle('active', camMode === 'hq');
+            initMedia();
+        }
+
         async function initMedia(withMic = false) {
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-            const attempts = [
-                { video: { facingMode: "environment", width: { min: 1280 }, height: { min: 720 }, frameRate: { exact: 60 } }, audio: withMic },
-                { video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { exact: 60 } }, audio: withMic },
-                { video: { facingMode: "environment", frameRate: { exact: 60 } }, audio: withMic },
-                { video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }, audio: withMic },
-            ];
+            const attempts = camMode === 'hq'
+                ? [{ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: withMic }]
+                : [
+                    { video: { facingMode: "environment", width: { min: 1280 }, height: { min: 720 }, frameRate: { exact: 60 } }, audio: withMic },
+                    { video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { exact: 60 } }, audio: withMic },
+                    { video: { facingMode: "environment", frameRate: { exact: 60 } }, audio: withMic },
+                    { video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }, audio: withMic },
+                  ];
             for (const c of attempts) {
                 try { currentStream = await navigator.mediaDevices.getUserMedia(c); break; } catch (e) { /* try next */ }
             }
