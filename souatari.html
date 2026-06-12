@@ -297,7 +297,9 @@
         <div><h3 class="text-base md:text-lg text-orange-400 font-sf mb-1">🥉 3RD PLACE</h3><p class="text-lg md:text-xl font-bold text-white" id="res3"></p></div>
         <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
       </div>
-      
+
+      <div id="res-match-list" class="text-left"></div>
+
       <div class="flex justify-center gap-4 mt-4 md:mt-6">
         <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
         <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
@@ -1529,7 +1531,12 @@
 
         let p1Display = `<span class="truncate ${m.winner === 1 ? 'text-cyber-green font-bold text-lg' : 'text-cyber-text'}">${m.p1.name}</span>`;
         let p2Display = `<span class="truncate ${m.winner === 2 ? 'text-cyber-green font-bold text-lg' : 'text-cyber-text'}">${m.p2.name}</span>`;
-        let centerArea = isFinished ? `<span class="font-sf text-lg text-cyber-green px-2">${m.s1} - ${m.s2}</span>` : `<span class="font-sf text-xs text-cyber-text opacity-50 px-2">VS</span>`;
+        const kimLine = isFinished && (m.kimarite_p1 || m.kimarite_p2)
+          ? `<div class="flex items-center justify-center gap-1 mt-0.5"><span class="text-[9px] font-sf text-cyber-blue opacity-70 truncate max-w-[48px]">${m.kimarite_p1 || '—'}</span><span class="text-[8px] text-cyber-text opacity-30 shrink-0">|</span><span class="text-[9px] font-sf text-cyber-pink opacity-70 truncate max-w-[48px]">${m.kimarite_p2 || '—'}</span></div>`
+          : '';
+        let centerArea = isFinished
+          ? `<div class="flex flex-col items-center px-1 shrink-0"><span class="font-sf text-lg text-cyber-green">${m.s1} - ${m.s2}</span>${kimLine}</div>`
+          : `<span class="font-sf text-xs text-cyber-text opacity-50 px-2">VS</span>`;
         
         const sendBtn = !isFinished ? `<button onclick="openRemoteModal(${m.id})" class="bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg text-[10px] font-sf px-2 py-1 rounded transition-colors mr-2">REMOTE</button>` : '';
 
@@ -1557,6 +1564,39 @@
 
       document.getElementById('resultLeagueName').innerText = leagueName;
       document.getElementById('res1').innerText = stds[0] ? stds[0].name : '-'; document.getElementById('res2').innerText = stds[1] ? stds[1].name : '-'; document.getElementById('res3').innerText = stds[2] ? stds[2].name : '-'; document.getElementById('res4').innerText = stds[3] ? stds[3].name : '-';
+
+      const finishedMatches = leagueMatches.filter(m => m.winner !== null && m.p1.id !== 'BYE' && m.p2.id !== 'BYE');
+      const matchListEl = document.getElementById('res-match-list');
+      if (matchListEl) {
+        if (finishedMatches.length > 0) {
+          let html = `<div class="mt-5 pt-4 border-t border-cyber-table-border">
+            <h3 class="text-center text-xs font-sf text-cyber-text opacity-50 mb-3 tracking-widest">MATCH RESULTS</h3>
+            <div class="space-y-1">`;
+          finishedMatches.forEach(m => {
+            const w1 = m.winner === 1;
+            const kp1 = m.kimarite_p1 || '';
+            const kp2 = m.kimarite_p2 || '';
+            html += `<div class="flex items-center justify-between py-1 border-b border-cyber-table-border/30 gap-1">
+              <div class="flex-1 flex flex-col items-end overflow-hidden">
+                <span class="font-bold text-sm truncate max-w-full ${w1 ? 'text-cyber-green' : 'text-gray-400'}">${m.p1.name}</span>
+                ${kp1 ? `<span class="text-[9px] font-sf text-cyber-blue opacity-70 truncate max-w-full">${kp1}</span>` : ''}
+              </div>
+              <div class="shrink-0 px-2 text-center">
+                <span class="font-sf font-bold text-sm text-cyber-green whitespace-nowrap">${m.s1}–${m.s2}</span>
+              </div>
+              <div class="flex-1 flex flex-col items-start overflow-hidden">
+                <span class="font-bold text-sm truncate max-w-full ${!w1 ? 'text-cyber-green' : 'text-gray-400'}">${m.p2.name}</span>
+                ${kp2 ? `<span class="text-[9px] font-sf text-cyber-pink opacity-70 truncate max-w-full">${kp2}</span>` : ''}
+              </div>
+            </div>`;
+          });
+          html += `</div></div>`;
+          matchListEl.innerHTML = html;
+        } else {
+          matchListEl.innerHTML = '';
+        }
+      }
+
       document.getElementById('resultsModal').classList.remove('hidden'); document.getElementById('resultsModal').classList.add('flex');
     }
     function closeResults() {
