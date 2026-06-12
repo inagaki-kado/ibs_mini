@@ -164,7 +164,10 @@
           </span>
           <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
         </div>
-        <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
+        <div class="flex items-center gap-2">
+          <button onclick="openExportModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">📝 CSV出力</button>
+          <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
+        </div>
       </div>
 
       <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
@@ -1544,6 +1547,10 @@
 
         scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${nextBtn}${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
       });
+      const allDone = leagueMatches.length > 0 && leagueMatches.every(m => m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner !== null);
+      const showBtn = document.getElementById('showResultsBtn');
+      if (showBtn) { if (allDone) showBtn.classList.remove('hidden'); else showBtn.classList.add('hidden'); }
+
       saveState();
       if (isTvMode_league) {
         const content = document.getElementById('view-league').innerHTML;
