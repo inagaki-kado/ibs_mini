@@ -558,6 +558,14 @@ nav {
 .stat-sub-key { color: var(--text-dim); min-width: 30px; }
 .stat-sub-val-blue  { color: var(--neon-blue); }
 .stat-sub-val-green { color: var(--neon-green); }
+.stat-item-bio {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.stat-item-bio .blader-bio-text {
+  flex: 1;
+}
 
 /* BP highlight */
 .bp-display { display: flex; align-items: baseline; gap: 0.4rem; }
@@ -1085,6 +1093,28 @@ nav {
   color: #475569;
   padding: 8px 0;
 }
+.blader-bio {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  margin: 0 0 10px 0;
+  background: rgba(0, 255, 136, 0.04);
+  border-left: 2px solid rgba(0, 255, 136, 0.28);
+  border-radius: 4px;
+}
+.blader-bio-icon {
+  color: rgba(0, 255, 136, 0.45);
+  font-size: 11px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.blader-bio-text {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.72);
+  line-height: 1.75;
+}
 </style>
 </head>
 
@@ -1253,7 +1283,7 @@ nav {
 // ─── CONFIG ───────────────────────────────────────────────
 const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
 const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:M');
+const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:N');
 const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
 // ベイ集計シート（相棒ベイTOP5取得用）
 const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
@@ -1923,6 +1953,7 @@ function renderResults(players) {
     const awardsCount = (row[10] || '').trim();     // [10] 入賞回数
     const awardsLog   = (row[11] || '').trim();     // [11] 入賞履歴テキスト
     const historyLog  = (row[12] || '').trim();     // [12] 参加履歴テキスト
+    const bio         = (row[13] || '').trim();     // [13] ブレーダー紹介文
 
     // 相棒ベイブレードのデータ：🌀ベイ集計シートからbeyMapで取得
     const beys = (beyMap && beyMap[name]) || [];
@@ -2138,36 +2169,22 @@ function renderResults(players) {
               <div class="bp-value">${bp !== '--' ? bp : '--'}</div>
               ${bp !== '--' ? '<div class="bp-unit">pts</div>' : ''}
             </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-label">勝率 (総合)</div>
+            <div class="stat-sub-label">勝率 (総合)</div>
             <div class="stat-value-large">${pct(wr)}</div>
-            <div class="stat-sub-label">スタジアム別勝率</div>
-            <div class="stat-sub-rows">
-              <div class="stat-sub-row">
-                <span class="stat-sub-key">EX</span>
-                <span class="stat-sub-val-blue">${pct(wrEx)}</span>
-              </div>
-              <div class="stat-sub-row">
-                <span class="stat-sub-key">INF</span>
-                <span class="stat-sub-val-green">${pct(wrInf)}</span>
-              </div>
-            </div>
+          </div>
+          <div class="stat-item stat-item-bio">
+            ${bio ? `
+            <span class="blader-bio-icon"><i class="fa fa-robot"></i></span>
+            <span class="blader-bio-text">${bio}</span>` : `
+            <span class="blader-bio-text" style="opacity:.35;">—</span>`}
           </div>
         </div>
 
         <div class="winrate-section">
           <div class="winrate-label">
-            <span><i class="fa fa-chart-bar"></i> 勝率グラフ</span>
+            <span><i class="fa fa-chart-bar"></i> スタジアム別勝率</span>
           </div>
           <div class="winrate-bars">
-            <div class="winrate-row">
-              <div class="winrate-row-label">総合</div>
-              <div class="winrate-pct" style="color:var(--neon-green)">${pct(wr)}</div>
-              <div class="winrate-track">
-                <div class="winrate-fill fill-green" data-pct="${wrPct}"></div>
-              </div>
-            </div>
             <div class="winrate-row">
               <div class="winrate-row-label">Extreme</div>
               <div class="winrate-pct" style="color:var(--neon-blue)">${pct(wrEx)}</div>
