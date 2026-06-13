@@ -977,6 +977,24 @@
             updateStatusMsg("▶ " + rate.toFixed(2).replace(/0$/, ''));
         }
 
+        function stopReplay() {
+            if (!isReplayMode) return;
+            isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none';
+            document.body.classList.remove('replay-mode');
+            replaySpeedIdx = -1;
+            resetReplayExtras();
+            if (replaySeekbar) { replaySeekbar.value = 0; replaySeekbar.max = 0; }
+            if (replayTimeCur) replayTimeCur.textContent = '0:00';
+            if (replayTimeDur) replayTimeDur.textContent = '0:00';
+            if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
+            // リプレイ終了後、👁️ONかつベイ名があれば再表示
+            if (isStatsVisible) {
+                document.querySelectorAll('.beyblade-box').forEach(b => {
+                    if (b.textContent.trim()) b.style.display = 'block';
+                });
+            }
+        }
+
         async function toggleReplayMode() {
             if (!isReplayMode) {
                 if (!chunks.length) { updateStatusMsg("NO REPLAY", 1500); return; }
@@ -999,20 +1017,7 @@
                     updateReplaySeekUI();
                 };
             } else {
-                isReplayMode = false; replayVideo.pause(); replayVideo.src = ""; replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none';
-                document.body.classList.remove('replay-mode');
-                replaySpeedIdx = -1;
-                resetReplayExtras();
-                if (replaySeekbar) { replaySeekbar.value = 0; replaySeekbar.max = 0; }
-                if (replayTimeCur) replayTimeCur.textContent = '0:00';
-                if (replayTimeDur) replayTimeDur.textContent = '0:00';
-                if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
-                // リプレイ終了後、👁️ONかつベイ名があれば再表示
-                if (isStatsVisible) {
-                    document.querySelectorAll('.beyblade-box').forEach(b => {
-                        if (b.textContent.trim()) b.style.display = 'block';
-                    });
-                }
+                stopReplay();
             }
         }
 
@@ -1162,7 +1167,8 @@
         }
 
         function addScore(p, pts, t) {
-            blurFocus(); if (isFinished || isReplayMode) return;
+            blurFocus(); if (isFinished) return;
+            if (isReplayMode) stopReplay();
             let styles = {SPIN:'ef-spin', OVER:'ef-over', BURST:'ef-burst', XTREME:'ef-xtreme'};
             showOverlayText(t + "<br>FINISH", 'effect-finish-style ' + styles[t], 2000);
             if (t === 'XTREME') {
