@@ -317,7 +317,7 @@
             transform: translate(-50%, -50%);
             transform-origin: center center;
         }
-        #next-battle-content { position: relative; z-index: 1; width: 100%; }
+        #next-battle-content { position: relative; z-index: 1; width: 100%; padding: 0 3vw; box-sizing: border-box; }
         @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
@@ -441,8 +441,18 @@
         .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
         .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
-        
-        
+
+        /* iPhone landscape / compact height — NEXT BATTLE 縮小モード */
+        @media (max-height: 500px) {
+            #next-battle-overlay .next-battle-blink { font-size: clamp(18px,3.8vw,40px) !important; margin-bottom:0.1rem !important; }
+            #nb-stage-round { font-size: clamp(9px,1.2vw,13px) !important; margin-bottom:0.5rem !important; }
+            .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
+            .nb-player { font-size:clamp(18px,4vw,50px) !important; }
+            .nb-player > div:first-child { font-size:clamp(18px,4vw,50px) !important; }
+            .nb-player > div:last-child { font-size:clamp(10px,1.4vw,15px) !important; }
+            .nb-vs { font-size:clamp(26px,5vw,60px) !important; }
+        }
+
         /* ベイブレード名の個別表示枠（画面最下部、左右端） */
         .beyblade-box {
             position: fixed;
@@ -1033,14 +1043,20 @@
 
         function toggleStatsDisplay() {
             blurFocus();
-            // 戦績ブロックの表示切替のみ
             let anyVisible = false;
             document.querySelectorAll('.player-stats-block').forEach(block => {
                 block.style.display = (block.style.display === 'none') ? 'flex' : 'none';
                 if (block.style.display !== 'none') anyVisible = true;
             });
+            // 👁️ボタンと状態を同期（ベイブレード名ボックスの表示判定に使われるため）
+            isStatsVisible = anyVisible;
+            document.querySelectorAll('.beyblade-box').forEach(b => {
+                b.style.display = (isStatsVisible && b.textContent.trim()) ? 'block' : 'none';
+            });
             const sbtn = document.getElementById('btn-stats');
             if (sbtn) sbtn.classList.toggle('active', anyVisible);
+            const vbtn = document.getElementById('btn-visibility');
+            if (vbtn) vbtn.classList.toggle('active', anyVisible);
         }
 
         // ===== FPS計測オーバーレイ =====
@@ -1383,8 +1399,10 @@
                     replayVideo.pause();
                     clearReplayLoop();
                     applyGameplayScore(cmd);
-                    updateReplaySeekUI();
-                    updateStatusMsg("‖ STOP");
+                    if (isReplayMode) {
+                        updateReplaySeekUI();
+                        updateStatusMsg("‖ STOP");
+                    }
                     return;
                 }
                 if (cmd === 'REPLAY_REV') {
@@ -1590,9 +1608,9 @@
                             resetGame();
                         }
                         if (data.winMode) {
-                            const modeMap = { '1':1, '2':2, '3':3, '4':4 };
+                            const modeMap = { '1':1, '2':2, '2+':99, '3':3, '4':4, '10':10 };
                             const lim = modeMap[data.winMode];
-                            if (lim) {
+                            if (lim !== undefined) {
                                 winPointMode = data.winMode;
                                 winScoreLimit = lim;
                                 document.getElementById('btn-winpoint').innerText = winPointMode;
@@ -1618,6 +1636,12 @@
             peer.on('disconnected', () => {
                 document.getElementById('link-dot').classList.remove('connected');
                 peer.reconnect();
+            });
+
+            peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                document.getElementById('link-dot').classList.remove('connected');
+                document.getElementById('link-text').innerText = 'ERROR: ' + (err.type || err.message || 'PEER ERR');
             });
         }
         initPeer();
@@ -1656,9 +1680,9 @@
             document.getElementById('nb-stage-round').textContent = stageText;
             const mkPlayerHtml = (name, members, color) => {
               const memberLine = members && members.length > 0
-                ? `<div style="font-size:clamp(15px,2.2vw,26px);font-weight:400;opacity:0.7;margin-top:0.3em;letter-spacing:0.05em;">${members.join('　/　')}</div>`
+                ? `<div style="font-size:clamp(15px,2.2vw,26px);font-weight:400;opacity:0.7;margin-top:0.3em;letter-spacing:0.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${members.join('　/　')}</div>`
                 : '';
-              return `<div style="font-size:clamp(26px,6vw,90px);font-weight:900;line-height:1.15;letter-spacing:0.05em;">${name}</div>${memberLine}`;
+              return `<div style="font-size:clamp(26px,6vw,90px);font-weight:900;line-height:1.15;letter-spacing:0.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
             };
             document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members, '#0ea5e9');
             document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members, '#ec4899');

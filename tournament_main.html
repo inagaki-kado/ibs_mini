@@ -374,7 +374,11 @@
             ▶ 決勝トーナメント開始
           </button>
           <div class="flex justify-between items-center mb-2">
-            <div class="font-sf text-cyber-pink text-xs">決勝ブラケット</div>
+            <div class="flex items-center gap-2">
+              <div class="font-sf text-cyber-pink text-xs">決勝ブラケット</div>
+              <button type="button" id="tv-btn-final-bracket" onclick="toggleFinalBracketTvMode()" style="touch-action:manipulation"
+                class="w-7 h-7 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-xs transition-all hover:shadow-[0_0_10px_#0ea5e9]" title="HUD表示">📺</button>
+            </div>
             <button type="button" id="btn-final-swap" onclick="toggleFinalSwapMode()" style="touch-action:manipulation"
               class="hidden text-xs bg-cyber-dark border border-cyber-pink text-cyber-pink px-3 py-1 rounded font-bold transition-colors active:scale-95">
               🔄 R1 手動入替
@@ -1239,6 +1243,8 @@
     let peer = null; let conn = null;
     let isTvMode_active = false;
     let isTvMode_results = false;
+    let isFinalBracketTvMode = false;
+    let finalResultsOverlaySent = false;
     let activeNextBattleId = null;
     const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
     let hudPreviewBackground = 'torabo_logo.png';
@@ -1639,6 +1645,9 @@
         showBtn.className = 'w-full mt-3 bg-yellow-400 text-cyber-bg py-3 rounded-full font-bold font-sf text-sm animate-pulse active:scale-95';
         showBtn.onclick = () => showFinalResults();
         area.appendChild(showBtn);
+      }
+      if (isFinalBracketTvMode && conn && conn.open) {
+        conn.send({ type: 'SHOW_OVERLAY', html: buildTvFinalBracketHtml() });
       }
     }
 
@@ -4443,6 +4452,79 @@
         </div>`;
     }
 
+    function buildTvFinalBracketHtml() {
+      const C = { bg: '#0a0e17', card: '#0d131f', border: '#1e293b', blue: '#0ea5e9', pink: '#ec4899', green: '#22c55e', yellow: '#facc15', orange: '#f97316', text: '#e2e8f0' };
+      const tName = tournamentName || '大会';
+      const bgLogoHtml = (hudPreviewBackground && hudPreviewBackground !== 'none')
+        ? `<img style="position:absolute;top:50%;left:50%;width:100vw;height:100vh;object-fit:cover;opacity:0.18;pointer-events:none;z-index:0;transform:translate(-50%,-50%) scale(0.8)" src="${hudPreviewBackground}" alt="" />`
+        : '';
+      const renderMatch = (match) => {
+        if (!match) return '';
+        const n1 = match.t1 ? match.t1.name : 'TBD';
+        const n2 = match.t2 ? match.t2.name : 'TBD';
+        let c1 = 'tv-p left', c2 = 'tv-p right';
+        if (match.winner === 1) { c1 = 'tv-p win-left'; c2 = 'tv-p lose-right'; }
+        if (match.winner === 2) { c1 = 'tv-p lose-left'; c2 = 'tv-p win-right'; }
+        const mid = match.score ? `<span class="tv-score">${match.score}</span>` : `<span class="tv-vs">VS</span>`;
+        return `<div class="tv-match"><span class="${c1}">${n1}</span>${mid}<span class="${c2}">${n2}</span></div>`;
+      };
+      let roundsHtml = '';
+      if (finalBracketRounds[0] && finalBracketRounds[0].length) {
+        roundsHtml += `<div class="tv-round-title" style="color:${C.green}">SEMIFINALS</div>`;
+        finalBracketRounds[0].forEach(m => { roundsHtml += renderMatch(m); });
+      }
+      if (finalBracketRounds[1] && finalBracketRounds[1].length) {
+        roundsHtml += `<div class="tv-round-title" style="color:${C.yellow};margin-top:6px">GRAND FINAL</div>`;
+        finalBracketRounds[1].forEach(m => { roundsHtml += renderMatch(m); });
+      }
+      if (finalThirdPlaceMatch.t1 && finalThirdPlaceMatch.t2) {
+        roundsHtml += `<div class="tv-round-title" style="color:${C.orange};margin-top:6px">3RD PLACE MATCH</div>`;
+        roundsHtml += renderMatch(finalThirdPlaceMatch);
+      }
+      return `<style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
+        * { box-sizing:border-box; }
+        .tv-wrap { position:relative; overflow:hidden; background:${C.bg}; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; font-family:'Chakra Petch',sans-serif; color:${C.text}; }
+        .tv-wrap > * { position:relative; z-index:1; }
+        .tv-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.8vw,16px); color:${C.blue}; text-align:center; letter-spacing:4px; margin-bottom:16px; text-shadow:0 0 10px ${C.blue}; }
+        .tv-card { border:1px solid ${C.pink}; border-radius:8px; overflow:hidden; background:${C.card}; box-shadow:0 0 12px rgba(236,72,153,0.2); width:100%; max-width:500px; }
+        .tv-card-title { background:rgba(236,72,153,0.15); border-bottom:1px solid ${C.pink}; text-align:center; padding:8px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.8vw,16px); font-weight:900; color:${C.yellow}; letter-spacing:3px; text-shadow:0 0 8px ${C.yellow}; }
+        .tv-round-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; padding:8px 12px 4px; }
+        .tv-match { display:flex; align-items:center; gap:5px; padding:5px 10px; margin:3px 8px; background:rgba(0,0,0,0.3); border-radius:5px; border:1px solid ${C.border}; }
+        .tv-p { font-style:italic; font-weight:700; font-size:clamp(13px,2vw,17px); text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+        .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; }
+        .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; }
+        .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; }
+        .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; }
+        .tv-p.lose-left { text-align:right; color:#475569; text-decoration:line-through; }
+        .tv-p.lose-right { text-align:left; color:#475569; text-decoration:line-through; }
+        .tv-vs { font-family:'Orbitron',sans-serif; font-size:10px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
+        .tv-score { font-family:'Orbitron',sans-serif; font-size:11px; color:${C.orange}; flex-shrink:0; white-space:nowrap; }
+      </style>
+      <div class="tv-wrap">
+        ${bgLogoHtml}
+        <div class="tv-title">${tName}</div>
+        <div class="tv-card">
+          <div class="tv-card-title">FINAL STAGE</div>
+          ${roundsHtml}
+          <div style="height:8px"></div>
+        </div>
+      </div>`;
+    }
+
+    function toggleFinalBracketTvMode() {
+      isFinalBracketTvMode = !isFinalBracketTvMode;
+      const btn = document.getElementById('tv-btn-final-bracket');
+      if (isFinalBracketTvMode) {
+        if (!conn || !conn.open) { isFinalBracketTvMode = false; return showAlert('score.html（HUD）が未接続です'); }
+        conn.send({ type: 'SHOW_OVERLAY', html: buildTvFinalBracketHtml() });
+        if (btn) btn.style.cssText = 'background:#0ea5e9;color:#fff;box-shadow:0 0 16px #0ea5e9;border-color:#0ea5e9;';
+      } else {
+        if (conn && conn.open) conn.send({ type: 'HIDE_OVERLAY' });
+        if (btn) btn.style.cssText = '';
+      }
+    }
+
     function toggleTvMode(mode) {
       const colorBlue = 'background:#0ea5e9;color:#fff;box-shadow:0 0 16px #0ea5e9,0 0 32px #0ea5e9;border-color:#0ea5e9;';
       if (mode === 'active') {
@@ -4528,6 +4610,8 @@
       document.getElementById('resultsModal').classList.add('flex');
     }
     function closeFinalResults() {
+      if (finalResultsOverlaySent && conn && conn.open) conn.send({ type: 'HIDE_OVERLAY' });
+      finalResultsOverlaySent = false;
       document.getElementById('resultsModal').classList.add('hidden');
       document.getElementById('resultsModal').classList.remove('flex');
     }
@@ -4600,6 +4684,7 @@
     function sendFinalResultsToHUD() {
       if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です');
       conn.send({ type: 'SHOW_OVERLAY', html: buildFinalResultsHtml() });
+      finalResultsOverlaySent = true;
     }
 
     function openExportModal() {
@@ -4976,7 +5061,8 @@
     function saveBeybladeEdit(index) {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       const input = document.getElementById(`editBeyName${index}`);
-      
+
+      if (!participant) return;
       if (input && input.value.trim()) {
         participant.beyblades[index].name = input.value.trim();
         currentEditingBeybladeIndex = -1;
@@ -5180,7 +5266,7 @@
      * パーツを選択
      */
     function selectPart(categoryId, part) {
-      currentBeybladeSelection[categoryId] = part.hudName || part.selectionName;
+      currentBeybladeSelection[categoryId] = part.hudName;
       beybladeSelectionStep++;
       showNextPartSelection();
     }
