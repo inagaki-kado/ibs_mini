@@ -437,9 +437,10 @@
         }
         #xtreme-flash.active { animation: xtreme-glow 1.2s ease-out forwards; }
         .nb-vs-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 3vw, 40px); margin: 2rem 0; }
-        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(26px, 6vw, 90px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
+        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 110px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
         .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
         .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
+        .nb-name-fit { display: block; font-size: clamp(40px, 8vw, 110px); font-weight: 900; line-height: 1.15; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
 
         /* iPhone landscape / compact height — NEXT BATTLE 縮小モード */
@@ -448,7 +449,6 @@
             #nb-stage-round { font-size: clamp(9px,1.2vw,13px) !important; margin-bottom:0.5rem !important; }
             .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
             .nb-player { font-size:clamp(18px,4vw,50px) !important; }
-            .nb-player > div:first-child { font-size:clamp(18px,4vw,50px) !important; }
             .nb-player > div:last-child { font-size:clamp(10px,1.4vw,15px) !important; }
             .nb-vs { font-size:clamp(26px,5vw,60px) !important; }
         }
@@ -1007,7 +1007,7 @@
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
-                if (!chunks.length) { updateStatusMsg("NO REPLAY", 1500); return; }
+                if (!chunks || chunks.length < 3) { updateStatusMsg("録画データなし", 2000); return; }
                 isReplayMode = true;
                 replaySpeedIdx = -1;
                 resetReplayExtras();
@@ -1020,12 +1020,27 @@
                 // リプレイ中はベイブレード名を非表示
                 document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
                 updateStatusMsg("▶ 1.0"); replayVideo.load();
-                replayVideo.oncanplay = () => {
-                    replayVideo.currentTime = Math.max(0, replayVideo.duration - 15);
+                const startPlayback = () => {
+                    const dur = replayVideo.duration;
+                    replayVideo.currentTime = (isFinite(dur) && dur > 0) ? Math.max(0, dur - 15) : 0;
                     replayVideo.playbackRate = 1.0;
-                    replayVideo.play();
+                    replayVideo.play().catch(() => {});
                     updateReplaySeekUI();
                 };
+                replayVideo.oncanplay = () => {
+                    const dur = replayVideo.duration;
+                    if (!isFinite(dur) || dur <= 0) {
+                        // iOS Safari でdurationがInfinityになる場合: 大きくシークして長さを確定させる
+                        replayVideo.currentTime = 1e6;
+                        replayVideo.ontimeupdate = () => { replayVideo.ontimeupdate = null; startPlayback(); };
+                    } else {
+                        startPlayback();
+                    }
+                };
+                // 保険: 1.5秒たっても再生されなければ先頭から強制再生
+                setTimeout(() => {
+                    if (isReplayMode && replayVideo.paused) { try { replayVideo.currentTime = 0; replayVideo.play().catch(() => {}); } catch(e){} }
+                }, 1500);
             } else {
                 stopReplay();
             }
@@ -1413,7 +1428,8 @@
                 if (cmd === 'REPLAY_LATEST') {
                     replaySpeedIdx = -1;
                     clearReplayLoop();
-                    replayVideo.currentTime = Math.max(0, replayVideo.duration - 15);
+                    const latestDur = replayVideo.duration;
+                    replayVideo.currentTime = (isFinite(latestDur) && latestDur > 0) ? Math.max(0, latestDur - 15) : 0;
                     replayVideo.playbackRate = 1.0;
                     replayVideo.play().then(() => { updateReplaySeekUI(); updateStatusMsg("▶ 1.0"); });
                 }
@@ -1648,6 +1664,23 @@
 
         const DEFAULT_NEXT_BATTLE_LOGO = 'torabo_logo.png';
 
+        function fitNbName(id) {
+            const container = document.getElementById(id);
+            const el = container && container.querySelector('.nb-name-fit');
+            if (!el) return;
+            el.style.fontSize = '';
+            const minSize = 24;
+            const avail = container.clientWidth;
+            if (el.scrollWidth > avail) {
+                let size = Math.max(minSize, Math.floor(parseFloat(window.getComputedStyle(el).fontSize) * avail / el.scrollWidth));
+                el.style.fontSize = size + 'px';
+                while (el.scrollWidth > avail && size > minSize) {
+                    size -= 1;
+                    el.style.fontSize = size + 'px';
+                }
+            }
+        }
+
         function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = []) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
@@ -1682,11 +1715,13 @@
               const memberLine = members && members.length > 0
                 ? `<div style="font-size:clamp(15px,2.2vw,26px);font-weight:400;opacity:0.7;margin-top:0.3em;letter-spacing:0.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${members.join('　/　')}</div>`
                 : '';
-              return `<div style="font-size:clamp(26px,6vw,90px);font-weight:900;line-height:1.15;letter-spacing:0.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
+              return `<div class="nb-name-fit" style="white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
             };
             document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members, '#0ea5e9');
             document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members, '#ec4899');
             overlay.classList.remove('hidden');
+            fitNbName('nb-p1');
+            fitNbName('nb-p2');
         }
         function hideNextBattle() {
             document.getElementById('next-battle-overlay').classList.add('hidden');
