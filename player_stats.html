@@ -2085,13 +2085,12 @@ function renderResults(players) {
           const barColor  = alpha < 1 ? x.color + '80' : x.color;
           const textColor = alpha < 1 ? x.color + 'b3' : x.color;
           return `
-            <div style="display:grid;grid-template-columns:48px 1fr 110px;align-items:center;gap:10px;">
+            <div style="display:grid;grid-template-columns:48px 52px 52px 1fr;align-items:center;gap:10px;">
               <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${textColor};">${x.k}</div>
+              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};">${c}回</div>
+              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;opacity:${alpha};font-size:12px;">${p}%</div>
               <div style="height:10px;background:#111827;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">
                 <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${barColor};"></div>
-              </div>
-              <div style="text-align:right;font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};">
-                ${c}回 <span style="opacity:.75;">(${p}%)</span>
               </div>
             </div>
           `;
