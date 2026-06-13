@@ -601,7 +601,7 @@ nav {
 .fill-pink   { background: linear-gradient(90deg, var(--neon-pink), rgba(236,72,153,0.6)); }
 .winrate-pct {
   font-family: 'Orbitron', monospace; font-size: 0.72rem;
-  font-weight: 700; width: 44px; text-align: right; flex-shrink: 0;
+  font-weight: 700; width: 52px; text-align: right; flex-shrink: 0;
 }
 
 /* ─── TOP 3 BEYBLADE ─── */
@@ -2163,24 +2163,24 @@ function renderResults(players) {
           <div class="winrate-bars">
             <div class="winrate-row">
               <div class="winrate-row-label">総合</div>
+              <div class="winrate-pct" style="color:var(--neon-green)">${pct(wr)}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-green" data-pct="${wrPct}"></div>
               </div>
-              <div class="winrate-pct" style="color:var(--neon-green)">${pct(wr)}</div>
             </div>
             <div class="winrate-row">
               <div class="winrate-row-label">Extreme</div>
+              <div class="winrate-pct" style="color:var(--neon-blue)">${pct(wrEx)}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-blue" data-pct="${wrExPct}"></div>
               </div>
-              <div class="winrate-pct" style="color:var(--neon-blue)">${pct(wrEx)}</div>
             </div>
             <div class="winrate-row">
               <div class="winrate-row-label">Infinity</div>
+              <div class="winrate-pct" style="color:var(--neon-pink)">${pct(wrInf)}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-pink" data-pct="${wrInfPct}"></div>
               </div>
-              <div class="winrate-pct" style="color:var(--neon-pink)">${pct(wrInf)}</div>
             </div>
           </div>
         </div>
