@@ -1668,6 +1668,32 @@ function calcKimariteStat(playerName, stadiumFilter = null) {
   return { total, counts, pct, totalRcv, countsRcv, pctRcv };
 }
 
+/**
+ * 全ブレーダーの決まり手を合計集計（勝利側のみ）
+ * stadiumFilter: null=総合, 'extreme', 'infinity'
+ */
+function calcGlobalKimariteStat(stadiumFilter) {
+  if (!matchDetailsByPlayer) return null;
+  const counts = { XF: 0, BF: 0, OF: 0, SF: 0 };
+  let total = 0;
+  Object.values(matchDetailsByPlayer).forEach(function(details) {
+    (details || []).forEach(function(d) {
+      if (!d || !d.isWin || !d.kimarite) return;
+      if (stadiumFilter && normalizeStadium(d.stadium) !== stadiumFilter) return;
+      d.kimarite.split(',').map(function(s) { return s.trim().toUpperCase(); })
+        .filter(Boolean).forEach(function(k) {
+          if (Object.prototype.hasOwnProperty.call(counts, k)) { counts[k]++; total++; }
+        });
+    });
+  });
+  if (total === 0) return null;
+  const pct = {};
+  Object.keys(counts).forEach(function(k) {
+    pct[k] = Math.round((counts[k] / total) * 100);
+  });
+  return { total, counts, pct };
+}
+
 function switchFinishTypeTab(tabId, tab) {
   ['all', 'ex', 'inf'].forEach(function(t) {
     var el = document.getElementById(tabId + '_' + t);
@@ -1677,6 +1703,18 @@ function switchFinishTypeTab(tabId, tab) {
   btns.forEach(function(b) {
     b.style.color = b.dataset.ftval === tab ? '#e2e8f0' : '#94a3b8';
     b.style.borderBottom = b.dataset.ftval === tab ? '2px solid #0ea5e9' : '2px solid transparent';
+  });
+}
+
+function switchGlobalFt(tab) {
+  ['all', 'ex', 'inf'].forEach(function(t) {
+    var el = document.getElementById('gt_top_' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+  });
+  document.querySelectorAll('[data-gttab]').forEach(function(b) {
+    var active = b.dataset.gtval === tab;
+    b.style.color = active ? '#e2e8f0' : '#94a3b8';
+    b.style.borderBottom = active ? '2px solid #0ea5e9' : '2px solid transparent';
   });
 }
 
@@ -1826,6 +1864,64 @@ function renderTopStats(players) {
     return keys.size;
   })();
 
+  const FINISH_DEFS_G = [
+    { k: 'XF', label: 'XTREME',   color: '#ff0055' },
+    { k: 'BF', label: 'BURST',    color: '#ffd700' },
+    { k: 'OF', label: 'OVER',     color: '#ffaa00' },
+    { k: 'SF', label: 'SURVIVOR', color: '#0ea5e9' },
+  ];
+  const gkt    = calcGlobalKimariteStat();
+  const gktEx  = calcGlobalKimariteStat('extreme');
+  const gktInf = calcGlobalKimariteStat('infinity');
+
+  const buildGlobalRows = function(ftData) {
+    if (!ftData) {
+      return '<div style="color:#475569;font-size:11px;font-family:\'Noto Sans JP\',sans-serif;text-align:center;padding:8px 0;">データなし</div>';
+    }
+    return FINISH_DEFS_G.filter(function(x) { return (ftData.counts[x.k] || 0) > 0; })
+      .map(function(x) {
+        const c = ftData.counts[x.k] || 0;
+        const p = ftData.pct[x.k]    || 0;
+        return '<div style="display:grid;grid-template-columns:60px 48px 44px 1fr;align-items:center;gap:8px;margin-bottom:8px;">'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:9px;font-weight:800;letter-spacing:.06em;color:' + x.color + ';">' + x.k + '</div>'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:11px;font-weight:700;color:#e2e8f0;">' + c + '回</div>'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:10px;font-weight:700;color:#94a3b8;">' + p + '%</div>'
+          + '<div style="height:8px;background:#0a0e17;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">'
+          +   '<div style="height:100%;width:' + Math.max(0, Math.min(p, 100)) + '%;background:' + x.color + ';"></div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+  };
+
+  const globalFtHtml = (gkt || gktEx || gktInf) ? `
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:14px;margin-top:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-family:'Orbitron',monospace;font-size:9px;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">CLUB FINISH RATE</div>
+        <div style="font-family:'Noto Sans JP',sans-serif;font-size:10px;color:#475569;">全ブレーダー合計</div>
+      </div>
+      <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:12px;">
+        ${[
+          { val: 'all', label: '総合',     total: gkt    ? gkt.total    : 0 },
+          { val: 'ex',  label: 'Extreme',  total: gktEx  ? gktEx.total  : 0 },
+          { val: 'inf', label: 'Infinity', total: gktInf ? gktInf.total : 0 },
+        ].map(function(tab, i) {
+          return '<button data-gttab data-gtval="' + tab.val + '" onclick="switchGlobalFt(\'' + tab.val + '\')"'
+            + ' style="background:none;border:none;cursor:pointer;padding:5px 12px;'
+            + 'font-family:\'Orbitron\',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;'
+            + 'color:' + (i === 0 ? '#e2e8f0' : '#94a3b8') + ';'
+            + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
+            + 'touch-action:manipulation;">'
+            + tab.label
+            + (tab.total > 0 ? '<span style="font-size:8px;color:#475569;margin-left:4px;">' + tab.total + '</span>' : '')
+            + '</button>';
+        }).join('')}
+      </div>
+      <div id="gt_top_all" style="display:block;">${buildGlobalRows(gkt)}</div>
+      <div id="gt_top_ex"  style="display:none;">${buildGlobalRows(gktEx)}</div>
+      <div id="gt_top_inf" style="display:none;">${buildGlobalRows(gktInf)}</div>
+    </div>
+  ` : '';
+
   // TOP 5
   const top30 = players.slice(0, 30);
   const col1 = top30.slice(0, 10);
@@ -1877,6 +1973,7 @@ function renderTopStats(players) {
         </div>
       `).join('')}
     </div>
+    ${globalFtHtml}
   `;
 }
 
