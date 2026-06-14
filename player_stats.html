@@ -92,7 +92,7 @@ nav {
 .nav-links { display: flex; gap: 1.6rem; list-style: none; }
 .nav-links a {
   font-family: 'Rajdhani', sans-serif; font-weight: 600;
-  font-size: 0.88rem; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--text-dim); text-decoration: none;
   transition: color 0.2s, text-shadow 0.2s;
 }
@@ -118,7 +118,7 @@ nav {
   background: linear-gradient(180deg, rgba(0,255,136,0.04) 0%, transparent 100%);
 }
 .page-header-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.9rem;
   font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
   color: var(--neon-green); margin-bottom: 0.4rem;
 }
@@ -151,7 +151,7 @@ nav {
   text-align: center;
 }
 .tower-subtitle {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8125rem;
   font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--text-dim); text-align: center; margin-top: -0.5rem;
 }
@@ -205,7 +205,7 @@ nav {
   cursor: default;
   transition: all 0.3s ease;
   clip-path: polygon(4px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
-  min-height: 4px;
+  min-height: 5px;
 }
 
 /* セグメント内のラベルは非表示（軸ラベルを使う） */
@@ -217,7 +217,7 @@ nav {
   right: 6px;           /* 軸の右端に揃える */
   transform: translateY(-50%);
   font-family: 'Orbitron', monospace;
-  font-size: 0.6rem; font-weight: 700;
+  font-size: 0.8125rem; font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
   line-height: 1;
@@ -261,7 +261,7 @@ nav {
 .zone-90s.active-floor    { background: rgba(239,68,68,0.3);    border-left: 3px solid #ef4444;  box-shadow: inset 0 0 20px rgba(239,68,68,0.3),   0 0 30px rgba(239,68,68,0.6); }
 .zone-xf.active-floor     { border-left: 3px solid #f59e0b; }
 
-.floor-seg.active-floor .floor-label { opacity: 1; font-size: 0.62rem; }
+.floor-seg.active-floor .floor-label { opacity: 1; font-size: 0.8125rem; }
 
 @keyframes floorPulse {
   0%, 100% { filter: brightness(1); }
@@ -304,7 +304,7 @@ nav {
 }
 .tower-indicator-label {
   font-family: 'Orbitron', monospace;
-  font-size: 0.68rem; font-weight: 700;
+  font-size: 0.8125rem; font-weight: 700;
   white-space: nowrap;
   text-shadow: 0 0 8px currentColor;
 }
@@ -312,11 +312,11 @@ nav {
 /* Zone legend */
 .zone-legend {
   width: 100%;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; gap: 6px;
 }
 .zone-legend-item {
   display: flex; align-items: center; gap: 8px;
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8125rem;
   font-weight: 600; color: var(--text-dim);
 }
 .zone-dot {
@@ -336,7 +336,7 @@ nav {
 /* Search box */
 .search-section {}
 .search-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
   color: var(--neon-green); margin-bottom: 0.8rem;
 }
@@ -368,7 +368,7 @@ nav {
 }
 .search-btn {
   background: var(--neon-green); color: var(--bg);
-  font-family: 'Orbitron', monospace; font-size: 0.78rem;
+  font-family: 'Orbitron', monospace; font-size: 0.875rem;
   font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   border: none; cursor: pointer;
   padding: 0 1.5rem;
@@ -462,7 +462,7 @@ nav {
 /* 数字+F を下揃えで中央配置 */
 .rank-text { display: flex; align-items: flex-end; line-height: 1; gap: 1px; }
 .rank-text .rank-num { font-size: 1.1rem; }
-.rank-text .rank-f   { font-size: 0.9rem; }
+.rank-text .rank-f   { font-size: 1rem; }
 .player-rank-icon::after {
   content: '';
   position: absolute; inset: -4px;
@@ -483,7 +483,7 @@ nav {
   margin-bottom: 0.2rem;
 }
 .player-matches {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.85rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 600; letter-spacing: 0.15em;
   color: var(--text-dim);
 }
@@ -516,22 +516,22 @@ nav {
 }
 
 /* Card body */
-.card-body { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.card-body { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.4rem; }
 
 /* Stats grid — BP & 勝率を横並び、同サイズ */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 .stat-item {
   background: rgba(4,7,15,0.6);
   border: 1px solid rgba(0,255,136,0.1);
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.25rem;
   clip-path: polygon(6px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
 }
 .stat-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8125rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--text-dim); margin-bottom: 0.3rem;
 }
@@ -544,16 +544,16 @@ nav {
 }
 /* スタジアム別サブ */
 .stat-sub-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.6rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8125rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--text-dim); margin-top: 0.55rem; margin-bottom: 0.3rem;
+  color: var(--text-dim); margin-top: 0.65rem; margin-bottom: 0.35rem;
   border-top: 1px solid rgba(255,255,255,0.07);
-  padding-top: 0.4rem;
+  padding-top: 0.5rem;
 }
-.stat-sub-rows { display: flex; flex-direction: column; gap: 0.25rem; }
+.stat-sub-rows { display: flex; flex-direction: column; gap: 0.35rem; }
 .stat-sub-row {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: 700;
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700;
 }
 .stat-sub-key { color: var(--text-dim); min-width: 30px; }
 .stat-sub-val-blue  { color: var(--neon-blue); }
@@ -575,14 +575,14 @@ nav {
   text-shadow: var(--glow-yellow);
 }
 .bp-unit {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.85rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 600; letter-spacing: 0.15em; color: var(--text-dim);
 }
 
 /* Win rate bar */
 .winrate-section {}
 .winrate-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8125rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--text-dim); margin-bottom: 0.6rem;
   display: flex; justify-content: space-between; align-items: center;
@@ -590,7 +590,7 @@ nav {
 .winrate-bars { display: flex; flex-direction: column; gap: 0.5rem; }
 .winrate-row { display: flex; align-items: center; gap: 0.75rem; }
 .winrate-row-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.7rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.9rem;
   font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--text-dim); width: 70px; flex-shrink: 0;
 }
@@ -608,29 +608,29 @@ nav {
 .fill-blue   { background: linear-gradient(90deg, var(--neon-blue), rgba(14,165,233,0.6)); }
 .fill-pink   { background: linear-gradient(90deg, var(--neon-pink), rgba(236,72,153,0.6)); }
 .winrate-pct {
-  font-family: 'Orbitron', monospace; font-size: 0.72rem;
+  font-family: 'Orbitron', monospace; font-size: 1rem;
   font-weight: 700; width: 52px; text-align: right; flex-shrink: 0;
 }
 
 /* ─── TOP 3 BEYBLADE ─── */
 .beys-block { margin-top: 1rem; }
 .beys-header {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.875rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--neon-green); margin-bottom: 0.6rem;
 }
 .beys-badges-row {
-  display: flex; gap: 0.6rem; flex-wrap: wrap;
+  display: flex; gap: 0.75rem; flex-wrap: wrap;
 }
 .bey-badge {
   display: flex; align-items: center; gap: 6px;
-  padding: 0.4rem 0.8rem;
-  font-family: 'Noto Sans JP', sans-serif; font-size: 0.75rem; font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 1rem; font-weight: 700;
   border: 1px solid currentColor;
   background: rgba(4,7,15,0.6);
   clip-path: polygon(6px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
 }
-.bey-rank-num { font-family: 'Orbitron', monospace; font-size: 0.65rem; opacity: 0.9; }
+.bey-rank-num { font-family: 'Orbitron', monospace; font-size: 0.8125rem; opacity: 0.9; }
 .bey-badge-1 { color: var(--neon-yellow); border-color: rgba(250,204,21,0.5); box-shadow: inset 0 0 12px rgba(250,204,21,0.15); }
 .bey-badge-2 { color: var(--neon-white); border-color: rgba(226,232,240,0.5); box-shadow: inset 0 0 12px rgba(226,232,240,0.15); }
 .bey-badge-3 { color: var(--neon-orange); border-color: rgba(249,115,22,0.5); box-shadow: inset 0 0 12px rgba(249,115,22,0.15); }
@@ -658,7 +658,7 @@ nav {
   margin-bottom: 0.25rem;
 }
 .rival-label {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.78rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 600; letter-spacing: 0.1em;
   color: var(--text-dim);
 }
@@ -676,7 +676,7 @@ nav {
   border-bottom-color: var(--neon-pink);
 }
 .rival-name .rival-jump-badge {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.6rem; font-weight: 700;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.875rem; font-weight: 700;
   letter-spacing: 0.06em; color: var(--neon-pink);
   border: 1px solid rgba(236,72,153,0.4);
   padding: 1px 5px;
@@ -685,13 +685,13 @@ nav {
   transition: opacity 0.2s;
 }
 .rival-record {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.92rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 600; color: var(--text-dim); letter-spacing: 0.05em;
 }
 /* 参加履歴ログ */
 .history-block { margin-top: 1rem; }
 .history-header {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.875rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--neon-blue); margin-bottom: 0.6rem;
 }
@@ -699,9 +699,9 @@ nav {
   background: rgba(4,7,15,0.7);
   border: 1px solid rgba(14,165,233,0.15);
   border-left: 3px solid rgba(14,165,233,0.5);
-  padding: 0.75rem 1rem;
+  padding: 0.9rem 1.15rem;
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 0.82rem; font-weight: 400;
+  font-size: 1rem; font-weight: 400;
   color: var(--text-dim);
   line-height: 1.8;
   max-height: 200px;
@@ -709,7 +709,7 @@ nav {
   clip-path: polygon(4px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
 }
 .awards-header {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.68rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.875rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--neon-yellow); margin-bottom: 0.6rem;
 }
@@ -722,9 +722,9 @@ nav {
   background: rgba(4,7,15,0.7);
   border: 1px solid rgba(250,204,21,0.15);
   border-left: 3px solid rgba(250,204,21,0.5);
-  padding: 0.75rem 1rem;
+  padding: 0.9rem 1.15rem;
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 0.82rem; font-weight: 400;
+  font-size: 1rem; font-weight: 400;
   color: var(--text-dim);
   line-height: 1.8;
   max-height: 200px;
@@ -734,8 +734,8 @@ nav {
 .awards-log br + br { display: block; margin: 0.3rem 0; content: ''; }
 .award-badge {
   display: flex; align-items: center; gap: 6px;
-  padding: 0.4rem 0.8rem;
-  font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  font-family: 'Orbitron', monospace; font-size: 0.875rem; font-weight: 700;
   border: 1px solid currentColor;
   clip-path: polygon(5px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
 }
@@ -754,7 +754,7 @@ nav {
   text-shadow: var(--glow-yellow);
 }
 .bp-unit {
-  font-family: 'Rajdhani', sans-serif; font-size: 0.85rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 600; letter-spacing: 0.15em; color: var(--text-dim);
 }
 
@@ -806,7 +806,7 @@ nav {
     justify-content: center;
     gap: 6px 14px;
   }
-  .zone-legend-item { font-size: 0.68rem; }
+  .zone-legend-item { font-size: 0.8125rem; }
 }
 
 @media (max-width: 540px) {
@@ -826,42 +826,42 @@ nav {
 }
 .about-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0.75rem 1.2rem; cursor: pointer;
-  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem;
+  padding: 0.9rem 1.4rem; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem;
   font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
   color: var(--neon-green);
   user-select: none; transition: background 0.15s;
 }
 .about-header:hover { background: rgba(0,255,136,0.05); }
 .about-arrow {
-  font-size: 0.6rem; transition: transform 0.25s ease;
+  font-size: 0.875rem; transition: transform 0.25s ease;
   color: var(--neon-green);
 }
 .about-arrow.open { transform: rotate(180deg); }
 .about-body {
   display: none;
-  padding: 0 1.4rem 1.2rem;
+  padding: 0 1.4rem 1.4rem;
   border-top: 1px solid rgba(0,255,136,0.08);
 }
 .about-body.open { display: block; }
 .about-intro {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 1rem;
   line-height: 1.85; color: var(--text-dim);
-  margin-top: 1rem; margin-bottom: 0.5rem;
+  margin-top: 1rem; margin-bottom: 0.65rem;
 }
-.about-item { margin-top: 1rem; }
+.about-item { margin-top: 1rem; margin-bottom: 0.25rem; }
 .about-item-title {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 0.82rem;
-  font-weight: 700; color: var(--text); margin-bottom: 0.3rem;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 1rem;
+  font-weight: 700; color: var(--text); margin-bottom: 4px;
 }
 .about-item-body {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 0.78rem;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 1rem;
   line-height: 1.85; color: var(--text-dim);
 }
 .about-note {
-  font-size: 0.74rem; color: var(--text-dim);
+  font-size: 0.875rem; color: var(--text-dim);
   border-left: 2px solid rgba(0,255,136,0.3);
-  padding: 0.4rem 0.8rem; margin-top: 0.5rem;
+  padding: 0.5rem 0.9rem; margin-top: 0.65rem;
   background: rgba(0,255,136,0.03);
 }
 
@@ -884,11 +884,11 @@ nav {
 .btn-share-stats {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 10px 18px;
   border-radius: 6px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 1px;
   cursor: pointer;
@@ -916,9 +916,9 @@ nav {
   background: rgba(8,13,26,0.95);
   border: 1px solid rgba(0,255,136,0.4);
   border-radius: 8px;
-  padding: 12px 22px;
+  padding: 14px 24px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--neon-green);
   box-shadow: 0 0 20px rgba(0,255,136,0.15);
   opacity: 0;
@@ -940,7 +940,7 @@ nav {
 }
 .bp-chart-title {
   font-family: 'Orbitron', monospace;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--neon-blue);
@@ -963,8 +963,8 @@ nav {
 }
 .bp-toggle-btn {
   font-family: 'Orbitron', monospace;
-  font-size: 0.55rem;
-  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 4px;
   border: 1px solid rgba(14,165,233,0.35);
   background: transparent;
@@ -993,18 +993,18 @@ nav {
 .ts-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 .ts-stat-card {
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 .ts-stat-label {
   font-family: 'Orbitron', monospace;
-  font-size: 9px;
+  font-size: 13px;
   color: #475569;
   letter-spacing: .14em;
   margin-bottom: 6px;
@@ -1016,24 +1016,24 @@ nav {
   color: #e2e8f0;
 }
 .ts-stat-unit {
-  font-size: 11px;
+  font-size: 14px;
   color: #64748b;
   margin-left: 3px;
 }
   .ts-grid3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 14px;
   }
 .ts-card {
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 .ts-card-title {
   font-family: 'Orbitron', monospace;
-  font-size: 9px;
+  font-size: 13px;
   color: #475569;
   letter-spacing: .14em;
   margin-bottom: 10px;
@@ -1041,22 +1041,22 @@ nav {
   .ts-rank-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px 0;
+    gap: 8px;
+    padding: 7px 0;
     border-bottom: 1px solid #1f2937;
   }
   .ts-rank-row:last-child { border-bottom: none; }
   .ts-rank-num {
     font-family: 'Orbitron', monospace;
-    font-size: 10px;
+    font-size: 14px;
     color: #475569;
-    width: 18px;
+    width: 20px;
     flex-shrink: 0;
     text-align: center;
   }
   .ts-rank-name {
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     color: #e2e8f0;
     flex: 1;
     min-width: 0;
@@ -1069,9 +1069,9 @@ nav {
 .ts-rank-name:hover { color: #0ea5e9; text-decoration: underline; }
 .ts-rank-badge {
   font-family: 'Orbitron', monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 999px;
 }
 .ts-rank-xf    { color: #f59e0b; background: #f59e0b18; }
@@ -1082,36 +1082,36 @@ nav {
 .ts-rank-white { color: #94a3b8; background: #1f2937; }
   .ts-rank-bp {
     font-family: 'Orbitron', monospace;
-    font-size: 10px;
+    font-size: 14px;
     color: #0ea5e9;
     white-space: nowrap;
     flex-shrink: 0;
   }
 .ts-empty {
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 12px;
+  font-size: 16px;
   color: #475569;
-  padding: 8px 0;
+  padding: 10px 0;
 }
 .blader-bio {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
-  padding: 10px 12px;
-  margin: 0 0 10px 0;
+  padding: 12px 14px;
+  margin: 0 0 12px 0;
   background: rgba(0, 255, 136, 0.04);
   border-left: 2px solid rgba(0, 255, 136, 0.28);
   border-radius: 4px;
 }
 .blader-bio-icon {
   color: rgba(0, 255, 136, 0.45);
-  font-size: 11px;
+  font-size: 16px;
   padding-top: 2px;
   flex-shrink: 0;
 }
 .blader-bio-text {
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(226, 232, 240, 0.72);
   line-height: 1.75;
 }
@@ -1876,16 +1876,16 @@ function renderTopStats(players) {
 
   const buildGlobalRows = function(ftData) {
     if (!ftData) {
-      return '<div style="color:#475569;font-size:11px;font-family:\'Noto Sans JP\',sans-serif;text-align:center;padding:8px 0;">データなし</div>';
+      return '<div style="color:#475569;font-size:16px;font-family:\'Noto Sans JP\',sans-serif;text-align:center;padding:10px 0;">データなし</div>';
     }
     return FINISH_DEFS_G.filter(function(x) { return (ftData.counts[x.k] || 0) > 0; })
       .map(function(x) {
         const c = ftData.counts[x.k] || 0;
         const p = ftData.pct[x.k]    || 0;
-        return '<div style="display:grid;grid-template-columns:60px 48px 44px 1fr;align-items:center;gap:8px;margin-bottom:8px;">'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:9px;font-weight:800;letter-spacing:.06em;color:' + x.color + ';">' + x.k + '</div>'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:11px;font-weight:700;color:#e2e8f0;">' + c + '回</div>'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:10px;font-weight:700;color:#94a3b8;">' + p + '%</div>'
+        return '<div style="display:grid;grid-template-columns:64px 56px 48px 1fr;align-items:center;gap:10px;margin-bottom:10px;">'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:800;letter-spacing:.06em;color:' + x.color + ';">' + x.k + '</div>'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:14px;font-weight:700;color:#e2e8f0;">' + c + '回</div>'
+          + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#94a3b8;">' + p + '%</div>'
           + '<div style="height:8px;background:#0a0e17;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">'
           +   '<div style="height:100%;width:' + Math.max(0, Math.min(p, 100)) + '%;background:' + x.color + ';"></div>'
           + '</div>'
@@ -1894,25 +1894,25 @@ function renderTopStats(players) {
   };
 
   const globalFtHtml = (gkt || gktEx || gktInf) ? `
-    <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:14px;margin-top:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-family:'Orbitron',monospace;font-size:9px;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">CLUB FINISH RATE</div>
-        <div style="font-family:'Noto Sans JP',sans-serif;font-size:10px;color:#475569;">全ブレーダー合計</div>
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:16px;margin-top:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">CLUB FINISH RATE</div>
+        <div style="font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#475569;">全ブレーダー合計</div>
       </div>
-      <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:12px;">
+      <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">
         ${[
           { val: 'all', label: '総合',     total: gkt    ? gkt.total    : 0 },
           { val: 'ex',  label: 'Extreme',  total: gktEx  ? gktEx.total  : 0 },
           { val: 'inf', label: 'Infinity', total: gktInf ? gktInf.total : 0 },
         ].map(function(tab, i) {
           return '<button data-gttab data-gtval="' + tab.val + '" onclick="switchGlobalFt(\'' + tab.val + '\')"'
-            + ' style="background:none;border:none;cursor:pointer;padding:5px 12px;'
-            + 'font-family:\'Orbitron\',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;'
+            + ' style="background:none;border:none;cursor:pointer;padding:6px 14px;'
+            + 'font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;letter-spacing:.06em;'
             + 'color:' + (i === 0 ? '#e2e8f0' : '#94a3b8') + ';'
             + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
             + 'touch-action:manipulation;">'
             + tab.label
-            + (tab.total > 0 ? '<span style="font-size:8px;color:#475569;margin-left:4px;">' + tab.total + '</span>' : '')
+            + (tab.total > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.total + '</span>' : '')
             + '</button>';
         }).join('')}
       </div>
@@ -2244,10 +2244,10 @@ function renderResults(players) {
           const barColor  = alpha < 1 ? x.color + '80' : x.color;
           const textColor = alpha < 1 ? x.color + 'b3' : x.color;
           return `
-            <div style="display:grid;grid-template-columns:48px 52px 52px 1fr;align-items:center;gap:10px;">
-              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${textColor};">${x.k}</div>
-              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};">${c}回</div>
-              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;opacity:${alpha};font-size:12px;">${p}%</div>
+            <div style="display:grid;grid-template-columns:64px 60px 52px 1fr;align-items:center;gap:12px;">
+              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${textColor};font-size:13px;">${x.k}</div>
+              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};font-size:14px;">${c}回</div>
+              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;opacity:${alpha};font-size:14px;">${p}%</div>
               <div style="height:10px;background:#111827;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">
                 <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${barColor};"></div>
               </div>
@@ -2257,21 +2257,21 @@ function renderResults(players) {
 
       const buildSection = (ftData) => {
         if (!ftData || (ftData.total === 0 && ftData.totalRcv === 0)) {
-          return `<div style="color:#94a3b8;font-size:12px;font-family:'Noto Sans JP',sans-serif;text-align:center;padding:8px 0;">データなし</div>`;
+          return `<div style="color:#94a3b8;font-size:16px;font-family:'Noto Sans JP',sans-serif;text-align:center;padding:10px 0;">データなし</div>`;
         }
         const doneRows = ftData.total    > 0 ? buildRows(ftData.counts,    ftData.pct,    1.0) : '';
         const rcvRows  = ftData.totalRcv > 0 ? buildRows(ftData.countsRcv, ftData.pctRcv, 0.7) : '';
         const rcvSection = rcvRows ? `
           <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;">
             <div style="flex:1;height:1px;background:#1f2937;"></div>
-            <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:10px;">RECEIVED</div>
-            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:10px;">TOTAL ${ftData.totalRcv}</div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:13px;">RECEIVED</div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:13px;">TOTAL ${ftData.totalRcv}</div>
             <div style="flex:1;height:1px;background:#1f2937;"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;">${rcvRows}</div>
         ` : '';
         const totalLabel = ftData.total > 0
-          ? `<div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">TOTAL ${ftData.total}</div>`
+          ? `<div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:14px;">TOTAL ${ftData.total}</div>`
           : '';
         return `
           ${totalLabel}
@@ -2281,10 +2281,10 @@ function renderResults(players) {
       };
 
       finishTypeHtml = `
-        <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:16px;">
-          <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;margin-bottom:10px;">FINISH TYPE</div>
+        <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:18px;">
+          <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;margin-bottom:12px;font-size:13px;">FINISH TYPE</div>
 
-          <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">
+          <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:16px;">
             ${[
               { val: 'all', label: '総合' },
               { val: 'ex',  label: 'Extreme' },
@@ -2294,8 +2294,8 @@ function renderResults(players) {
                 data-fttab="${tabId}" data-ftval="${tab.val}"
                 onclick="switchFinishTypeTab('${tabId}','${tab.val}')"
                 style="
-                  background:none;border:none;cursor:pointer;padding:6px 14px;
-                  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;
+                  background:none;border:none;cursor:pointer;padding:8px 16px;
+                  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:.08em;
                   color:${i === 0 ? '#e2e8f0' : '#94a3b8'};
                   border-bottom:${i === 0 ? '2px solid #0ea5e9' : '2px solid transparent'};
                   touch-action:manipulation;
@@ -2935,8 +2935,8 @@ async function shareBladerStats(dataset) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `
     <div id="shareModalInner" style="background:#080d1a;border:1px solid rgba(0,255,136,0.3);border-radius:12px;padding:24px 22px;max-width:360px;width:100%;position:relative;box-shadow:0 0 40px rgba(0,255,136,0.1);">
-      <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--neon-green);margin-bottom:16px;">SHARE BLADER STATS</div>
-      <div id="shareModalBody" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 0;font-family:'Orbitron',sans-serif;font-size:11px;color:#475569;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:2px;color:var(--neon-green);margin-bottom:16px;">SHARE BLADER STATS</div>
+      <div id="shareModalBody" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 0;font-family:'Orbitron',sans-serif;font-size:14px;color:#475569;">
         <i class="fa fa-spinner fa-spin"></i> 画像を生成中...
       </div>
       <button onclick="document.getElementById('shareModal').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#475569;font-size:18px;cursor:pointer;touch-action:manipulation;line-height:1;padding:4px;">✕</button>
@@ -2965,7 +2965,7 @@ async function shareBladerStats(dataset) {
   window._shareTweetText = tweetText;
   window._shareFileName = `blader_stats_${encodeURIComponent(name)}.png`;
   const body = document.getElementById('shareModalBody');
-  const btnStyle = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:7px;font-family:\'Orbitron\',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;touch-action:manipulation;width:100%;';
+  const btnStyle = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:7px;font-family:\'Orbitron\',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;touch-action:manipulation;width:100%;';
   const btnGreen = btnStyle + 'border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);';
   const btnWhite = btnStyle + 'border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);color:#fff;text-decoration:none;';
   body.innerHTML = `
