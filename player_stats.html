@@ -1537,6 +1537,7 @@ async function fetchPlayers() {
       // row[13]=N列(P1決まり手), row[14]=O列(P2決まり手), row[15]=P列(P1使用ベイ), row[16]=Q列(P2使用ベイ)
       const kp1 = (row[13] || '').trim();
       const kp2 = (row[14] || '').trim();
+      const stadium = (row[12] || '').trim();
       const p1Bey = (row[15] || '').trim();
       const p2Bey = (row[16] || '').trim();
 
@@ -1555,6 +1556,7 @@ async function fetchPlayers() {
           kimarite_received: kimariteReceived,
           bey,
           score: '',
+          stadium,
         });
       };
       if (p1 && p2) {
@@ -1617,14 +1619,25 @@ function enrichParticipationHistory(playerName, rawHistory) {
   }).join('\n');
 }
 
+function normalizeStadium(s) {
+  const u = (s || '').toUpperCase();
+  if (u.includes('EXTREME') || u.includes('エクストリーム') || u === 'EX') return 'extreme';
+  if (u.includes('INFINITY') || u.includes('インフィニティ') || u === 'INF') return 'infinity';
+  return 'other';
+}
+
 /**
  * 選手名を受け取り、決まり手ごとのフィニッシュ回数・割合を返す
  * @param {string} playerName
+ * @param {string|null} stadiumFilter null=総合, 'extreme', 'infinity'
  * @returns {{ total: number, counts: {XF:number, BF:number, OF:number, SF:number}, pct: {XF:number, BF:number, OF:number, SF:number} } | null}
  */
-function calcKimariteStat(playerName) {
-  const details = matchDetailsByPlayer && matchDetailsByPlayer[playerName];
+function calcKimariteStat(playerName, stadiumFilter = null) {
+  let details = matchDetailsByPlayer && matchDetailsByPlayer[playerName];
   if (!details || details.length === 0) return null;
+  if (stadiumFilter) {
+    details = details.filter(d => normalizeStadium(d.stadium) === stadiumFilter);
+  }
 
   const counts    = { XF: 0, BF: 0, OF: 0, SF: 0 };
   const countsRcv = { XF: 0, BF: 0, OF: 0, SF: 0 };
@@ -1653,6 +1666,18 @@ function calcKimariteStat(playerName) {
   });
 
   return { total, counts, pct, totalRcv, countsRcv, pctRcv };
+}
+
+function switchFinishTypeTab(tabId, tab) {
+  ['all', 'ex', 'inf'].forEach(function(t) {
+    var el = document.getElementById(tabId + '_' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+  });
+  var btns = document.querySelectorAll('[data-fttab="' + tabId + '"]');
+  btns.forEach(function(b) {
+    b.style.color = b.dataset.ftval === tab ? '#e2e8f0' : '#94a3b8';
+    b.style.borderBottom = b.dataset.ftval === tab ? '2px solid #0ea5e9' : '2px solid transparent';
+  });
 }
 
 // ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
@@ -2100,15 +2125,21 @@ function renderResults(players) {
     }
 
     // ── FINISH TYPE (決まり手 & 被決まり手) ──
+    const ft     = calcKimariteStat(name);
+    const ftEx   = calcKimariteStat(name, 'extreme');
+    const ftInf  = calcKimariteStat(name, 'infinity');
     let finishTypeHtml = '';
-    const ft = calcKimariteStat(name);
     if (ft && (ft.total > 0 || ft.totalRcv > 0)) {
+
+      const tabId = 'ft_' + name.replace(/[^a-zA-Z0-9]/g, '_');
+
       const FINISH_DEFS = [
         { k: 'XF', color: '#ff0055' },
         { k: 'BF', color: '#ffd700' },
         { k: 'OF', color: '#ffaa00' },
         { k: 'SF', color: '#0ea5e9' },
       ];
+
       const buildRows = (countsObj, pctObj, alpha) =>
         FINISH_DEFS.filter(x => (countsObj[x.k] || 0) > 0).map(x => {
           const c = countsObj[x.k] || 0;
@@ -2127,27 +2158,57 @@ function renderResults(players) {
           `;
         }).join('');
 
-      const doneRows = ft.total    > 0 ? buildRows(ft.counts,    ft.pct,    1.0) : '';
-      const rcvRows  = ft.totalRcv > 0 ? buildRows(ft.countsRcv, ft.pctRcv, 0.7) : '';
-
-      const rcvSection = rcvRows ? `
-        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;">
-          <div style="flex:1;height:1px;background:#1f2937;"></div>
-          <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:10px;">RECEIVED</div>
-          <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:10px;">TOTAL ${ft.totalRcv}</div>
-          <div style="flex:1;height:1px;background:#1f2937;"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">${rcvRows}</div>
-      ` : '';
+      const buildSection = (ftData) => {
+        if (!ftData || (ftData.total === 0 && ftData.totalRcv === 0)) {
+          return `<div style="color:#94a3b8;font-size:12px;font-family:'Noto Sans JP',sans-serif;text-align:center;padding:8px 0;">データなし</div>`;
+        }
+        const doneRows = ftData.total    > 0 ? buildRows(ftData.counts,    ftData.pct,    1.0) : '';
+        const rcvRows  = ftData.totalRcv > 0 ? buildRows(ftData.countsRcv, ftData.pctRcv, 0.7) : '';
+        const rcvSection = rcvRows ? `
+          <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;">
+            <div style="flex:1;height:1px;background:#1f2937;"></div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:10px;">RECEIVED</div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:10px;">TOTAL ${ftData.totalRcv}</div>
+            <div style="flex:1;height:1px;background:#1f2937;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">${rcvRows}</div>
+        ` : '';
+        const totalLabel = ftData.total > 0
+          ? `<div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">TOTAL ${ftData.total}</div>`
+          : '';
+        return `
+          ${totalLabel}
+          ${doneRows ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">${doneRows}</div>` : ''}
+          ${rcvSection}
+        `;
+      };
 
       finishTypeHtml = `
         <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">FINISH TYPE</div>
-            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:12px;">TOTAL ${ft.total}</div>
+          <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;margin-bottom:10px;">FINISH TYPE</div>
+
+          <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">
+            ${[
+              { val: 'all', label: '総合' },
+              { val: 'ex',  label: 'Extreme' },
+              { val: 'inf', label: 'Infinity' },
+            ].map((tab, i) => `
+              <button
+                data-fttab="${tabId}" data-ftval="${tab.val}"
+                onclick="switchFinishTypeTab('${tabId}','${tab.val}')"
+                style="
+                  background:none;border:none;cursor:pointer;padding:6px 14px;
+                  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;
+                  color:${i === 0 ? '#e2e8f0' : '#94a3b8'};
+                  border-bottom:${i === 0 ? '2px solid #0ea5e9' : '2px solid transparent'};
+                  touch-action:manipulation;
+                ">${tab.label}</button>
+            `).join('')}
           </div>
-          ${doneRows ? `<div style="display:flex;flex-direction:column;gap:10px;">${doneRows}</div>` : ''}
-          ${rcvSection}
+
+          <div id="${tabId}_all" style="display:block;">${buildSection(ft)}</div>
+          <div id="${tabId}_ex"  style="display:none;">${buildSection(ftEx)}</div>
+          <div id="${tabId}_inf" style="display:none;">${buildSection(ftInf)}</div>
         </div>
       `;
     }
