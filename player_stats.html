@@ -1305,7 +1305,7 @@ let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
 let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
-let validBladesCache = null; // parts.csv から動的生成したブレードセット
+let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
   if (rankNum === 100) return 'zone-xf';
@@ -1724,6 +1724,49 @@ function switchGlobalFt(tab) {
   });
 }
 
+function buildBladeMetaRowsHtml(rows) {
+  if (!rows || rows.length === 0) {
+    return '<div style="color:#475569;font-family:\'Noto Sans JP\',sans-serif;font-size:15px;text-align:center;padding:8px 0;">データなし</div>';
+  }
+  const MEDAL     = ['🥇', '🥈', '🥉'];
+  const TOP_COLOR = ['#ffd700', '#c0c0c0', '#cd7f32'];
+  return rows.map(function(r) {
+    const isTop3   = r.rank <= 3;
+    const color    = isTop3 ? TOP_COLOR[r.rank - 1] : '#0ea5e9';
+    const rankDisp = isTop3
+      ? '<span style="font-size:16px;">' + MEDAL[r.rank - 1] + '</span>'
+      : '<span style="font-family:\'Orbitron\',monospace;font-size:13px;'
+          + 'font-weight:700;color:#475569;">' + r.rank + '</span>';
+    return '<div style="display:grid;grid-template-columns:36px 1fr 48px 100px;'
+      + 'align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1f2937;">'
+      + '<div style="text-align:center;">' + rankDisp + '</div>'
+      + '<div style="font-family:\'Noto Sans JP\',sans-serif;font-size:15px;'
+          + 'color:' + (isTop3 ? color : '#e2e8f0') + ';font-weight:'
+          + (isTop3 ? '700' : '400') + ';">' + r.blade + '</div>'
+      + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;'
+          + 'font-weight:700;color:' + color + ';text-align:right;">'
+          + r.normScore + '</div>'
+      + '<div style="height:7px;background:#0a0e17;border:1px solid #1f2937;'
+          + 'border-radius:999px;overflow:hidden;">'
+      +   '<div style="height:100%;width:' + r.normScore + '%;background:'
+          + color + ';border-radius:999px;"></div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function switchBladeMetaTab(tab) {
+  ['all', 'ex', 'inf'].forEach(function(t) {
+    var el = document.getElementById('bladeMeta_' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+  });
+  document.querySelectorAll('[data-bmtab]').forEach(function(b) {
+    var active = b.dataset.bmval === tab;
+    b.style.color = active ? '#e2e8f0' : '#94a3b8';
+    b.style.borderBottom = active ? '2px solid #0ea5e9' : '2px solid transparent';
+  });
+}
+
 // ─── BP推移グラフ（全対戦履歴ベース） ────────────────────────
 function buildBpGraph(playerName, cardEl) {
   const events = bpHistory && bpHistory[playerName];
@@ -1849,30 +1892,39 @@ async function fetchBladeMetaScore() {
   const RANK_COEF    = { '優勝': 6, '準優勝': 4, '3位': 2, '4位': 1 };
   const TARGET_TYPES = new Set(['BX', 'UX', 'CX', 'MB']);
 
+  function normalizeBladeKey(raw) {
+    if (!raw) return '';
+    let s = raw.trim();
+    s = s.replace(/^エンペラー/, '');
+    s = s.replace(/ウィ/g, 'ウイ').replace(/ヴィ/g, 'ヴイ');
+    return s;
+  }
+
   // ── parts.csv を動的取得してブレードセットを構築（キャッシュ）──
   if (!validBladesCache) {
     try {
       const csvText = await fetch('./parts.csv').then(r => r.text());
-      const validBlades = new Set();
+      const validBlades = new Map();
       csvText.split(/\r?\n/).slice(1).forEach(line => {
         const cols = line.split(',');
         const type = (cols[0] || '').trim();
         const name = (cols[1] || '').trim();
-        if (TARGET_TYPES.has(type) && name) validBlades.add(name);
+        const key  = normalizeBladeKey(name);
+        if (TARGET_TYPES.has(type) && key) {
+          validBlades.set(key, (cols[2] || name).trim() || name);
+        }
       });
       validBladesCache = validBlades;
     } catch {
-      validBladesCache = new Set();
+      validBladesCache = new Map();
     }
   }
 
   // ── ブレード名の正規化（CX系「エンペラー」除去・カタカナ揺れ統一）──
   function normalizeBladeForMeta(raw) {
-    if (!raw) return null;
-    let s = raw.trim();
-    s = s.replace(/^エンペラー/, '');
-    s = s.replace(/ウィ/g, 'ウイ').replace(/ヴィ/g, 'ヴイ');
-    return validBladesCache.has(s) ? s : null;
+    const key = normalizeBladeKey(raw);
+    if (!key || !validBladesCache.has(key)) return null;
+    return validBladesCache.get(key);
   }
 
   // ── 3シートを並列取得 ──
@@ -1883,56 +1935,78 @@ async function fetchBladeMetaScore() {
     fetch(BEY_HIST_URL).then(r => r.json()),
   ]);
 
-  // ── ① 大会マスター → Map<大会名, 参加人数>（ボーナス対象のみ）──
-  // 列: A=大会ID, B=大会名, C=開催日, D=種別, E=参加人数, F=ボーナス対象
+  // ── ① 大会マスター → Map<大会名, {参加人数, スタジアム}>（ボーナス対象のみ）──
+  // 列: A=大会ID, B=大会名, C=開催日, D=種別, E=参加人数, F=ボーナス対象, H=スタジアム
   const tourneyMap = new Map();
   (rT.values || []).forEach(r => {
-    const name  = (r[1] || '').trim();
-    const count = parseInt((r[4] || '').replace(/,/g, '')) || 0;
-    const bonus = (r[5] || '').trim();
+    const name    = (r[1] || '').trim();
+    const count   = parseInt((r[4] || '').replace(/,/g, '')) || 0;
+    const bonus   = (r[5] || '').trim();
+    const stadium = normalizeStadium((r[7] || '').trim());
     if (name && count > 0 && bonus.includes('対象') && !bonus.includes('対象外')) {
-      tourneyMap.set(name, count);
+      tourneyMap.set(name, { count, stadium });
     }
   });
 
-  // ── ② ベイ使用履歴 → Map<"大会名|選手名", ベイ1> ──
-  // 列: A=大会名, B=選手名, C=ベイ1
+  // ── ② ベイ使用履歴 → Map<"大会名|選手名", [ベイ1,ベイ2,ベイ3]> ──
+  // 列: A=大会名, B=選手名, C=ベイ1, D=ベイ2, E=ベイ3
   const beyHistMap = new Map();
   (rB.values || []).forEach(r => {
     const tName  = (r[0] || '').trim();
     const player = (r[1] || '').trim();
-    const bey1   = (r[2] || '').trim();
-    if (tName && player) beyHistMap.set(`${tName}|${player}`, bey1);
+    if (!tName || !player) return;
+    beyHistMap.set(`${tName}|${player}`, [
+      (r[2] || '').trim(),
+      (r[3] || '').trim(),
+      (r[4] || '').trim(),
+    ]);
   });
 
-  // ── ③ 対戦入力のボーナス行から入賞レコードを集計 ──
+  // ── ③ 対戦入力のボーナス行から入賞レコードを集計（スタジアム別）──
   // 列: A=選手1(0), E=順位テキスト(4), J=大会名(9), L=行種別(11)
-  // ボーナス行条件: L列 === 'ボーナス' かつ E列 ∈ {優勝,準優勝,3位,4位}
-  const scoreMap = new Map();
+  const scoreMaps = { all: new Map(), ex: new Map(), inf: new Map() };
   (rH.values || []).forEach(r => {
     if ((r[11] || '').trim() !== 'ボーナス') return;
-    const rankText     = (r[4]  || '').trim();
+    const rankText = (r[4] || '').trim();
     if (!RANK_COEF[rankText]) return;
-    const tName        = (r[9]  || '').trim();
-    const player       = (r[0]  || '').trim();
-    const participants = tourneyMap.get(tName);
-    if (!participants) return; // ボーナス対象外大会はスキップ
-    const rawBey = beyHistMap.get(`${tName}|${player}`) || '';
-    const blade  = normalizeBladeForMeta(rawBey);
-    if (!blade) return;
-    scoreMap.set(blade, (scoreMap.get(blade) || 0) + participants * RANK_COEF[rankText]);
+    const tName  = (r[9] || '').trim();
+    const player = (r[0] || '').trim();
+    const info   = tourneyMap.get(tName);
+    if (!info) return;
+    const rawBeys  = beyHistMap.get(`${tName}|${player}`) || [];
+    const points   = info.count * RANK_COEF[rankText];
+    const seenBlade = new Set();
+    rawBeys.forEach(function(rawBey) {
+      const blade = normalizeBladeForMeta(rawBey);
+      if (!blade || seenBlade.has(blade)) return;
+      seenBlade.add(blade);
+      scoreMaps.all.set(blade, (scoreMaps.all.get(blade) || 0) + points);
+      if (info.stadium === 'extreme') {
+        scoreMaps.ex.set(blade, (scoreMaps.ex.get(blade) || 0) + points);
+      }
+      if (info.stadium === 'infinity') {
+        scoreMaps.inf.set(blade, (scoreMaps.inf.get(blade) || 0) + points);
+      }
+    });
   });
 
-  // ── ④ 降順ソート・max=100 正規化 ──
-  const sorted = Array.from(scoreMap.entries())
-    .filter(([, s]) => s > 0)
-    .sort(([, a], [, b]) => b - a);
-  const maxScore = sorted.length > 0 ? sorted[0][1] : 1;
-  bladeMetaCache = sorted.map(([blade, score], i) => ({
-    rank: i + 1,
-    blade,
-    normScore: Math.round((score / maxScore) * 100),
-  }));
+  // ── ④ 降順ソート・max=100 正規化（タブ別）──
+  function toSortedRows(scoreMap) {
+    const sorted = Array.from(scoreMap.entries())
+      .filter(([, s]) => s > 0)
+      .sort(([, a], [, b]) => b - a);
+    const maxScore = sorted.length > 0 ? sorted[0][1] : 1;
+    return sorted.map(([blade, score], i) => ({
+      rank: i + 1,
+      blade,
+      normScore: Math.round((score / maxScore) * 100),
+    }));
+  }
+  bladeMetaCache = {
+    all: toSortedRows(scoreMaps.all),
+    ex:  toSortedRows(scoreMaps.ex),
+    inf: toSortedRows(scoreMaps.inf),
+  };
   return bladeMetaCache;
 }
 
@@ -2080,7 +2154,7 @@ function renderTopStats(players) {
                     letter-spacing:.18em;color:#e2e8f0;margin-bottom:14px;">
           ⚔ BLADE META SCORE
         </div>
-        <div id="bladeMetaBody"
+        <div id="bladeMetaContent"
              style="color:#475569;font-family:'Noto Sans JP',sans-serif;
                     font-size:15px;padding:8px 0;">
           読み込み中...
@@ -2090,42 +2164,35 @@ function renderTopStats(players) {
   `;
 
   // BLADE META を非同期で描画（キャッシュ済みなら即時）
-  fetchBladeMetaScore().then(function(rows) {
-    const bodyEl = document.getElementById('bladeMetaBody');
-    if (!bodyEl) return;
-    if (!rows || rows.length === 0) {
-      bodyEl.textContent = 'データなし';
-      return;
-    }
-    const MEDAL      = ['🥇', '🥈', '🥉'];
-    const TOP_COLOR  = ['#ffd700', '#c0c0c0', '#cd7f32'];
-    const rowsHtml = rows.map(function(r) {
-      const isTop3    = r.rank <= 3;
-      const color     = isTop3 ? TOP_COLOR[r.rank - 1] : '#0ea5e9';
-      const rankDisp  = isTop3
-        ? '<span style="font-size:16px;">' + MEDAL[r.rank - 1] + '</span>'
-        : '<span style="font-family:\'Orbitron\',monospace;font-size:13px;'
-            + 'font-weight:700;color:#475569;">' + r.rank + '</span>';
-      return '<div style="display:grid;grid-template-columns:36px 1fr 48px 100px;'
-        + 'align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1f2937;">'
-        + '<div style="text-align:center;">' + rankDisp + '</div>'
-        + '<div style="font-family:\'Noto Sans JP\',sans-serif;font-size:15px;'
-            + 'color:' + (isTop3 ? color : '#e2e8f0') + ';font-weight:'
-            + (isTop3 ? '700' : '400') + ';">' + r.blade + '</div>'
-        + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;'
-            + 'font-weight:700;color:' + color + ';text-align:right;">'
-            + r.normScore + '</div>'
-        + '<div style="height:7px;background:#0a0e17;border:1px solid #1f2937;'
-            + 'border-radius:999px;overflow:hidden;">'
-        +   '<div style="height:100%;width:' + r.normScore + '%;background:'
-            + color + ';border-radius:999px;"></div>'
-        + '</div>'
+  fetchBladeMetaScore().then(function(data) {
+    const contentEl = document.getElementById('bladeMetaContent');
+    if (!contentEl) return;
+    const tabs = [
+      { val: 'all', label: '総合',     rows: data.all || [] },
+      { val: 'ex',  label: 'Extreme',  rows: data.ex  || [] },
+      { val: 'inf', label: 'Infinity', rows: data.inf || [] },
+    ];
+    const tabsHtml = tabs.map(function(tab, i) {
+      return '<button data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')"'
+        + ' style="background:none;border:none;cursor:pointer;padding:6px 14px;'
+        + 'font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;letter-spacing:.06em;'
+        + 'color:' + (i === 0 ? '#e2e8f0' : '#94a3b8') + ';'
+        + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
+        + 'touch-action:manipulation;">'
+        + tab.label
+        + (tab.rows.length > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.rows.length + '</span>' : '')
+        + '</button>';
+    }).join('');
+    const panelsHtml = tabs.map(function(tab, i) {
+      return '<div id="bladeMeta_' + tab.val + '" style="display:' + (i === 0 ? 'block' : 'none') + ';">'
+        + buildBladeMetaRowsHtml(tab.rows)
         + '</div>';
     }).join('');
-    bodyEl.innerHTML = rowsHtml;
+    contentEl.innerHTML = '<div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">'
+      + tabsHtml + '</div>' + panelsHtml;
   }).catch(function() {
-    const bodyEl = document.getElementById('bladeMetaBody');
-    if (bodyEl) bodyEl.textContent = '取得失敗';
+    const contentEl = document.getElementById('bladeMetaContent');
+    if (contentEl) contentEl.textContent = '取得失敗';
   });
 }
 
