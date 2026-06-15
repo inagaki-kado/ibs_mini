@@ -1730,6 +1730,11 @@ function buildBladeMetaRowsHtml(rows) {
   }
   const MEDAL     = ['🥇', '🥈', '🥉'];
   const TOP_COLOR = ['#ffd700', '#c0c0c0', '#cd7f32'];
+  const nameLen   = rows.reduce(function(m, r) {
+    return Math.max(m, (r.blade || '').length);
+  }, 0);
+  const nameCol   = nameLen + 'em';
+  const gridCols  = '36px ' + nameCol + ' 2.4em 1fr';
   return rows.map(function(r) {
     const isTop3   = r.rank <= 3;
     const color    = isTop3 ? TOP_COLOR[r.rank - 1] : '#0ea5e9';
@@ -1737,21 +1742,19 @@ function buildBladeMetaRowsHtml(rows) {
       ? '<span style="font-size:16px;">' + MEDAL[r.rank - 1] + '</span>'
       : '<span style="font-family:\'Orbitron\',monospace;font-size:13px;'
           + 'font-weight:700;color:#475569;">' + r.rank + '</span>';
-    return '<div style="display:grid;grid-template-columns:36px 1fr;'
-      + 'align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1f2937;">'
+    return '<div style="display:grid;grid-template-columns:' + gridCols + ';'
+      + 'align-items:center;column-gap:10px;padding:7px 0;border-bottom:1px solid #1f2937;">'
       + '<div style="text-align:center;">' + rankDisp + '</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;min-width:0;">'
-      +   '<div style="font-family:\'Noto Sans JP\',sans-serif;font-size:15px;white-space:nowrap;'
-      +       'color:' + (isTop3 ? color : '#e2e8f0') + ';font-weight:'
-      +       (isTop3 ? '700' : '400') + ';">' + r.blade + '</div>'
-      +   '<div style="font-family:\'Orbitron\',monospace;font-size:13px;'
-      +       'font-weight:700;color:' + color + ';flex-shrink:0;">'
-      +       r.normScore + '</div>'
-      +   '<div style="flex:1;height:7px;background:#0a0e17;border:1px solid #1f2937;'
-      +       'border-radius:999px;overflow:hidden;min-width:40px;">'
-      +     '<div style="height:100%;width:' + r.normScore + '%;background:'
-      +         color + ';border-radius:999px;"></div>'
-      +   '</div>'
+      + '<div style="font-family:\'Noto Sans JP\',sans-serif;font-size:15px;'
+      +     'white-space:nowrap;color:' + (isTop3 ? color : '#e2e8f0') + ';font-weight:'
+      +     (isTop3 ? '700' : '400') + ';">' + r.blade + '</div>'
+      + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;'
+      +     'font-weight:700;color:' + color + ';text-align:right;">'
+      +     r.normScore + '</div>'
+      + '<div style="height:7px;background:#0a0e17;border:1px solid #1f2937;'
+      +     'border-radius:999px;overflow:hidden;min-width:32px;">'
+      +   '<div style="height:100%;width:' + r.normScore + '%;background:'
+      +       color + ';border-radius:999px;"></div>'
       + '</div>'
       + '</div>';
   }).join('');
