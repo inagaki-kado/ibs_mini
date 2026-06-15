@@ -71,8 +71,8 @@
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
-        <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
         <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
+        <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       </div>
 
       <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
@@ -1142,6 +1142,9 @@
     }
 
     function handleScoreCmd(side, cmd, pts) {
+        if (currentRemoteMode === 'replay' && cmd !== 'SYS_RESET' && cmd !== 'reset') {
+            switchRemoteTab('score', { syncHud: false });
+        }
         sendRemoteCmd(cmd);
         if (cmd === 'SYS_RESET') { remoteScoreLeft = 0; remoteScoreRight = 0; }
         else {
@@ -1403,7 +1406,8 @@
         closeRemoteModal();
     }
 
-    function switchRemoteTab(mode) {
+    function switchRemoteTab(mode, options = {}) {
+        const syncHud = options.syncHud !== false;
         const tabScore = document.getElementById('tab-remote-score'); const tabReplay = document.getElementById('tab-remote-replay');
         const areaScore = document.getElementById('remote-score-area'); const areaReplay = document.getElementById('remote-replay-area');
         if (mode === 'score') {
@@ -1411,7 +1415,10 @@
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 rounded transition-all";
             areaScore.classList.remove('hidden'); areaScore.classList.add('flex');
             areaReplay.classList.add('hidden'); areaReplay.classList.remove('flex');
-            if (currentRemoteMode === 'replay') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'score'; }
+            if (currentRemoteMode === 'replay') {
+                if (syncHud) sendRemoteCmd('REPLAY_TOGGLE');
+                currentRemoteMode = 'score';
+            }
         } else {
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_10px_#ec4899]";
             tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 rounded transition-all";
@@ -1421,7 +1428,10 @@
             if (lbl) lbl.textContent = document.getElementById('remote-left-name')?.textContent || 'LEFT';
             if (rbr) rbr.textContent = document.getElementById('remote-right-name')?.textContent || 'RIGHT';
             areaScore.classList.add('hidden'); areaScore.classList.remove('flex');
-            if (currentRemoteMode === 'score') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'replay'; }
+            if (currentRemoteMode === 'score') {
+                if (syncHud) sendRemoteCmd('REPLAY_TOGGLE');
+                currentRemoteMode = 'replay';
+            }
         }
     }
 
@@ -2584,7 +2594,7 @@
           const kp2 = m.kimarite_p2 || '';
           const bey1 = m.p1BeyUsed || '';
           const bey2 = m.p2BeyUsed || '';
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t${score}\t${round}\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t\t${round}\t\t\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
         }
       };
       ['A', 'B', 'C', 'D'].forEach(bName => {

@@ -73,8 +73,6 @@
         body.pro-mode #cam-debug { display: none !important; }
         body.hud-hidden #cam-debug { display: none !important; }
         body.pro-mode .system-btn { display: none !important; }
-        body.pro-mode .btn-pro { display: flex !important; }
-        body.pro-mode .btn-hud { display: flex !important; }
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
@@ -1553,6 +1551,7 @@
                         const overlay = document.getElementById('remote-content-overlay');
                         overlay.innerHTML = '<style>*{pointer-events:none!important;cursor:default!important;}</style>' + data.html;
                         overlay.classList.remove('hidden');
+                        fitTvResTeamNames();
                     }
                     else if (data.type === 'HIDE_OVERLAY') {
                         const overlay = document.getElementById('remote-content-overlay');
@@ -1685,6 +1684,36 @@
         initPeer();
 
         const DEFAULT_NEXT_BATTLE_LOGO = 'torabo_logo.png';
+
+        function fitTvResTeamNames() {
+            const overlay = document.getElementById('remote-content-overlay');
+            if (!overlay || overlay.classList.contains('hidden')) return;
+            const targets = [
+                { sel: '.tv-res-name1', min: 18 },
+                { sel: '.tv-res-name2', min: 14 },
+                { sel: '.tv-res-lower-name', min: 11 }
+            ];
+            const run = () => {
+                targets.forEach(({ sel, min }) => {
+                    overlay.querySelectorAll(sel).forEach((el) => {
+                        el.style.whiteSpace = 'nowrap';
+                        el.style.maxWidth = '100%';
+                        el.style.fontSize = '';
+                        const avail = el.parentElement ? el.parentElement.clientWidth : el.clientWidth;
+                        if (avail <= 0) return;
+                        if (el.scrollWidth > avail) {
+                            let size = Math.max(min, Math.floor(parseFloat(window.getComputedStyle(el).fontSize) * avail / el.scrollWidth));
+                            el.style.fontSize = size + 'px';
+                            while (el.scrollWidth > avail && size > min) {
+                                size -= 1;
+                                el.style.fontSize = size + 'px';
+                            }
+                        }
+                    });
+                });
+            };
+            requestAnimationFrame(() => requestAnimationFrame(run));
+        }
 
         function fitNbName(id, solo) {
             const container = document.getElementById(id);

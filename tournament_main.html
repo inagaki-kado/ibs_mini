@@ -502,6 +502,52 @@
     </div>
   </div>
 
+  <!-- BPコピーモーダル -->
+  <div id="bpCopyModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex flex-col items-center justify-center z-[115] p-4 overflow-y-auto">
+    <div class="w-full max-w-lg bg-cyber-dark border border-cyber-green rounded-xl p-4 space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="font-sf text-cyber-green text-sm tracking-widest">📊 BPコピー</h2>
+        <button type="button" onclick="closeBpCopyModal()" class="text-cyber-text hover:text-cyber-pink font-bold font-sf">✖</button>
+      </div>
+
+      <!-- ① チーム戦入力用 -->
+      <div>
+        <p class="text-[10px] text-cyber-text opacity-60 mb-1">① チーム戦入力シートに貼り付け（1行）→ Q列の変動BPを確認</p>
+        <textarea id="bpCopyTeamInput" readonly class="w-full h-16 p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-green font-mono text-xs resize-none focus:outline-none"></textarea>
+        <button type="button" onclick="copyBpText('bpCopyTeamInput', this)" style="touch-action:manipulation"
+          class="mt-1 w-full bg-cyber-green/20 border border-cyber-green text-cyber-green py-1.5 rounded font-bold font-sf text-xs hover:bg-cyber-green/30">
+          📋 チーム戦入力用コピー
+        </button>
+      </div>
+
+      <!-- ② 変動BP & スタジアム名 -->
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-[10px] text-cyber-orange font-sf block mb-1">変動BP（Q列の値・正数）</label>
+          <input type="number" id="bpCopyBpValue" min="0" placeholder="例: 725"
+            oninput="updateBpCopyMatchText()"
+            class="w-full p-2 bg-cyber-bg border border-cyber-orange rounded text-cyber-orange font-sf text-sm focus:border-cyber-green outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-cyber-blue font-sf block mb-1">スタジアム名（N列）</label>
+          <input type="text" id="bpCopyStadium" placeholder="例: インフィニティ"
+            oninput="updateBpCopyMatchText()"
+            class="w-full p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-blue font-sf text-sm focus:border-cyber-green outline-none">
+        </div>
+      </div>
+
+      <!-- ③ 対戦入力用 -->
+      <div>
+        <p class="text-[10px] text-cyber-text opacity-60 mb-1">③ 対戦入力シートに貼り付け（6行）</p>
+        <textarea id="bpCopyMatchInput" readonly class="w-full h-36 p-2 bg-cyber-bg border border-cyber-table-border rounded text-cyber-green font-mono text-xs resize-none focus:outline-none"></textarea>
+        <button type="button" onclick="copyBpText('bpCopyMatchInput', this)" style="touch-action:manipulation"
+          class="mt-1 w-full bg-cyber-blue/20 border border-cyber-blue text-cyber-blue py-1.5 rounded font-bold font-sf text-xs hover:bg-cyber-blue/30">
+          📋 対戦入力用コピー（6行）
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ベイブレード選択モーダル -->
   <div id="beybladeSelectModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 overflow-y-auto">
     <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-green neon-green flex flex-col relative my-8 max-h-[90vh]">
@@ -1793,6 +1839,71 @@
       }
     }
 
+    /* ── BPコピーモーダル ── */
+    let _bpCopyWinTeam = null;
+    let _bpCopyLoseTeam = null;
+
+    function openBpCopyModal(winTeam, loseTeam) {
+      _bpCopyWinTeam = winTeam;
+      _bpCopyLoseTeam = loseTeam;
+
+      const wm = (winTeam.members || ['', '', '']).map(s => s || '');
+      const lm = (loseTeam.members || ['', '', '']).map(s => s || '');
+      const tn = tournamentName || '';
+      const teamInputText = `${wm[0]}\t${wm[1]}\t${wm[2]}\t${lm[0]}\t${lm[1]}\t${lm[2]}\tA\t\t\t\t\t\t\t\t${tn}`;
+      document.getElementById('bpCopyTeamInput').value = teamInputText;
+
+      document.getElementById('bpCopyBpValue').value = '';
+      document.getElementById('bpCopyMatchInput').value = '';
+
+      document.getElementById('bpCopyModal').classList.remove('hidden');
+      document.getElementById('bpCopyModal').style.display = 'flex';
+    }
+
+    function closeBpCopyModal() {
+      document.getElementById('bpCopyModal').classList.add('hidden');
+      document.getElementById('bpCopyModal').style.display = '';
+    }
+
+    function updateBpCopyMatchText() {
+      if (!_bpCopyWinTeam || !_bpCopyLoseTeam) return;
+      const bp = parseInt(document.getElementById('bpCopyBpValue').value, 10);
+      const stadium = document.getElementById('bpCopyStadium').value.trim();
+      const tn = tournamentName || '';
+      const d = new Date();
+      const date = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+
+      if (isNaN(bp) || bp < 0) {
+        document.getElementById('bpCopyMatchInput').value = '← 変動BPを入力してください';
+        return;
+      }
+
+      const wm = (_bpCopyWinTeam.members || ['', '', '']).map(s => s || '');
+      const lm = (_bpCopyLoseTeam.members || ['', '', '']).map(s => s || '');
+      const row = (name, result, bpVal) =>
+        `${name}\t\t\t\t${result}\t${bpVal}\t\t\t\t${tn}\t\t${date}\tボーナス\t${stadium}`;
+
+      const lines = [
+        row(wm[0], 'チーム勝利', bp),
+        row(wm[1], 'チーム勝利', bp),
+        row(wm[2], 'チーム勝利', bp),
+        row(lm[0], 'チーム敗北', -bp),
+        row(lm[1], 'チーム敗北', -bp),
+        row(lm[2], 'チーム敗北', -bp),
+      ];
+      document.getElementById('bpCopyMatchInput').value = lines.join('\n');
+    }
+
+    async function copyBpText(textareaId, btn) {
+      const text = document.getElementById(textareaId).value;
+      if (!text || text.startsWith('←')) return showAlert('テキストが生成されていません');
+      const ok = await copyToClipboard(text);
+      if (!ok) return showAlert('コピーに失敗しました');
+      const orig = btn.textContent;
+      btn.textContent = '✅ コピーしました！';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    }
+
     function getBlockExportTournamentName() {
       const el = document.getElementById('tournamentNameInput');
       const v = (el && el.value.trim()) || '';
@@ -2770,6 +2881,16 @@
           else { parentLocalAdvanceBracket(); saveState(); src === 'sf' ? parentLocalRenderSemiFinal() : parentLocalRenderBracket(); }
         };
         card.appendChild(u);
+        const bp = document.createElement('button');
+        bp.type = 'button';
+        bp.textContent = '📊';
+        bp.title = 'BPコピー';
+        bp.className = 'text-xs text-cyber-green px-1 shrink-0';
+        bp.style.touchAction = 'manipulation';
+        const winTeam = match.winner === 1 ? match.t1 : match.t2;
+        const loseTeam = match.winner === 1 ? match.t2 : match.t1;
+        bp.onclick = () => openBpCopyModal(winTeam, loseTeam);
+        card.appendChild(bp);
       }
       return card;
     }
