@@ -1969,7 +1969,8 @@ async function fetchBladeMetaScore() {
 
   // ── ③ 対戦入力のボーナス行から入賞レコードを集計（スタジアム別）──
   // 列: A=選手1(0), E=順位テキスト(4), J=大会名(9), L=行種別(11)
-  const scoreMaps = { all: new Map(), ex: new Map(), inf: new Map() };
+  const scoreMaps   = { all: new Map(), ex: new Map(), inf: new Map() };
+  const awardCounts = { all: 0, ex: 0, inf: 0 };
   (rH.values || []).forEach(r => {
     if ((r[11] || '').trim() !== 'ボーナス') return;
     const rankText = (r[4] || '').trim();
@@ -1981,10 +1982,12 @@ async function fetchBladeMetaScore() {
     const rawBeys  = beyHistMap.get(`${tName}|${player}`) || [];
     const points   = info.count * RANK_COEF[rankText];
     const seenBlade = new Set();
+    let awarded = false;
     rawBeys.forEach(function(rawBey) {
       const blade = normalizeBladeForMeta(rawBey);
       if (!blade || seenBlade.has(blade)) return;
       seenBlade.add(blade);
+      awarded = true;
       scoreMaps.all.set(blade, (scoreMaps.all.get(blade) || 0) + points);
       if (info.stadium === 'extreme') {
         scoreMaps.ex.set(blade, (scoreMaps.ex.get(blade) || 0) + points);
@@ -1993,6 +1996,11 @@ async function fetchBladeMetaScore() {
         scoreMaps.inf.set(blade, (scoreMaps.inf.get(blade) || 0) + points);
       }
     });
+    if (awarded) {
+      awardCounts.all++;
+      if (info.stadium === 'extreme') awardCounts.ex++;
+      if (info.stadium === 'infinity') awardCounts.inf++;
+    }
   });
 
   // ── ④ 降順ソート・max=100 正規化（タブ別）──
@@ -2011,6 +2019,7 @@ async function fetchBladeMetaScore() {
     all: toSortedRows(scoreMaps.all),
     ex:  toSortedRows(scoreMaps.ex),
     inf: toSortedRows(scoreMaps.inf),
+    counts: awardCounts,
   };
   return bladeMetaCache;
 }
@@ -2172,10 +2181,11 @@ function renderTopStats(players) {
   fetchBladeMetaScore().then(function(data) {
     const contentEl = document.getElementById('bladeMetaContent');
     if (!contentEl) return;
+    const counts = data.counts || {};
     const tabs = [
-      { val: 'all', label: '総合',     rows: data.all || [] },
-      { val: 'ex',  label: 'Extreme',  rows: data.ex  || [] },
-      { val: 'inf', label: 'Infinity', rows: data.inf || [] },
+      { val: 'all', label: '総合',     rows: data.all || [], count: counts.all || 0 },
+      { val: 'ex',  label: 'Extreme',  rows: data.ex  || [], count: counts.ex  || 0 },
+      { val: 'inf', label: 'Infinity', rows: data.inf || [], count: counts.inf || 0 },
     ];
     const tabsHtml = tabs.map(function(tab, i) {
       return '<button data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')"'
@@ -2185,7 +2195,7 @@ function renderTopStats(players) {
         + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
         + 'touch-action:manipulation;">'
         + tab.label
-        + (tab.rows.length > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.rows.length + '</span>' : '')
+        + (tab.count > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.count + '</span>' : '')
         + '</button>';
     }).join('');
     const panelsHtml = tabs.map(function(tab, i) {
