@@ -52,7 +52,9 @@
         .btn-reload { top: 20px; left: max(75px, calc(var(--safe-left) + 75px)); color: #ec4899; border-color: #ec4899; box-shadow: 0 0 10px rgba(236,72,153,0.3); }
         .btn-bg { bottom: 20px; left: max(20px, calc(var(--safe-left) + 20px)); }
         .btn-rotate { bottom: 20px; left: max(80px, calc(var(--safe-left) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
-        .btn-hud { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: #22c55e; border-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+        .btn-pro { bottom: 20px; left: max(140px, calc(var(--safe-left) + 130px)); color: #0ea5e9; border-color: #0ea5e9; font-size: 20px; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
+        .btn-pro.active { background: rgba(14,165,233,0.2); box-shadow: 0 0 15px rgba(14,165,233,0.5); }
+        .btn-hud { bottom: 20px; left: max(200px, calc(var(--safe-left) + 190px)); color: #22c55e; border-color: #22c55e; font-size: 20px; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .btn-hud.active { background: rgba(34,197,94,0.2); box-shadow: 0 0 15px rgba(34,197,94,0.5); }
 
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
@@ -71,6 +73,8 @@
         body.pro-mode #cam-debug { display: none !important; }
         body.hud-hidden #cam-debug { display: none !important; }
         body.pro-mode .system-btn { display: none !important; }
+        body.pro-mode .btn-pro { display: flex !important; }
+        body.pro-mode .btn-hud { display: flex !important; }
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; }
         body.pro-mode #battle-counter-area { top: 15px; }
@@ -317,7 +321,11 @@
             transform: translate(-50%, -50%);
             transform-origin: center center;
         }
-        #next-battle-content { position: relative; z-index: 1; width: 100%; padding: 0 3vw; box-sizing: border-box; }
+        #next-battle-content {
+            position: relative; z-index: 1; width: 100%; box-sizing: border-box;
+            padding-left: max(3vw, var(--safe-left), var(--safe-right));
+            padding-right: max(3vw, var(--safe-left), var(--safe-right));
+        }
         @keyframes neonBlink { 0%,100%{opacity:1;text-shadow:0 0 20px #fff,0 0 40px #0ea5e9,0 0 80px #0ea5e9;} 50%{opacity:0.7;text-shadow:0 0 10px #fff,0 0 20px #0ea5e9;} }
         .next-battle-blink { animation: neonBlink 1.2s ease-in-out infinite; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-10px)} 20%{transform:translateX(10px)} 30%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 50%{transform:translateX(-10px)} 60%{transform:translateX(10px)} 70%{transform:translateX(-10px)} 80%{transform:translateX(10px)} 90%{transform:translateX(-10px)} }
@@ -437,10 +445,11 @@
         }
         #xtreme-flash.active { animation: xtreme-glow 1.2s ease-out forwards; }
         .nb-vs-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: clamp(20px, 3vw, 40px); margin: 2rem 0; }
-        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 110px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
+        .nb-player { font-family: 'Orbitron', sans-serif; font-size: clamp(34px, 7vw, 96px); font-weight: 900; color: #fff; line-height: 1.15; letter-spacing: 0.05em; text-align: center; width: 100%; }
         .nb-p1 { text-shadow: 0 0 24px #0ea5e9, 0 0 48px #0ea5e9; }
         .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
-        .nb-name-fit { display: block; font-size: clamp(40px, 8vw, 110px); font-weight: 900; line-height: 1.15; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; }
+        .nb-name-fit { display: block; font-size: clamp(34px, 7vw, 96px); font-weight: 900; line-height: 1.15; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; }
+        .nb-member-fit { display: block; font-size: 16px; font-weight: 600; margin-top: 0.3em; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; line-height: 1.2; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
 
         /* iPhone landscape / compact height — NEXT BATTLE 縮小モード */
@@ -448,8 +457,8 @@
             #next-battle-overlay .next-battle-blink { font-size: clamp(18px,3.8vw,40px) !important; margin-bottom:0.1rem !important; }
             #nb-stage-round { font-size: clamp(9px,1.2vw,13px) !important; margin-bottom:0.5rem !important; }
             .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
-            .nb-player { font-size:clamp(18px,4vw,50px) !important; }
-            .nb-player > div:last-child { font-size:clamp(10px,1.4vw,15px) !important; }
+            .nb-player { font-size:clamp(16px,3.6vw,44px) !important; }
+            .nb-member-fit { font-size:14px !important; }
             .nb-vs { font-size:clamp(26px,5vw,60px) !important; }
         }
 
@@ -618,7 +627,8 @@
     <div class="system-btn btn-timer" onclick="executeCommand('TIMER')">T</div>
     <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
     <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
-    <div class="system-btn btn-hud active" onclick="executeCommand('SYS_HUD')" id="btn-hud">📹</div>
+    <div class="system-btn btn-pro" onclick="executeCommand('SYS_PRO')" id="btn-pro" title="PRO MODE (UI表示切替)">👁</div>
+    <div class="system-btn btn-hud active" onclick="executeCommand('SYS_HUD')" id="btn-hud" title="HUD (非表示/表示)">📹</div>
 <div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">📝</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 <div class="system-btn btn-fps" onclick="toggleFps()" id="btn-fps">FPS</div>
@@ -1056,6 +1066,13 @@
             if (btn) btn.classList.toggle('active', isHudVisible);
         }
 
+        function toggleProMode() {
+            blurFocus();
+            document.body.classList.toggle('pro-mode');
+            const btn = document.getElementById('btn-pro');
+            if (btn) btn.classList.toggle('active', document.body.classList.contains('pro-mode'));
+        }
+
         function toggleStatsDisplay() {
             blurFocus();
             let anyVisible = false;
@@ -1388,6 +1405,10 @@
               document.getElementById('btn-winpoint').innerText = winPointMode;
               return;
             }
+            if (cmd === 'SYS_TOGGLE_WINPOINT') {
+              toggleWinPoint();
+              return;
+            }
             if (cmd === 'REPLAY_TOGGLE') { toggleReplayMode(); return; }
             if (cmd === 'SYS_HUD') { toggleHudVisibility(); return; }
             
@@ -1434,7 +1455,7 @@
                     replayVideo.play().then(() => { updateReplaySeekUI(); updateStatusMsg("▶ 1.0"); });
                 }
             } else {
-                if (cmd === 'SYS_PRO') document.body.classList.toggle('pro-mode');
+                if (cmd === 'SYS_PRO') toggleProMode();
                 if (cmd === 'SYS_CAM') rotateCamera();
                 if (cmd === 'SYS_STATS') toggleStatsDisplay();
                 if (cmd === 'CALL') { if (isCalling) cancelCall(); else startCall(); }
@@ -1489,6 +1510,7 @@
                 if (key === '-') executeCommand('TIMER');
                 if (key === '*') { e.preventDefault(); location.reload(); }
                 if (key === 'Enter') { e.preventDefault(); executeCommand('REPLAY_TOGGLE'); }
+                if (key === 'Tab') { e.preventDefault(); executeCommand('SYS_STATS'); }
                 if (key === '5') executeCommand('SYS_SWAP');
 
                 if (key === '7') executeCommand('P1_X');
@@ -1664,15 +1686,48 @@
 
         const DEFAULT_NEXT_BATTLE_LOGO = 'torabo_logo.png';
 
-        function fitNbName(id) {
+        function fitNbName(id, solo) {
             const container = document.getElementById(id);
             const el = container && container.querySelector('.nb-name-fit');
             if (!el) return;
             el.style.fontSize = '';
-            const minSize = 24;
+            const compact = window.matchMedia('(max-height: 500px)').matches;
+            const minSize = solo ? (compact ? 16 : 34) : (compact ? 14 : 20);
             const avail = container.clientWidth;
+            if (avail <= 0) return;
             if (el.scrollWidth > avail) {
                 let size = Math.max(minSize, Math.floor(parseFloat(window.getComputedStyle(el).fontSize) * avail / el.scrollWidth));
+                el.style.fontSize = size + 'px';
+                while (el.scrollWidth > avail && size > minSize) {
+                    size -= 1;
+                    el.style.fontSize = size + 'px';
+                }
+            }
+        }
+
+        function fitNbNamesAfterLayout(p1members, p2members) {
+            const p1solo = !p1members || p1members.length === 0;
+            const p2solo = !p2members || p2members.length === 0;
+            const run = () => {
+                fitNbName('nb-p1', p1solo);
+                fitNbName('nb-p2', p2solo);
+                fitNbMember('nb-p1');
+                fitNbMember('nb-p2');
+            };
+            requestAnimationFrame(() => requestAnimationFrame(run));
+        }
+
+        function fitNbMember(id) {
+            const container = document.getElementById(id);
+            const el = container && container.querySelector('.nb-member-fit');
+            if (!el) return;
+            const baseSize = window.matchMedia('(max-height: 500px)').matches ? 14 : 16;
+            const minSize = 10;
+            el.style.fontSize = baseSize + 'px';
+            el.style.whiteSpace = 'nowrap';
+            const avail = container.clientWidth;
+            if (el.scrollWidth > avail) {
+                let size = Math.max(minSize, Math.floor(baseSize * avail / el.scrollWidth));
                 el.style.fontSize = size + 'px';
                 while (el.scrollWidth > avail && size > minSize) {
                     size -= 1;
@@ -1711,17 +1766,18 @@
             }
             
             document.getElementById('nb-stage-round').textContent = stageText;
-            const mkPlayerHtml = (name, members, color) => {
-              const memberLine = members && members.length > 0
-                ? `<div style="font-size:clamp(15px,2.2vw,26px);font-weight:400;opacity:0.7;margin-top:0.3em;letter-spacing:0.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${members.join('　/　')}</div>`
+            const mkPlayerHtml = (name, members) => {
+              const solo = !members || members.length === 0;
+              const memberLine = !solo
+                ? `<div class="nb-member-fit">${members.join('　/　')}</div>`
                 : '';
-              return `<div class="nb-name-fit" style="white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
+              const soloCls = solo ? ' nb-solo' : '';
+              return `<div class="nb-name-fit${soloCls}" style="white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
             };
-            document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members, '#0ea5e9');
-            document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members, '#ec4899');
+            document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members);
+            document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members);
             overlay.classList.remove('hidden');
-            fitNbName('nb-p1');
-            fitNbName('nb-p2');
+            fitNbNamesAfterLayout(p1members, p2members);
         }
         function hideNextBattle() {
             document.getElementById('next-battle-overlay').classList.add('hidden');

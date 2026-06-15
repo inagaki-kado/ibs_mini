@@ -90,6 +90,7 @@
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
+        <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
         <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       </div>
 
@@ -277,6 +278,15 @@
           <h3 class="font-sf text-cyber-green text-sm mb-2">③ ブロックデータ出力（子機へコピー）</h3>
           <p class="text-[10px] text-cyber-text opacity-70 mb-3">各スタジアムのデータを LINE 等で子機担当者へ送ってください。</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="block-export-cards"></div>
+        </div>
+
+        <div class="bg-cyber-dark border border-cyber-blue rounded-lg p-4">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <h3 class="font-sf text-cyber-blue text-sm">ブロック予選 · 途中経過（第<span id="block-prelim-part-label">1</span>部）</h3>
+            <button type="button" id="tv-btn-block-prelim" onclick="toggleBlockPrelimTvMode()" style="touch-action:manipulation"
+              class="w-7 h-7 rounded-full border-2 border-cyber-blue text-cyber-blue bg-cyber-dark flex items-center justify-center text-xs transition-all hover:shadow-[0_0_10px_#0ea5e9] shrink-0" title="HUDに途中経過を表示">📺</button>
+          </div>
+          <div id="blockPrelimSummary"></div>
         </div>
 
         <!-- block.html 準拠：自担当スタジアムのブロック戦・代表決定戦 -->
@@ -1244,6 +1254,7 @@
     let isTvMode_active = false;
     let isTvMode_results = false;
     let isFinalBracketTvMode = false;
+    let isBlockPrelimTvMode = false;
     let finalResultsOverlaySent = false;
     let activeNextBattleId = null;
     const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
@@ -1343,7 +1354,7 @@
 
     function sendRemoteCmd(cmd) {
         if(!conn || !conn.open) {
-            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM') return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
+            if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM' || cmd === 'SYS_HUD') return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
@@ -1411,6 +1422,7 @@
       renderBlockFormedTeams();
       renderBlockAssignSlots();
       updateParentLocalBlockUiVisibility();
+      renderBlockPrelimSummary();
       saveState();
     }
     function updatePartTabButtons() {
@@ -1536,20 +1548,58 @@
       if (oks.length) ta.value = '';
     }
 
+    function getFinalSlotTeamCandidates(partNum, blocks) {
+      const ctx = partContexts[partNum] || createDefaultPartContext();
+      const stadiumTeams = ctx.stadiumTeams || { A: [], B: [], C: [], D: [] };
+      const seen = new Set();
+      const result = [];
+      blocks.forEach(st => {
+        (stadiumTeams[st] || []).forEach(tid => {
+          if (seen.has(tid)) return;
+          const t = eventBlockTeams.find(x => x.id === tid);
+          if (!t) return;
+          seen.add(tid);
+          result.push({ team: t, block: st });
+        });
+      });
+      return result;
+    }
+
     function renderFinalSlots() {
       const cands = collectFinalFinalists();
       [
-        { id: 'final-slot-1', team: cands.slot1 },
-        { id: 'final-slot-2', team: cands.slot2 },
-        { id: 'final-slot-3', team: cands.slot3 },
-        { id: 'final-slot-4', team: cands.slot4 }
-      ].forEach(({ id, team }) => {
+        { id: 'final-slot-1', team: cands.slot1, part: 1, blocks: ['A', 'B'] },
+        { id: 'final-slot-2', team: cands.slot2, part: 2, blocks: ['A', 'B'] },
+        { id: 'final-slot-3', team: cands.slot3, part: 1, blocks: ['C', 'D'] },
+        { id: 'final-slot-4', team: cands.slot4, part: 2, blocks: ['C', 'D'] }
+      ].forEach(({ id, team, part, blocks }) => {
         const sel = document.getElementById(id);
         if (!sel) return;
         const prev = sel.value;
         sel.innerHTML = '';
         sel.appendChild(new Option('— 未選択（代表未確定）—', ''));
-        eventBlockTeams.forEach(t => sel.appendChild(new Option(t.name, String(t.id))));
+        const added = new Set();
+        blocks.forEach(st => {
+          const entries = getFinalSlotTeamCandidates(part, [st]);
+          if (!entries.length) return;
+          const og = document.createElement('optgroup');
+          og.label = '第' + part + '部 Block ' + st;
+          entries.forEach(({ team: t }) => {
+            og.appendChild(new Option(t.name, String(t.id)));
+            added.add(String(t.id));
+          });
+          sel.appendChild(og);
+        });
+        const ensureIds = [];
+        if (team && team.id) ensureIds.push(String(team.id));
+        if (prev && !ensureIds.includes(prev)) ensureIds.push(prev);
+        ensureIds.forEach(eid => {
+          if (added.has(eid)) return;
+          const t = eventBlockTeams.find(x => String(x.id) === eid);
+          if (!t) return;
+          sel.appendChild(new Option(t.name + ' ★', eid));
+          added.add(eid);
+        });
         let chosen = '';
         if (team) {
           if (team.id) {
@@ -1561,7 +1611,7 @@
             if (found) chosen = String(found.id);
           }
         }
-        sel.value = chosen || prev || '';
+        sel.value = chosen || (prev && added.has(prev) ? prev : '') || '';
         sel.style.borderColor = sel.value ? '#22c55e' : '';
       });
     }
@@ -2398,6 +2448,7 @@
       }
       saveState();
       renderBlockImportedReps();
+      renderBlockPrelimSummary();
       const repName = data.representative && data.representative.name ? data.representative.name : '?';
       showAlert('✅ ' + data.stadium + 'ブロック 第' + data.part + '部 の結果を取り込みました。代表: ' + repName);
     }
@@ -2408,6 +2459,7 @@
       renderBlockAssignSlots();
       renderBlockImportedReps();
       updateParentLocalBlockUiVisibility();
+      renderBlockPrelimSummary();
     }
 
     function getParentLocalStadiumCode() {
@@ -2880,7 +2932,8 @@
     }
 
     let toraboTabMode = 'score';
-    function switchToraboTab(mode) {
+    function switchToraboTab(mode, options = {}) {
+      const syncHud = options.syncHud !== false;
       const tabScore   = document.getElementById('tbr-tab-score');
       const tabReplay  = document.getElementById('tbr-tab-replay');
       const scoreRow   = document.getElementById('tbr-rm-score-btn-row');
@@ -2893,7 +2946,10 @@
         beyRow.classList.remove('hidden');
         replayArea.classList.remove('flex');
         replayArea.classList.add('hidden');
-        if (toraboTabMode === 'replay') { sendToraboRemoteCmd('REPLAY_TOGGLE'); toraboTabMode = 'score'; }
+        if (toraboTabMode === 'replay') {
+          if (syncHud) sendToraboRemoteCmd('REPLAY_TOGGLE');
+          toraboTabMode = 'score';
+        }
       } else {
         tabReplay.className = 'flex-1 py-2 font-bold font-sf text-xs border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_8px_#ec4899]';
         tabScore.className  = 'flex-1 py-2 font-bold font-sf text-xs border border-cyber-pink text-cyber-pink rounded transition-all hover:bg-cyber-pink/20';
@@ -2905,11 +2961,15 @@
         const rbr = document.getElementById('tbr-replay-lbl-right');
         if (lbl) lbl.textContent = document.getElementById('tbr-rm-left-name')?.textContent || 'LEFT';
         if (rbr) rbr.textContent = document.getElementById('tbr-rm-right-name')?.textContent || 'RIGHT';
-        if (toraboTabMode === 'score') { sendToraboRemoteCmd('REPLAY_TOGGLE'); toraboTabMode = 'replay'; }
+        if (toraboTabMode === 'score') {
+          if (syncHud) sendToraboRemoteCmd('REPLAY_TOGGLE');
+          toraboTabMode = 'replay';
+        }
       }
     }
 
     function toraboScoreFromReplay(side, cmd, pts) {
+      if (toraboTabMode === 'replay') switchToraboTab('score', { syncHud: false });
       toraboSendScore(side, cmd, pts);
     }
 
@@ -3321,6 +3381,9 @@
     }
 
     function handleScoreCmd(side, cmd, pts) {
+        if (currentRemoteMode === 'replay' && cmd !== 'SYS_RESET') {
+          switchRemoteTab('score', { syncHud: false });
+        }
         if (cmd === 'SYS_RESET') {
             sendRemoteCmd('RESET');
             remoteScoreLeft = 0;
@@ -3538,7 +3601,8 @@
         closeRemoteModal();
     }
 
-    function switchRemoteTab(mode) {
+    function switchRemoteTab(mode, options = {}) {
+        const syncHud = options.syncHud !== false;
         const tabScore = document.getElementById('tab-remote-score'); const tabReplay = document.getElementById('tab-remote-replay');
         const areaScore = document.getElementById('remote-score-area'); const areaReplay = document.getElementById('remote-replay-area');
         if (mode === 'score') {
@@ -3546,13 +3610,19 @@
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 rounded transition-all";
             areaScore.classList.remove('hidden'); areaScore.classList.add('flex');
             areaReplay.classList.add('hidden'); areaReplay.classList.remove('flex');
-            if (currentRemoteMode === 'replay') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'score'; }
+            if (currentRemoteMode === 'replay') {
+              if (syncHud) sendRemoteCmd('REPLAY_TOGGLE');
+              currentRemoteMode = 'score';
+            }
         } else {
             tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_10px_#ec4899]";
             tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 rounded transition-all";
             areaReplay.classList.remove('hidden'); areaReplay.classList.add('flex');
             areaScore.classList.add('hidden'); areaScore.classList.remove('flex');
-            if (currentRemoteMode === 'score') { sendRemoteCmd('REPLAY_TOGGLE'); currentRemoteMode = 'replay'; }
+            if (currentRemoteMode === 'score') {
+              if (syncHud) sendRemoteCmd('REPLAY_TOGGLE');
+              currentRemoteMode = 'replay';
+            }
         }
     }
 
@@ -4269,13 +4339,35 @@
       return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
     }
 
+    function resolveMatchByKey(matchKey) {
+      const parts = String(matchKey).split('-');
+      if (parts.length < 3) return null;
+      const block = parts[0];
+      const matchIdx = parseInt(parts[parts.length - 1], 10);
+      const roundIdx = parts.slice(1, -1).join('-');
+      if (block === 'finals') {
+        return roundIdx === 'sf' ? finals.sf[matchIdx] : finals[roundIdx];
+      }
+      const ri = parseInt(roundIdx, 10);
+      return blockMatches[block] && blockMatches[block][ri] ? blockMatches[block][ri][matchIdx] : null;
+    }
+
     function sendNextBattle(matchKey, p1, p2, stage, round) {
       if (activeNextBattleId === matchKey) {
         if (conn) conn.send({ type: 'HIDE_PREVIEW' });
         activeNextBattleId = null;
       } else {
         const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
+        const match = resolveMatchByKey(matchKey);
+        if (conn) conn.send({
+          type: 'SHOW_PREVIEW',
+          p1: match?.p1?.name || p1,
+          p2: match?.p2?.name || p2,
+          p1members: (match?.p1?.members || []).filter(Boolean),
+          p2members: (match?.p2?.members || []).filter(Boolean),
+          label,
+          ...getShowPreviewHudFields()
+        });
         activeNextBattleId = matchKey;
       }
     }
