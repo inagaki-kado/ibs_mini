@@ -2763,8 +2763,42 @@ async function shareBladerStats(dataset) {
   const bey1Name = beys.split('|').filter(Boolean)[0] || '';
 
   const latestHistoryLine = (() => {
-    if (!historyLog || !historyLog.trim()) return '';
-    const histLines = historyLog.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const enriched = enrichParticipationHistory(name, historyLog);
+    if (!enriched || !enriched.trim()) return '';
+
+    const lookupRecord = (date, tourName) => {
+      if (tournamentStatsByPlayer && tournamentStatsByPlayer[name]) {
+        const pmap = tournamentStatsByPlayer[name];
+        const key = `${date}|${tourName}`;
+        let rec = pmap[key];
+        if (!rec) {
+          for (const k of Object.keys(pmap)) {
+            const sep = k.indexOf('|');
+            if (sep < 0) continue;
+            const kd = k.slice(0, sep);
+            const kt = k.slice(sep + 1);
+            if (kd === date && (kt === tourName || tourName.includes(kt) || kt.includes(tourName))) {
+              rec = pmap[k]; break;
+            }
+          }
+        }
+        if (rec && rec.matches > 0) return `【${rec.matches}戦${rec.wins}勝】`;
+      }
+      const details = matchDetailsByPlayer && matchDetailsByPlayer[name];
+      if (details && details.length > 0) {
+        const rel = details.filter(d => {
+          if (!d || !d.tName) return false;
+          const tn = d.tName.trim();
+          return tn === tourName || tn.includes(tourName) || tourName.includes(tn);
+        });
+        if (rel.length > 0) {
+          return `【${rel.length}戦${rel.filter(d => d.isWin).length}勝】`;
+        }
+      }
+      return '';
+    };
+
+    const histLines = enriched.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     histLines.sort((a, b) => {
       const da = a.match(/^(\d{4}\/\d{2}\/\d{2})/);
       const db = b.match(/^(\d{4}\/\d{2}\/\d{2})/);
@@ -2772,11 +2806,15 @@ async function shareBladerStats(dataset) {
     });
     const latest = histLines[0];
     if (!latest) return '';
-    const m = latest.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+?)(?:\s+(【\d+戦\d+勝】))?$/);
+
+    const recM = latest.match(/【\d+戦\d+勝】/);
+    let record = recM ? recM[0] : '';
+    const lineBody = record ? latest.replace(record, '').trim() : latest;
+    const m = lineBody.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+)$/);
     if (!m) return `【最新参加履歴】 ${latest}`;
     const date     = m[1];
     const tourName = m[2].trim();
-    const record   = m[3] || '';
+    if (!record) record = lookupRecord(date, tourName);
 
     let awardBadge = '';
     if (awardsLog && awardsLog.trim()) {
