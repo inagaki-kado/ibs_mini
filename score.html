@@ -60,8 +60,6 @@
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); } 
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
-        .btn-visibility { bottom: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #a78bfa; border-color: #a78bfa; font-size: 20px; box-shadow: 0 0 10px rgba(167,139,250,0.3); }
-        .btn-visibility.active { background: rgba(167,139,250,0.2); box-shadow: 0 0 15px rgba(167,139,250,0.5); }
         .btn-fps { top: 20px; left: max(130px, calc(var(--safe-left) + 130px)); color: #22c55e; border-color: #22c55e; font-size: 11px; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .btn-fps.active { background: rgba(34,197,94,0.2); box-shadow: 0 0 15px rgba(34,197,94,0.5); }
         .btn-cammode { top: 20px; left: max(185px, calc(var(--safe-left) + 185px)); color: #ffaa00; border-color: #ffaa00; font-size: 11px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
@@ -492,9 +490,6 @@
             border-color: #ec4899;
             box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
         }
-        body.pro-mode .beyblade-box {
-            /* 表示はtoggleVisibility()で制御 */
-        }
     </style>
 </head>
 <body>
@@ -627,7 +622,6 @@
     <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
     <div class="system-btn btn-pro" onclick="executeCommand('SYS_PRO')" id="btn-pro" title="PRO MODE (UI表示切替)">👁</div>
     <div class="system-btn btn-hud active" onclick="executeCommand('SYS_HUD')" id="btn-hud" title="HUD (非表示/表示)">📹</div>
-<div class="system-btn btn-visibility active" onclick="toggleVisibility()" id="btn-visibility">📝</div>
 <div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
 <div class="system-btn btn-fps" onclick="toggleFps()" id="btn-fps">FPS</div>
 <div class="system-btn btn-cammode" onclick="toggleCamMode()" id="btn-cammode">60</div>
@@ -1085,8 +1079,6 @@
             });
             const sbtn = document.getElementById('btn-stats');
             if (sbtn) sbtn.classList.toggle('active', anyVisible);
-            const vbtn = document.getElementById('btn-visibility');
-            if (vbtn) vbtn.classList.toggle('active', anyVisible);
         }
 
         // ===== FPS計測オーバーレイ =====
@@ -1122,21 +1114,6 @@
             };
             if (camVideo.requestVideoFrameCallback) camVideo.requestVideoFrameCallback(tick);
             else requestAnimationFrame(tick);
-        }
-
-        function toggleVisibility() {
-            blurFocus();
-            isStatsVisible = !isStatsVisible;
-            // 戦績ブロック（RANK / BP / WR）
-            document.querySelectorAll('.player-stats-block').forEach(b => {
-                b.style.display = isStatsVisible ? 'flex' : 'none';
-            });
-            // ベイブレード名ボックス（データがある場合のみ表示）
-            document.querySelectorAll('.beyblade-box').forEach(b => {
-                b.style.display = (isStatsVisible && b.textContent.trim()) ? 'block' : 'none';
-            });
-            const btn = document.getElementById('btn-visibility');
-            if (btn) btn.classList.toggle('active', isStatsVisible);
         }
 
         function startCall() {
@@ -1372,6 +1349,7 @@
         function executeCommand(cmd) {
             // ★修正：タッグ戦アプリからの "reset" コマンドも許容するように変更
             if (cmd === 'SYS_RESET' || cmd === 'reset') { resetGame(); return; }
+            if (cmd === 'SYS_RELOAD') { location.reload(); return; }
             if (cmd === 'P1_WIN') {
               // 決まり手エフェクト表示中（2秒）は遅延してWIN表示する
               const winEl = document.getElementById('win-display');
