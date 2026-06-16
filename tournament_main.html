@@ -2794,7 +2794,7 @@
         nb.textContent = '📢';
         nb.title = 'NEXT BATTLE 予告';
         nb.className = 'text-sm shrink-0';
-        nb.onclick = () => parentLocalSendNextBattle(match);
+        nb.onclick = () => parentLocalSendNextBattle(match, src, rIdx, mIdx);
         card.appendChild(nb);
         const rb = document.createElement('button');
         rb.type = 'button';
@@ -2910,17 +2910,29 @@
       else { parentLocalAdvanceBracket(); saveState(); src === 'sf' ? parentLocalRenderSemiFinal() : parentLocalRenderBracket(); }
     }
 
-    function parentLocalSendNextBattle(match) {
+    function parentLocalSendNextBattle(match, src, rIdx, mIdx) {
       if (!conn || !conn.open) return showAlert('score.html（HUD）が未接続です。');
       const st = getParentLocalStadiumCode();
       const part = getParentLocalPartNum();
+      let label;
+      if (src === 'sf') {
+        label = '代表決定戦';
+      } else if (src === 'final_bracket') {
+        label = rIdx === 0 ? 'FINAL STAGE - ROUND 1' : 'FINAL STAGE - FINAL';
+      } else if (src === 'final_third') {
+        label = 'FINAL STAGE - 3RD PLACE MATCH';
+      } else if (src === 'third') {
+        label = (st ? st + ' BLOCK - ' : '') + '3位決定戦';
+      } else {
+        label = st + ' BLOCK - 第' + part + '部';
+      }
       conn.send({
         type: 'SHOW_PREVIEW',
         p1: match.t1?.name || '?',
         p2: match.t2?.name || '?',
         p1members: (match.t1?.members || []).filter(Boolean),
         p2members: (match.t2?.members || []).filter(Boolean),
-        label: st + ' BLOCK - 第' + part + '部',
+        label,
         ...getShowPreviewHudFields()
       });
     }
