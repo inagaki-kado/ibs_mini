@@ -1144,6 +1144,14 @@
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
 
+    function renameParticipant(id) {
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+      const newName = prompt('新しいブレーダー名を入力', p.name);
+      if (!newName || newName.trim() === '' || newName.trim() === p.name) return;
+      p.name = newName.trim();
+      renderParticipants();
+    }
 
     function getSortedParticipants() {
       let sorted = [...participants];
@@ -1172,6 +1180,7 @@
         tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue">${idx + 1}</td>
         <td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td>
         <td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック">📷</button></td>
+        <td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" title="名前を変更">✏️</button></td>
         <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
