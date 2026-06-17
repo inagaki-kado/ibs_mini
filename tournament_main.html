@@ -179,6 +179,7 @@
                     <th id="th-name-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-blue transition-colors" onclick="toggleParticipantSort('name')">NAME / STATS <span id="sort-icon-name-t"></span></th>
                     <th id="th-team-t" class="p-3 text-sm font-sf cursor-pointer hover:text-cyber-pink transition-colors text-left" onclick="toggleParticipantSort('team')">TEAM <span id="sort-icon-team-t"></span></th>
                     <th class="p-3 text-sm text-center font-sf w-20">🗳️</th>
+                    <th class="p-3 text-sm text-center font-sf w-12"></th>
                     <th class="p-3 text-sm text-center font-sf w-16">ACTION</th>
                   </tr>
                 </thead>
@@ -3950,7 +3951,22 @@
       const p = participants.find(x => x.id === id); if(p && p.color) blockData[p.color][p.position] = null;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
-    
+
+    function renameParticipant(id) {
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+      const newName = prompt('新しいブレーダー名を入力', p.name);
+      if (!newName || newName.trim() === '' || newName.trim() === p.name) return;
+      const trimmed = newName.trim();
+      p.name = trimmed;
+      eventBlockTeams.forEach(t => {
+        const idx = (t.memberIds || []).indexOf(id);
+        if (idx === -1) return;
+        if (t.members) t.members[idx] = trimmed;
+        t.name = (t.members || []).filter(Boolean).join(' / ') || t.name;
+      });
+      renderParticipants();
+    }
 
     function toggleSetupSwapMode() {
       if(isTournamentStarted) return;
@@ -4062,7 +4078,7 @@
         const teamNameCell = memberTeam
           ? `<td class="p-3 text-xs text-cyber-pink font-sf truncate max-w-[80px]">${memberTeam.name}</td>`
           : `<td class="p-3 text-xs text-cyber-text opacity-30 font-sf">—</td>`;
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}${nameCellExtra}</td>${teamNameCell}<td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}${nameCellExtra}</td>${teamNameCell}<td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
