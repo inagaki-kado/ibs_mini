@@ -163,7 +163,6 @@
                 <option value="none">非表示</option>
               </select>
             </label>
-            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -1236,24 +1235,6 @@
     let isParentLocalSwapMode = false;
     let parentLocalSwapPending = null; // { mIdx: number }
 
-    let isEffectOn = true;
-
-    function toggleEffectMode() {
-        isEffectOn = !isEffectOn;
-        const btn = document.getElementById('btn-toggle-effect');
-        if (!btn) return;
-        if (isEffectOn) {
-            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
-            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-            btn.innerText = "✨ 演出: ON";
-        } else {
-            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
-            btn.innerText = "✨ 演出: OFF";
-        }
-        saveState();
-    }
-
     function calculateRate(wins, matches) {
         if (matches === 0) return '0.00%';
         return ((wins / matches) * 100).toFixed(2) + '%';
@@ -2011,12 +1992,21 @@
       const el = document.getElementById('block-formed-teams-list');
       if (!el) return;
       el.innerHTML = '';
-      eventBlockTeams.forEach((t) => {
+      const finalistIds = new Set();
+      if (finalBracketStarted && finalBracketRounds[0]) {
+        finalBracketRounds[0].forEach(m => {
+          if (m.t1 && m.t1.id != null) finalistIds.add(m.t1.id);
+          if (m.t2 && m.t2.id != null) finalistIds.add(m.t2.id);
+        });
+      }
+      const sortedTeams = [...eventBlockTeams].sort((a, b) => (finalistIds.has(a.id) ? 0 : 1) - (finalistIds.has(b.id) ? 0 : 1));
+      sortedTeams.forEach((t) => {
+        const isFinal = finalistIds.has(t.id);
         const row = document.createElement('div');
-        row.className = 'flex justify-between items-center gap-2 bg-[#0a0e17] border border-cyber-table-border rounded px-2 py-1 text-xs';
+        row.className = 'flex justify-between items-center gap-2 bg-[#0a0e17] border rounded px-2 py-1 text-xs ' + (isFinal ? 'border-cyber-red' : 'border-cyber-table-border');
         const names = (t.members || []).filter(Boolean).join(' / ') || t.name;
         const span = document.createElement('span');
-        span.className = 'flex-1 truncate';
+        span.className = 'flex-1 truncate' + (isFinal ? ' text-cyber-red font-bold' : '');
         const partLabel = t.part ? (String(t.part) === '1' ? '[第1部] ' : '[第2部] ') : '';
         span.textContent = partLabel + t.name + ' — ' + names;
         const rnBtn = document.createElement('button');
@@ -5081,7 +5071,7 @@
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
-          blockActivePositions, blockMatches, finals, isEffectOn,
+          blockActivePositions, blockMatches, finals,
           eventBlockTeams, blockTeamIdCounter,
           hudPreviewBackground,
           activePartNum, partContexts,
@@ -5118,7 +5108,6 @@
         blockActivePositions = s.blockActivePositions || {};
         blockMatches = s.blockMatches || {};
         finals = s.finals || {};
-        isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
         eventBlockTeams = s.eventBlockTeams || [];
         blockTeamIdCounter = s.blockTeamIdCounter || 1;
         const pls = document.getElementById('parent-local-block-stadium');
@@ -5175,8 +5164,6 @@
       document.getElementById('setupSection').classList.add('hidden');
       document.getElementById('mainManagementSection').classList.remove('hidden');
       document.getElementById('mainManagementSection').classList.add('flex');
-      const effectBtn = document.getElementById('btn-toggle-effect');
-      if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
       recalculateAllStats();
       renderParticipants();
       updateParentLocalBlockUiVisibility();
@@ -5642,10 +5629,52 @@
       closeBeybladeSelectModal();
     }
 
+    function checkDeckDuplication(participant, newParts, skipIndex = -1) {
+      const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+      const PART_LABELS = {
+        BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+        MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+        RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+      };
+      const warnings = [];
+      const team = eventBlockTeams.find(t => (t.memberIds || []).includes(participant.id));
+      const compareList = [];
+
+      if (team) {
+        (team.memberIds || []).forEach(mid => {
+          const member = participants.find(p => p.id === mid);
+          if (!member) return;
+          (member.beyblades || []).forEach((bey, idx) => {
+            if (mid === participant.id && idx === skipIndex) return;
+            if (!bey.parts) return;
+            compareList.push({ bey, owner: member.name });
+          });
+        });
+      } else {
+        (participant.beyblades || []).forEach((bey, idx) => {
+          if (idx === skipIndex || !bey.parts) return;
+          compareList.push({ bey, owner: participant.name });
+        });
+      }
+
+      compareList.forEach(({ bey, owner }) => {
+        Object.keys(newParts).filter(k => k !== 'type').forEach(key => {
+          const val = newParts[key];
+          if (!val || val === 'なし') return;
+          if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
+          if (bey.parts[key] === val) {
+            const label = team ? `${owner}（${bey.name}）` : bey.name;
+            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${label} と重複`);
+          }
+        });
+      });
+      return warnings;
+    }
+
     /**
      * ベイブレード選択を完了
      */
-    function completeBeybladeSelection() {
+    async function completeBeybladeSelection() {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       if (!participant) return;
       const maxBey = getMaxBeybladesForParticipantId(participant.id);
@@ -5680,6 +5709,16 @@
         name: name,
         parts: {...currentBeybladeSelection}
       };
+
+      const dupSkipIdx = (typeof beyChangeModeActive !== 'undefined' && beyChangeModeActive && beyChangeTargetIndex >= 0)
+        ? beyChangeTargetIndex : -1;
+      const dupWarnings = checkDeckDuplication(participant, currentBeybladeSelection, dupSkipIdx);
+      if (dupWarnings.length > 0) {
+        const inTeam = eventBlockTeams.some(t => (t.memberIds || []).includes(participant.id));
+        const scope = inTeam ? 'チーム内' : 'デッキ内';
+        const msg = `⚠️ ${scope}にパーツの重複があります:\n・${dupWarnings.join('\n・')}\n\nレギュレーションによっては問題ありませんが、このまま登録しますか？`;
+        if (!await showConfirm(msg)) return;
+      }
       
       participant.beyblades.push(beyblade);
       

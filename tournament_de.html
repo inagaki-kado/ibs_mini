@@ -1686,7 +1686,15 @@
       participants = participants.filter(x => x.id !== id); renderParticipants();
       void syncToSheets();
     }
-    
+
+    function renameParticipant(id) {
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+      const newName = prompt('新しいブレーダー名を入力', p.name);
+      if (!newName || newName.trim() === '' || newName.trim() === p.name) return;
+      p.name = newName.trim();
+      renderParticipants();
+    }
 
     function toggleSetupSwapMode() {
       if(isTournamentStarted) return;
@@ -1782,7 +1790,7 @@
             ? '<button type="button" disabled class="bg-cyber-dark border border-gray-600 text-gray-500 px-2 py-1 rounded font-bold text-xs cursor-not-allowed opacity-50">✅ 変更済</button>'
             : `<button type="button" onclick="openBeyChangeModal(${p.id})" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded font-bold text-xs transition-colors">🔄 ベイ変更</button>`)
           : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -3767,10 +3775,32 @@
       closeBeybladeSelectModal();
     }
 
+    function checkDeckDuplication(participant, newParts, skipIndex = -1) {
+      const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+      const PART_LABELS = {
+        BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+        MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+        RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+      };
+      const warnings = [];
+      (participant.beyblades || []).forEach((bey, idx) => {
+        if (idx === skipIndex || !bey.parts) return;
+        Object.keys(newParts).filter(k => k !== 'type').forEach(key => {
+          const val = newParts[key];
+          if (!val || val === 'なし') return;
+          if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
+          if (bey.parts[key] === val) {
+            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${bey.name} と重複`);
+          }
+        });
+      });
+      return warnings;
+    }
+
     /**
      * ベイブレード選択を完了
      */
-    function completeBeybladeSelection() {
+    async function completeBeybladeSelection() {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       
       // ベイブレード名を自動生成（記号なし、間を詰める）
@@ -3797,6 +3827,14 @@
         name: name,
         parts: {...currentBeybladeSelection}
       };
+
+      const dupSkipIdx = (typeof beyChangeModeActive !== 'undefined' && beyChangeModeActive && beyChangeTargetIndex >= 0)
+        ? beyChangeTargetIndex : -1;
+      const dupWarnings = checkDeckDuplication(participant, currentBeybladeSelection, dupSkipIdx);
+      if (dupWarnings.length > 0) {
+        const msg = `⚠️ デッキ内にパーツの重複があります:\n・${dupWarnings.join('\n・')}\n\nレギュレーションによっては問題ありませんが、このまま登録しますか？`;
+        if (!await showConfirm(msg)) return;
+      }
       
       if (beyChangeModeActive && beyChangeTargetIndex >= 0) {
         const before = participant.beyblades[beyChangeTargetIndex];

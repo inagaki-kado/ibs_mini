@@ -129,7 +129,6 @@
             <img id="previewLogoThumb" src="" alt="" class="h-8 max-w-[72px] object-contain rounded border border-cyber-table-border hidden">
           </div>
         </div>
-        <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
         <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
       </div>
       
@@ -422,7 +421,6 @@
 
     let isSetupSwapMode = false;
     let setupSwapPending = null;
-    let isEffectOn = true;
 
     function calculateRate(wins, matches) {
         if (matches === 0) return '0.00%';
@@ -575,21 +573,6 @@
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
     }
 
-    function toggleEffectMode() {
-        isEffectOn = !isEffectOn;
-        const btn = document.getElementById('btn-toggle-effect');
-        if (!btn) return;
-        if (isEffectOn) {
-            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
-            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-            btn.innerText = "✨ 演出: ON";
-        } else {
-            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
-            btn.innerText = "✨ 演出: OFF";
-        }
-        saveState();
-    }
 
     // ==========================================
     // リモコンモーダル ＆ スコア連動
@@ -1000,6 +983,7 @@
         tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-orange text-sm">${originalNo}</td>
         <td ${nameCellClick}>${p.name} ${memoBadge}${statsDisplay}</td>
         <td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''}>🗳️${beyBadge}</button></td>
+        <td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-orange text-xs border border-cyber-orange hover:bg-cyber-orange hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''} title="名前を変更">✏️</button></td>
         <td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
@@ -1230,7 +1214,28 @@
       }
     }
     function cancelBeybladeSelect() { closeBeybladeSelectModal(); }
-    function completeBeybladeSelection() {
+    function checkDeckDuplication(participant, newParts, skipIndex = -1) {
+      const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+      const PART_LABELS = {
+        BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+        MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+        RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+      };
+      const warnings = [];
+      (participant.beyblades || []).forEach((bey, idx) => {
+        if (idx === skipIndex || !bey.parts) return;
+        Object.keys(newParts).filter(k => k !== 'type').forEach(key => {
+          const val = newParts[key];
+          if (!val || val === 'なし') return;
+          if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
+          if (bey.parts[key] === val) {
+            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${bey.name} と重複`);
+          }
+        });
+      });
+      return warnings;
+    }
+    async function completeBeybladeSelection() {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       let name = '';
       const type = currentBeybladeSelection.type;
@@ -1238,7 +1243,13 @@
       else if (type === 'UX') name = currentBeybladeSelection.UX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
       else if (type === 'CX') name = currentBeybladeSelection.RC + currentBeybladeSelection.CX + currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
       else if (type === 'CXEX') name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + currentBeybladeSelection.OB + currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
-      participant.beyblades.push({ type: type === 'CXEX' ? 'CX(EX)' : type, name: name, parts: {...currentBeybladeSelection} });
+      const beyblade = { type: type === 'CXEX' ? 'CX(EX)' : type, name: name, parts: {...currentBeybladeSelection} };
+      const dupWarnings = checkDeckDuplication(participant, currentBeybladeSelection);
+      if (dupWarnings.length > 0) {
+        const msg = `⚠️ デッキ内にパーツの重複があります:\n・${dupWarnings.join('\n・')}\n\nレギュレーションによっては問題ありませんが、このまま登録しますか？`;
+        if (!await showConfirm(msg)) return;
+      }
+      participant.beyblades.push(beyblade);
       closeBeybladeSelectModal();
       renderBeybladeList(); renderParticipants(); saveState();
     }
@@ -1287,6 +1298,17 @@
     }
     async function execClearSave() { await clearSave(); }
     async function execRemoveParticipant(id) { await removeParticipant(id); }
+
+    function renameParticipant(id) {
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+      const newName = prompt('新しいブレーダー名を入力', p.name);
+      if (!newName || newName.trim() === '' || newName.trim() === p.name) return;
+      p.name = newName.trim();
+      renderParticipants();
+      if (matches && matches.length) renderMatches();
+    }
+
     async function execDeleteBeyblade(index) { await deleteBeyblade(index); }
 
     // ==========================================
@@ -1547,7 +1569,7 @@
 
     function saveState() {
       try {
-        const state = { pidCounter, matchIdCounter, participants, matches, participantSortMode, isEffectOn, hudPreviewBackground, previewLogoDataUrl, remoteWinPointMode, matchName };
+        const state = { pidCounter, matchIdCounter, participants, matches, participantSortMode, hudPreviewBackground, previewLogoDataUrl, remoteWinPointMode, matchName };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -1568,7 +1590,6 @@
         });
         matches = s.matches || [];
         participantSortMode = s.participantSortMode || 'id';
-        isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
           : 'BEYX_logo_amb.png';
@@ -1591,18 +1612,6 @@
 
     function resumeFromSave() {
       document.getElementById('resume-banner').classList.add('hidden');
-      const effectBtn = document.getElementById('btn-toggle-effect');
-      if (effectBtn) {
-        if (isEffectOn) {
-          effectBtn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
-          effectBtn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-          effectBtn.innerText = '✨ 演出: ON';
-        } else {
-          effectBtn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-          effectBtn.classList.add('bg-cyber-dark', 'text-cyber-pink');
-          effectBtn.innerText = '✨ 演出: OFF';
-        }
-      }
       recalculateAllStats();
       syncHudPreviewBgSelect();
       syncHudPreviewLogoUI();

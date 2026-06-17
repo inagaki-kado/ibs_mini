@@ -4017,10 +4017,32 @@
       closeBeybladeSelectModal();
     }
 
+    function checkDeckDuplication(participant, newParts, skipIndex = -1) {
+      const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+      const PART_LABELS = {
+        BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+        MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+        RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+      };
+      const warnings = [];
+      (participant.beyblades || []).forEach((bey, idx) => {
+        if (idx === skipIndex || !bey.parts) return;
+        Object.keys(newParts).filter(k => k !== 'type').forEach(key => {
+          const val = newParts[key];
+          if (!val || val === 'なし') return;
+          if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
+          if (bey.parts[key] === val) {
+            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${bey.name} と重複`);
+          }
+        });
+      });
+      return warnings;
+    }
+
     /**
      * ベイブレード選択を完了
      */
-    function completeBeybladeSelection() {
+    async function completeBeybladeSelection() {
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       
       // ベイブレード名を自動生成（記号なし、間を詰める）
@@ -4047,6 +4069,14 @@
         name: name,
         parts: {...currentBeybladeSelection}
       };
+
+      const dupSkipIdx = (typeof beyChangeModeActive !== 'undefined' && beyChangeModeActive && beyChangeTargetIndex >= 0)
+        ? beyChangeTargetIndex : -1;
+      const dupWarnings = checkDeckDuplication(participant, currentBeybladeSelection, dupSkipIdx);
+      if (dupWarnings.length > 0) {
+        const msg = `⚠️ デッキ内にパーツの重複があります:\n・${dupWarnings.join('\n・')}\n\nレギュレーションによっては問題ありませんが、このまま登録しますか？`;
+        if (!await showConfirm(msg)) return;
+      }
       
       participant.beyblades.push(beyblade);
       
