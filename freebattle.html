@@ -401,6 +401,7 @@
           <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-orange hover:bg-[#ea580c] text-cyber-bg font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ffaa00]">LEFT WIN 🏆</button>
           <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
         </div>
+        <div id="remote-kimarite-summary" class="text-[11px] font-sf text-cyber-orange text-center min-h-[1.25rem] break-all leading-snug opacity-50 mt-1">（未入力）</div>
       </div>
     </div>
   </div>
@@ -594,6 +595,29 @@
     // リモコンモーダル ＆ スコア連動
     // ==========================================
     let currentRemoteMatch = null;
+    let remoteKimariteP1 = [];
+    let remoteKimariteP2 = [];
+    let remoteKimariteList = [];
+
+    function parseKimariteStored(val) {
+      if (val == null || val === '') return [];
+      if (Array.isArray(val)) return val.map(v => String(v||'').trim()).filter(Boolean);
+      return String(val).trim().split(/[,、\s]+/).map(x => x.trim()).filter(Boolean);
+    }
+    function serializeKimariteList(arr) {
+      if (!Array.isArray(arr)) return '';
+      return arr.map(v => String(v||'').trim()).filter(Boolean).join(',');
+    }
+    function updateRemoteKimariteSummary() {
+      const el = document.getElementById('remote-kimarite-summary');
+      if (!el) return;
+      if (!remoteKimariteList.length) {
+        el.textContent = '（未入力）'; el.classList.add('opacity-50');
+      } else {
+        el.textContent = remoteKimariteList.join(','); el.classList.remove('opacity-50');
+      }
+    }
+
     let currentRemoteMode = 'score';
     let isRemoteSwapped = false;
     let remoteScoreLeft = 0;
@@ -639,6 +663,24 @@
             if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
             else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
         }
+        // kimarite 記録（P1_X / P2_B 等のスコアボタンのみ）
+        if (/^P[12]_[XBOS]$/.test(cmd)) {
+          const kLabel = cmd.slice(3);
+          const cmdPlayer = cmd.startsWith('P1_') ? 'p1' : 'p2';
+          const actualWho = isRemoteSwapped ? (cmdPlayer === 'p1' ? 'p2' : 'p1') : cmdPlayer;
+          remoteKimariteList.push(cmd);
+          if (actualWho === 'p1') remoteKimariteP1.push(kLabel);
+          else remoteKimariteP2.push(kLabel);
+          if (currentRemoteMatch) {
+            currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+            currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
+            saveState();
+          }
+          updateRemoteKimariteSummary();
+        } else if (cmd === 'SYS_RESET') {
+          remoteKimariteP1 = []; remoteKimariteP2 = []; remoteKimariteList = [];
+          updateRemoteKimariteSummary();
+        }
         updateRemoteScoreUI();
     }
 
@@ -649,11 +691,15 @@
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
         currentRemoteMatch = match;
+        remoteKimariteP1 = parseKimariteStored(match.kimarite_p1 || '');
+        remoteKimariteP2 = parseKimariteStored(match.kimarite_p2 || '');
+        remoteKimariteList = parseKimariteStored(match.kimarite || '');
         isRemoteSwapped = false;
         remoteScoreLeft = 0;
         remoteScoreRight = 0;
         updateRemoteNamesUI();
         updateRemoteScoreUI();
+        updateRemoteKimariteSummary();
         updateRemoteBeybladeButtons();
         if(conn && conn.open) {
             conn.send({
@@ -782,6 +828,9 @@
         else { scoreP1 = remoteScoreLeft; scoreP2 = remoteScoreRight; }
         currentRemoteMatch.score = `${scoreP1}-${scoreP2}`;
         currentRemoteMatch.winner = winnerVal;
+        currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+        currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
+        currentRemoteMatch.kimarite = serializeKimariteList(remoteKimariteList);
         recalculateAllStats();
         renderMatches();
         if (document.getElementById('view-ranking').classList.contains('flex')) renderRanking();
@@ -849,7 +898,7 @@
       const text = document.getElementById('pasteArea').value; if(!text.trim()) return showAlert("テキストが入力されていません");
       const lines = text.split(/\r\n|\n/); let count = 0;
       lines.forEach(line => {
-        if(!line.trim() || participants.length >= 32) return;
+        if(!line.trim() || participants.length >= 100) return;
         const delimiter = line.includes('\t') ? '\t' : ','; const cols = line.split(delimiter);
         if(cols[0] && cols[0].trim() !== '') {
           let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
@@ -868,7 +917,7 @@
     }
 
     function addParticipant() {
-      if(participants.length >= 32) return showAlert("最大32名までです。");
+      if(participants.length >= 100) return showAlert("最大100名までです。");
       let name = prompt("参加者名を入力"); if(!name) return;
       participants.push({
         id: pidCounter++, name, memo1: '', rank: '--',
@@ -1452,13 +1501,18 @@
     }
 
     function openExportModal() {
+      const today = new Date();
+      const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       let exportText = "";
       matches.forEach(m => {
-        if (m.winner !== null) {
+        if (m.winner !== null && m.p1 && m.p2) {
           const p1Name = m.p1.name;
           const p2Name = m.p2.name;
           const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+          const score = m.score || '';
+          const kp1 = m.kimarite_p1 || '';
+          const kp2 = m.kimarite_p2 || '';
+          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t${score}\t\t\t${matchName}\t\t\t\t\t${kp1}\t${kp2}\t\t\n`;
         }
       });
       document.getElementById('exportArea').value = exportText;
