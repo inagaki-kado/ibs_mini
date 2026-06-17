@@ -2501,6 +2501,8 @@
       if (!same) return;
       if (imported.score != null) localMatch.score = imported.score;
       if (imported.kimarite != null) localMatch.kimarite = imported.kimarite;
+      if (imported.kimarite_p1 != null) localMatch.kimarite_p1 = imported.kimarite_p1;
+      if (imported.kimarite_p2 != null) localMatch.kimarite_p2 = imported.kimarite_p2;
       if (imported.winner != null && (imported.winner === 1 || imported.winner === 2)) {
         if (t1n === it2 && t2n === it1) {
           localMatch.winner = imported.winner === 1 ? 2 : 1;
@@ -3508,21 +3510,42 @@
     let remoteScoreLeft = 0; let remoteScoreRight = 0; let remoteWinScoreLimit = 4;
     /** 選択中の決まり手（出現順を保持。同一略称の重複も可＝例: SF,SF,BF） */
     let remoteKimariteList = [];
-    const KIMARITE_ORDER = ['X', 'B', 'O', 'S'];
-    const KIMARITE_LEGACY_MAP = { SF: 'S', BF: 'B', OF: 'O', XF: 'X' };
-    const REMOTE_KIMARITE_PTS = { X: 3, B: 2, O: 2, S: 1 };
+    let remoteKimariteP1 = [];  // P1が取った決まり手（SF/BF/OF/XF 形式）
+    let remoteKimariteP2 = [];  // P2が取った決まり手（SF/BF/OF/XF 形式）
+    const KIMARITE_ORDER = ['SF', 'BF', 'OF', 'XF'];
+    const KIMARITE_LEGACY_CHAR_MAP = { X: 'XF', B: 'BF', O: 'OF', S: 'SF' };
+    const KIMARITE_PTS = { XF: 3, BF: 2, OF: 2, SF: 1 };
+    function normalizeKimariteToken(tok) {
+      const t = String(tok || '').trim().toUpperCase();
+      if (KIMARITE_ORDER.includes(t)) return t;
+      if (KIMARITE_LEGACY_CHAR_MAP[t]) return KIMARITE_LEGACY_CHAR_MAP[t];
+      const m = t.match(/^P[12]_([XBOS])$/);
+      if (m && KIMARITE_LEGACY_CHAR_MAP[m[1]]) return KIMARITE_LEGACY_CHAR_MAP[m[1]];
+      return null;
+    }
     function parseKimariteStored(val) {
       if (val == null || val === '') return [];
+      const pushTok = (out, tok) => { const n = normalizeKimariteToken(tok); if (n) out.push(n); };
       if (Array.isArray(val)) {
-        return val.map((v) => String(v || '').trim()).filter(Boolean);
+        const out = [];
+        val.forEach((v) => pushTok(out, v));
+        return out;
       }
       const s = String(val).trim();
       if (!s) return [];
-      return s.split(/[,、\s]+/).map((x) => x.trim()).filter(Boolean);
+      const parts = s.split(/[,、\s→]+/).map((x) => x.trim()).filter(Boolean);
+      const out = [];
+      parts.forEach((p) => pushTok(out, p));
+      return out;
     }
     function serializeKimariteList(arr) {
       if (!Array.isArray(arr)) return '';
-      return arr.map((v) => String(v || '').trim()).filter(Boolean).join(',');
+      const out = [];
+      arr.forEach((v) => {
+        const x = normalizeKimariteToken(v);
+        if (x) out.push(x);
+      });
+      return out.join(',');
     }
 
     function updateRemoteScoreUI() {
@@ -3539,6 +3562,8 @@
             remoteScoreLeft = 0;
             remoteScoreRight = 0;
             remoteKimariteList = [];
+            remoteKimariteP1 = [];
+            remoteKimariteP2 = [];
         } else {
             sendRemoteCmd(cmd);
             if (cmd === 'P1_PLUS' || cmd === 'P1_MINUS') {
@@ -3549,7 +3574,26 @@
               const effectiveSide = isRemoteSwapped ? (side === 'left' ? 'right' : 'left') : side;
               if (effectiveSide === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
               else if (effectiveSide === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
-              remoteKimariteList.push(cmd);
+              const kimariteCmdMap = {
+                'P1_X': { k: 'XF', who: 'p1' }, 'P2_X': { k: 'XF', who: 'p2' },
+                'P1_B': { k: 'BF', who: 'p1' }, 'P2_B': { k: 'BF', who: 'p2' },
+                'P1_O': { k: 'OF', who: 'p1' }, 'P2_O': { k: 'OF', who: 'p2' },
+                'P1_S': { k: 'SF', who: 'p1' }, 'P2_S': { k: 'SF', who: 'p2' },
+              };
+              const autoKEntry = kimariteCmdMap[cmd];
+              if (autoKEntry && KIMARITE_ORDER.includes(autoKEntry.k)) {
+                const actualWho = isRemoteSwapped
+                  ? (autoKEntry.who === 'p1' ? 'p2' : 'p1')
+                  : autoKEntry.who;
+                if (actualWho === 'p1') remoteKimariteP1.push(autoKEntry.k);
+                else remoteKimariteP2.push(autoKEntry.k);
+                remoteKimariteList.push(autoKEntry.k);
+                if (currentRemoteMatch && currentRemoteMatch.match) {
+                  currentRemoteMatch.match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+                  currentRemoteMatch.match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
+                  saveState();
+                }
+              }
             }
         }
         updateRemoteScoreUI();
@@ -3571,6 +3615,8 @@
         currentRemoteMatch = { block, roundIdx, matchIdx, match };
         isRemoteSwapped = false; remoteScoreLeft = 0; remoteScoreRight = 0;
         remoteKimariteList = parseKimariteStored(match && match.kimarite != null ? match.kimarite : '');
+        remoteKimariteP1 = parseKimariteStored(match && match.kimarite_p1 != null ? match.kimarite_p1 : '');
+        remoteKimariteP2 = parseKimariteStored(match && match.kimarite_p2 != null ? match.kimarite_p2 : '');
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
@@ -3696,7 +3742,7 @@
         el.textContent = '（未入力）';
         el.classList.add('opacity-50');
       } else {
-        el.textContent = remoteKimariteList.join(' → ');
+        el.textContent = remoteKimariteList.join(',');
         el.classList.remove('opacity-50');
       }
     }
@@ -3709,13 +3755,16 @@
       if (!remoteKimariteList.length) return;
       const lastK = remoteKimariteList[remoteKimariteList.length - 1];
       remoteKimariteList.pop();
-      const m = String(lastK).match(/^(P1|P2)_([XBOS])$/i);
-      if (m) {
-        const pts = REMOTE_KIMARITE_PTS[m[2].toUpperCase()] || 0;
-        if (m[1].toUpperCase() === 'P1') {
+      const pts = KIMARITE_PTS[lastK] || 0;
+      if (remoteKimariteP1.length > 0 && remoteKimariteP1[remoteKimariteP1.length - 1] === lastK) {
+        remoteKimariteP1.pop();
+        if (pts > 0) {
           if (isRemoteSwapped) remoteScoreRight = Math.max(0, remoteScoreRight - pts);
           else remoteScoreLeft = Math.max(0, remoteScoreLeft - pts);
-        } else {
+        }
+      } else if (remoteKimariteP2.length > 0 && remoteKimariteP2[remoteKimariteP2.length - 1] === lastK) {
+        remoteKimariteP2.pop();
+        if (pts > 0) {
           if (isRemoteSwapped) remoteScoreLeft = Math.max(0, remoteScoreLeft - pts);
           else remoteScoreRight = Math.max(0, remoteScoreRight - pts);
         }
@@ -3724,6 +3773,8 @@
       updateRemoteKimariteUI();
       if (currentRemoteMatch && currentRemoteMatch.match) {
         currentRemoteMatch.match.kimarite = serializeKimariteList(remoteKimariteList);
+        currentRemoteMatch.match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+        currentRemoteMatch.match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
         saveState();
       }
     }
@@ -3745,6 +3796,8 @@
         // スコアを "4-2" 形式で保存
         match.score = `${scoreP1}-${scoreP2}`;
         match.kimarite = serializeKimariteList(remoteKimariteList);
+        match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+        match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
         // ▲ スコア保存処理ここまで
         
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -4933,16 +4986,54 @@
     }
 
     function openExportModal() {
+      const today = new Date();
+      const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       let exportText = "";
-      const addMatch = (m) => {
-        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
-          const p1Name = m.p1.name; const p2Name = m.p2.name; const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\n`;
+      exportText += `日付\t大会名\tラウンド\tP1\tP2\t勝者\tスコア\t決まり手(P1)\t決まり手(P2)\n`;
+
+      const getRoundLabel = (block, roundIdx) => {
+        if (block === 'finals') {
+          if (roundIdx === 'sf') return '準決勝';
+          if (roundIdx === 'f') return '決勝';
+          if (roundIdx === 'third') return '3位決定戦';
+          return 'FINAL';
+        }
+        if (blockMatches[block]) {
+          const totalRounds = blockMatches[block].length;
+          if (roundIdx === totalRounds - 1) return `${block}ブロック最終`;
+          return `${block}ブロック${roundIdx + 1}回戦`;
+        }
+        return '';
+      };
+
+      const addMatch = (m, block, roundIdx) => {
+        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE'
+            && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
+          const p1Name = m.p1.name;
+          const p2Name = m.p2.name;
+          const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+          const score = m.score || '';
+          const round = getRoundLabel(block, roundIdx);
+          const kp1 = m.kimarite_p1 || '';
+          const kp2 = m.kimarite_p2 || '';
+          exportText += `${ymd}\t${tournamentName}\t${round}\t${p1Name}\t${p2Name}\t${winnerName}\t${score}\t\t\t\t\t${kp1}\t${kp2}\n`;
         }
       };
-      ['A', 'B', 'C', 'D'].forEach(bName => { if(blockMatches[bName]) { blockMatches[bName].forEach(round => { round.forEach(match => addMatch(match)); }); } });
-      if (finals.sf) finals.sf.forEach(match => addMatch(match)); if (finals.third) addMatch(finals.third); if (finals.f) addMatch(finals.f);
-      document.getElementById('exportArea').value = exportText; document.getElementById('exportModal').classList.remove('hidden'); document.getElementById('exportModal').classList.add('flex');
+
+      ['A', 'B', 'C', 'D'].forEach(bName => {
+        if (blockMatches[bName]) {
+          blockMatches[bName].forEach((round, roundIdx) => {
+            round.forEach(match => addMatch(match, bName, roundIdx));
+          });
+        }
+      });
+      if (finals.sf) finals.sf.forEach(match => addMatch(match, 'finals', 'sf'));
+      if (finals.third) addMatch(finals.third, 'finals', 'third');
+      if (finals.f) addMatch(finals.f, 'finals', 'f');
+
+      document.getElementById('exportArea').value = exportText;
+      document.getElementById('exportModal').classList.remove('hidden');
+      document.getElementById('exportModal').classList.add('flex');
     }
 
     function closeExportModal() { document.getElementById('exportModal').classList.add('hidden'); document.getElementById('exportModal').classList.remove('flex'); }
