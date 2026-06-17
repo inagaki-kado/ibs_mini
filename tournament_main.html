@@ -1987,7 +1987,7 @@
       const el = document.getElementById('block-team-pick-list');
       const hint = document.getElementById('block-formation-hint');
       if (!el) return;
-      if (!isSetupDone) {
+      if (!isSetupDone && participants.length === 0) {
         if (hint) hint.classList.remove('hidden');
         el.innerHTML = '';
         return;
