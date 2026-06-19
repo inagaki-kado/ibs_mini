@@ -998,6 +998,7 @@
         // リモコン画面を開く際、score.htmlの次戦予告を閉じる
         if (conn && conn.open) {
             conn.send({ type: 'HIDE_PREVIEW' });
+            conn.send({ type: 'SHOW_SCORE_VIEW' });
         }
         currentBTL_P1 = p1;
         currentBTL_P2 = p2;

@@ -1190,6 +1190,7 @@
         // リモコン画面を開く際、score.htmlの次戦予告を閉じる
         if (conn && conn.open) {
             conn.send({ type: 'HIDE_PREVIEW' });
+            conn.send({ type: 'SHOW_SCORE_VIEW' });
         }
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;

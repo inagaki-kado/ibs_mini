@@ -670,7 +670,7 @@
     function openRemoteModal(matchId) {
         const match = matches.find(m => m.id === matchId);
         if(!match) return;
-        if (conn && conn.open) conn.send({ type: 'HIDE_PREVIEW' });
+        if (conn && conn.open) { conn.send({ type: 'HIDE_PREVIEW' }); conn.send({ type: 'SHOW_SCORE_VIEW' }); }
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
         currentRemoteMatch = match;
