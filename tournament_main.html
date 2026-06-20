@@ -4593,7 +4593,7 @@
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Chakra+Petch:ital,wght@1,700&display=swap');
           * { box-sizing: border-box; }
           .tv-wrap { position:relative; overflow:hidden; background:${C.bg}; min-height:100vh; padding:10px env(safe-area-inset-right,10px) 10px env(safe-area-inset-left,10px); font-family:'Chakra Petch',sans-serif; color:${C.text}; }
-          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; width:90vw; height:90vh; object-fit:contain; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%); }
           .tv-wrap > .tv-title, .tv-wrap > .tv-blocks, .tv-wrap > .tv-finals { position:relative; z-index:1; }
           .tv-title { font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.8vw,16px); color:${C.blue}; text-align:center; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 10px ${C.blue}; }
           .tv-blocks { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -4601,11 +4601,11 @@
           .tv-block-title { background:rgba(14,165,233,0.15); border-bottom:1px solid ${C.blue}; text-align:center; padding:6px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.6vw,14px); font-weight:900; color:${C.blue}; letter-spacing:3px; text-shadow:0 0 8px ${C.blue}; }
           .tv-round-title { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:2px; padding:6px 10px 2px; }
           .tv-match { display:flex; align-items:center; justify-content:flex-end; gap:5px; padding:3px 8px; margin:2px 6px; background:rgba(0,0,0,0.3); border-radius:5px; border:1px solid ${C.border}; }
-          .tv-p { font-style:italic; font-weight:700; font-size:clamp(12px,1.8vw,15px); text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .tv-p { font-style:italic; font-weight:700; font-size:clamp(11px,1.6vw,14px); text-shadow:1px 1px 0 black; white-space:nowrap; min-width:0; }
           .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; flex:1; }
           .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; flex:1; }
-          .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(13px,1.9vw,16px); text-shadow:0 0 12px ${C.blue}; flex:1; }
-          .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(13px,1.9vw,16px); text-shadow:0 0 12px ${C.pink}; flex:1; }
+          .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(12px,1.7vw,15px); text-shadow:0 0 12px ${C.blue}; flex:1; }
+          .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(12px,1.7vw,15px); text-shadow:0 0 12px ${C.pink}; flex:1; }
           .tv-p.lose-left { text-align:right; color:#475569; text-decoration:line-through; flex:1; }
           .tv-p.lose-right { text-align:left; color:#475569; text-decoration:line-through; flex:1; }
           .tv-vs { font-family:'Orbitron',sans-serif; font-size:9px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
@@ -4679,7 +4679,7 @@
             padding: 16px env(safe-area-inset-right,16px) 16px env(safe-area-inset-left,16px);
             position: relative; overflow: hidden;
           }
-          .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); transform-origin:center center; }
+          .tv-bg-logo { position:absolute; top:50%; left:50%; width:90vw; height:90vh; object-fit:contain; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%); }
           .tv-res-ghost {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
             font-family: 'Chakra Petch', sans-serif; font-style: italic; font-weight: 700;
@@ -4795,11 +4795,11 @@
         .tv-card-title { background:rgba(236,72,153,0.15); border-bottom:1px solid ${C.pink}; text-align:center; padding:8px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.8vw,16px); font-weight:900; color:${C.yellow}; letter-spacing:3px; text-shadow:0 0 8px ${C.yellow}; }
         .tv-round-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; padding:8px 12px 4px; }
         .tv-match { display:flex; align-items:center; gap:5px; padding:5px 10px; margin:3px 8px; background:rgba(0,0,0,0.3); border-radius:5px; border:1px solid ${C.border}; }
-        .tv-p { font-style:italic; font-weight:700; font-size:clamp(13px,2vw,17px); text-shadow:1px 1px 0 black; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+        .tv-p { font-style:italic; font-weight:700; font-size:clamp(11px,1.6vw,15px); text-shadow:1px 1px 0 black; white-space:nowrap; flex:1; min-width:0; }
         .tv-p.left { text-align:right; color:${C.blue}; text-shadow:0 0 8px ${C.blue},1px 1px 0 black; }
         .tv-p.right { text-align:left; color:${C.pink}; text-shadow:0 0 8px ${C.pink},1px 1px 0 black; }
-        .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.blue}; }
-        .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(14px,2.2vw,18px); text-shadow:0 0 12px ${C.pink}; }
+        .tv-p.win-left { text-align:right; color:${C.blue}; font-size:clamp(12px,1.8vw,16px); text-shadow:0 0 12px ${C.blue}; }
+        .tv-p.win-right { text-align:left; color:${C.pink}; font-size:clamp(12px,1.8vw,16px); text-shadow:0 0 12px ${C.pink}; }
         .tv-p.lose-left { text-align:right; color:#475569; text-decoration:line-through; }
         .tv-p.lose-right { text-align:left; color:#475569; text-decoration:line-through; }
         .tv-vs { font-family:'Orbitron',sans-serif; font-size:10px; color:${C.yellow}; text-shadow:0 0 6px ${C.yellow}; flex-shrink:0; font-weight:900; }
@@ -4941,7 +4941,7 @@
           display:flex; flex-direction:column; align-items:center; justify-content:center;
           padding:16px; position:relative; overflow:hidden;
         }
-        .tv-bg-logo { position:absolute; top:50%; left:50%; width:100vw; height:100vh; object-fit:cover; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%) scale(0.8); }
+        .tv-bg-logo { position:absolute; top:50%; left:50%; width:90vw; height:90vh; object-fit:contain; opacity:0.18; pointer-events:none; z-index:0; transform:translate(-50%,-50%); }
         .tv-res-card { position:relative; z-index:2; width:100%; max-width:620px; text-align:center; }
         .tv-res-tname { font-family:'Orbitron',sans-serif; font-size:clamp(10px,1.6vw,14px); color:#0ea5e9; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 8px #0ea5e9; }
         .tv-res-winner-lbl { font-family:'Orbitron',sans-serif; font-size:clamp(16px,3.5vw,28px); color:#facc15; text-shadow:0 0 20px #facc15; margin-bottom:4px; letter-spacing:6px; }

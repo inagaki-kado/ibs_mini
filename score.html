@@ -1668,22 +1668,27 @@
             const overlay = document.getElementById('remote-content-overlay');
             if (!overlay || overlay.classList.contains('hidden')) return;
             const targets = [
-                { sel: '.tv-res-name1', min: 18 },
-                { sel: '.tv-res-name2', min: 14 },
-                { sel: '.tv-res-lower-name', min: 11 }
+                { sel: '.tv-res-name1', min: 18, avail: 'parent' },
+                { sel: '.tv-res-name2', min: 14, avail: 'parent' },
+                { sel: '.tv-res-lower-name', min: 11, avail: 'parent' },
+                { sel: '.tv-p', min: 8, avail: 'self' }
             ];
             const run = () => {
-                targets.forEach(({ sel, min }) => {
+                targets.forEach(({ sel, min, avail }) => {
                     overlay.querySelectorAll(sel).forEach((el) => {
                         el.style.whiteSpace = 'nowrap';
                         el.style.maxWidth = '100%';
+                        el.style.overflow = 'visible';
+                        el.style.textOverflow = 'clip';
                         el.style.fontSize = '';
-                        const avail = el.parentElement ? el.parentElement.clientWidth : el.clientWidth;
-                        if (avail <= 0) return;
-                        if (el.scrollWidth > avail) {
-                            let size = Math.max(min, Math.floor(parseFloat(window.getComputedStyle(el).fontSize) * avail / el.scrollWidth));
+                        const width = avail === 'self'
+                            ? el.clientWidth
+                            : (el.parentElement ? el.parentElement.clientWidth : el.clientWidth);
+                        if (width <= 0) return;
+                        if (el.scrollWidth > width) {
+                            let size = Math.max(min, Math.floor(parseFloat(window.getComputedStyle(el).fontSize) * width / el.scrollWidth));
                             el.style.fontSize = size + 'px';
-                            while (el.scrollWidth > avail && size > min) {
+                            while (el.scrollWidth > width && size > min) {
                                 size -= 1;
                                 el.style.fontSize = size + 'px';
                             }
