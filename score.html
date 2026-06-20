@@ -1234,7 +1234,7 @@
                     battleCount++; 
                     updateBattleCounterDisplay(); 
                     let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
-                    let nextText = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+                    let nextText = (s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) ? "FINAL" : `${battleCount}${suffix}`;
                     showOverlayText(`NEXT to<br><span style="font-size:20vmin;display:block;font-weight:900;color:var(--bx-yellow);">${nextText}</span>BATTLE`, 'interstitial-style', 2500); 
                 }, 2500); 
             }
@@ -1259,7 +1259,7 @@
         function updateBattleCounterDisplay() { 
             let suffix = ["st","nd","rd"][battleCount-1] || "th"; 
             const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
-            let text = ((s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) || battleCount >= 7) ? "FINAL" : `${battleCount}${suffix}`; 
+            let text = (s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) ? "FINAL" : `${battleCount}${suffix}`;
             document.getElementById('battle-ordinal').innerText = text; 
         }
         function finishGame(p) {
