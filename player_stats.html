@@ -1565,9 +1565,9 @@ async function fetchPlayers() {
       const p1Bey = (row[15] || '').trim();
       const p2Bey = (row[16] || '').trim();
 
-      // 行種別が「対戦」以外は決まり手を記録しない
-      const skipKimarite = rowType && rowType !== '対戦';
-      const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived) => {
+      // 行種別が「対戦」以外でも N/O 列に決まり手が入力されていれば記録する
+      const skipKimarite = rowType && rowType !== '対戦' && !kp1 && !kp2;
+      const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived, kimariteOnly = false) => {
         if (!name) return;
         if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
         matchDetailsByPlayer[name].push({
@@ -1581,6 +1581,7 @@ async function fetchPlayers() {
           bey,
           score: '',
           stadium,
+          kimariteOnly,
         });
       };
       if (p1 && p2) {
@@ -1588,6 +1589,10 @@ async function fetchPlayers() {
         const dk2 = skipKimarite ? '' : kp2;
         pushDetail(p1, p2, winner && winner === p1, p1Bey, dk1, dk2);
         pushDetail(p2, p1, winner && winner === p2, p2Bey, dk2, dk1);
+      }
+      // ボーナス行で対戦相手なし・決まり手あり → 対戦数カウントに含めず決まり手のみ記録
+      if (p1 && !p2 && (kp1 || kp2)) {
+        pushDetail(p1, '', false, p1Bey, kp1, kp2, true);
       }
     });
 
@@ -2666,8 +2671,8 @@ function renderResults(players) {
             data-rank-str="${rankStr}"
             data-bp="${bp}"
             data-wr="${wrPct}"
-            data-wins="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].filter(d=>d.isWin).length : 0}"
-            data-total="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].length : 0}"
+            data-wins="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].filter(d=>d.isWin && !d.kimariteOnly).length : 0}"
+            data-total="${matchDetailsByPlayer && matchDetailsByPlayer[name] ? matchDetailsByPlayer[name].filter(d=>!d.kimariteOnly).length : 0}"
             data-tournaments="${parseInt(tournaments)||0}"
             data-beys="${[bey1,bey2,bey3,bey4,bey5].filter(b=>b&&b!=='－'&&b!=='-').join('|')}"
             data-awards="${awardsCount||''}"
