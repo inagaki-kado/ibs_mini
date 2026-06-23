@@ -1298,6 +1298,8 @@ const RANGE_TOURNEY  = encodeURIComponent("'📅 大会マスター'!A2:H");
 const TOURNEY_URL    = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_TOURNEY}?key=${API_KEY}`;
 const RANGE_BEY_HIST = encodeURIComponent("'🌀 ベイ使用履歴'!A2:E");
 const BEY_HIST_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY_HIST}?key=${API_KEY}`;
+const RANGE_TEAM = encodeURIComponent("'🤝 チーム戦入力'!A3:P");
+const TEAM_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_TEAM}?key=${API_KEY}`;
 
 let allPlayers = null; // cache
 let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
@@ -1452,8 +1454,10 @@ async function fetchPlayers() {
   if (allPlayers) return allPlayers;
 
   // Webデータ出力・ベイ集計・全対戦履歴 を並列フェッチ
-  const [res1, res2, res3] = await Promise.all([
-    fetch(API_URL), fetch(BEY_URL), fetch(HISTORY_URL)
+  const [res1, res2, res3, resT, resTeam] = await Promise.all([
+    fetch(API_URL), fetch(BEY_URL), fetch(HISTORY_URL),
+    fetch(TOURNEY_URL).catch(() => ({ ok: false })),
+    fetch(TEAM_URL).catch(() => ({ ok: false }))
   ]);
   if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
   if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
@@ -1477,6 +1481,19 @@ async function fetchPlayers() {
       ];
     }
   });
+
+  // 大会名→日付マップ（チーム戦のstatKey日付解決用）
+  const tDateMap = new Map();
+  if (resT && resT.ok) {
+    try {
+      const jsonT = await resT.json();
+      (jsonT.values || []).forEach(r => {
+        const n = (r[1] || '').trim();
+        const d = (r[2] || '').trim();
+        if (n && d) tDateMap.set(n, d);
+      });
+    } catch {}
+  }
 
   // 全対戦履歴からBP推移データを生成し、大会別の対戦数・勝数も集計
   let matchRows = [];
@@ -1573,6 +1590,33 @@ async function fetchPlayers() {
         pushDetail(p2, p1, winner && winner === p2, p2Bey, dk2, dk1);
       }
     });
+
+    // ── チーム戦入力 → tournamentStatsByPlayer に追加 ──
+    if (resTeam && resTeam.ok) {
+      try {
+        const jsonTeam = await resTeam.json();
+        (jsonTeam.values || []).forEach(tr => {
+          const tName = (tr[15] || '').trim();
+          const date  = tDateMap.get(tName) || '';
+          if (!tName || !date) return;
+          const teamA = [tr[0], tr[1], tr[2]].map(v => (v || '').trim()).filter(Boolean);
+          const teamB = [tr[3], tr[4], tr[5]].map(v => (v || '').trim()).filter(Boolean);
+          const won   = (tr[6] || '').trim().toUpperCase();
+          const statKey = `${date}|${tName}`;
+          [...teamA, ...teamB].forEach(name => {
+            if (!tournamentStatsByPlayer[name]) tournamentStatsByPlayer[name] = {};
+            if (!tournamentStatsByPlayer[name][statKey])
+              tournamentStatsByPlayer[name][statKey] = { matches: 0, wins: 0 };
+            tournamentStatsByPlayer[name][statKey].matches += 1;
+          });
+          const winners = won === 'A' ? teamA : won === 'B' ? teamB : [];
+          winners.forEach(name => {
+            if (tournamentStatsByPlayer[name]?.[statKey])
+              tournamentStatsByPlayer[name][statKey].wins += 1;
+          });
+        });
+      } catch {}
+    }
 
     // Map → 日付昇順の配列に変換（names を配列化）
     bpHistory = {};
