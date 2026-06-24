@@ -1307,6 +1307,7 @@ let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履
 /** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
 let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
+let tStadiumMap = null; // { 大会名: 'extreme'|'infinity' } チーム戦スタジアム参照用
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
 let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
 // ─── TOWER SETUP ──────────────────────────────────────────
@@ -1503,6 +1504,7 @@ async function fetchPlayers() {
     const playerMap = {}; // { 選手名: { date: {date, names:Set, bp} } }
     tournamentStatsByPlayer = {};
     matchDetailsByPlayer = {};
+    tStadiumMap = {};
 
     matchRows.forEach(row => {
       if (row.length < 11) return;
@@ -1562,6 +1564,9 @@ async function fetchPlayers() {
       const kp1 = (row[13] || '').trim();
       const kp2 = (row[14] || '').trim();
       const stadium = (row[12] || '').trim();
+      if (tName && stadium && normalizeStadium(stadium) !== 'other') {
+        tStadiumMap[tName] = tStadiumMap[tName] || normalizeStadium(stadium);
+      }
       const p1Bey = (row[15] || '').trim();
       const p2Bey = (row[16] || '').trim();
 
@@ -1634,6 +1639,7 @@ async function fetchPlayers() {
     bpHistory = {}; // 取得失敗時はグラフ非表示
     tournamentStatsByPlayer = {};
     matchDetailsByPlayer = {};
+    tStadiumMap = {};
   }
 
   return allPlayers;
@@ -2380,15 +2386,25 @@ function renderResults(players) {
       displayRankHtml = `<div class="rank-text"><span class="rank-num">${numPart}</span><span class="rank-f">F</span></div>`;
     }
 
-    const wrPct    = pctNum(wr);
-    // matchDetailsByPlayer のチーム含む実績でスタジアム別勝率を計算（シート値より優先）
-    const _stDet  = (matchDetailsByPlayer && matchDetailsByPlayer[name]) || [];
-    const _exList = _stDet.filter(d => normalizeStadium(d.stadium) === 'extreme');
-    const _infList= _stDet.filter(d => normalizeStadium(d.stadium) === 'infinity');
-    const wrExPct  = _exList.length  > 0 ? Math.round(_exList.filter(d=>d.isWin).length  / _exList.length  * 1000) / 10 : pctNum(wrEx);
-    const wrInfPct = _infList.length > 0 ? Math.round(_infList.filter(d=>d.isWin).length / _infList.length * 1000) / 10 : pctNum(wrInf);
-    const wrExDisp  = _exList.length  > 0 ? wrExPct.toFixed(1)  + '%' : pct(wrEx);
-    const wrInfDisp = _infList.length > 0 ? wrInfPct.toFixed(1) + '%' : pct(wrInf);
+    const wrPct = pctNum(wr);
+    const _stDet = (matchDetailsByPlayer && matchDetailsByPlayer[name]) || [];
+    // 個人戦（kimariteOnly=false）のスタジアム別集計
+    let _exW = _stDet.filter(d=>!d.kimariteOnly && normalizeStadium(d.stadium)==='extreme' && d.isWin).length;
+    let _exT = _stDet.filter(d=>!d.kimariteOnly && normalizeStadium(d.stadium)==='extreme').length;
+    let _ifW = _stDet.filter(d=>!d.kimariteOnly && normalizeStadium(d.stadium)==='infinity' && d.isWin).length;
+    let _ifT = _stDet.filter(d=>!d.kimariteOnly && normalizeStadium(d.stadium)==='infinity').length;
+    // チーム戦（tournamentStatsByPlayer × tStadiumMap）を加算
+    if (tournamentStatsByPlayer && tournamentStatsByPlayer[name]) {
+      Object.entries(tournamentStatsByPlayer[name]).forEach(([sk, r]) => {
+        const st = tStadiumMap[sk.split('|').slice(1).join('|')];
+        if (st === 'extreme')  { _exT += r.matches; _exW += r.wins; }
+        if (st === 'infinity') { _ifT += r.matches; _ifW += r.wins; }
+      });
+    }
+    const wrExPct  = _exT > 0 ? Math.round(_exW / _exT * 1000) / 10 : pctNum(wrEx);
+    const wrInfPct = _ifT > 0 ? Math.round(_ifW / _ifT * 1000) / 10 : pctNum(wrInf);
+    const wrExDisp  = _exT > 0 ? wrExPct.toFixed(1) + '%' : pct(wrEx);
+    const wrInfDisp = _ifT > 0 ? wrInfPct.toFixed(1) + '%' : pct(wrInf);
 
     const card = document.createElement('div');
     card.className = 'player-card';
