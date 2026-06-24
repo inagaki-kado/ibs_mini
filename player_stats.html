@@ -1590,9 +1590,9 @@ async function fetchPlayers() {
         pushDetail(p1, p2, winner && winner === p1, p1Bey, dk1, dk2);
         pushDetail(p2, p1, winner && winner === p2, p2Bey, dk2, dk1);
       }
-      // ボーナス行で対戦相手なし・決まり手あり → 対戦数カウントに含めず決まり手のみ記録
-      if (p1 && !p2 && (kp1 || kp2)) {
-        pushDetail(p1, '', false, p1Bey, kp1, kp2, true);
+      // ボーナス行で対戦相手なし → チーム勝利/敗北 or 決まり手あり → スタジアム別勝率・決まり手に記録
+      if (p1 && !p2 && (winner === 'チーム勝利' || winner === 'チーム敗北' || kp1 || kp2)) {
+        pushDetail(p1, '', winner === 'チーム勝利', p1Bey, kp1, kp2, true);
       }
     });
 
@@ -2381,8 +2381,14 @@ function renderResults(players) {
     }
 
     const wrPct    = pctNum(wr);
-    const wrExPct  = pctNum(wrEx);
-    const wrInfPct = pctNum(wrInf);
+    // matchDetailsByPlayer のチーム含む実績でスタジアム別勝率を計算（シート値より優先）
+    const _stDet  = (matchDetailsByPlayer && matchDetailsByPlayer[name]) || [];
+    const _exList = _stDet.filter(d => normalizeStadium(d.stadium) === 'extreme');
+    const _infList= _stDet.filter(d => normalizeStadium(d.stadium) === 'infinity');
+    const wrExPct  = _exList.length  > 0 ? Math.round(_exList.filter(d=>d.isWin).length  / _exList.length  * 1000) / 10 : pctNum(wrEx);
+    const wrInfPct = _infList.length > 0 ? Math.round(_infList.filter(d=>d.isWin).length / _infList.length * 1000) / 10 : pctNum(wrInf);
+    const wrExDisp  = _exList.length  > 0 ? wrExPct.toFixed(1)  + '%' : pct(wrEx);
+    const wrInfDisp = _infList.length > 0 ? wrInfPct.toFixed(1) + '%' : pct(wrInf);
 
     const card = document.createElement('div');
     card.className = 'player-card';
@@ -2629,14 +2635,14 @@ function renderResults(players) {
           <div class="winrate-bars">
             <div class="winrate-row">
               <div class="winrate-row-label">Extreme</div>
-              <div class="winrate-pct" style="color:var(--neon-blue)">${pct(wrEx)}</div>
+              <div class="winrate-pct" style="color:var(--neon-blue)">${wrExDisp}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-blue" data-pct="${wrExPct}"></div>
               </div>
             </div>
             <div class="winrate-row">
               <div class="winrate-row-label">Infinity</div>
-              <div class="winrate-pct" style="color:var(--neon-pink)">${pct(wrInf)}</div>
+              <div class="winrate-pct" style="color:var(--neon-pink)">${wrInfDisp}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-pink" data-pct="${wrInfPct}"></div>
               </div>
