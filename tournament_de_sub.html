@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LB SUB — Itabashi Beyblade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        'cyber-bg':          '#0a0e17',
+        'cyber-dark':        '#111827',
+        'cyber-blue':        '#0ea5e9',
+        'cyber-green':       '#22c55e',
+        'cyber-pink':        '#ec4899',
+        'cyber-orange':      '#ffaa00',
+        'cyber-red':         '#ff0055',
+        'cyber-red-orange':  '#ff4500',
+        'cyber-text':        '#e2e8f0',
+        'cyber-table-border':'#1f2937'
+      }}}
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    html { font-size: 16px; }
+    body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .font-sf { font-family: 'Orbitron', sans-serif; }
+    button { touch-action: manipulation; }
+  </style>
+</head>
+<body class="bg-cyber-bg text-cyber-text min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="bg-cyber-dark border-b border-cyber-table-border px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <span class="text-cyber-blue font-sf font-bold text-base tracking-widest">LB SUB</span>
+      <span id="tournament-name" class="text-sm text-cyber-text opacity-50 truncate max-w-[130px]"></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div id="conn-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444] transition-all"></div>
+      <span id="conn-label" class="text-sm font-sf text-red-400 transition-colors">OFFLINE</span>
+    </div>
+  </header>
+
+  <!-- ===== 接続画面（未接続時） ===== -->
+  <div id="connect-screen" class="flex-1 flex flex-col items-center justify-center gap-8 p-8">
+    <h1 class="font-sf text-cyber-blue text-4xl font-bold tracking-widest drop-shadow-[0_0_12px_#0ea5e9]">LB SUB</h1>
+    <p class="text-base text-cyber-text opacity-60 text-center leading-relaxed">
+      親機（tournament_de.html）の<br>LB SUB欄に表示される<br>4桁コードを入力してください
+    </p>
+    <input id="peer-code-input" type="number" min="1000" max="9999" placeholder="0000" value="1784"
+      class="w-44 text-center text-4xl font-sf bg-cyber-dark border-2 border-cyber-blue rounded-xl px-4 py-4 text-cyber-text focus:outline-none focus:border-cyber-green transition-colors"
+      inputmode="numeric">
+    <button id="btn-connect" onclick="connectToHost()"
+      class="px-12 py-4 bg-cyber-blue text-cyber-bg font-sf font-bold rounded-xl text-xl hover:opacity-80 active:scale-95 transition-all shadow-[0_0_20px_#0ea5e9]">
+      CONNECT
+    </button>
+    <p id="connect-error" class="text-cyber-red text-base hidden text-center"></p>
+  </div>
+
+  <!-- ===== メイン（接続後） ===== -->
+  <div id="main-screen" class="hidden flex-1 flex flex-col overflow-hidden">
+
+    <!-- タブナビ（3タブ） -->
+    <div class="flex border-b border-cyber-table-border bg-cyber-dark shrink-0">
+      <button id="tab-losers" onclick="switchTab('losers')"
+        class="flex-1 py-3 font-sf font-bold text-sm border-b-2 border-cyber-blue text-cyber-blue transition-colors">
+        LOSERS
+      </button>
+      <button id="tab-winners" onclick="switchTab('winners')"
+        class="flex-1 py-3 font-sf font-bold text-sm border-b-2 border-transparent text-cyber-text opacity-40 transition-colors">
+        WINNERS
+      </button>
+      <button id="tab-match" onclick="switchTab('match')"
+        class="flex-1 py-3 font-sf font-bold text-sm border-b-2 border-transparent text-cyber-text opacity-40 transition-colors">
+        MATCH
+      </button>
+    </div>
+
+    <!-- タブコンテンツ: LOSERS -->
+    <div id="tab-content-losers" class="flex-1 overflow-y-auto p-3">
+      <div id="losers-bracket-root">
+        <p class="text-center text-cyber-text opacity-30 text-base mt-10 font-sf">データを受信中...</p>
+      </div>
+    </div>
+
+    <!-- タブコンテンツ: WINNERS -->
+    <div id="tab-content-winners" class="hidden flex-1 overflow-y-auto p-3">
+      <div id="winners-bracket-root">
+        <p class="text-center text-cyber-text opacity-30 text-base mt-10 font-sf">データを受信中...</p>
+      </div>
+    </div>
+
+    <!-- タブコンテンツ: MATCH -->
+    <div id="tab-content-match" class="hidden flex-1 overflow-y-auto">
+      <div class="p-4 flex flex-col gap-4">
+
+        <!-- 試合未選択 -->
+        <div id="match-no-select" class="text-center text-cyber-text opacity-30 text-base font-sf py-10">
+          LOSERSタブから試合を選択してください
+        </div>
+
+        <!-- 対戦ヘッダー -->
+        <div id="match-header" class="hidden bg-cyber-dark rounded-xl p-4 border border-cyber-table-border">
+          <div class="text-xs font-sf text-cyber-text opacity-40 text-center tracking-widest mb-3" id="match-round-label">-</div>
+          <div class="flex items-center justify-between gap-3">
+            <span id="match-p1-name" class="flex-1 text-cyber-blue font-bold font-sf text-base truncate text-right">P1</span>
+            <div class="flex items-center gap-3 shrink-0">
+              <span id="match-score-left"  class="text-5xl font-sf font-bold text-white w-12 text-right leading-none">0</span>
+              <span class="text-cyber-text opacity-20 font-sf text-xl">—</span>
+              <span id="match-score-right" class="text-5xl font-sf font-bold text-white w-12 text-left leading-none">0</span>
+            </div>
+            <span id="match-p2-name" class="flex-1 text-cyber-pink font-bold font-sf text-base truncate text-left">P2</span>
+          </div>
+        </div>
+
+        <!-- スコアボタン -->
+        <div id="score-buttons" class="hidden flex gap-4">
+          <!-- P1 左側 -->
+          <div class="flex-1 flex flex-col gap-2">
+            <div class="text-sm font-sf text-cyber-blue text-center opacity-70 mb-1" id="score-lbl-left">LEFT</div>
+            <button onclick="addScore('left','X',3)" class="py-4 bg-cyber-bg border border-cyber-red text-cyber-red font-sf font-bold rounded-lg hover:bg-cyber-red hover:text-white active:scale-95 transition-all text-lg">X <span class="text-sm opacity-60">(3)</span></button>
+            <button onclick="addScore('left','B',2)" class="py-4 bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded-lg hover:bg-cyber-red-orange hover:text-white active:scale-95 transition-all text-lg">B <span class="text-sm opacity-60">(2)</span></button>
+            <button onclick="addScore('left','O',2)" class="py-4 bg-cyber-bg border border-cyber-orange text-cyber-orange font-sf font-bold rounded-lg hover:bg-cyber-orange hover:text-white active:scale-95 transition-all text-lg">O <span class="text-sm opacity-60">(2)</span></button>
+            <button onclick="addScore('left','S',1)" class="py-4 bg-cyber-bg border border-cyber-blue text-cyber-blue font-sf font-bold rounded-lg hover:bg-cyber-blue hover:text-white active:scale-95 transition-all text-lg">S <span class="text-sm opacity-60">(1)</span></button>
+            <div class="flex gap-2 mt-1">
+              <button onclick="addScore('left','MINUS',-1)" class="flex-1 py-3 bg-cyber-bg border border-gray-700 text-gray-400 font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-base">-1</button>
+              <button onclick="addScore('left','PLUS',1)"  class="flex-1 py-3 bg-cyber-bg border border-gray-500 text-gray-300 font-sf font-bold rounded-lg hover:bg-gray-700 transition-colors text-base">+1</button>
+            </div>
+          </div>
+          <!-- P2 右側 -->
+          <div class="flex-1 flex flex-col gap-2">
+            <div class="text-sm font-sf text-cyber-pink text-center opacity-70 mb-1" id="score-lbl-right">RIGHT</div>
+            <button onclick="addScore('right','X',3)" class="py-4 bg-cyber-bg border border-cyber-red text-cyber-red font-sf font-bold rounded-lg hover:bg-cyber-red hover:text-white active:scale-95 transition-all text-lg">X <span class="text-sm opacity-60">(3)</span></button>
+            <button onclick="addScore('right','B',2)" class="py-4 bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange font-sf font-bold rounded-lg hover:bg-cyber-red-orange hover:text-white active:scale-95 transition-all text-lg">B <span class="text-sm opacity-60">(2)</span></button>
+            <button onclick="addScore('right','O',2)" class="py-4 bg-cyber-bg border border-cyber-orange text-cyber-orange font-sf font-bold rounded-lg hover:bg-cyber-orange hover:text-white active:scale-95 transition-all text-lg">O <span class="text-sm opacity-60">(2)</span></button>
+            <button onclick="addScore('right','S',1)" class="py-4 bg-cyber-bg border border-cyber-blue text-cyber-blue font-sf font-bold rounded-lg hover:bg-cyber-blue hover:text-white active:scale-95 transition-all text-lg">S <span class="text-sm opacity-60">(1)</span></button>
+            <div class="flex gap-2 mt-1">
+              <button onclick="addScore('right','MINUS',-1)" class="flex-1 py-3 bg-cyber-bg border border-gray-700 text-gray-400 font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-base">-1</button>
+              <button onclick="addScore('right','PLUS',1)"  class="flex-1 py-3 bg-cyber-bg border border-gray-500 text-gray-300 font-sf font-bold rounded-lg hover:bg-gray-700 transition-colors text-base">+1</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- リセット -->
+        <button id="score-reset-btn" onclick="resetMatchScore()"
+          class="hidden py-3 bg-cyber-bg border border-cyber-red/40 text-cyber-red/60 font-sf rounded-lg text-sm hover:border-cyber-red hover:text-cyber-red transition-colors">
+          ♻️ MATCH RESET
+        </button>
+
+        <!-- 決まり手 + WIN ボタン -->
+        <div id="winner-section" class="hidden bg-cyber-bg border border-cyber-green rounded-xl p-4">
+          <div class="text-sm font-sf text-cyber-green font-bold text-center mb-1 tracking-widest">SET WINNER &amp; ADVANCE</div>
+          <div class="text-xs font-sf text-cyber-text opacity-40 text-center mb-4">決まり手（スコアボタンで自動追加。手動でも追加可）</div>
+          <div class="grid grid-cols-5 gap-2 mb-3">
+            <button onclick="addKimarite('SF')" class="py-3 bg-cyber-bg border border-cyber-table-border text-cyber-text font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-sm">SF</button>
+            <button onclick="addKimarite('BF')" class="py-3 bg-cyber-bg border border-cyber-table-border text-cyber-text font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-sm">BF</button>
+            <button onclick="addKimarite('OF')" class="py-3 bg-cyber-bg border border-cyber-table-border text-cyber-text font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-sm">OF</button>
+            <button onclick="addKimarite('XF')" class="py-3 bg-cyber-bg border border-cyber-table-border text-cyber-text font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-sm">XF</button>
+            <button onclick="clearAllKimarite()" class="py-3 bg-cyber-bg border border-cyber-table-border text-gray-500 font-sf font-bold rounded-lg hover:bg-gray-800 transition-colors text-sm">－</button>
+          </div>
+          <div id="kimarite-summary" class="text-sm font-sf text-cyber-green text-center min-h-[1.5rem] mb-2 break-all leading-snug"></div>
+          <button onclick="undoKimarite()" class="w-full py-2 bg-cyber-dark border border-cyber-table-border text-cyber-text/60 font-sf text-sm rounded-lg mb-4 hover:bg-gray-800 transition-colors">← 1つ戻す</button>
+          <div class="flex gap-3">
+            <button id="win-left-btn" onclick="submitWinner('left')"
+              class="flex-1 py-5 bg-cyber-blue text-white font-sf font-bold rounded-xl text-lg active:scale-95 transition-transform shadow-[0_0_12px_#0ea5e9]">
+              LEFT WIN 🏆
+            </button>
+            <button id="win-right-btn" onclick="submitWinner('right')"
+              class="flex-1 py-5 bg-cyber-pink text-white font-sf font-bold rounded-xl text-lg active:scale-95 transition-transform shadow-[0_0_12px_#ec4899]">
+              RIGHT WIN 🏆
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 勝敗直接入力ミニモーダル ===== -->
+  <div id="quick-modal" class="hidden fixed inset-0 bg-black/85 items-center justify-center z-50 p-6">
+    <div class="bg-cyber-dark border border-cyber-table-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div class="text-xs font-sf text-cyber-text opacity-40 text-center mb-2 tracking-widest">勝者を選択</div>
+      <div class="font-sf text-cyber-blue font-bold text-center mb-6 text-base leading-snug" id="qm-title">MATCH</div>
+      <div class="flex gap-3 mb-4">
+        <button id="qm-p1-btn" onclick="quickWin(1)"
+          class="flex-1 py-5 bg-cyber-blue text-cyber-bg font-sf font-bold rounded-xl text-base active:scale-95 transition-transform">
+          P1 WIN
+        </button>
+        <button id="qm-p2-btn" onclick="quickWin(2)"
+          class="flex-1 py-5 bg-cyber-pink text-white font-sf font-bold rounded-xl text-base active:scale-95 transition-transform">
+          P2 WIN
+        </button>
+      </div>
+      <button onclick="openMatchMode()"
+        class="w-full py-4 bg-cyber-bg border border-cyber-blue text-cyber-blue font-sf font-bold rounded-xl text-base mb-3 hover:bg-cyber-blue/10 active:scale-95 transition-all">
+        スコア・決まり手も入力する →
+      </button>
+      <button onclick="closeQuickModal()" class="w-full py-2 text-sm font-sf text-cyber-text opacity-30 hover:opacity-60 transition-opacity">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- ===== ACKエラーモーダル ===== -->
+  <div id="ack-error-modal" class="hidden fixed inset-0 bg-black/85 items-center justify-center z-50 p-6">
+    <div class="bg-cyber-dark border border-cyber-red rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+      <div class="text-cyber-red font-sf font-bold mb-3 text-xl">⚠️ 送信失敗</div>
+      <div id="ack-error-msg" class="text-base text-cyber-text opacity-80 mb-6 leading-relaxed whitespace-pre-line"></div>
+      <button onclick="closeAckError()"
+        class="px-10 py-4 bg-cyber-red text-white font-sf font-bold rounded-xl text-base active:scale-95 transition-transform">OK</button>
+    </div>
+  </div>
+
+  <script>
+  // ================================================
+  // 状態変数
+  // ================================================
+  let peer = null, conn = null;
+  let appState    = null;   // DE_STATE_SYNC で受け取った最新状態
+  let currentMatch = null;  // { bracket, roundIdx, matchIdx, match }
+  let scoreLeft = 0, scoreRight = 0;
+  let winScoreLimit = 4;
+  let kimariteAll = [], kimariteP1 = [], kimariteP2 = [];
+  let currentTab = 'losers';
+
+  // スコアボタン → 決まり手の自動マッピング
+  const SCORE_KIMARITE_MAP = { 'X': 'XF', 'B': 'BF', 'O': 'OF', 'S': 'SF' };
+
+  // ================================================
+  // PeerJS 接続
+  // ================================================
+  function connectToHost() {
+    const code = String(document.getElementById('peer-code-input').value).trim();
+    if (code.length !== 4 || isNaN(Number(code))) {
+      showConnError('4桁の数字を入力してください'); return;
+    }
+    const btn = document.getElementById('btn-connect');
+    btn.textContent = '接続中...'; btn.disabled = true;
+    if (peer) peer.destroy();
+    peer = new Peer();
+    peer.on('open', () => {
+      conn = peer.connect('de-sub-' + code, { reliable: true });
+      conn.on('open', () => {
+        btn.textContent = 'CONNECT'; btn.disabled = false;
+        onConnected();
+        conn.send({ type: 'DE_REQUEST_STATE' });
+      });
+      conn.on('data',  (msg) => handleMessage(msg));
+      conn.on('close', () => onDisconnected());
+      conn.on('error', () => onDisconnected());
+    });
+    peer.on('error', () => {
+      btn.textContent = 'CONNECT'; btn.disabled = false;
+      showConnError('接続できませんでした。コードを確認してください');
+    });
+  }
+
+  function onConnected() {
+    document.getElementById('connect-screen').classList.add('hidden');
+    const ms = document.getElementById('main-screen');
+    ms.classList.remove('hidden'); ms.classList.add('flex');
+    document.getElementById('conn-dot').className  = 'w-3 h-3 rounded-full bg-cyber-green shadow-[0_0_6px_#22c55e] transition-all';
+    document.getElementById('conn-label').textContent = 'ONLINE';
+    document.getElementById('conn-label').className  = 'text-sm font-sf text-cyber-green transition-colors';
+  }
+
+  function onDisconnected() {
+    document.getElementById('connect-screen').classList.remove('hidden');
+    const ms = document.getElementById('main-screen');
+    ms.classList.add('hidden'); ms.classList.remove('flex');
+    document.getElementById('conn-dot').className  = 'w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444] transition-all';
+    document.getElementById('conn-label').textContent = 'OFFLINE';
+    document.getElementById('conn-label').className  = 'text-sm font-sf text-red-400 transition-colors';
+    document.getElementById('btn-connect').textContent = 'CONNECT';
+    document.getElementById('btn-connect').disabled    = false;
+  }
+
+  function showConnError(msg) {
+    const el = document.getElementById('connect-error');
+    el.textContent = msg; el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 4000);
+  }
+
+  // ================================================
+  // メッセージ受信
+  // ================================================
+  function handleMessage(msg) {
+    if (!msg?.type) return;
+    if (msg.type === 'DE_STATE_SYNC') {
+      applyState(msg.state);
+    } else if (msg.type === 'DE_RESULT_ACK') {
+      if (!msg.ok) {
+        const reason = msg.reason === 'already_set'
+          ? 'この試合は親機側で既に確定済みです。\nサブ機からの上書きはできません。'
+          : '送信エラーが発生しました。再度お試しください。';
+        showAckError(reason);
+        if (msg.state) applyState(msg.state);
+      }
+    }
+  }
+
+  function applyState(s) {
+    if (!s) return;
+    appState      = s;
+    winScoreLimit = s.remoteWinScoreLimit || 4;
+    const nameEl  = document.getElementById('tournament-name');
+    if (nameEl) nameEl.textContent = s.tournamentName || '';
+    renderLosersBracket();
+    renderWinnersBracket();
+    // currentMatch があれば最新状態に更新
+    if (currentMatch) {
+      const updated = getMatchFromState(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx);
+      if (updated) currentMatch.match = updated;
+    }
+  }
+
+  // ================================================
+  // ブラケット描画
+  // ================================================
+  function renderLosersBracket() {
+    const root = document.getElementById('losers-bracket-root');
+    if (!root || !appState) return;
+    let html = '';
+
+    if (appState.losersBracket?.length) {
+      appState.losersBracket.forEach((round, rIdx) => {
+        html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">LB ROUND ${rIdx + 1}</div>`;
+        round.forEach((m, mIdx) => { html += renderMatchCard(m, 'lb', rIdx, mIdx, true); });
+      });
+    }
+
+    if (appState.lbThirdPlace) {
+      html += `<div class="text-xs font-sf text-cyber-orange/70 tracking-widest mt-5 mb-2">3RD PLACE MATCH</div>`;
+      html += renderMatchCard(appState.lbThirdPlace, 'lb3rd', 0, 0, true);
+    }
+
+    root.innerHTML = html || '<p class="text-center text-cyber-text opacity-20 text-base mt-10 font-sf">トーナメント開始待ち</p>';
+  }
+
+  function renderWinnersBracket() {
+    const root = document.getElementById('winners-bracket-root');
+    if (!root || !appState) return;
+    let html = '';
+
+    if (appState.winnersBracket?.length) {
+      appState.winnersBracket.forEach((round, rIdx) => {
+        html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">WB ROUND ${rIdx + 1}</div>`;
+        round.forEach((m, mIdx) => { html += renderMatchCard(m, 'wb', rIdx, mIdx, false); });
+      });
+    }
+
+    if (appState.grandFinal) {
+      html += `<div class="text-xs font-sf text-cyber-blue/70 tracking-widest mt-5 mb-2">GRAND FINAL</div>`;
+      html += renderMatchCard(appState.grandFinal, 'gf', 0, 0, false);
+    }
+
+    if (appState.grandFinalReset) {
+      html += `<div class="text-xs font-sf text-cyber-red/70 tracking-widest mt-4 mb-2">GF RESET</div>`;
+      html += renderMatchCard(appState.grandFinalReset, 'gf_reset', 0, 0, false);
+    }
+
+    root.innerHTML = html || '<p class="text-center text-cyber-text opacity-20 text-base mt-10 font-sf">トーナメント開始待ち</p>';
+  }
+
+  function renderMatchCard(m, bracket, rIdx, mIdx, isInput) {
+    const p1n    = m.p1?.name || 'TBD';
+    const p2n    = m.p2?.name || 'TBD';
+    const decided = m.winner !== null;
+    const canClick = isInput && m.p1 && m.p2
+      && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && !decided;
+    const p1Win  = decided && m.winner === 1;
+    const p2Win  = decided && m.winner === 2;
+
+    // 名前テキストスタイル
+    const p1cls = p1Win  ? 'text-cyber-blue font-bold'
+                : p2Win  ? 'text-gray-600 line-through opacity-40'
+                :           'text-cyber-text';
+    const p2cls = p2Win  ? 'text-cyber-pink font-bold'
+                : p1Win  ? 'text-gray-600 line-through opacity-40'
+                :           'text-cyber-text';
+
+    const borderCls = canClick
+      ? 'border-cyber-blue/70 cursor-pointer hover:bg-cyber-dark active:bg-cyber-dark'
+      : decided
+        ? 'border-cyber-table-border opacity-75'
+        : 'border-cyber-table-border';
+
+    const onclickAttr = canClick
+      ? `onclick="openQuickModal('${bracket}',${rIdx},${mIdx})"`
+      : '';
+
+    const centerHtml = m.score
+      ? `<span class="text-sm font-sf text-cyber-orange font-bold whitespace-nowrap">${m.score}</span>`
+      : canClick
+        ? `<span class="text-xs font-sf text-cyber-blue/40">TAP</span>`
+        : `<span class="text-sm font-sf text-cyber-text/20">—</span>`;
+
+    // 左プレイヤー: text-right（VS中央に向かって右寄せ）
+    // 右プレイヤー: text-left（VS中央に向かって左寄せ）
+    return `<div ${onclickAttr} class="flex items-center px-3 py-3 rounded-xl mb-2 border ${borderCls} bg-[#0d131f] transition-colors">
+      <span class="flex-1 text-base ${p1cls} truncate pr-2 text-right">${p1n}</span>
+      <div class="flex flex-col items-center mx-3 shrink-0 min-w-[50px]">${centerHtml}</div>
+      <span class="flex-1 text-base ${p2cls} truncate pl-2 text-left">${p2n}</span>
+    </div>`;
+  }
+
+  // ================================================
+  // タブ切り替え
+  // ================================================
+  function switchTab(tab) {
+    currentTab = tab;
+    const tabs = ['losers', 'winners', 'match'];
+    const activeClass   = 'flex-1 py-3 font-sf font-bold text-sm border-b-2 border-cyber-blue text-cyber-blue transition-colors';
+    const inactiveClass = 'flex-1 py-3 font-sf font-bold text-sm border-b-2 border-transparent text-cyber-text opacity-40 transition-colors';
+    tabs.forEach(t => {
+      document.getElementById('tab-content-' + t).classList.toggle('hidden', t !== tab);
+      document.getElementById('tab-' + t).className = t === tab ? activeClass : inactiveClass;
+    });
+  }
+
+  // ================================================
+  // クイックモーダル
+  // ================================================
+  function openQuickModal(bracket, rIdx, mIdx) {
+    const m = getMatchFromState(bracket, rIdx, mIdx);
+    if (!m || !m.p1 || !m.p2) return;
+    currentMatch = { bracket, roundIdx: rIdx, matchIdx: mIdx, match: m };
+    document.getElementById('qm-title').textContent    = `${m.p1.name} vs ${m.p2.name}`;
+    document.getElementById('qm-p1-btn').textContent   = `${m.p1.name} WIN`;
+    document.getElementById('qm-p2-btn').textContent   = `${m.p2.name} WIN`;
+    const modal = document.getElementById('quick-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  }
+
+  function closeQuickModal() {
+    const modal = document.getElementById('quick-modal');
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  }
+
+  function quickWin(winnerVal) {
+    if (!currentMatch) return;
+    closeQuickModal();
+    sendResult(winnerVal, null, null, null, null);
+  }
+
+  function openMatchMode() {
+    if (!currentMatch) return;
+    closeQuickModal();
+    const m = currentMatch.match;
+
+    // MATCHタブ表示切り替え
+    document.getElementById('match-no-select').classList.add('hidden');
+    ['match-header','score-buttons','score-reset-btn','winner-section'].forEach(id => {
+      document.getElementById(id).classList.remove('hidden');
+    });
+
+    // ラベルセット
+    document.getElementById('match-p1-name').textContent      = m.p1?.name || 'P1';
+    document.getElementById('match-p2-name').textContent      = m.p2?.name || 'P2';
+    document.getElementById('score-lbl-left').textContent     = m.p1?.name || 'LEFT';
+    document.getElementById('score-lbl-right').textContent    = m.p2?.name || 'RIGHT';
+    document.getElementById('win-left-btn').textContent       = (m.p1?.name || 'LEFT') + ' WIN 🏆';
+    document.getElementById('win-right-btn').textContent      = (m.p2?.name || 'RIGHT') + ' WIN 🏆';
+
+    const roundLabel = currentMatch.bracket === 'lb3rd' ? '3RD PLACE MATCH'
+      : currentMatch.bracket === 'lb' ? `LB ROUND ${currentMatch.roundIdx + 1}`
+      : currentMatch.bracket.toUpperCase();
+    document.getElementById('match-round-label').textContent = roundLabel;
+
+    resetMatchScore();
+    switchTab('match');
+  }
+
+  // ================================================
+  // スコア管理
+  // ================================================
+  function addScore(side, type, pts) {
+    if (!currentMatch) return;
+    if (side === 'left') {
+      scoreLeft = Math.max(0, Math.min(scoreLeft + pts, winScoreLimit));
+      if (pts > 0 && SCORE_KIMARITE_MAP[type]) {
+        const k = SCORE_KIMARITE_MAP[type];
+        kimariteAll.push(k); kimariteP1.push(k);
+      }
+    } else {
+      scoreRight = Math.max(0, Math.min(scoreRight + pts, winScoreLimit));
+      if (pts > 0 && SCORE_KIMARITE_MAP[type]) {
+        const k = SCORE_KIMARITE_MAP[type];
+        kimariteAll.push(k); kimariteP2.push(k);
+      }
+    }
+    updateMatchDisplay();
+    updateKimariteSummary();
+  }
+
+  function resetMatchScore() {
+    scoreLeft = 0; scoreRight = 0;
+    kimariteAll = []; kimariteP1 = []; kimariteP2 = [];
+    updateMatchDisplay();
+    updateKimariteSummary();
+  }
+
+  function updateMatchDisplay() {
+    document.getElementById('match-score-left').textContent  = scoreLeft;
+    document.getElementById('match-score-right').textContent = scoreRight;
+  }
+
+  // ================================================
+  // 決まり手管理
+  // ================================================
+  function addKimarite(k) {
+    kimariteAll.push(k);
+    updateKimariteSummary();
+  }
+
+  function clearAllKimarite() {
+    kimariteAll = []; kimariteP1 = []; kimariteP2 = [];
+    updateKimariteSummary();
+  }
+
+  function undoKimarite() {
+    if (!kimariteAll.length) return;
+    const last = kimariteAll.pop();
+    const idxP1 = kimariteP1.lastIndexOf(last);
+    if (idxP1 !== -1) kimariteP1.splice(idxP1, 1);
+    else {
+      const idxP2 = kimariteP2.lastIndexOf(last);
+      if (idxP2 !== -1) kimariteP2.splice(idxP2, 1);
+    }
+    updateKimariteSummary();
+  }
+
+  function updateKimariteSummary() {
+    const el = document.getElementById('kimarite-summary');
+    if (el) el.textContent = kimariteAll.length ? kimariteAll.join(', ') : '';
+  }
+
+  // ================================================
+  // 勝者送信
+  // ================================================
+  function submitWinner(side) {
+    if (!currentMatch) { showAckError('試合が選択されていません'); return; }
+    const winnerVal = side === 'left' ? 1 : 2;
+    sendResult(
+      winnerVal,
+      `${scoreLeft}-${scoreRight}`,
+      kimariteAll.join(',') || null,
+      kimariteP1.join(',')  || null,
+      kimariteP2.join(',')  || null
+    );
+  }
+
+  function sendResult(winnerVal, score, kimarite, kp1, kp2) {
+    if (!conn?.open) { showAckError('親機との接続が切れています'); return; }
+    if (!currentMatch) return;
+    conn.send({
+      type:        'DE_RESULT',
+      bracket:     currentMatch.bracket,
+      roundIdx:    currentMatch.roundIdx,
+      matchIdx:    currentMatch.matchIdx,
+      winner:      winnerVal,
+      score,
+      kimarite,
+      kimarite_p1: kp1,
+      kimarite_p2: kp2,
+      updatedAt:   Date.now()
+    });
+    // 送信後即座にUIリセット（ACK受信前でも次の試合へ）
+    currentMatch = null;
+    resetMatchScoreUI();
+  }
+
+  function resetMatchScoreUI() {
+    document.getElementById('match-no-select').classList.remove('hidden');
+    ['match-header','score-buttons','score-reset-btn','winner-section'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+    resetMatchScore();
+    switchTab('losers');
+  }
+
+  // ================================================
+  // ユーティリティ
+  // ================================================
+  function getMatchFromState(bracket, rIdx, mIdx) {
+    if (!appState) return null;
+    if (bracket === 'lb')       return appState.losersBracket?.[rIdx]?.[mIdx] || null;
+    if (bracket === 'lb3rd')    return appState.lbThirdPlace || null;
+    if (bracket === 'wb')       return appState.winnersBracket?.[rIdx]?.[mIdx] || null;
+    if (bracket === 'gf')       return appState.grandFinal || null;
+    if (bracket === 'gf_reset') return appState.grandFinalReset || null;
+    return null;
+  }
+
+  function showAckError(msg) {
+    document.getElementById('ack-error-msg').textContent = msg;
+    const modal = document.getElementById('ack-error-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  }
+
+  function closeAckError() {
+    const modal = document.getElementById('ack-error-modal');
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  }
+  </script>
+</body>
+</html>

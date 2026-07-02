@@ -138,8 +138,8 @@
         #win-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; }
         @keyframes glowing-win-anim { 0% { text-shadow: 0 0 20px #fff, 0 0 40px #fff000, 0 0 60px #fff000, 4px 4px 0 #000; } 100% { text-shadow: 0 0 50px #fff, 0 0 100px #fff000, 0 0 150px #ffaa00, 4px 4px 0 #000; } }
         .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.05) !important; animation: glowing-win-anim 0.8s infinite alternate ease-in-out; }
-        .win-name { font-size: 15vmin; display: block; line-height: 1; white-space: nowrap; }
-        .win-label { font-size: 15vmin; display: block; margin-top: 0.25em; color: white; text-shadow: 0 0 30px white; line-height: 1; }
+        .win-name { font-size: 15vmin; display: block; line-height: 1; white-space: nowrap; color: #fff000; }
+        .win-label { font-size: 15vmin; display: block; margin-top: 0.25em; color: #ff0055; text-shadow: 0 0 30px #ff0055, 0 0 60px #ff0044, 4px 4px 0 #000; line-height: 1; }
 
         #effect-overlay { position: fixed; top: 0; left: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; pointer-events: none; }
         #effect-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; color: white; text-shadow: 0 0 20px var(--bx-green), 4px 4px 0px black; width: 100%; text-align: center; opacity: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -446,6 +446,7 @@
         .nb-p2 { text-shadow: 0 0 24px #ec4899, 0 0 48px #ec4899; }
         .nb-name-fit { display: block; font-size: clamp(34px, 7vw, 96px); font-weight: 900; line-height: 1.15; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; }
         .nb-member-fit { display: block; font-size: 16px; font-weight: 600; margin-top: 0.3em; letter-spacing: 0.05em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; line-height: 1.2; }
+        .nb-stats-line { display: block; font-size: clamp(18px, 2.4vw, 34px); font-weight: 700; margin-top: 0.35em; letter-spacing: 0.03em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; line-height: 1.2; color: #38bdf8; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
 
         /* iPhone landscape / compact height — NEXT BATTLE 縮小モード */
@@ -455,6 +456,7 @@
             .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
             .nb-player { font-size:clamp(16px,3.6vw,44px) !important; }
             .nb-member-fit { font-size:14px !important; }
+            .nb-stats-line { font-size: clamp(11px, 2.6vw, 18px) !important; }
             .nb-vs { font-size:clamp(26px,5vw,60px) !important; }
         }
 
@@ -1538,7 +1540,7 @@
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
                         // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || []);
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || [], data.p1Stats, data.p2Stats, data.h2hP1Wins, data.h2hP2Wins);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -1749,7 +1751,7 @@
             }
         }
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = []) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = [], p1Stats = null, p2Stats = null, h2hP1Wins = null, h2hP2Wins = null) {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
             if (logoDataUrl) {
@@ -1779,16 +1781,22 @@
             }
             
             document.getElementById('nb-stage-round').textContent = stageText;
-            const mkPlayerHtml = (name, members) => {
+            const mkStatsLine = (stats, myWins) => {
+              if (!stats) return '';
+              const power = (stats.power != null) ? Number(stats.power).toLocaleString() : '-';
+              const winText = (myWins != null) ? `${myWins}win` : '-';
+              return `<div class="nb-stats-line">Rank ${stats.rank || '-'}/BP ${power}/VS Record ${winText}</div>`;
+            };
+            const mkPlayerHtml = (name, members, stats, myWins) => {
               const solo = !members || members.length === 0;
               const memberLine = !solo
                 ? `<div class="nb-member-fit">${members.join('　/　')}</div>`
                 : '';
               const soloCls = solo ? ' nb-solo' : '';
-              return `<div class="nb-name-fit${soloCls}" style="white-space:nowrap;max-width:100%;">${name}</div>${memberLine}`;
+              return `<div class="nb-name-fit${soloCls}" style="white-space:nowrap;max-width:100%;">${name}</div>${memberLine}${mkStatsLine(stats, myWins)}`;
             };
-            document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members);
-            document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members);
+            document.getElementById('nb-p1').innerHTML = mkPlayerHtml(p1, p1members, p1Stats, h2hP1Wins);
+            document.getElementById('nb-p2').innerHTML = mkPlayerHtml(p2, p2members, p2Stats, h2hP2Wins);
             overlay.classList.remove('hidden');
             fitNbNamesAfterLayout(p1members, p2members);
         }

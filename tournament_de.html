@@ -64,6 +64,12 @@
     ::-webkit-scrollbar-track { background: #0a0e17; }
     ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
+
+    /* フォントサイズ 16px 基準 */
+    html { font-size: 16px; }
+    .text-xs  { font-size: 0.8125rem !important; }
+    .text-sm  { font-size: 0.9375rem !important; }
+    .text-\[9px\], .text-\[10px\], .text-\[11px\] { font-size: 0.75rem !important; }
   </style>
 </head>
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
@@ -84,12 +90,20 @@
         <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest">DOUBLE ELIMINATION <span>v1.0</span></p>
       </div>
       
-      <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
-        <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
-        <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
-        <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
-        <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
-        <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+      <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex flex-col gap-1 z-50">
+        <div class="flex items-center gap-2 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
+          <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
+          <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
+          <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
+          <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+          <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+        </div>
+        <div class="flex items-center gap-1 bg-[#0a0e17] px-2 py-1.5 rounded-lg border border-cyber-table-border shadow-lg">
+          <span class="text-[9px] text-cyber-blue font-sf font-bold hidden md:inline">LB SUB</span>
+          <input id="sub-code-input" type="number" min="1000" max="9999" placeholder="CODE" value="1784" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-table-border text-cyber-text text-xs text-center outline-none font-sf" maxlength="4">
+          <button onclick="initHostPeer(document.getElementById('sub-code-input').value)" style="touch-action:manipulation" class="bg-cyber-dark border border-cyber-table-border text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[9px] md:text-[10px] font-sf font-bold transition-colors rounded">HOST</button>
+          <span id="sub-conn-count" class="text-[9px] font-sf text-cyber-green/60 whitespace-nowrap">-</span>
+        </div>
       </div>
     </header>
 
@@ -188,6 +202,7 @@
               </span>
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 WT R1 手動入替</button>
+              <button id="btn-toggle-progress-guide" onclick="toggleProgressGuide()" class="text-xs bg-yellow-500 border border-yellow-400 text-black px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#facc15]">🎯 進行ガイド: ON</button>
               <button
                 id="btn-break"
                 onclick="toggleBreak()"
@@ -202,6 +217,7 @@
             <button type="button" onclick="switchDeSubTab('wb')" id="de-tab-wb" class="flex-1 py-2 text-sm font-sf font-bold border-b-2 border-cyber-blue text-cyber-blue">WINNERS</button>
             <button type="button" onclick="switchDeSubTab('lb')" id="de-tab-lb" class="flex-1 py-2 text-sm font-sf font-bold border-b-2 border-transparent text-cyber-text opacity-60">LOSERS</button>
           </div>
+          <div id="progress-guide-hint" class="hidden mb-2 px-3 py-2 rounded border border-yellow-400/40 bg-yellow-400/10 text-yellow-400 text-xs font-sf shrink-0"></div>
           <div id="de-view-wb" class="flex-1 overflow-x-auto overflow-y-auto mb-4 pb-2">
             <div id="wbContainer" class="de-bracket-row"></div>
           </div>
@@ -903,6 +919,22 @@
     let swapPending = null;
 
     let isEffectOn = true;
+    let isProgressGuideOn = true;
+    let suggestedWbMatchKey = null;
+    let suggestedWbMatchLabel = '';
+
+    // 20人(P=32)向け WB R0 推奨進行順（de_bracket_20_print と同一）
+    const WB_R0_PLAY_ORDER_32 = [0, 4, 8, 12, 1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
+
+    // 20名4ブロック専用: WB全試合の進行番号 (1-19)
+    const WB_PLAY_NUMBER_20 = {
+      '0-0':1,  '0-4':2,  '0-8':3,  '0-12':4,
+      '1-7':5,  '1-5':6,  '1-3':7,  '1-1':8,
+      '1-6':9,  '1-4':10, '1-2':11, '1-0':12,
+      '2-2':13, '2-0':14, '2-3':15, '2-1':16,
+      '3-1':17, '3-0':18,
+      '4-0':19,
+    };
 
     function getTournamentPhase() {
       if (!isSetupDone) return 'waiting';
@@ -948,6 +980,7 @@
         losersBracket,
         grandFinal,
         grandFinalReset,
+        lbThirdPlace,
         playedPairs,
         gfResetRequired,
       };
@@ -1048,12 +1081,46 @@
     // リモート通信 / PeerJS
     // ==========================================
     let peer = null; let conn = null;
+    let hostPeer = null; let subConns = [];
     let isTvMode_active = false;
     let isTvMode_results = false;
     let activeNextBattleId = null;
     const HUD_PREVIEW_BG_KEYS = ['BEYX_logo_amb.png', 'maintitle_white.png', 'torabo_logo.png', 'evojlogo.png', 'none'];
     let hudPreviewBackground = 'maintitle_white.png';
     let isBreakMode = false; // 休憩中フラグ
+
+    // 過去対戦成績（VS Record）参照用 Google Sheets 連携
+    const SHEET_ID_H2H = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
+    const API_KEY_H2H  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
+    const RANGE_H2H    = encodeURIComponent("'⚔️ 対戦入力'!A3:E");
+    const H2H_URL      = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_H2H}?key=${API_KEY_H2H}`;
+    let _h2hCache = null;
+
+    async function loadH2HHistory() {
+      if (_h2hCache) return _h2hCache;
+      try {
+        const res = await fetch(H2H_URL);
+        const json = await res.json();
+        _h2hCache = json.values || [];
+      } catch (e) {
+        console.error('H2H履歴取得失敗', e);
+        _h2hCache = [];
+      }
+      return _h2hCache;
+    }
+
+    function calcH2H(rows, p1Name, p2Name) {
+      let p1Wins = 0, p2Wins = 0;
+      for (const row of rows) {
+        const a = row[0], b = row[2], winner = row[4];
+        if (!a || !b) continue;
+        const isPair = (a === p1Name && b === p2Name) || (a === p2Name && b === p1Name);
+        if (!isPair) continue;
+        if (winner === p1Name) p1Wins++;
+        else if (winner === p2Name) p2Wins++;
+      }
+      return { p1Wins, p2Wins };
+    }
 
     function getShowPreviewHudFields() {
       const el = document.getElementById('hud-preview-bg');
@@ -1114,6 +1181,81 @@
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
       });
       c.on('close', () => resetLinkUI());
+    }
+
+    // ==========================================
+    // サブ機ホスト機能（LB SUB）
+    // ==========================================
+    function initHostPeer(code) {
+      const c = String(code).trim();
+      if (c.length !== 4 || isNaN(Number(c))) { showAlert('4桁の数字コードを入力してください'); return; }
+      if (hostPeer) hostPeer.destroy();
+      hostPeer = new Peer('de-sub-' + c);
+      hostPeer.on('open', () => updateSubConnUI());
+      hostPeer.on('connection', (sc) => {
+        subConns = subConns.filter(x => x.open);
+        subConns.push(sc);
+        sc.on('open', () => { updateSubConnUI(); sendSubSync(sc); });
+        sc.on('data', (msg) => handleSubMessage(sc, msg));
+        sc.on('close', () => { subConns = subConns.filter(x => x !== sc); updateSubConnUI(); });
+      });
+      hostPeer.on('error', (err) => console.warn('hostPeer error:', err));
+    }
+
+    function updateSubConnUI() {
+      const el = document.getElementById('sub-conn-count');
+      if (el) el.textContent = subConns.filter(c => c.open).length + '台接続中';
+    }
+
+    function buildSyncState() {
+      return {
+        tournamentName, losersBracket, winnersBracket,
+        grandFinal, grandFinalReset, lbThirdPlace,
+        participants, remoteWinScoreLimit: 4
+      };
+    }
+
+    function sendSubSync(sc) {
+      try { sc.send({ type: 'DE_STATE_SYNC', state: buildSyncState(), ts: Date.now() }); } catch(e) {}
+    }
+
+    function broadcastSubSync() {
+      subConns.filter(c => c.open).forEach(sc => sendSubSync(sc));
+    }
+
+    function handleSubMessage(sc, msg) {
+      if (!msg?.type) return;
+      if (msg.type === 'DE_REQUEST_STATE') { sendSubSync(sc); return; }
+      if (msg.type === 'DE_RESULT') {
+        let m;
+        if (msg.bracket === 'lb3rd') {
+          m = lbThirdPlace;
+        } else {
+          m = getMatchByCoords(msg.bracket, msg.roundIdx, msg.matchIdx);
+        }
+        if (!m || !m.p1 || !m.p2) {
+          sc.send({ type: 'DE_RESULT_ACK', ok: false, reason: 'invalid' }); return;
+        }
+        if (m.winner !== null) {
+          sc.send({ type: 'DE_RESULT_ACK', ok: false, reason: 'already_set', state: buildSyncState() }); return;
+        }
+        m.score = msg.score ?? null;
+        m.kimarite = msg.kimarite ?? null;
+        m.kimarite_p1 = msg.kimarite_p1 ?? null;
+        m.kimarite_p2 = msg.kimarite_p2 ?? null;
+        if (msg.bracket === 'lb3rd') {
+          m.winner = msg.winner;
+          m.updatedAt = msg.updatedAt ?? Date.now();
+          updateAdvancementsDE();
+          if (m.winner !== null) void syncToSheets();
+          saveState();
+          renderTournament();
+          broadcastSubSync();
+        } else {
+          setWinner(msg.bracket, msg.roundIdx, msg.matchIdx, msg.winner);
+        }
+        sc.send({ type: 'DE_RESULT_ACK', ok: true });
+      }
     }
 
     function forceResetLink() { if (conn) { conn.close(); conn = null; } initPeer(); resetLinkUI(); }
@@ -2287,6 +2429,219 @@
       return list;
     }
 
+    function isWbMatchPlayable(match) {
+      if (!match || match.winner !== null) return false;
+      if (!match.p1 || !match.p2) return false;
+      if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return false;
+      return true;
+    }
+
+    function lbSlotFilled(match, slot) {
+      if (!match) return false;
+      const p = slot === 1 ? match.p1 : match.p2;
+      return !!(p && p.id);
+    }
+
+    function findWbFeederForLbSlot(lbR, lbM, slot) {
+      for (let r = 0; r < winnersBracket.length; r++) {
+        for (let m = 0; m < winnersBracket[r].length; m++) {
+          const to = winnersBracket[r][m]._meta?.loserTo;
+          if (to?.bracket === 'lb' && to.round === lbR && to.index === lbM && to.slot === slot) {
+            return { r, m, match: winnersBracket[r][m] };
+          }
+        }
+      }
+      return null;
+    }
+
+    function isRealLbPlayer(p) {
+      return !!(p && p.id && p.id !== 'BYE');
+    }
+
+    /** WB 実戦（BYE 試合は LB に実選手が落ちないため後回し） */
+    function isWbRealDuel(match) {
+      return !!(match?.p1 && match?.p2 && match.p1.id !== 'BYE' && match.p2.id !== 'BYE');
+    }
+
+    /**
+     * LB R2+ で WB 敗者待ちかつ実戦が組まれる枠か。
+     * - 待ち側が BYE のみ → LB 不戦勝になるので除外
+     * - 落下元 WB が BYE 試合 → 実選手が落ちないので除外
+     */
+    function isLbWbFeedTargetEligible(lm, lbR, lbM, emptySlot) {
+      if (!lm || lm.winner !== null) return null;
+      const otherSlot = emptySlot === 1 ? 2 : 1;
+      if (lbSlotFilled(lm, emptySlot) || !lbSlotFilled(lm, otherSlot)) return null;
+      const waitPlayer = otherSlot === 1 ? lm.p1 : lm.p2;
+      if (!isRealLbPlayer(waitPlayer)) return null;
+      const feeder = findWbFeederForLbSlot(lbR, lbM, emptySlot);
+      if (!feeder || !isWbRealDuel(feeder.match)) return null;
+      return { feeder, waitName: waitPlayer.name || '' };
+    }
+
+    /** LB R2 以降（roundIdx>=1）を上から走査し、実戦が決まる WB 敗者待ち枠を返す */
+    function findTopLbWaitingForWb(requirePlayable) {
+      for (let lbR = 1; lbR < losersBracket.length; lbR++) {
+        const round = losersBracket[lbR];
+        for (let lbM = 0; lbM < round.length; lbM++) {
+          const lm = round[lbM];
+          for (const slot of [1, 2]) {
+            const hit = isLbWbFeedTargetEligible(lm, lbR, lbM, slot);
+            if (!hit) continue;
+            if (requirePlayable && !isWbMatchPlayable(hit.feeder.match)) continue;
+            return { lbR, lbM, slot, feeder: hit.feeder, waitName: hit.waitName };
+          }
+        }
+      }
+      return null;
+    }
+
+    function getWbR0SiblingIndex(m) {
+      return (m % 2 === 0) ? m + 1 : m - 1;
+    }
+
+    function isWb20PlayerBracket() {
+      return bracketSize === 32 && participants.length === 20 && colors.length === 4;
+    }
+    function getWb20PlayNumber(roundIdx, matchIdx) {
+      return WB_PLAY_NUMBER_20[`${roundIdx}-${matchIdx}`] ?? null;
+    }
+
+    function getWbPlayOrderRank(roundIdx, matchIdx) {
+      if (roundIdx === 0 && bracketSize === 32) {
+        const i = WB_R0_PLAY_ORDER_32.indexOf(matchIdx);
+        return i >= 0 ? i : matchIdx + 100;
+      }
+      return matchIdx;
+    }
+
+    function scoreWbMatchForSuggestion(roundIdx, matchIdx, match) {
+      let score = 0;
+      const loserTo = match._meta?.loserTo;
+      if (loserTo?.bracket === 'lb') {
+        const lbDest = getMatchByCoords('lb', loserTo.round, loserTo.index);
+        if (lbDest) {
+          const otherSlot = loserTo.slot === 1 ? 2 : 1;
+          if (lbSlotFilled(lbDest, otherSlot)) score += 1000;
+        }
+      }
+      if (roundIdx === 0) {
+        const sib = winnersBracket[0][getWbR0SiblingIndex(matchIdx)];
+        if (sib?.winner !== null) score += 100;
+      }
+      score += (winnersBracket.length - roundIdx) * 10;
+      score -= getWbPlayOrderRank(roundIdx, matchIdx) * 0.1;
+      return score;
+    }
+
+    function pickFallbackWbMatch() {
+      let bestKey = null;
+      let bestScore = -Infinity;
+      let bestMatch = null;
+      let bestR = 0;
+      winnersBracket.forEach((round, r) => {
+        round.forEach((match, m) => {
+          if (!isWbMatchPlayable(match)) return;
+          const s = scoreWbMatchForSuggestion(r, m, match);
+          if (s > bestScore) {
+            bestScore = s;
+            bestKey = `wb-${r}-${m}`;
+            bestMatch = match;
+            bestR = r;
+          }
+        });
+      });
+      return bestKey ? { key: bestKey, match: bestMatch, r: bestR, waitName: '' } : null;
+    }
+
+    function computeSuggestedWbMatch() {
+      if (!isProgressGuideOn || !isTournamentStarted || bracketSize === 2) {
+        suggestedWbMatchKey = null;
+        suggestedWbMatchLabel = '';
+        return;
+      }
+      // 20名4ブロック専用: 番号順で最小の実戦可能試合を選択
+      if (isWb20PlayerBracket()) {
+        let bestNum = Infinity, bestKey = null, bestMatch = null, bestR = 0;
+        winnersBracket.forEach((round, r) => {
+          round.forEach((match, m) => {
+            if (!isWbMatchPlayable(match)) return;
+            const num = getWb20PlayNumber(r, m);
+            if (num !== null && num < bestNum) {
+              bestNum = num; bestKey = `wb-${r}-${m}`; bestMatch = match; bestR = r;
+            }
+          });
+        });
+        if (bestKey) {
+          suggestedWbMatchKey = bestKey;
+          suggestedWbMatchLabel = `#${bestNum} ${getDeRoundLabel('wb', bestR, 0)} — ${bestMatch.p1.name} vs ${bestMatch.p2.name}`;
+        } else {
+          suggestedWbMatchKey = null;
+          suggestedWbMatchLabel = '';
+        }
+        return;
+      }
+      // LB R2 以降: 実戦が組まれる枠に対応するプレイ可能 WB を優先
+      const waiting = findTopLbWaitingForWb(true);
+      if (waiting) {
+        const { feeder, waitName, lbR } = waiting;
+        suggestedWbMatchKey = `wb-${feeder.r}-${feeder.m}`;
+        const lbLabel = getDeRoundLabel('lb', lbR, 0);
+        const wbLabel = getDeRoundLabel('wb', feeder.r, 0);
+        const arrow = waitName ? ` → ${lbLabel} ${waitName} の相手` : '';
+        suggestedWbMatchLabel = `${wbLabel} — ${feeder.match.p1.name} vs ${feeder.match.p2.name}${arrow}`;
+        return;
+      }
+      // LB R1 のみの段階など: 従来スコアで WB R0 進行を補助
+      const fallback = pickFallbackWbMatch();
+      if (fallback) {
+        suggestedWbMatchKey = fallback.key;
+        suggestedWbMatchLabel = `${getDeRoundLabel('wb', fallback.r, 0)} — ${fallback.match.p1.name} vs ${fallback.match.p2.name}`;
+      } else {
+        suggestedWbMatchKey = null;
+        suggestedWbMatchLabel = '';
+      }
+    }
+
+    function updateProgressGuideHint() {
+      const el = document.getElementById('progress-guide-hint');
+      if (!el) return;
+      if (isProgressGuideOn && suggestedWbMatchLabel) {
+        el.classList.remove('hidden');
+        el.innerHTML = `<span class="font-bold">🎯 進行おすすめ:</span> ${suggestedWbMatchLabel}`;
+      } else if (isProgressGuideOn && isTournamentStarted) {
+        el.classList.remove('hidden');
+        el.innerHTML = '<span class="opacity-70">🎯 進行おすすめ: プレイ可能な WB 試合なし</span>';
+      } else {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+      }
+    }
+
+    function updateProgressGuideButton() {
+      const btn = document.getElementById('btn-toggle-progress-guide');
+      if (!btn) return;
+      if (isProgressGuideOn) {
+        btn.classList.remove('bg-cyber-dark', 'text-cyber-blue', 'border-cyber-blue', 'shadow-[0_0_5px_#0ea5e9]');
+        btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-400', 'shadow-[0_0_5px_#facc15]');
+        btn.innerText = '🎯 進行ガイド: ON';
+      } else {
+        btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-400', 'shadow-[0_0_5px_#facc15]');
+        btn.classList.add('bg-cyber-dark', 'text-cyber-blue', 'border-cyber-blue', 'shadow-[0_0_5px_#0ea5e9]');
+        btn.innerText = '🎯 進行ガイド: OFF';
+      }
+    }
+
+    function toggleProgressGuide() {
+      isProgressGuideOn = !isProgressGuideOn;
+      updateProgressGuideButton();
+      if (isTournamentStarted) {
+        computeSuggestedWbMatch();
+        renderTournament();
+      }
+      saveState();
+    }
+
     function sanitizeWbWinners() {
       winnersBracket.forEach((round, ri) => {
         round.forEach(match => {
@@ -2504,6 +2859,7 @@
       const showBtn = isTournamentFinished();
       document.getElementById('showResultsBtn').classList.toggle('hidden', !showBtn);
       recalculateAllStats();
+      computeSuggestedWbMatch();
       renderTournament();
       saveState();
     }
@@ -2710,9 +3066,11 @@
       } else {
         match.winner = winnerVal;
       }
+      match.updatedAt = Date.now();
       clearDeDownstream(block, roundIdx);
       updateAdvancementsDE();
       if (match.winner !== null) void syncToSheets();
+      broadcastSubSync();
     }
 
     function renderMatchCard(match, block, roundIdx, matchIdx, label1, label2) {
@@ -2765,22 +3123,44 @@
       const stageInfo = (block === 'wb') ? 'WINNERS' : (block === 'lb') ? 'LOSERS' : 'FINAL STAGE';
       const roundInfo = getDeRoundLabel(block, roundIdx, matchIdx);
       const matchKey = `${block}-${roundIdx}-${matchIdx}`;
+      const isSuggested = isProgressGuideOn && block === 'wb' && matchKey === suggestedWbMatchKey;
+      const cardBorder = isSuggested
+        ? 'border-2 border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]'
+        : 'border border-cyber-table-border shadow-sm';
+      const nextBadge = isSuggested
+        ? '<span class="absolute -top-2 left-2 text-[9px] font-sf font-bold text-yellow-400 bg-[#0a0e17] px-1.5 py-0.5 rounded border border-yellow-400/50 z-10">▶ NEXT</span>'
+        : '';
+      const wbPlayNum = (block === 'wb') ? getWb20PlayNumber(roundIdx, matchIdx) : null;
+      const playNumBadge = wbPlayNum
+        ? `<span class="absolute -top-2 right-2 text-[9px] font-sf font-bold text-cyber-blue/80 bg-[#0a0e17] px-1.5 py-0.5 rounded border border-cyber-blue/30 z-10">${wbPlayNum}</span>`
+        : '';
       const nextBtn = canSendToScore
-        ? `<button onclick="sendNextBattle('${matchKey}','${p1Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${p2Name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${stageInfo}','${roundInfo}')" class="text-sm leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>`
+        ? `<button onclick="sendNextBattle('${matchKey}','${block}',${roundIdx},${matchIdx},'${stageInfo}','${roundInfo}')" class="text-sm leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>`
         : '';
 
-      return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
+      return `<div class="relative flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] ${cardBorder}">${nextBadge}${playNumBadge}${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
     }
 
-    function sendNextBattle(matchKey, p1, p2, stage, round) {
+    async function sendNextBattle(matchKey, block, roundIdx, matchIdx, stage, round) {
       if (activeNextBattleId === matchKey) {
         if (conn) conn.send({ type: 'HIDE_PREVIEW' });
         activeNextBattleId = null;
-      } else {
-        const label = `${stage} - ${round}`;
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...getShowPreviewHudFields() });
-        activeNextBattleId = matchKey;
+        return;
       }
+      const match = getMatchByCoords(block, roundIdx, matchIdx);
+      if (!match || !match.p1 || !match.p2) return;
+      const p1 = match.p1, p2 = match.p2;
+      const label = `${stage} - ${round}`;
+      const rows = await loadH2HHistory();
+      const { p1Wins, p2Wins } = calcH2H(rows, p1.name, p2.name);
+      if (conn) conn.send({
+        type: 'SHOW_PREVIEW', p1: p1.name, p2: p2.name, label,
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power },
+        h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+        ...getShowPreviewHudFields()
+      });
+      activeNextBattleId = matchKey;
     }
 
     function sendBreakStart() {
@@ -2876,9 +3256,13 @@
           .tv-finals { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
           .tv-finals-block { border:1px solid ${C.pink}; border-radius:8px; overflow:hidden; background:${C.card}; box-shadow:0 0 12px rgba(236,72,153,0.2); }
           .tv-finals-title { background:rgba(236,72,153,0.15); border-bottom:1px solid ${C.pink}; text-align:center; padding:6px 4px; font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.6vw,14px); font-weight:900; color:${C.yellow}; letter-spacing:3px; text-shadow:0 0 8px ${C.yellow}; }
+          .tv-match-suggested { border:2px solid ${C.yellow} !important; box-shadow:0 0 12px rgba(250,204,21,0.55); animation:tv-guide-pulse 1.6s ease-in-out infinite; }
+          .tv-match-suggested::before { content:'▶ NEXT'; font-family:'Orbitron',sans-serif; font-size:7px; color:${C.yellow}; letter-spacing:1px; margin-right:4px; flex-shrink:0; text-shadow:0 0 6px ${C.yellow}; }
+          @keyframes tv-guide-pulse { 0%,100%{box-shadow:0 0 8px rgba(250,204,21,0.35);} 50%{box-shadow:0 0 18px rgba(250,204,21,0.75);} }
+          .tv-guide-banner { text-align:center; font-family:'Orbitron',sans-serif; font-size:clamp(9px,1.4vw,12px); color:${C.yellow}; letter-spacing:2px; margin-bottom:8px; padding:6px 10px; border:1px solid rgba(250,204,21,0.45); border-radius:6px; background:rgba(250,204,21,0.08); text-shadow:0 0 8px rgba(250,204,21,0.5); }
         </style>`;
 
-      const renderTvMatch = (match) => {
+      const renderTvMatch = (match, bracket, roundIdx, matchIdx) => {
         if (!match || (!match.p1 && !match.p2)) return '';
         const p1Name = !match.p1 ? 'TBD' : (match.p1.id === 'BYE' ? 'BYE' : match.p1.name);
         const p2Name = !match.p2 ? 'TBD' : (match.p2.id === 'BYE' ? 'BYE' : match.p2.name);
@@ -2886,30 +3270,32 @@
         if (match.winner === 1) { p1cls = 'tv-p win-left'; p2cls = 'tv-p lose-right'; }
         if (match.winner === 2) { p1cls = 'tv-p lose-left'; p2cls = 'tv-p win-right'; }
         const mid = match.score ? `<span class="tv-score">${match.score}</span>` : `<span class="tv-vs">VS</span>`;
-        return `<div class="tv-match"><span class="${p1cls}">${p1Name}</span>${mid}<span class="${p2cls}">${p2Name}</span></div>`;
+        const matchKey = `${bracket}-${roundIdx}-${matchIdx}`;
+        const suggestCls = (isProgressGuideOn && bracket === 'wb' && matchKey === suggestedWbMatchKey) ? ' tv-match-suggested' : '';
+        return `<div class="tv-match${suggestCls}"><span class="${p1cls}">${p1Name}</span>${mid}<span class="${p2cls}">${p2Name}</span></div>`;
       };
 
-      const buildTvBracketCol = (title, rounds, color, finalLabel) => {
+      const buildTvBracketCol = (title, rounds, color, finalLabel, bracketKey) => {
         let inner = '';
         rounds.forEach((round, i) => {
           const label = (i === rounds.length - 1 && finalLabel) ? finalLabel : `R${i + 1}`;
           inner += `<div class="tv-round-title" style="color:${color}">${label}</div>`;
-          round.forEach(m => { inner += renderTvMatch(m); });
+          round.forEach((m, mi) => { inner += renderTvMatch(m, bracketKey, i, mi); });
         });
         return `<div class="tv-block"><div class="tv-block-title">${title}</div>${inner}<div style="height:6px"></div></div>`;
       };
 
-      let blocksHtml = buildTvBracketCol('WINNERS', winnersBracket, C.blue, 'WB FINAL');
-      blocksHtml += buildTvBracketCol('LOSERS', losersBracket, C.pink, 'LB FINAL');
+      let blocksHtml = buildTvBracketCol('WINNERS', winnersBracket, C.blue, 'WB FINAL', 'wb');
+      blocksHtml += buildTvBracketCol('LOSERS', losersBracket, C.pink, 'LB FINAL', 'lb');
 
       let finalsHtml = '';
       if (grandFinal) {
         let sfInner = '';
         sfInner += `<div class="tv-round-title" style="color:${C.yellow}">GRAND FINAL</div>`;
-        sfInner += renderTvMatch(grandFinal);
+        sfInner += renderTvMatch(grandFinal, 'gf', 0, 0);
         if (grandFinalReset) {
           sfInner += `<div class="tv-round-title" style="color:${C.yellow};margin-top:6px">GF RESET</div>`;
-          sfInner += renderTvMatch(grandFinalReset);
+          sfInner += renderTvMatch(grandFinalReset, 'gf_reset', 0, 0);
         }
         finalsHtml = `<div class="tv-finals"><div class="tv-finals-block"><div class="tv-finals-title">FINAL STAGE</div>${sfInner}<div style="height:6px"></div></div></div>`;
       }
@@ -2918,7 +3304,10 @@
       const tvBgLogoHtml = (hudPreviewBackground && hudPreviewBackground !== 'none')
         ? `<img class="tv-bg-logo" src="${hudPreviewBackground}" alt="" />`
         : '';
-      return `${S}<div class="tv-wrap">${tvBgLogoHtml}<div class="tv-title">${tName}</div><div class="tv-blocks">${blocksHtml}</div>${finalsHtml}</div>`;
+      const guideBanner = (isProgressGuideOn && suggestedWbMatchLabel)
+        ? `<div class="tv-guide-banner">🎯 NEXT: ${suggestedWbMatchLabel}</div>`
+        : '';
+      return `${S}<div class="tv-wrap">${tvBgLogoHtml}<div class="tv-title">${tName}</div>${guideBanner}<div class="tv-blocks">${blocksHtml}</div>${finalsHtml}</div>`;
     }
 
 
@@ -3097,6 +3486,7 @@
         finalsHtml += `</div>`;
       }
       document.getElementById('finalsContainer').innerHTML = finalsHtml;
+      updateProgressGuideHint();
       switchDeSubTab(deSubTab);
       if (isTvMode_active && conn) conn.send({ type: 'SHOW_OVERLAY', html: buildTvTournamentHtml() });
     }
@@ -3170,7 +3560,7 @@
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, winnersBracket, losersBracket, grandFinal, grandFinalReset,
           lbThirdPlace, bracketSize, playedPairs, gfResetRequired, deSubTab, isEffectOn,
-          hudPreviewBackground
+          isProgressGuideOn, hudPreviewBackground
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
@@ -3212,6 +3602,7 @@
         deSubTab = s.deSubTab || 'wb';
         ensureDeBracketIntegrity();
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        isProgressGuideOn = s.isProgressGuideOn !== undefined ? s.isProgressGuideOn : true;
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
@@ -3237,6 +3628,7 @@
       document.getElementById('mainManagementSection').classList.add('flex');
       const effectBtn = document.getElementById('btn-toggle-effect');
       if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
+      updateProgressGuideButton();
       recalculateAllStats();
       renderParticipants();
       if (isTournamentStarted) {
