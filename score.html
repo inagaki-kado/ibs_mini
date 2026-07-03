@@ -1040,8 +1040,9 @@
                 replayVideo.src = replayObjectUrl;
                 replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block';
                 document.body.classList.add('replay-mode');
-                // リプレイ中はベイブレード名を非表示
+                // リプレイ中はベイブレード名・試合後コメントを非表示（#replay-controlsに隠れるのを防止）
                 document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
+                hideMatchComment();
                 updateStatusMsg("▶ 1.0"); replayVideo.load();
                 const startPlayback = () => {
                     // duration=Infinity (webm/Chrome) の場合は seek後のcurrentTimeを実質durationとして使う

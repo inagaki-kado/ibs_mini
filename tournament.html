@@ -1505,6 +1505,8 @@
       const lastEvent = events[events.length - 1];
       const finishPhrase = { XF: '豪快なXF', BF: 'バースト', OF: 'オーバーフィニッシュ', SF: 'スピンフィニッシュ' }[lastEvent.k] || '決め手';
       const lastBey = (lastEvent.bey || '').trim();
+      const loserSide = winnerIsP1 ? 'p2' : 'p1';
+      const loserEvents = events.filter(ev => ev.who === loserSide);
 
       let pattern = null;
       if (maxWinnerDeficit >= 2) {
@@ -1520,7 +1522,43 @@
         }
       }
 
-      return { pattern, maxWinnerDeficit, finishPhrase, lastBey };
+      return { pattern, maxWinnerDeficit, finishPhrase, lastBey, loserEvents };
+    }
+
+    // 敗者への一言を生成する。loserEventsがあれば決め手ベイに触れるパターンも候補に含め、
+    // 言及あり/励ましのみをpickRandomで確率的に混在させる（loserEventsが空=完封負けなら励ましのみ）
+    function generateLoserComment(data, loserEvents, loserBeyTop5) {
+      const loserName = data.loser;
+      const plainComments = [
+        `負けた${loserName}も随所に妙技が光るいい試合だった！`,
+        `負けた${loserName}も随所に才能の片鱗を感じた。次戦に期待！`,
+        `負けた${loserName}も最後まで諦めない粘りを見せた一戦だった。`,
+        `負けた${loserName}の健闘も光る一戦だった。`,
+        `負けた${loserName}も次に繋がる収穫のある試合だった。`,
+        `負けた${loserName}も見応えのある戦いぶりだった。`,
+        `負けた${loserName}も食らいつく姿勢を最後まで崩さなかった。`,
+        `負けた${loserName}にとっても得るものが多い一戦だった。`
+      ];
+
+      if (!Array.isArray(loserEvents) || loserEvents.length === 0) {
+        return pickRandom(plainComments);
+      }
+
+      const pickedEvent = pickRandom(loserEvents);
+      const kimaritePhrase = { XF: 'XF', BF: 'バースト', OF: 'オーバーフィニッシュ', SF: 'スピンフィニッシュ' }[pickedEvent.k] || '一撃';
+      const decoratedLoserBey = decorateBeyName(pickedEvent.bey || data.loserBey, loserBeyTop5);
+      const beyMention = beyPhrase(decoratedLoserBey, 'no');
+
+      const withBeyComments = [
+        `負けた${loserName}も${beyMention}${kimaritePhrase}で意地を見せつけた！`,
+        `負けた${loserName}も${beyMention}${kimaritePhrase}を決め、意地を見せつけた。`,
+        `負けた${loserName}も${beyMention}${kimaritePhrase}で一矢報いた名勝負だった。`,
+        `負けた${loserName}も${beyMention}${kimaritePhrase}の強さを見せた一戦！`,
+        `負けた${loserName}の${beyMention}${kimaritePhrase}が会場を沸かせた。`,
+        `負けた${loserName}も${beyMention}${kimaritePhrase}で存在感を示した。`
+      ];
+
+      return pickRandom([...plainComments, ...withBeyComments]);
     }
 
     // ベイ名があるときだけ助詞付きフレーズを返す（未登録なら空文字で自然な文になる）
@@ -1551,7 +1589,7 @@
       return b;
     }
 
-    function generateLocalComment(data, winnerBeyTop5) {
+    function generateLocalComment(data, winnerBeyTop5, loserBeyTop5) {
       const { style } = analyzeFinishPattern(data.finishHistory);
       const [wScore, lScore] = data.score.split('-').map(Number);
       const gap = Math.abs(wScore - lScore);
@@ -1576,36 +1614,61 @@
           const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
             ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
           const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
+          const loserComment = generateLoserComment(data, flow.loserEvents, loserBeyTop5);
           return pickRandom([
-            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドからの大逆転劇！${finishBey}${flow.finishPhrase}で${data.loser}を下した。`,
-            `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}が最後の決め手となった。`,
-            `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ大逆転。`
+            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドからの大逆転劇！${finishBey}${flow.finishPhrase}で${data.loser}を下した。${loserComment}`,
+            `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}が最後の決め手となった。${loserComment}`,
+            `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ大逆転。${loserComment}`,
+            `絶体絶命の${flow.maxWinnerDeficit}点差から、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が奇跡の大逆転！${finishBey}${flow.finishPhrase}で${data.loser}を突き放した。${loserComment}`,
+            `誰もが${data.loser}の勝利を確信した${flow.maxWinnerDeficit}点差から、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}がまさかの逆転勝利。${finishBey}${flow.finishPhrase}が流れを変えた。${loserComment}`,
+            `${flow.maxWinnerDeficit}点のビハインドをものともせず、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が土壇場で逆転。${finishBey}${flow.finishPhrase}が会場を沸かせた。${loserComment}`
           ]);
         }
         if (flow && flow.pattern === 'seesaw') {
           const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
             ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
           const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
+          const loserComment = generateLoserComment(data, flow.loserEvents, loserBeyTop5);
           return pickRandom([
-            `一進一退のシーソーゲームを制したのは${data.winner}！${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で決着をつけた。`,
-            `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}が光った。`,
-            `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}でものにした。`
+            `一進一退のシーソーゲームを制したのは${data.winner}！${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で決着をつけた。${loserComment}`,
+            `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}が光った。${loserComment}`,
+            `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}でものにした。${loserComment}`,
+            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が僅差の攻防を制した！${finishBey}${flow.finishPhrase}が最後の決め手。${loserComment}`,
+            `終始リードの奪い合いとなった一戦は${data.winner}に軍配。${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}が勝敗を分けた。${loserComment}`,
+            `一進一退の展開を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。競り合いを${finishBey}${flow.finishPhrase}でものにした。${loserComment}`
           ]);
         }
         if (flow && flow.pattern === 'wire') {
+          const loserComment = generateLoserComment(data, flow.loserEvents, loserBeyTop5);
           return pickRandom([
-            `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}先手を取って一度もリードを譲らず快勝。${styleText}${data.loser}を下した。`,
-            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終始ペースを握り快勝。${styleText}${data.loser}を圧倒した。`,
-            `序盤から主導権を握った${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}そのまま押し切った。${styleText}逃げ切った。`
+            `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}先手を取って一度もリードを譲らず快勝。${styleText}${data.loser}を下した。${loserComment}`,
+            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終始ペースを握り快勝。${styleText}${data.loser}を圧倒した。${loserComment}`,
+            `序盤から主導権を握った${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}そのまま押し切った。${styleText}逃げ切った。${loserComment}`,
+            `終始危なげない試合運びで${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が快勝。${styleText}${data.loser}に付け入る隙を与えなかった。${loserComment}`,
+            `${data.winner}が序盤のリードを最後まで守り切った。${beyPhrase(decoratedWinnerBey, 'with')}${styleText}危なげなく勝利。${loserComment}`,
+            `一度もリードを譲ることなく${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が完勝。${styleText}${data.loser}を寄せ付けなかった。${loserComment}`
           ]);
         }
+        const loserCommentFallbackWithFlow = generateLoserComment(data, flow ? flow.loserEvents : null, loserBeyTop5);
+        return pickRandom([
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を下した。${loserCommentFallbackWithFlow}`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を突き放した。${loserCommentFallbackWithFlow}`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}見事に勝利を収めた。${loserCommentFallbackWithFlow}`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}巧みなゲーム運びで${data.loser}に勝利した。${loserCommentFallbackWithFlow}`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}安定した強さで${data.loser}を退けた。${loserCommentFallbackWithFlow}`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}着実に勝ち星を積み重ねた。${loserCommentFallbackWithFlow}`
+        ]);
       }
       // ▲ 試合展開の分析ここまで
 
+      const loserComment = generateLoserComment(data, null, loserBeyTop5);
       return pickRandom([
-        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を下した。`,
-        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を突き放した。`,
-        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}見事に勝利を収めた。`
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を下した。${loserComment}`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を突き放した。${loserComment}`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}見事に勝利を収めた。${loserComment}`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}巧みなゲーム運びで${data.loser}に勝利した。${loserComment}`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}安定した強さで${data.loser}を退けた。${loserComment}`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}着実に勝ち星を積み重ねた。${loserComment}`
       ]);
     }
 
@@ -1619,8 +1682,11 @@
       const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
         .filter(s => s && String(s).trim())
         .sort((a, b) => b.length - a.length);
-      const winnerBeyTop5 = await fetchBeyUsageTop5(data.winner);
-      sendMatchComment(generateLocalComment(data, winnerBeyTop5), highlights);
+      const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
+        fetchBeyUsageTop5(data.winner),
+        fetchBeyUsageTop5(data.loser)
+      ]);
+      sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
     }
 
     function handleRemoteWinner(side) {
