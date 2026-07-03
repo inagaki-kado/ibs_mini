@@ -602,6 +602,33 @@
     let remoteKimariteList = [];
     let remoteKimariteP1 = [];
     let remoteKimariteP2 = [];
+    // 試合展開の時系列ログ（コメント生成専用・保存やCSVには使わない）
+    let remoteMatchEvents = [];
+
+    // 試合コメント用「よく使うベイTOP5」参照（キャッシュせず毎回フレッシュ取得）
+    const SHEET_ID_H2H = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
+    const API_KEY_H2H  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
+    const RANGE_BEY_USAGE = encodeURIComponent('🌀 ベイ集計!A2:F');
+    const BEY_USAGE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_BEY_USAGE}?key=${API_KEY_H2H}`;
+
+    async function fetchBeyUsageTop5(playerName, timeoutMs = 4000) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(BEY_USAGE_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return [];
+        const json = await res.json();
+        const row = (json.values || []).find(r => (r[0] || '').trim() === playerName);
+        if (!row) return [];
+        return [1, 2, 3, 4, 5]
+          .map(i => (row[i] || '').trim())
+          .filter(b => b && b !== '－' && b !== '-');
+      } catch (e) {
+        console.warn('ベイ使用率取得失敗（装飾なしで継続）', e);
+        return [];
+      }
+    }
     const KIMARITE_ORDER = ['SF', 'BF', 'OF', 'XF'];
     function parseKimariteStored(val) {
       if (val == null || val === '') return [];
@@ -668,6 +695,7 @@
         if (cmd === 'SYS_RESET' || cmd === 'reset') {
             remoteScoreLeft = 0;
             remoteScoreRight = 0;
+            remoteMatchEvents = [];
         } else {
             if (side === 'left') {
                 remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
@@ -694,6 +722,17 @@
               } else {
                 remoteKimariteP2.push(autoKEntry.k);
               }
+              // 時系列イベントを記録（スワップ解決済みの actualWho を使う）
+              remoteMatchEvents.push({
+                who: actualWho,
+                k: autoKEntry.k,
+                pts: pts,
+                scoreP1: isRemoteSwapped ? remoteScoreRight : remoteScoreLeft,
+                scoreP2: isRemoteSwapped ? remoteScoreLeft : remoteScoreRight,
+                bey: currentRemoteMatch
+                  ? (actualWho === 'p1' ? (currentRemoteMatch.p1BeyUsed || '') : (currentRemoteMatch.p2BeyUsed || ''))
+                  : ''
+              });
               // 表示用の全体リストにも追加
               remoteKimariteList.push(autoKEntry.k);
               updateRemoteKimariteUI();
@@ -721,7 +760,8 @@
 
         currentRemoteMatch = match;
         isRemoteSwapped = false;
-        
+        remoteMatchEvents = [];
+
         // 既にスコアが入っている場合は反映
         remoteScoreLeft = match.s1 !== null ? match.s1 : 0;
         remoteScoreRight = match.s2 !== null ? match.s2 : 0;
@@ -933,6 +973,7 @@
     function undoRemoteKimariteLast() {
       if (!remoteKimariteList.length) return;
       remoteKimariteList.pop();
+      remoteMatchEvents.pop();
       updateRemoteKimariteUI();
       if (currentRemoteMatch) {
         currentRemoteMatch.kimarite = serializeKimariteList(remoteKimariteList);
@@ -940,9 +981,170 @@
       }
     }
 
+    // ==========================================
+    // 試合コメント自動生成（テンプレート方式）
+    // ==========================================
+
+    function analyzeFinishPattern(finishHistory) {
+      const counts = { XF: 0, BF: 0, OF: 0, SF: 0 };
+      finishHistory.forEach(k => { if (counts[k] !== undefined) counts[k]++; });
+      const total = finishHistory.length || 1;
+      let style = 'balance';
+      if (counts.XF / total >= 0.5) style = 'attack';
+      else if (counts.SF / total >= 0.5) style = 'grind';
+      else if (counts.BF / total >= 0.4) style = 'burst';
+      return { style, lastFinish: finishHistory[finishHistory.length - 1] || null };
+    }
+
+    function analyzeMatchFlow(events, winnerIsP1) {
+      if (!Array.isArray(events) || events.length === 0) return null;
+
+      let leadChangeCount = 0;
+      let prevLeader = null;
+      let maxWinnerDeficit = 0;
+      let winnerEverLed = false;
+      let winnerTrailedAfterLeading = false;
+
+      events.forEach(ev => {
+        const winnerScore = winnerIsP1 ? ev.scoreP1 : ev.scoreP2;
+        const loserScore  = winnerIsP1 ? ev.scoreP2 : ev.scoreP1;
+        const deficit = loserScore - winnerScore;
+        if (deficit > maxWinnerDeficit) maxWinnerDeficit = deficit;
+
+        let leader = 'tie';
+        if (winnerScore > loserScore) leader = 'winner';
+        else if (loserScore > winnerScore) leader = 'loser';
+
+        if (leader !== 'tie') {
+          if (prevLeader && prevLeader !== 'tie' && leader !== prevLeader) leadChangeCount++;
+          prevLeader = leader;
+        }
+        if (leader === 'winner') winnerEverLed = true;
+        if (leader === 'loser' && winnerEverLed) winnerTrailedAfterLeading = true;
+      });
+
+      const lastEvent = events[events.length - 1];
+      const finishPhrase = { XF: '豪快なXF', BF: 'バースト', OF: 'オーバーフィニッシュ', SF: 'スピンフィニッシュ' }[lastEvent.k] || '決め手';
+      const lastBey = (lastEvent.bey || '').trim();
+
+      let pattern = null;
+      if (maxWinnerDeficit >= 2) {
+        pattern = 'comeback';
+      } else if (leadChangeCount >= 3) {
+        pattern = 'seesaw';
+      } else if (winnerEverLed && !winnerTrailedAfterLeading) {
+        const firstScoringEvent = events.find(ev => ev.scoreP1 !== ev.scoreP2);
+        if (firstScoringEvent) {
+          const firstWinnerScore = winnerIsP1 ? firstScoringEvent.scoreP1 : firstScoringEvent.scoreP2;
+          const firstLoserScore  = winnerIsP1 ? firstScoringEvent.scoreP2 : firstScoringEvent.scoreP1;
+          if (firstWinnerScore > firstLoserScore) pattern = 'wire';
+        }
+      }
+
+      return { pattern, maxWinnerDeficit, finishPhrase, lastBey };
+    }
+
+    // ベイ名があるときだけ助詞付きフレーズを返す（未登録なら空文字で自然な文になる）
+    function beyPhrase(beyName, pattern) {
+      const b = (beyName || '').trim();
+      if (!b) return '';
+      switch (pattern) {
+        case 'pilot': return `${b}を駆る`;
+        case 'with':  return `${b}で`;
+        case 'no':    return `${b}の`;
+        default:      return '';
+      }
+    }
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // TOP5に入っているベイ名なら前置詞を付けて装飾する（未登録・取得失敗時は空配列が渡り無装飾のまま）
+    function decorateBeyName(beyName, top5List) {
+      const b = (beyName || '').trim();
+      if (!b) return '';
+      if (Array.isArray(top5List) && top5List.includes(b)) {
+        return pickRandom(['相棒', '魂のベイ', '得意の', '愛機']) + b;
+      }
+      return b;
+    }
+
+    function generateLocalComment(data, winnerBeyTop5) {
+      const { style } = analyzeFinishPattern(data.finishHistory);
+      const [wScore, lScore] = data.score.split('-').map(Number);
+      const gap = Math.abs(wScore - lScore);
+      const shutout = Math.min(wScore, lScore) === 0;
+
+      const styleText = {
+        attack: '怒涛のXFで畳み掛けて',
+        grind: '最後まで回転を残す粘りを見せて',
+        burst: 'バーストで一気に決めて',
+        balance: '堅実な戦いを見せて'
+      }[style];
+      const closeText = shutout ? '完封の圧倒的な強さ'
+        : gap === 1 ? '一歩も引かない攻防' : '実力を見せつけた';
+
+      // TOP5ベイなら前置詞付きで装飾（winnerBeyTop5が空/未取得なら無装飾のまま）
+      const decoratedWinnerBey = decorateBeyName(data.winnerBey, winnerBeyTop5);
+
+      // ▼ 試合展開（逆転・シーソー・逃げ切り）の分析。data.eventsがなければ既存ロジックにフォールバック
+      if (Array.isArray(data.events) && data.events.length > 0 && typeof data.winnerIsP1 === 'boolean') {
+        const flow = analyzeMatchFlow(data.events, data.winnerIsP1);
+        if (flow && flow.pattern === 'comeback') {
+          const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
+            ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
+          const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
+          return pickRandom([
+            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドからの大逆転劇！${finishBey}${flow.finishPhrase}で${data.loser}を下した。`,
+            `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}が最後の決め手となった。`,
+            `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ大逆転。`
+          ]);
+        }
+        if (flow && flow.pattern === 'seesaw') {
+          const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
+            ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
+          const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
+          return pickRandom([
+            `一進一退のシーソーゲームを制したのは${data.winner}！${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で決着をつけた。`,
+            `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}が光った。`,
+            `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}でものにした。`
+          ]);
+        }
+        if (flow && flow.pattern === 'wire') {
+          return pickRandom([
+            `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}先手を取って一度もリードを譲らず快勝。${styleText}${data.loser}を下した。`,
+            `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終始ペースを握り快勝。${styleText}${data.loser}を圧倒した。`,
+            `序盤から主導権を握った${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}そのまま押し切った。${styleText}逃げ切った。`
+          ]);
+        }
+      }
+      // ▲ 試合展開の分析ここまで
+
+      return pickRandom([
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を下した。`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}${data.loser}を突き放した。`,
+        `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${closeText}。${styleText}見事に勝利を収めた。`
+      ]);
+    }
+
+    function sendMatchComment(comment, highlights) {
+      if (!conn || !conn.open) return;
+      conn.send({ type: 'MATCH_COMMENT', comment, highlights });
+    }
+
+    async function onMatchFinished(data) {
+      // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
+      const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
+        .filter(s => s && String(s).trim())
+        .sort((a, b) => b.length - a.length);
+      const winnerBeyTop5 = await fetchBeyUsageTop5(data.winner);
+      sendMatchComment(generateLocalComment(data, winnerBeyTop5), highlights);
+    }
+
     function handleRemoteWinner(side) {
         if (!currentRemoteMatch) return;
-        
+
         let finalWinnerVal;
         let finalScore1 = isRemoteSwapped ? remoteScoreRight : remoteScoreLeft;
         let finalScore2 = isRemoteSwapped ? remoteScoreLeft : remoteScoreRight;
@@ -961,9 +1163,24 @@
         currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
         currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
 
+        // ▼ 試合コメント生成・送信
+        const isP1Winner = (finalWinnerVal === 1);
+        onMatchFinished({
+          winner: isP1Winner ? currentRemoteMatch.p1.name : currentRemoteMatch.p2.name,
+          loser:  isP1Winner ? currentRemoteMatch.p2.name : currentRemoteMatch.p1.name,
+          winnerBey: isP1Winner ? (currentRemoteMatch.p1BeyUsed || '') : (currentRemoteMatch.p2BeyUsed || ''),
+          loserBey:  isP1Winner ? (currentRemoteMatch.p2BeyUsed || '') : (currentRemoteMatch.p1BeyUsed || ''),
+          score: `${finalScore1}-${finalScore2}`,
+          finishHistory: isP1Winner ? [...remoteKimariteP1] : [...remoteKimariteP2],
+          tournamentName: leagueName,
+          events: remoteMatchEvents.slice(),
+          winnerIsP1: isP1Winner
+        });
+        // ▲ 試合コメント生成・送信ここまで
+
         recalculateAllStats();
         updateLeagueDisplay();
-        
+
         closeRemoteModal();
     }
 
