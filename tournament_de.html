@@ -1705,7 +1705,9 @@
     function decorateBeyName(beyName, top5List) {
       const b = (beyName || '').trim();
       if (!b) return '';
-      if (Array.isArray(top5List) && top5List.includes(b)) {
+      // 「🌀 ベイ集計」にはブレード名のみ（ラチェット/ビット抜き）で登録されているため、
+      // 実際の使用ベイ名がそのブレード名を含んでいれば得意ベイ扱いにする（完全一致ではなく部分一致）
+      if (Array.isArray(top5List) && top5List.some(entry => entry && b.includes(entry))) {
         return pickRandom(['相棒', '魂のベイ', '得意の', '愛機']) + b;
       }
       return b;
@@ -3870,20 +3872,62 @@
 
     let partsData = []; // パースしたパーツデータを保存
 
+    function applyPartsCsvFromText(csvText) {
+      partsData = parsePartsCSV(csvText || '');
+      return partsData.length;
+    }
+
+    /**
+     * 手動で parts.csv を読み込み（file:// 時や fetch 失敗時用）
+     */
+    function onManualPartsCsvPick(ev) {
+      const f = ev.target && ev.target.files && ev.target.files[0];
+      if (ev.target) ev.target.value = '';
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const n = applyPartsCsvFromText(reader.result);
+        if (n === 0) {
+          showAlert('parts.csv を解析しましたが、有効なパーツがありません。');
+          return;
+        }
+        const modal = document.getElementById('beybladeSelectModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          showNextPartSelection();
+        } else {
+          showAlert('parts.csv を読み込みました（' + n + ' 件）。ベイ登録を続けられます。');
+        }
+      };
+      reader.onerror = () => showAlert('ファイルの読み込みに失敗しました。');
+      reader.readAsText(f, 'UTF-8');
+    }
+
     /**
      * 同じフォルダの parts.csv を fetch で読み込んでパースする
+     * ※ file:// で HTML を開いている場合、ブラウザ制限で fetch が使えず空になります → HTTP で開くか、パーツ選択画面で CSV を指定してください。
      */
     async function loadPartsCSV() {
+      if (window.location.protocol === 'file:') {
+        console.warn(
+          '[ベイ登録] file:// では parts.csv を自動読み込みできません。ローカルサーバー（例: npx serve）で http:// から開くか、パーツ選択画面で parts.csv を手動指定してください。'
+        );
+        return [];
+      }
       try {
         const response = await fetch('parts.csv');
         if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
         const csvText = await response.text();
-        partsData = parsePartsCSV(csvText);
-        console.log('✅ parts.csv読み込み成功:', partsData.length, '件');
+        const n = applyPartsCsvFromText(csvText);
+        console.log('✅ parts.csv読み込み成功:', n, '件');
         return partsData;
       } catch (error) {
         console.error('❌ parts.csv読み込みエラー:', error);
-        showAlert('parts.csvの読み込みに失敗しました。\nparts.csvがtournament_de.htmlと同じフォルダにあるか確認してください。');
+        showAlert(
+          'parts.csvの読み込みに失敗しました。\n' +
+            '・tournament_de.html と同じフォルダに parts.csv があるか確認\n' +
+            '・可能ならフォルダで「npx serve」や Live Server など http:// で開き直してください\n' +
+            '・またはベイのパーツ選択画面で parts.csv を手動で選べます'
+        );
         return [];
       }
     }
@@ -4340,10 +4384,37 @@
       }
       
       const parts = getPartsByCategory(categoryId);
-      
+
       content.innerHTML = '';
+      if (parts.length === 0) {
+        content.className = 'flex flex-col gap-3 p-3 overflow-y-auto flex-1 text-left';
+        const isFileProto = window.location.protocol === 'file:';
+        const p1 = document.createElement('p');
+        p1.className = 'text-sm text-cyber-text leading-relaxed';
+        p1.innerHTML =
+          '<strong class="text-cyber-pink">パーツ一覧が空です。</strong><br>' +
+          (isFileProto
+            ? 'HTML をダブルクリックで開いている（<code class="text-cyber-blue">file://</code>）と、ブラウザの制限で <code class="text-cyber-blue">parts.csv</code> を読み込めません。<br>'
+            : '') +
+          '対処: (1) このフォルダでローカルサーバーを起動して <code class="text-cyber-blue">http://</code> から開く（例: ターミナルで <code class="text-cyber-green">npx --yes serve</code>）<br>' +
+          '(2) 下の「parts.csv を指定」でファイルを選ぶ<br>' +
+          '(3) <code class="text-cyber-blue">parts.csv</code> が tournament_de.html と同じフォルダにあるか確認';
+        content.appendChild(p1);
+        const lab = document.createElement('label');
+        lab.className =
+          'inline-flex items-center gap-2 text-xs font-sf text-cyber-green border border-cyber-green/50 rounded px-3 py-2 cursor-pointer hover:bg-cyber-green/10';
+        const fin = document.createElement('input');
+        fin.type = 'file';
+        fin.accept = '.csv,text/csv';
+        fin.className = 'text-[11px] max-w-full';
+        fin.onchange = onManualPartsCsvPick;
+        lab.appendChild(document.createTextNode('parts.csv を指定 '));
+        lab.appendChild(fin);
+        content.appendChild(lab);
+        return;
+      }
       content.className = 'grid grid-cols-2 gap-2 overflow-y-auto flex-1';
-      
+
       parts.forEach(part => {
         const btn = document.createElement('button');
         const textColor = part.isFrequent ? 'text-cyber-red' : 'text-cyber-text';

@@ -964,7 +964,9 @@
     function decorateBeyName(beyName, top5List) {
       const b = (beyName || '').trim();
       if (!b) return '';
-      if (Array.isArray(top5List) && top5List.includes(b)) {
+      // 「🌀 ベイ集計」にはブレード名のみ（ラチェット/ビット抜き）で登録されているため、
+      // 実際の使用ベイ名がそのブレード名を含んでいれば得意ベイ扱いにする（完全一致ではなく部分一致）
+      if (Array.isArray(top5List) && top5List.some(entry => entry && b.includes(entry))) {
         return pickRandom(['相棒', '魂のベイ', '得意の', '愛機']) + b;
       }
       return b;
