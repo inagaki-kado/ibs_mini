@@ -218,9 +218,11 @@
 | `souatari.html` | 総当たりリーグ管理 | 青 `#0ea5e9` |
 | `freebattle.html` | フリー対戦管理 | オレンジ `#fb923c` |
 | `block.html` | ブロック戦子機（スタジアム担当者用） | 緑 `#22c55e` |
++ | `tournament_de_sub.html` | tournament_de.htmlのLBスタッフ管理子機（4桁コード接続） | 青 `#0ea5e9` |
 | `score.html` | OBS用HUDディスプレイ（受信専用・Ver.34） | — |
++ | `cx_parts_chart.html` | CXパーツ参照チャート（tournament.htmlからiframeモーダル表示） | — |
 | `player_stats.html` | ブレーダー統計ポータル（Google Sheets連携） | 緑 `#00ff88` |
-| `lottery.html` | 抽選アプリ | — |
+- | `lottery.html` | 抽選アプリ | — |
 | `spectator.html` | 観客向け表示 | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
