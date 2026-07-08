@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【テスト依頼】LB SUB（ルーザーズ管理アプリ）の動作確認について</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cyber-bg': '#0a0e17',
+            'cyber-dark': '#111827',
+            'cyber-blue': '#0ea5e9',
+            'cyber-green': '#22c55e',
+            'cyber-pink': '#ec4899',
+            'cyber-orange': '#ffaa00',
+            'cyber-red': '#ff0055',
+            'cyber-red-orange': '#ff4500',
+            'cyber-text': '#e2e8f0',
+            'cyber-table-border': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #0a0e17;
+      color: #e2e8f0;
+    }
+    .font-sf {
+      font-family: 'Orbitron', sans-serif;
+    }
+    .neon-blue {
+      box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
+      border: 1px solid #0ea5e9;
+    }
+    .neon-pink {
+      box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);
+      border: 1px solid #ec4899;
+    }
+    .neon-green {
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+      border: 1px solid #22c55e;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-3xl mx-auto bg-cyber-dark rounded-xl p-6 md:p-8 border border-cyber-table-border shadow-2xl">
+    
+    <!-- ヘッダー -->
+    <header class="border-b border-cyber-table-border pb-6 mb-6 text-center">
+      <h1 class="text-xl md:text-2xl font-bold text-cyber-blue tracking-wide mb-2 font-sf drop-shadow-[0_0_10px_#0ea5e9]">
+        【テスト依頼】LB SUB（ルーザーズ管理アプリ）の動作確認について
+      </h1>
+      <p class="text-xs text-cyber-text opacity-60">IBS MINI TOURNAMENT SYSTEM</p>
+    </header>
+
+    <!-- 注意書き -->
+    <div class="bg-[#1a1018] border border-cyber-pink/40 rounded-lg p-4 mb-8 neon-pink">
+      <p class="text-cyber-pink font-bold mb-1 text-sm">※ ご確認ください</p>
+      <p class="text-xs md:text-sm leading-relaxed text-cyber-text opacity-90">
+        本アプリはあくまでデータ収集を目的としています。テストの結果、操作が煩雑であったり不具合が多い場合は、当日は無理にアプリを使用せず、従来通りのアナログ運用を行う予定です。気負わずに触ってみてください。
+      </p>
+    </div>
+
+    <!-- 各手順 -->
+    <div class="space-y-8">
+      
+      <!-- ① テスト環境の準備 -->
+      <section class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-5">
+        <h2 class="text-base font-bold text-cyber-blue mb-4 flex items-center gap-2 font-sf">
+          <span class="bg-cyber-blue text-cyber-bg w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+          テスト環境の準備（親機の設定）
+        </h2>
+        <p class="text-xs text-cyber-text opacity-70 mb-3 leading-relaxed">テストはPCのブラウザで実施していただいて構いません。</p>
+        
+        <ol class="list-decimal list-inside space-y-3 text-xs md:text-sm text-cyber-text opacity-90 pl-1">
+          <li>
+            親機（トーナメント管理アプリ）を起動します。<br>
+            <a href="https://inagaki-kado.github.io/ibs_mini/tournament_de.html" target="_blank" class="text-cyber-blue hover:underline break-all text-xs inline-block my-1">https://inagaki-kado.github.io/ibs_mini/tournament_de.html</a>
+          </li>
+          <li>参加人数を「<strong>20</strong>」に設定してください。</li>
+          <li>
+            画面上部の<strong>「テキスト貼付」の機能</strong>を用いて、以下のテスト用名簿（20名分）を登録します。下記の「名簿をコピー」ボタンを押すと、一括でクリップボードにコピーできます。
+            
+            <!-- 名簿とコピーボタンエリア -->
+            <div class="mt-3 bg-cyber-dark border border-cyber-table-border rounded-lg p-4 relative">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] text-cyber-text opacity-40 font-sf tracking-widest">TEST MEMBER LIST</span>
+                <button id="copyBtn" onclick="copyMemberList()" class="px-3 py-1 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg font-bold rounded text-xs transition-all font-sf shadow-[0_0_8px_#0ea5e9]">
+                  📋 名簿をコピー
+                </button>
+              </div>
+              <pre id="memberList" class="text-xs font-mono text-cyber-green leading-tight opacity-90 overflow-x-auto bg-[#0a0e17] p-3 rounded border border-cyber-table-border">A-1
+A-2
+A-3
+A-4
+A-5
+B-1
+B-2
+B-3
+B-4
+B-5
+C-1
+C-2
+C-3
+C-4
+C-5
+D-1
+D-2
+D-3
+D-4
+D-5</pre>
+            </div>
+          </li>
+          <li class="mt-3">
+            名簿の貼り付け・受付完了後、<strong>画面一番下のデバッグモード等でトーナメントを開始状態にしてください。</strong>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ② ルーザーズ管理アプリの同期 -->
+      <section class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-5">
+        <h2 class="text-base font-bold text-cyber-blue mb-4 flex items-center gap-2 font-sf">
+          <span class="bg-cyber-blue text-cyber-bg w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+          ルーザーズ管理アプリの同期（サブ機の立ち上げ）
+        </h2>
+        <ol class="list-decimal list-inside space-y-3 text-xs md:text-sm text-cyber-text opacity-90 pl-1">
+          <li>
+            サブ機（LB SUBアプリ）を起動します。<br>
+            <a href="https://inagaki-kado.github.io/ibs_mini/tournament_de_sub.html" target="_blank" class="text-cyber-blue hover:underline break-all text-xs inline-block my-1">https://inagaki-kado.github.io/ibs_mini/tournament_de_sub.html</a>
+          </li>
+          <li>
+            <strong>CONNECT</strong>ボタンを押して、親機と同期されることを確認してください。
+            <div class="mt-2 bg-[#0a0e17] border border-cyber-table-border p-3 rounded text-xs text-cyber-orange font-sf">
+              ※ 接続コードはデフォルトの「1784」のままでOKです。今回は入力の必要はありません。
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ③ 親機の進行とトーナメント表の確認 -->
+      <section class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-5">
+        <h2 class="text-base font-bold text-cyber-blue mb-4 flex items-center gap-2 font-sf">
+          <span class="bg-cyber-blue text-cyber-bg w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+          親機の進行とトーナメント表の確認
+        </h2>
+        <ul class="list-disc list-inside space-y-2 text-xs md:text-sm text-cyber-text opacity-90 pl-1 mb-4">
+          <li>親機側で勝敗を順次設定し、試合を進めてください（親機上で光っている試合順に従って進めてください）。</li>
+          <li>親機で試合が進むと、サブ機（LB SUB）の<strong>LOSERSタブ</strong>に試合が自動で反映されます。</li>
+          <li>アプリ上の組み合わせが、正しく更新されているかを確認してください（必要に応じて以下の参考トーナメント表画像と照らし合わせてください）。</li>
+        </ul>
+
+        <!-- トーナメント表画像切り替えエリア（追加部分） -->
+        <div class="mt-4 bg-cyber-dark border border-cyber-table-border rounded-lg p-4">
+          <div class="flex gap-2 mb-3">
+            <button id="btn-img-winners" onclick="switchTournamentImg('winners')" class="flex-1 py-2 font-bold font-sf border border-cyber-blue bg-cyber-blue text-cyber-bg rounded text-xs transition-all shadow-[0_0_8px_#0ea5e9]">
+              WINNERS 表
+            </button>
+            <button id="btn-img-losers" onclick="switchTournamentImg('losers')" class="flex-1 py-2 font-bold font-sf border border-cyber-table-border text-cyber-text hover:bg-cyber-blue/20 rounded text-xs transition-all">
+              LOSERS 表
+            </button>
+          </div>
+          <div class="bg-[#0a0e17] p-2 rounded border border-cyber-table-border flex items-center justify-center overflow-hidden min-h-[200px]">
+            <img id="tournamentImg" src="https://inagaki-kado.github.io/ibs_mini/1_Winners.png" alt="トーナメント表" class="max-w-full h-auto rounded border border-cyber-table-border/30">
+          </div>
+        </div>
+      </section>
+
+      <!-- ④ ルーザーズ管理アプリの操作 -->
+      <section class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-5 neon-blue">
+        <h2 class="text-base font-bold text-cyber-blue mb-4 flex items-center gap-2 font-sf">
+          <span class="bg-cyber-blue text-cyber-bg w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+          ルーザーズ管理アプリの操作（当日のメイン作業）
+        </h2>
+        <p class="text-xs text-cyber-text opacity-70 mb-3 leading-relaxed">LOSERSタブに表示された試合に対して、以下の手順で入力テストをお願いします。</p>
+        
+        <ol class="list-decimal list-inside space-y-4 text-xs md:text-sm text-cyber-text opacity-90 pl-1">
+          <li>
+            <strong class="text-cyber-blue">試合の選択：</strong><br>
+            <span class="opacity-80 block pl-5 mt-1">対象の試合をタップ（クリック）し、表示されるメニューから「スコア・決まり手も入力する」を選択します。</span>
+          </li>
+          <li>
+            <strong class="text-cyber-blue">立ち位置の確認と入れ替え：</strong><br>
+            <span class="opacity-80 block pl-5 mt-1">画面に表示されているプレイヤーの左右（P1/P2）と、実際の立ち位置が逆の場合は、画面中央の <strong>⇄ SWAP</strong> ボタンを押して入れ替えてください。</span>
+            <span class="text-cyber-orange text-xs block pl-5 mt-1">※ 注意：現在SWAPボタンのデザインが少し地味で目立ちにくいため、見落としにご注意ください（今後アップデート予定です）。</span>
+          </li>
+          <li>
+            <strong class="text-cyber-blue">スコアと決まり手の入力：</strong><br>
+            <span class="opacity-80 block pl-5 mt-1">試合展開に応じて、各プレイヤーのスコアボタン（X, B, O, S）を押してください。</span>
+            <span class="text-cyber-green text-xs font-bold block pl-5 mt-1">★ スコアボタンを押すと、自動的に得点と「決まり手」が記録されます。</span>
+          </li>
+          <li>
+            <strong class="text-cyber-blue">入力の修正（ミスをした場合）：</strong><br>
+            <span class="opacity-80 block pl-5 mt-1">得点の修正はスコアボタンの下にある <strong>-1</strong> / <strong>+1</strong> ボタンで調整できます。</span>
+            <span class="opacity-80 block pl-5 mt-1">決まり手の修正は画面下部の「決まり手」エリアにある <strong>← 1つ戻す</strong> ボタン、または <strong>－</strong>（全消去）ボタンで修正してください。</span>
+          </li>
+          <li>
+            <strong class="text-cyber-blue">勝敗の確定：</strong><br>
+            <span class="opacity-80 block pl-5 mt-1">決着がついたら、画面一番下の <strong>LEFT WIN 🏆</strong> または <strong>RIGHT WIN 🏆</strong> ボタンを押して勝敗を確定させてください。</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ⑤ フィードバックのお願い -->
+      <section class="bg-[#0d131f] border border-cyber-table-border rounded-lg p-5">
+        <h2 class="text-base font-bold text-cyber-green mb-4 flex items-center gap-2 font-sf">
+          <span class="bg-cyber-green text-cyber-bg w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
+          テスト後のフィードバックのお願い
+        </h2>
+        <p class="text-xs md:text-sm text-cyber-text opacity-90 leading-relaxed mb-3">
+          一通り操作していただき、以下の点についてご意見や不便に感じた部分をお聞かせください。
+        </p>
+        <ul class="list-disc list-inside space-y-2 text-xs md:text-sm text-cyber-text opacity-80 pl-1">
+          <li>操作していて分かりにくかった点や、押し間違えやすかったボタン</li>
+          <li>親機とサブ機の同期の遅れやエラーの有無</li>
+          <li>当日の忙しい環境下でも無理なく入力できそうか（難しそうであれば遠慮なくお伝えください）</li>
+        </ul>
+      </section>
+
+    </div>
+    
+    <!-- フッター -->
+    <footer class="mt-8 pt-4 border-t border-cyber-table-border text-center text-[10px] text-cyber-text opacity-40 font-sf tracking-widest">
+      ITABASHI BEYBLADE @ 2026
+    </footer>
+
+  </div>
+
+  <script>
+    function copyMemberList() {
+      const text = document.getElementById('memberList').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const originalText = btn.innerHTML;
+        btn.innerText = '✅ コピーしました！';
+        btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.replace('bg-cyber-green', 'bg-cyber-blue');
+        }, 2000);
+      }).catch(err => {
+        alert('コピーに失敗しました。お手数ですが手動で選択してコピーしてください。');
+      });
+    }
+
+    function switchTournamentImg(type) {
+      const img = document.getElementById('tournamentImg');
+      const btnWinners = document.getElementById('btn-img-winners');
+      const btnLosers = document.getElementById('btn-img-losers');
+      
+      if (type === 'winners') {
+        img.src = 'https://inagaki-kado.github.io/ibs_mini/1_Winners.png';
+        btnWinners.className = "flex-1 py-2 font-bold font-sf border border-cyber-blue bg-cyber-blue text-cyber-bg rounded text-xs transition-all shadow-[0_0_8px_#0ea5e9]";
+        btnLosers.className = "flex-1 py-2 font-bold font-sf border border-cyber-table-border text-cyber-text hover:bg-cyber-blue/20 rounded text-xs transition-all";
+      } else {
+        img.src = 'https://inagaki-kado.github.io/ibs_mini/2_Losers.png';
+        btnWinners.className = "flex-1 py-2 font-bold font-sf border border-cyber-table-border text-cyber-text hover:bg-cyber-blue/20 rounded text-xs transition-all";
+        btnLosers.className = "flex-1 py-2 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded text-xs transition-all shadow-[0_0_8px_#ec4899]";
+      }
+    }
+  </script>
+</body>
+</html>
