@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>板橋会 DE大会 - CYBER BEY-DOUBLE</title>
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzFlM2E1ZiIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzBlYTVlOSI+44OIPC90ZXh0Pgo8L3N2Zz4=">
   
@@ -75,7 +75,7 @@
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
   <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
-    <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0">
+    <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0" style="padding-top: max(env(safe-area-inset-top), 1rem);">
       <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
@@ -3736,7 +3736,12 @@
 
     function openExportModal() {
       let exportText = "";
-      const getRoundLabel = (block, roundIdx) => getDeRoundLabel(block, roundIdx, 0);
+      const getRoundLabel = (block, roundIdx) => {
+        if (block === 'losers') return `ルーザーズ ${roundIdx + 1}回戦`;
+        if (block === 'lbThirdPlace') return 'ルーザーズ 3位決定戦';
+        if (block === 'grandFinalReset') return 'GFリセット戦';
+        return getDeRoundLabel(block, roundIdx, 0);
+      };
       const addMatch = (m, block, roundIdx) => {
         if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
           const p1Name = m.p1.name;
@@ -3752,9 +3757,17 @@
         }
       };
       winnersBracket.forEach((round, roundIdx) => round.forEach(match => addMatch(match, 'wb', roundIdx)));
-      losersBracket.forEach((round, roundIdx) => round.forEach(match => addMatch(match, 'lb', roundIdx)));
       if (grandFinal) addMatch(grandFinal, 'gf', 0);
-      if (grandFinalReset) addMatch(grandFinalReset, 'gf_reset', 0);
+
+      // ルーザーズ側（DE: LB各ラウンド → LB3位決定戦 → GFリセット戦）
+      if (Array.isArray(losersBracket)) {
+        losersBracket.forEach((round, roundIdx) => {
+          if (Array.isArray(round)) round.forEach(match => addMatch(match, 'losers', roundIdx));
+        });
+      }
+      if (lbThirdPlace) addMatch(lbThirdPlace, 'lbThirdPlace', 0);
+      if (grandFinalReset) addMatch(grandFinalReset, 'grandFinalReset', 0);
+
       document.getElementById('exportArea').value = exportText;
       document.getElementById('exportModal').classList.remove('hidden');
       document.getElementById('exportModal').classList.add('flex');
