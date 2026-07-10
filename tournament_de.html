@@ -75,8 +75,8 @@
 <body class="font-sans select-none relative h-screen flex flex-col overflow-hidden bg-cyber-bg">
   <div id="app-wrapper" class="w-full h-full flex flex-col origin-center">
 
-    <header class="bg-cyber-dark text-cyber-text p-4 text-center shadow-lg relative border-b border-cyber-blue flex flex-col justify-center min-h-[80px] shrink-0" style="padding-top: max(env(safe-area-inset-top), 1rem);">
-      <div class="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 flex items-center gap-2 z-50">
+    <header class="bg-cyber-dark text-cyber-text p-4 shadow-lg relative border-b border-cyber-blue flex flex-row items-center justify-between gap-2 shrink-0" style="padding-top: max(env(safe-area-inset-top), 1rem);">
+      <div class="flex items-center gap-2 z-50 shrink-0">
         <button onclick="sendRemoteCmd('SYS_PRO')" title="PRO MODE (UI表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">👁</button>
         <button onclick="sendRemoteCmd('SYS_STATS')" title="STATS (戦績表示切替)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-blue transition-colors shadow-lg text-sm md:text-lg">📊</button>
         <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
@@ -85,12 +85,12 @@
         <button onclick="(async()=>{if(await showConfirm('score.html をリロードします。PeerJSリンクが切れます。よろしいですか？'))sendRemoteCmd('SYS_RELOAD')})()" title="SCORE RELOAD（ページリロード）" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-red rounded-full hover:bg-gray-800 hover:text-red-400 transition-colors shadow-lg text-[10px] md:text-xs font-bold font-sf">RL</button>
       </div>
 
-      <div class="ml-20 md:ml-0 flex flex-col items-center justify-center gap-1 px-2">
+      <div class="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 px-2">
         <img src="maintitle_white.png" alt="ITABASHI BEY-ROULETTE" class="h-10 md:h-12 w-auto max-w-[min(85vw,320px)] object-contain object-center" width="320" height="72" decoding="async">
         <p class="text-[10px] md:text-xs text-cyber-text opacity-70 font-sf tracking-widest">DOUBLE ELIMINATION <span>v1.0</span></p>
       </div>
-      
-      <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex flex-col gap-1 z-50">
+
+      <div class="flex flex-col items-end gap-1 z-50 shrink-0">
         <div class="flex items-center gap-2 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
           <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
           <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
