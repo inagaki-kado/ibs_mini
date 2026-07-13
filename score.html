@@ -1026,6 +1026,8 @@
             document.querySelectorAll('.beyblade-box').forEach(b => {
                 if (b.textContent.trim()) b.style.display = 'block';
             });
+            // 修正1で recorder を停止しているため、録画バッファを再開する
+            if (currentStream) startBuffering(currentStream);
         }
 
         async function toggleReplayMode() {
@@ -1034,9 +1036,24 @@
                 isReplayMode = true;
                 replaySpeedIdx = -1;
                 resetReplayExtras();
+                // mp4(iOS Safari)は stop() で finalize しないと途中チャンク結合が壊れるため、一旦停止して確定させる
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    await new Promise(res => {
+                        let done = false;
+                        const fin = () => { if (!done) { done = true; res(); } };
+                        mediaRecorder.onstop = fin;
+                        try { mediaRecorder.stop(); } catch(e) { fin(); }
+                        setTimeout(fin, 800); // 保険: onstopが来ない場合
+                    });
+                }
                 const blob = new Blob(chunks, { type: recordingMime || 'video/webm' });
                 if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
                 replayObjectUrl = URL.createObjectURL(blob);
+                replayVideo.onerror = () => {
+                    replayVideo.onerror = null;
+                    updateStatusMsg("リプレイ生成失敗", 2000);
+                    stopReplay();
+                };
                 replayVideo.src = replayObjectUrl;
                 replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block';
                 document.body.classList.add('replay-mode');

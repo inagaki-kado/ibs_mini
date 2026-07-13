@@ -1892,10 +1892,12 @@
       let totalSize = parseInt(sizeStr);
       if (isNaN(totalSize) || totalSize < 8 || totalSize > 64) { totalSize = 32; if(sizeInput) sizeInput.value = "32"; }
       if (totalSize <= 8) globalBlockSize = 2; else if (totalSize <= 16) globalBlockSize = 4; else globalBlockSize = 8;
-      colors.forEach(c => { blockData[c] = new Array(globalBlockSize).fill(null); });
       const baseSize = Math.floor(totalSize / 4); const remainder = totalSize % 4;
       const caps = { 'A': baseSize, 'B': baseSize, 'C': baseSize, 'D': baseSize };
       if (remainder >= 1) caps['A']++; if (remainder >= 2) caps['C']++; if (remainder >= 3) caps['B']++;
+      // ブロック配列は各ブロックの実キャパシティ分だけ確保する（globalBlockSizeは3段階の目安値でしかなく、
+      // totalSize>32 だとブロック実定員(caps)がglobalBlockSize(最大8)を超えてスパース配列の穴になっていた）
+      colors.forEach(c => { blockData[c] = new Array(caps[blockMap[c]]).fill(null); });
       colors.forEach(c => { blockCapacities[c] = caps[blockMap[c]]; blockActivePositions[c] = getFairPositions(caps[blockMap[c]], globalBlockSize); });
       isSetupDone = true;
       document.getElementById('setupSection').classList.add('hidden');
@@ -2482,6 +2484,13 @@
       const N = colors.reduce((s, c) => s + blockActivePositions[c].filter(pos => blockData[c][pos]).length, 0);
       if (N < 2) return [];
       const P = 1 << Math.ceil(Math.log2(N));
+      if (P < colors.length) {
+        // 実participants2人などブラケットが色数(4)未満の場合は色区画に分割できないため、そのまま並べる
+        const slots = new Array(P).fill(BYE);
+        let i = 0;
+        colors.forEach(c => { blockActivePositions[c].forEach(pos => { const p = blockData[c][pos]; if (p) slots[i++] = p; }); });
+        return slots;
+      }
       const slotsPerBlock = P / colors.length;
       const byeMatchCount = slotsPerBlock / 2;
       const slots = new Array(P).fill(BYE);
