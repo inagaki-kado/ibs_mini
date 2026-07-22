@@ -1667,6 +1667,8 @@
       const lastEvent = events[events.length - 1];
       const finishPhrase = { XF: '豪快なXF', BF: 'バースト', OF: 'オーバーフィニッシュ', SF: 'スピンフィニッシュ' }[lastEvent.k] || '決め手';
       const lastBey = (lastEvent.bey || '').trim();
+      const loserSide = winnerIsP1 ? 'p2' : 'p1';
+      const loserEvents = events.filter(ev => ev.who === loserSide);
 
       let pattern = null;
       if (maxWinnerDeficit >= 2) {
@@ -1682,7 +1684,7 @@
         }
       }
 
-      return { pattern, maxWinnerDeficit, finishPhrase, lastBey };
+      return { pattern, maxWinnerDeficit, finishPhrase, lastBey, loserEvents };
     }
 
     // ベイ名があるときだけ助詞付きフレーズを返す（未登録なら空文字で自然な文になる）
@@ -1714,10 +1716,10 @@
     }
 
     // 敗者の見せ場を分析して「敗れた◯◯も…」の1文を返す
-    function buildLoserPraise(data, flow) {
+    function buildLoserPraise(data, flow, loserBeyTop5) {
       const loser = data.loser;
-      const loserBeyRaw = (data.loserBey || '').trim();
-      const bey = loserBeyRaw ? `${loserBeyRaw}で` : '';
+      const decoratedLoserBey = decorateBeyName(data.loserBey, loserBeyTop5);
+      const bey = beyPhrase(decoratedLoserBey, 'with');
       const [wScore, lScore] = data.score.split('-').map(Number);
       const shutout = lScore === 0;
       const closeGame = (wScore - lScore) === 1;
@@ -1882,7 +1884,7 @@
       ]);
     }
 
-    function generateLocalComment(data, winnerBeyTop5) {
+    function generateLocalComment(data, winnerBeyTop5, loserBeyTop5) {
       const { style } = analyzeFinishPattern(data.finishHistory);
       const [wScore, lScore] = data.score.split('-').map(Number);
       const gap = Math.abs(wScore - lScore);
@@ -1961,7 +1963,7 @@
       }
       // ▲ 試合展開の分析ここまで
 
-      return firstSentence + buildLoserPraise(data, flow) + buildSummary(flow, gap, shutout);
+      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout);
     }
 
     function sendMatchComment(comment, highlights) {
@@ -1974,8 +1976,11 @@
       const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
         .filter(s => s && String(s).trim())
         .sort((a, b) => b.length - a.length);
-      const winnerBeyTop5 = await fetchBeyUsageTop5(data.winner);
-      sendMatchComment(generateLocalComment(data, winnerBeyTop5), highlights);
+      const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
+        fetchBeyUsageTop5(data.winner),
+        fetchBeyUsageTop5(data.loser)
+      ]);
+      sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
     }
 
     function handleRemoteWinner(side) {
