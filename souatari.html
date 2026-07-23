@@ -70,7 +70,9 @@
       <button onclick="sendRemoteCmd('SYS_HUD')" title="HUD (非表示/表示)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">📹</button>
       <button onclick="sendRemoteCmd('SYS_CAM')" title="180° CAM (カメラ反転)" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-sm md:text-lg">🔄</button>
       <button onclick="sendRemoteCmd('SYS_RESET')" title="SCORE RESET（スコアリセット）" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-red rounded-full hover:bg-gray-800 hover:text-red-400 transition-colors shadow-lg text-xs md:text-sm font-bold font-sf">R</button>
-      <button onclick="if(confirm('score.html をリロードします。よろしいですか？')) sendRemoteCmd('SYS_RELOAD')" title="SCORE RELOAD（ページリロード）" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-red rounded-full hover:bg-gray-800 hover:text-red-400 transition-colors shadow-lg text-[10px] md:text-xs font-bold font-sf">RL</button>
+      <button onclick="(async()=>{if(await showConfirm('score.html をリロードします。よろしいですか？'))sendRemoteCmd('SYS_RELOAD')})()" title="SCORE RELOAD（ページリロード）" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-red rounded-full hover:bg-gray-800 hover:text-red-400 transition-colors shadow-lg text-[10px] md:text-xs font-bold font-sf">RL</button>
+      <button id="btn-break" onclick="toggleBreak()" title="休憩オーバーレイ 表示/解除" style="touch-action: manipulation;" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-yellow-400 text-yellow-400 rounded-full hover:bg-yellow-400/20 transition-colors shadow-lg text-[7px] md:text-[8px] font-bold font-sf leading-none text-center whitespace-nowrap px-0.5">☕ 休憩</button>
+      <button onclick="openCxChart()" title="CXライン パーツ参照" style="touch-action: manipulation;" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-cyber-bg border border-cyber-table-border text-cyber-text rounded-full hover:bg-gray-800 hover:text-cyber-green transition-colors shadow-lg text-[10px] md:text-xs font-bold font-sf">CX</button>
     </div>
 
     <h1 class="text-2xl font-sf text-cyber-green ml-24 md:ml-0">ITABASHI BEY-LEAGUE</h1>
@@ -103,8 +105,8 @@
 
       <div id="mainManagementSection" class="flex-1 flex flex-col min-h-0">
         <div class="flex flex-wrap gap-2 mb-4 items-center shrink-0">
-          <button onclick="openPasteModal()" ontouchend="handleTouch(event,openPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
-          <button onclick="addParticipant()" ontouchend="handleTouch(event,addParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
+          <button onclick="execOpenPasteModal()" ontouchend="handleTouch(event,execOpenPasteModal)" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
+          <button onclick="execAddParticipant()" ontouchend="handleTouch(event,execAddParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
           
           <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
 
@@ -124,7 +126,7 @@
               <option value="none">なし</option>
             </select>
           </label>
-          <button onclick="clearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
+          <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
         </div>
         
         <div class="bg-cyber-dark rounded-lg shadow-xl overflow-hidden border border-cyber-table-border mb-6 flex-1 flex flex-col min-h-0">
@@ -148,7 +150,7 @@
           <p class="text-cyber-text text-xs mb-3 font-sf opacity-70">前回の途中から再開できます</p>
           <div class="flex gap-3">
             <button onclick="resumeFromSave()" class="flex-1 bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg font-bold py-2 rounded font-sf transition-colors">▶ 続きから再開</button>
-            <button onclick="clearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
+            <button onclick="execClearSave()" class="flex-1 bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white font-bold py-2 rounded font-sf transition-colors">🗑 新規開始</button>
           </div>
         </div>
         <div class="text-center pb-4 shrink-0" id="startLeagueArea">
@@ -168,6 +170,7 @@
           <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
         </div>
         <div class="flex items-center gap-2">
+          <button onclick="toggleEffectMode()" id="btn-toggle-effect" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
           <button onclick="openExportModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">📝 CSV出力</button>
           <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
         </div>
@@ -244,8 +247,8 @@
 
       <div class="flex gap-4">
         <button onclick="closeScoreModal()" class="flex-1 bg-cyber-bg border border-cyber-table-border text-cyber-text px-4 py-3 rounded font-sf">CANCEL</button>
-        <button onclick="resetScoreMatch()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded font-sf text-xs">RESET<br>MATCH</button>
-        <button onclick="saveScoreMatch()" class="flex-[2] bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf text-lg transition-transform active:scale-95">SAVE RESULT</button>
+        <button onclick="execResetScoreMatch()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink px-4 py-3 rounded font-sf text-xs">RESET<br>MATCH</button>
+        <button onclick="execSaveScoreMatch()" class="flex-[2] bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-4 py-3 rounded font-bold shadow font-sf text-lg transition-transform active:scale-95">SAVE RESULT</button>
       </div>
     </div>
   </div>
@@ -311,6 +314,14 @@
         <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
       </div>
     </div>
+  </div>
+
+  <div id="cxChartModal" class="hidden fixed inset-0 z-[200] flex flex-col bg-cyber-bg">
+    <div class="flex items-center justify-between px-3 py-2 border-b border-cyber-table-border shrink-0 bg-cyber-dark">
+      <span class="font-sf text-cyber-green text-sm">CXライン パーツ参照（cx_parts_chart.html）</span>
+      <button type="button" onclick="closeCxChart()" style="touch-action: manipulation;" class="text-cyber-pink font-sf text-sm px-3 py-1 border border-cyber-pink rounded hover:bg-cyber-pink/20">✖ 閉じる</button>
+    </div>
+    <iframe title="CXパーツ" src="cx_parts_chart.html" class="flex-1 w-full min-h-0 border-0 bg-cyber-bg"></iframe>
   </div>
 
   <div id="cameraModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[120] p-4 relative">
@@ -461,13 +472,39 @@
 
   <script>
 
-    let participants = []; 
+    // ==========================================
+    // Google Sheets 同期（GAS Webアプリ）
+    // ==========================================
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxs6j8vOdWe6f5P616KV_wxpLUABL73xAcCFOMFEpKYpPdSAZkg0GVdHjo1ZTlkujmn/exec'; // Google Apps Script WebアプリURL（未設定なら同期しない）
+
+    async function syncToSheets() {
+      if (!SHEETS_API_URL) return;
+      try {
+        const payload = {
+          tournament_name: leagueName || '',
+          phase: 'ROUND_ROBIN',
+          bracket: leagueMatches,
+          participants,
+        };
+        await fetch(SHEETS_API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {
+        console.warn('syncToSheets failed:', e);
+      }
+    }
+
+    let participants = [];
     let participantSortMode = 'id';
 
-    let pidCounter = 1; 
-    let isLeagueStarted = false; 
+    let pidCounter = 1;
+    let isLeagueStarted = false;
     let leagueName = '';
-    
+    let isEffectOn = true;
+
     let leagueMatches = []; 
     let currentScoreMatchId = null;
     let currentCheckId = null;
@@ -540,11 +577,12 @@
     let isTvMode_results = false;
     let activeNextBattleId = null;
     let logoDisplayEnabled = true;
+    let isBreakMode = false; // 休憩中フラグ
 
     function initPeer() {
       if (peer) peer.destroy();
       peer = new Peer();
-      peer.on('error', (err) => { console.error(err); resetLinkUI(); alert("通信エラーが発生しました: " + err.type + "\n右上の「✖」を押してリセットしてください。"); });
+      peer.on('error', (err) => { console.error(err); resetLinkUI(); showAlert("通信エラーが発生しました: " + err.type + "\n右上の「✖」を押してリセットしてください。"); });
       peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
     }
 
@@ -555,6 +593,8 @@
       btn.innerText = "CONN"; btn.classList.replace('text-cyber-green', 'text-cyber-blue'); btn.classList.replace('border-cyber-green', 'border-cyber-blue');
       const dot = document.getElementById('link-status-dot');
       dot.classList.replace('bg-cyber-green', 'bg-red-500'); dot.classList.replace('shadow-[0_0_5px_#22c55e]', 'shadow-[0_0_5px_#ef4444]');
+      isBreakMode = false;
+      updateBreakButton();
       conn = null;
     }
 
@@ -583,7 +623,7 @@
     function sendRemoteCmd(cmd) {
         if(!conn || !conn.open) {
             if(cmd === 'SYS_PRO' || cmd === 'SYS_STATS' || cmd === 'SYS_CAM' || cmd === 'SYS_HUD') {
-                return alert("⚠️ HUD（スコアアプリ）がリンクされていません。");
+                return showAlert("⚠️ HUD（スコアアプリ）がリンクされていません。");
             }
             return;
         }
@@ -610,6 +650,37 @@
     const API_KEY_H2H  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
     const RANGE_BEY_USAGE = encodeURIComponent('🌀 ベイ集計!A2:F');
     const BEY_USAGE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_BEY_USAGE}?key=${API_KEY_H2H}`;
+
+    // 過去対戦成績（VS Record）参照用
+    const RANGE_H2H = encodeURIComponent("'⚔️ 対戦入力'!A3:E");
+    const H2H_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_H2H}?key=${API_KEY_H2H}`;
+    let _h2hCache = null;
+
+    async function loadH2HHistory() {
+      if (_h2hCache) return _h2hCache;
+      try {
+        const res = await fetch(H2H_URL);
+        const json = await res.json();
+        _h2hCache = json.values || [];
+      } catch (e) {
+        console.error('H2H履歴取得失敗', e);
+        _h2hCache = [];
+      }
+      return _h2hCache;
+    }
+
+    function calcH2H(rows, p1Name, p2Name) {
+      let p1Wins = 0, p2Wins = 0;
+      for (const row of rows) {
+        const a = row[0], b = row[2], winner = row[4];
+        if (!a || !b) continue;
+        const isPair = (a === p1Name && b === p2Name) || (a === p2Name && b === p1Name);
+        if (!isPair) continue;
+        if (winner === p1Name) p1Wins++;
+        else if (winner === p2Name) p2Wins++;
+      }
+      return { p1Wins, p2Wins };
+    }
 
     async function fetchBeyUsageTop5(playerName, timeoutMs = 4000) {
       try {
@@ -784,7 +855,7 @@
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
             });
         } else {
-            alert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
+            showAlert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
         }
 
         currentRemoteMode = 'score';
@@ -1339,6 +1410,7 @@
         fetchBeyUsageTop5(data.loser)
       ]);
       sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+      void syncToSheets();
     }
 
     function handleRemoteWinner(side) {
@@ -1431,7 +1503,7 @@
 
     function saveState() {
       try {
-        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode, hudPreviewBackground };
+        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode, hudPreviewBackground, isEffectOn };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -1457,12 +1529,14 @@
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
         syncHudPreviewBgSelect();
+        isEffectOn = s.isEffectOn !== false;
+        updateEffectButton();
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
 
-    function clearSave() {
-      if (!confirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
+    async function clearSave() {
+      if (!await showConfirm("セーブデータを削除して最初からやり直しますか?\n※この操作は元に戻せません")) return;
       localStorage.removeItem(SAVE_KEY);
       location.reload();
     }
@@ -1494,14 +1568,14 @@
     });
 
     let startDebounce = false;
-    function handleStartLeague() {
+    async function handleStartLeague() {
         if (startDebounce) return;
         startDebounce = true;
         setTimeout(() => { startDebounce = false; }, 500);
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
-        startLeague();
+        await startLeague();
     }
 
     function switchTab(tabId) {
@@ -1516,7 +1590,7 @@
       document.getElementById(`tab-${tabId}`).classList.replace('text-cyber-text', 'text-cyber-green');
     }
 
-    function openPasteModal() { if(isLeagueStarted) return alert("開始後は追加できません"); document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
+    async function openPasteModal() { if(isLeagueStarted) { await showAlert("開始後は追加できません"); return; } document.getElementById('pasteArea').value = ''; document.getElementById('pasteModal').classList.remove('hidden'); document.getElementById('pasteModal').classList.add('flex'); setTimeout(() => document.getElementById('pasteArea').focus(), 100); }
     function closePasteModal() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteModal').classList.remove('flex'); }
     
     function processPasteData() {
@@ -1540,12 +1614,12 @@
           count++; 
         }
       });
-      renderParticipants(); closePasteModal(); if(count > 0) alert(`${count} 名追加しました！（最大12名）`);
+      renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！（最大12名）`);
     }
 
-    function addParticipant() {
-      if(isLeagueStarted) return alert("開始後は追加できません"); 
-      if(participants.length >= 12) return alert("総当たり戦は最大12名までです。");
+    async function addParticipant() {
+      if(isLeagueStarted) { await showAlert("開始後は追加できません"); return; }
+      if(participants.length >= 12) { await showAlert("総当たり戦は最大12名までです。"); return; }
       let name = prompt("参加者名を入力"); if(!name) return;
       participants.push({ 
           id: pidCounter++, name, memo1: '', rank: '--', 
@@ -1556,8 +1630,9 @@
       renderParticipants();
     }
     
-    function removeParticipant(id) {
-      if(isLeagueStarted) return alert("開始後は削除できません"); if(!confirm("削除しますか？")) return;
+    async function removeParticipant(id) {
+      if(isLeagueStarted) { await showAlert("開始後は削除できません"); return; }
+      if(!await showConfirm("削除しますか？")) return;
       participants = participants.filter(x => x.id !== id); renderParticipants();
     }
 
@@ -1598,7 +1673,7 @@
         <td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td>
         <td class="p-3 text-center"><button onclick="openCamera(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all" title="ベイチェック">📷</button></td>
         <td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" title="名前を変更">✏️</button></td>
-        <td class="p-3 text-center"><button onclick="removeParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
+        <td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors">DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-s'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -1686,11 +1761,12 @@
 
     async function downloadAllImagesZip() {
         if (typeof JSZip === 'undefined') {
-            return alert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
+            await showAlert("ZIPライブラリが読み込まれていません。通信環境を確認してページをリロードしてください。");
+            return;
         }
 
         const checkedParticipants = participants.filter(p => p.bayChecked && p.bayImage);
-        if (checkedParticipants.length === 0) return alert("保存するベイチェック画像がありません。");
+        if (checkedParticipants.length === 0) { await showAlert("保存するベイチェック画像がありません。"); return; }
         
         const zip = new JSZip();
         const safeTournamentName = leagueName || 'League';
@@ -1711,9 +1787,9 @@
         });
     }
 
-    function startLeague() {
-      if (participants.length < 3) return alert("総当たり戦は最低3名の参加者が必要です！");
-      if (!confirm("リーグ戦を開始しますか？（以降、参加者の追加・削除はできません）")) return;
+    async function startLeague() {
+      if (participants.length < 3) { await showAlert("総当たり戦は最低3名の参加者が必要です！"); return; }
+      if (!await showConfirm("リーグ戦を開始しますか？（以降、参加者の追加・削除はできません）")) return;
 
       const nameInput = document.getElementById('leagueNameInput').value;
       leagueName = nameInput.trim() !== '' ? nameInput.trim() : 'CYBER BEY-LEAGUE';
@@ -1775,17 +1851,17 @@
 
     function closeScoreModal() { document.getElementById('scoreModal').classList.add('hidden'); document.getElementById('scoreModal').classList.remove('flex'); }
 
-    function resetScoreMatch() {
-      if(!confirm("この試合を未対戦の状態に戻しますか？")) return;
+    async function resetScoreMatch() {
+      if(!await showConfirm("この試合を未対戦の状態に戻しますか？")) return;
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
       match.s1 = null; match.s2 = null; match.winner = null; 
       recalculateAllStats();
       updateLeagueDisplay(); closeScoreModal();
     }
 
-    function saveScoreMatch() {
+    async function saveScoreMatch() {
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
-      if (tempScoreP1 === tempScoreP2) return alert("ベイブレードの公式ルールでは引き分けはありません。勝者が決まるまで再試合を行ってからスコアを入力してください。");
+      if (tempScoreP1 === tempScoreP2) { await showAlert("ベイブレードの公式ルールでは引き分けはありません。勝者が決まるまで再試合を行ってからスコアを入力してください。"); return; }
       match.s1 = tempScoreP1; match.s2 = tempScoreP2; match.winner = tempScoreP1 > tempScoreP2 ? 1 : 2;
       
       recalculateAllStats();
@@ -1810,20 +1886,101 @@
 
     function clearFocus() { currentSortMode = 'default'; focusPlayerId = null; updateLeagueDisplay(); }
 
-    function sendNextBattle(matchId, p1, p2, stage, round) {
+    async function sendNextBattle(matchId, p1, p2, stage, round) {
       if (activeNextBattleId === matchId) {
         if (conn) conn.send({ type: 'HIDE_PREVIEW' });
         activeNextBattleId = null;
       } else {
         const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
         const hud = getShowPreviewHudFields();
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, ...hud, showLogo: logoDisplayEnabled && hud.showLogo });
+        const rows = await loadH2HHistory();
+        const { p1Wins, p2Wins } = calcH2H(rows, p1, p2);
+        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, h2hP1Wins: p1Wins, h2hP2Wins: p2Wins, ...hud, showLogo: logoDisplayEnabled && hud.showLogo });
         activeNextBattleId = matchId;
       }
     }
 
     function toggleLogoDisplay() {
       logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
+    }
+
+    function updateEffectButton() {
+        const btn = document.getElementById('btn-toggle-effect');
+        if (!btn) return;
+        if (isEffectOn) {
+            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
+            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "✨ 演出: ON";
+        } else {
+            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
+            btn.innerText = "✨ 演出: OFF";
+        }
+    }
+
+    function toggleEffectMode() {
+        isEffectOn = !isEffectOn;
+        updateEffectButton();
+        saveState();
+    }
+
+    function sendBreakStart() {
+        if (!conn || !conn.open) return;
+        const hudFields = getShowPreviewHudFields();
+        conn.send({
+            type: 'BREAK_START',
+            p1: '',
+            p2: '',
+            ...hudFields,
+            showLogo: logoDisplayEnabled && hudFields.showLogo
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakStartWithNext(p1, p2) {
+        if (!conn || !conn.open) return;
+        const hudFields = getShowPreviewHudFields();
+        conn.send({
+            type: 'BREAK_START',
+            p1: p1 || '',
+            p2: p2 || '',
+            ...hudFields,
+            showLogo: logoDisplayEnabled && hudFields.showLogo
+        });
+        isBreakMode = true;
+        updateBreakButton();
+    }
+
+    function sendBreakEnd() {
+        if (!conn || !conn.open) return;
+        conn.send({ type: 'BREAK_END' });
+        isBreakMode = false;
+        updateBreakButton();
+    }
+
+    function toggleBreak() {
+        if (isBreakMode) {
+            sendBreakEnd();
+        } else {
+            sendBreakStart();
+        }
+    }
+
+    function updateBreakButton() {
+        const btn = document.getElementById('btn-break');
+        if (!btn) return;
+        if (isBreakMode) {
+            btn.textContent = '▶ 再開';
+            btn.classList.remove('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+            btn.classList.add('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                              'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+        } else {
+            btn.textContent = '☕ 休憩';
+            btn.classList.remove('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                                 'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+            btn.classList.add('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+        }
     }
 
     function scrollRemote(amount) {
@@ -2009,7 +2166,9 @@
 
         const nextBtn = !isFinished ? `<button onclick="sendNextBattle(${m.id},'${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',leagueName,'LEAGUE MATCH')" class="text-base leading-none shrink-0 mr-1" title="NEXT BATTLE 予告">📢</button>` : '';
 
-        scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${nextBtn}${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
+        const breakNextBtn = !isFinished ? `<button onclick="sendBreakStartWithNext('${m.p1.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${m.p2.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" style="touch-action: manipulation;" class="text-base leading-none shrink-0 mr-1" title="次戦を出して休憩">☕</button>` : '';
+
+        scheduleList.innerHTML += `<div class="flex items-center justify-between p-2 rounded border ${bgClass} shadow-sm transition-colors"><div class="flex items-center flex-1 overflow-hidden pr-2"><span class="text-[10px] font-sf text-cyber-blue opacity-70 w-6 shrink-0">#${m.id}</span>${nextBtn}${breakNextBtn}${sendBtn}<div class="flex-1 flex justify-end">${p1Display}</div>${centerArea}<div class="flex-1 flex justify-start">${p2Display}</div></div><button onclick="openScoreModal(${m.id})" class="${btnClass} rounded px-3 py-2 font-sf shrink-0 hover:opacity-80 transition-colors">${btnText}</button></div>`;
       });
       const allDone = leagueMatches.length > 0 && leagueMatches.every(m => m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner !== null);
       const showBtn = document.getElementById('showResultsBtn');
@@ -2107,6 +2266,15 @@
       document.getElementById('exportModal').classList.remove('flex');
     }
 
+    function openCxChart() {
+      document.getElementById('cxChartModal').classList.remove('hidden');
+      document.getElementById('cxChartModal').classList.add('flex');
+    }
+    function closeCxChart() {
+      document.getElementById('cxChartModal').classList.add('hidden');
+      document.getElementById('cxChartModal').classList.remove('flex');
+    }
+
     function copyExportData() {
       const area = document.getElementById('exportArea');
       area.select();
@@ -2121,6 +2289,65 @@
       }, 2000);
     }
 
+    // ===== カスタム alert / confirm =====
+    function showAlert(msg) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('custom-alert-modal');
+        document.getElementById('custom-alert-msg').innerText = msg;
+        modal.style.transform = '';
+        modal.classList.remove('hidden');
+        const okBtn = document.getElementById('custom-alert-ok');
+        const handler = () => {
+          modal.classList.add('hidden');
+          modal.style.transform = 'rotate(0deg)';
+          okBtn.removeEventListener('click', handler);
+          resolve();
+        };
+        okBtn.addEventListener('click', handler);
+      });
+    }
+    function showConfirm(msg) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        document.getElementById('custom-confirm-msg').innerText = msg;
+        modal.style.transform = '';
+        modal.classList.remove('hidden');
+        const okBtn = document.getElementById('custom-confirm-ok');
+        const cancelBtn = document.getElementById('custom-confirm-cancel');
+        const onOk = () => { modal.classList.add('hidden'); modal.style.transform = 'rotate(0deg)'; cleanup(); resolve(true); };
+        const onCancel = () => { modal.classList.add('hidden'); modal.style.transform = 'rotate(0deg)'; cleanup(); resolve(false); };
+        const cleanup = () => { okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); };
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+      });
+    }
+
+    // ===== async関数用ラッパー（onclickをシンプルに保つ） =====
+    async function execClearSave() { await clearSave(); }
+    async function execRemoveParticipant(id) { await removeParticipant(id); }
+    async function execOpenPasteModal() { await openPasteModal(); }
+    async function execAddParticipant() { await addParticipant(); }
+    async function execResetScoreMatch() { await resetScoreMatch(); }
+    async function execSaveScoreMatch() { await saveScoreMatch(); }
+    // ===== ここまで =====
+
   </script>
+
+<!-- ===== カスタム alert / confirm モーダル ===== -->
+<div id="custom-alert-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl shadow-[0_0_30px_rgba(14,165,233,0.3)] p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-alert-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <button id="custom-alert-ok" style="touch-action: manipulation;" class="py-2 bg-cyber-blue text-cyber-bg font-bold font-sf rounded hover:brightness-110 transition">OK</button>
+  </div>
+</div>
+<div id="custom-confirm-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+  <div class="bg-[#0d131f] border border-cyber-blue rounded-xl shadow-[0_0_30px_rgba(14,165,233,0.3)] p-6 max-w-sm w-[90%] flex flex-col gap-4">
+    <p id="custom-confirm-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="custom-confirm-cancel" style="touch-action: manipulation;" class="flex-1 py-2 bg-transparent border border-gray-500 text-gray-300 font-bold font-sf rounded hover:bg-gray-700 transition">キャンセル</button>
+      <button id="custom-confirm-ok" style="touch-action: manipulation;" class="flex-1 py-2 bg-cyber-pink text-white font-bold font-sf rounded hover:brightness-110 transition">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
