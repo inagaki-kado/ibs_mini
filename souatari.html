@@ -170,7 +170,7 @@
           <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="toggleEffectMode()" id="btn-toggle-effect" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+          <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
           <button onclick="openExportModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">📝 CSV出力</button>
           <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
         </div>
@@ -483,8 +483,20 @@
         const payload = {
           tournament_name: leagueName || '',
           phase: 'ROUND_ROBIN',
-          bracket: leagueMatches,
-          participants,
+          participants: participants.map(p => ({
+            id: p.id, name: p.name, rank: p.rank,
+            currentStats: p.currentStats
+          })),
+          bracket: leagueMatches.map(m => ({
+            id: m.id,
+            p1: m.p1 ? m.p1.name : '',
+            p2: m.p2 ? m.p2.name : '',
+            winner: m.winner, s1: m.s1, s2: m.s2,
+            kimarite_p1: m.kimarite_p1 || '',
+            kimarite_p2: m.kimarite_p2 || '',
+            p1BeyUsed: m.p1BeyUsed || '',
+            p2BeyUsed: m.p2BeyUsed || ''
+          })),
         };
         await fetch(SHEETS_API_URL, {
           method: 'POST',
@@ -503,7 +515,7 @@
     let pidCounter = 1;
     let isLeagueStarted = false;
     let leagueName = '';
-    let isEffectOn = true;
+    let isCommentOn = true;
 
     let leagueMatches = []; 
     let currentScoreMatchId = null;
@@ -1401,15 +1413,17 @@
     }
 
     async function onMatchFinished(data) {
-      // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
-      const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
-        .filter(s => s && String(s).trim())
-        .sort((a, b) => b.length - a.length);
-      const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
-        fetchBeyUsageTop5(data.winner),
-        fetchBeyUsageTop5(data.loser)
-      ]);
-      sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+      if (isCommentOn) {
+        // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
+        const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
+          .filter(s => s && String(s).trim())
+          .sort((a, b) => b.length - a.length);
+        const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
+          fetchBeyUsageTop5(data.winner),
+          fetchBeyUsageTop5(data.loser)
+        ]);
+        sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+      }
       void syncToSheets();
     }
 
@@ -1503,7 +1517,7 @@
 
     function saveState() {
       try {
-        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode, hudPreviewBackground, isEffectOn };
+        const state = { leagueName, isLeagueStarted, pidCounter, participants, leagueMatches, participantSortMode, hudPreviewBackground, isCommentOn };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
     }
@@ -1529,8 +1543,8 @@
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
         syncHudPreviewBgSelect();
-        isEffectOn = s.isEffectOn !== false;
-        updateEffectButton();
+        isCommentOn = s.isCommentOn !== false;
+        updateCommentButton();
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -1904,23 +1918,23 @@
       logoDisplayEnabled = document.getElementById('toggle-logo-display').checked;
     }
 
-    function updateEffectButton() {
-        const btn = document.getElementById('btn-toggle-effect');
+    function updateCommentButton() {
+        const btn = document.getElementById('btn-toggle-comment');
         if (!btn) return;
-        if (isEffectOn) {
+        if (isCommentOn) {
             btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
             btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
-            btn.innerText = "✨ 演出: ON";
+            btn.innerText = "💬 コメント: ON";
         } else {
             btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
             btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
-            btn.innerText = "✨ 演出: OFF";
+            btn.innerText = "💬 コメント: OFF";
         }
     }
 
-    function toggleEffectMode() {
-        isEffectOn = !isEffectOn;
-        updateEffectButton();
+    function toggleCommentMode() {
+        isCommentOn = !isCommentOn;
+        updateCommentButton();
         saveState();
     }
 
