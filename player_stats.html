@@ -708,6 +708,16 @@ nav {
   overflow-y: auto;
   clip-path: polygon(4px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%);
 }
+.history-line-clickable {
+  cursor: pointer;
+  text-decoration: underline dotted rgba(14,165,233,0.5);
+  text-underline-offset: 3px;
+  touch-action: manipulation;
+}
+.history-line-clickable:hover,
+.history-line-clickable:active {
+  color: var(--neon-blue);
+}
 .awards-header {
   font-family: 'Rajdhani', sans-serif; font-size: 0.875rem;
   font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
@@ -1681,6 +1691,101 @@ function enrichParticipationHistory(playerName, rawHistory) {
   }).join('\n');
 }
 
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * 参加履歴テキストをカード表示用HTMLに変換。
+ * 対戦データがある大会名の行はクリック可能にし、戦績を表示する。
+ */
+function buildHistoryLogHtml(playerName, rawHistory) {
+  if (!rawHistory || rawHistory === '－' || rawHistory === '-') return escHtml(rawHistory || '');
+  const pmap = (tournamentStatsByPlayer && tournamentStatsByPlayer[playerName]) || null;
+  return rawHistory.split(/\r?\n/).map((line) => {
+    const t = line.trim();
+    if (!t) return '';
+    const m = t.match(/^(\d{4}\/\d{2}\/\d{2})\s+(.+)$/);
+    if (!m || !pmap) return escHtml(line);
+    const d = m[1];
+    const title = m[2].trim();
+    const key = `${d}|${title}`;
+    let rec = pmap[key];
+    let resolvedTName = title;
+    if (!rec) {
+      for (const k of Object.keys(pmap)) {
+        const sep = k.indexOf('|');
+        if (sep < 0) continue;
+        const kd = k.slice(0, sep);
+        const kt = k.slice(sep + 1);
+        if (kd === d && (kt === title || title.includes(kt) || kt.includes(title))) {
+          rec = pmap[k];
+          resolvedTName = kt;
+          break;
+        }
+      }
+    }
+    if (!rec || rec.matches <= 0) return escHtml(line);
+    const label = `${escHtml(t)} 【${rec.matches}戦${rec.wins}勝】`;
+    const hasDetails = matchDetailsByPlayer && matchDetailsByPlayer[playerName] &&
+      matchDetailsByPlayer[playerName].some(md => md.date === d && md.tName === resolvedTName && !md.kimariteOnly);
+    if (!hasDetails) return label;
+    return `<span class="history-line-clickable" data-player="${escHtml(playerName)}" data-date="${escHtml(d)}" data-tname="${escHtml(resolvedTName)}" onclick="showMatchHistoryModal(this)">${label}</span>`;
+  }).join('<br>');
+}
+
+function closeMatchHistoryModal() {
+  const el = document.getElementById('matchHistoryModal');
+  if (el) el.remove();
+}
+
+const KIMARITE_MODAL_COLOR = { XF: '#ff0055', BF: '#ffd700', OF: '#ffaa00', SF: '#0ea5e9' };
+
+function showMatchHistoryModal(el) {
+  const playerName = el.getAttribute('data-player');
+  const date = el.getAttribute('data-date');
+  const tName = el.getAttribute('data-tname');
+  const details = (matchDetailsByPlayer && matchDetailsByPlayer[playerName]) || [];
+  const matches = details.filter(d => d.date === date && d.tName === tName && !d.kimariteOnly);
+
+  closeMatchHistoryModal();
+
+  const fmtKimarite = (raw) => {
+    if (!raw) return '';
+    return raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+      .map(k => `<span style="color:${KIMARITE_MODAL_COLOR[k] || '#94a3b8'};font-weight:700;">${escHtml(k)}</span>`)
+      .join(', ');
+  };
+
+  const rowsHtml = matches.length ? matches.map(d => {
+    const resultColor = d.isWin ? '#22c55e' : '#ff0055';
+    const resultLabel = d.isWin ? 'WIN' : 'LOSE';
+    const kimariteHtml = d.isWin ? fmtKimarite(d.kimarite) : fmtKimarite(d.kimarite_received);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(4,7,15,0.6);border:1px solid rgba(14,165,233,0.15);border-left:3px solid ${resultColor};border-radius:4px;">
+        <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:12px;color:${resultColor};min-width:44px;">${resultLabel}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#e2e8f0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ${escHtml(d.opp || '不明')}</div>
+          <div style="font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#94a3b8;margin-top:2px;">${d.round ? escHtml(d.round) + '　' : ''}${kimariteHtml}</div>
+        </div>
+      </div>`;
+  }).join('') : `<div style="text-align:center;color:#94a3b8;font-family:'Noto Sans JP',sans-serif;padding:20px 0;">対戦データがありません</div>`;
+
+  const modal = document.createElement('div');
+  modal.id = 'matchHistoryModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:#080d1a;border:1px solid rgba(14,165,233,0.3);border-radius:12px;padding:22px 20px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 0 40px rgba(14,165,233,0.15);">
+      <button onclick="closeMatchHistoryModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#475569;font-size:18px;cursor:pointer;touch-action:manipulation;line-height:1;padding:4px;">✕</button>
+      <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.06em;color:#e2e8f0;font-size:15px;margin-bottom:2px;padding-right:24px;">${escHtml(tName)}</div>
+      <div style="font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#94a3b8;margin-bottom:14px;">${escHtml(date)} ／ ${escHtml(playerName)}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">${rowsHtml}</div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) closeMatchHistoryModal(); });
+  document.body.appendChild(modal);
+}
+
 function normalizeStadium(s) {
   const u = (s || '').toUpperCase();
   if (u.includes('EXTREME') || u.includes('エクストリーム') || u === 'EX') return 'extreme';
@@ -2516,10 +2621,7 @@ function renderResults(players) {
     let historyLogHtml = '';
     const histEmpty = !historyLog || historyLog === '－' || historyLog === '-';
     if (!histEmpty) {
-      const histEnriched = enrichParticipationHistory(name, historyLog);
-      const histFormatted = histEnriched
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
+      const histFormatted = buildHistoryLogHtml(name, historyLog);
       historyLogHtml = `
         <div class="history-block">
           <div class="history-header"><i class="fa fa-calendar-alt"></i> 参加履歴</div>
