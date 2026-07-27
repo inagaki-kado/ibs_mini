@@ -1301,7 +1301,7 @@ const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
 const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
 // 対戦入力シート（BP推移グラフ・決まり手データ用）
 // A=選手1, B=BP1(現在), C=選手2, D=BP2(現在), E=勝者名, F=変動BP, G=BP1(新), H=BP2(新)
-// I=回戦, J=大会名, K=日付, L=行種別, M=スタジアム, N=決まり手P1, O=決まり手P2, P=P1使用ベイ, Q=P2使用ベイ
+// I=回戦, J=大会名, K=日付, L=行種別, M=スタジアム, N=決まり手P1, O=決まり手P2, P=P1得点, Q=P2得点
 const RANGE_HISTORY = encodeURIComponent("'⚔️ 対戦入力'!A3:Q");
 const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
 const RANGE_TOURNEY  = encodeURIComponent("'📅 大会マスター'!A2:H");
@@ -1316,7 +1316,7 @@ let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
 let bpHistory  = null; // cache: { 選手名: [{date, tName, bp}] } 全対戦履歴から生成
 /** 大会別の対戦数・勝数（📜 全対戦履歴から） key: `${日付}|${大会名}` */
 let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } } }
-let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, bey, score }] }
+let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, kimarite_received, scoreOwn, scoreOpp }] }
 let tStadiumMap = null; // { 大会名: 'extreme'|'infinity' } チーム戦スタジアム参照用
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
 let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
@@ -1520,7 +1520,7 @@ async function fetchPlayers() {
       if (row.length < 11) return;
       // A=選手1(0), B=BP1現在(1), C=選手2(2), D=BP2現在(3), E=勝者(4), F=変動BP(5)
       // G=BP1新(6), H=BP2新(7), I=回戦(8), J=大会名(9), K=日付(10)
-      // L=行種別(11), M=スタジアム(12), N=決まり手P1(13), O=決まり手P2(14), P=P1ベイ(15), Q=P2ベイ(16)
+      // L=行種別(11), M=スタジアム(12), N=決まり手P1(13), O=決まり手P2(14), P=P1得点(15), Q=P2得点(16)
       const p1    = (row[0] || '').trim();
       const bp1a  = parseFloat((row[6] || '').replace(/,/g, ''));
       const p2    = (row[2] || '').trim();
@@ -1570,19 +1570,19 @@ async function fetchPlayers() {
       }
 
       // 決まり手詳細（対戦入力シート直接参照）
-      // row[13]=N列(P1決まり手), row[14]=O列(P2決まり手), row[15]=P列(P1使用ベイ), row[16]=Q列(P2使用ベイ)
+      // row[13]=N列(P1決まり手), row[14]=O列(P2決まり手), row[15]=P列(P1得点), row[16]=Q列(P2得点)
       const kp1 = (row[13] || '').trim();
       const kp2 = (row[14] || '').trim();
       const stadium = (row[12] || '').trim();
       if (tName && stadium && normalizeStadium(stadium) !== 'other') {
         tStadiumMap[tName] = tStadiumMap[tName] || normalizeStadium(stadium);
       }
-      const p1Bey = (row[15] || '').trim();
-      const p2Bey = (row[16] || '').trim();
+      const p1Score = (row[15] == null ? '' : String(row[15])).trim();
+      const p2Score = (row[16] == null ? '' : String(row[16])).trim();
 
       // 行種別が「対戦」以外でも N/O 列に決まり手が入力されていれば記録する
       const skipKimarite = rowType && rowType !== '対戦' && !kp1 && !kp2;
-      const pushDetail = (name, opp, isWin, bey, kimariteDone, kimariteReceived, kimariteOnly = false) => {
+      const pushDetail = (name, opp, isWin, scoreOwn, scoreOpp, kimariteDone, kimariteReceived, kimariteOnly = false) => {
         if (!name) return;
         if (!matchDetailsByPlayer[name]) matchDetailsByPlayer[name] = [];
         matchDetailsByPlayer[name].push({
@@ -1593,8 +1593,8 @@ async function fetchPlayers() {
           isWin: !!isWin,
           kimarite: kimariteDone,
           kimarite_received: kimariteReceived,
-          bey,
-          score: '',
+          scoreOwn,
+          scoreOpp,
           stadium,
           kimariteOnly,
         });
@@ -1602,12 +1602,12 @@ async function fetchPlayers() {
       if (p1 && p2) {
         const dk1 = skipKimarite ? '' : kp1;
         const dk2 = skipKimarite ? '' : kp2;
-        pushDetail(p1, p2, winner && winner === p1, p1Bey, dk1, dk2);
-        pushDetail(p2, p1, winner && winner === p2, p2Bey, dk2, dk1);
+        pushDetail(p1, p2, winner && winner === p1, p1Score, p2Score, dk1, dk2);
+        pushDetail(p2, p1, winner && winner === p2, p2Score, p1Score, dk2, dk1);
       }
       // ボーナス行で対戦相手なし → チーム勝利/敗北 or 決まり手あり → スタジアム別勝率・決まり手に記録
       if (p1 && !p2 && (winner === 'チーム勝利' || winner === 'チーム敗北' || kp1 || kp2)) {
-        pushDetail(p1, '', winner === 'チーム勝利', p1Bey, kp1, kp2, true);
+        pushDetail(p1, '', winner === 'チーム勝利', p1Score, p2Score, kp1, kp2, true);
       }
     });
 
@@ -1740,6 +1740,11 @@ function closeMatchHistoryModal() {
   if (el) el.remove();
 }
 
+function jumpToRivalFromModal(name) {
+  closeMatchHistoryModal();
+  jumpToRival(name);
+}
+
 const KIMARITE_MODAL_COLOR = { XF: '#ff0055', BF: '#ffd700', OF: '#ffaa00', SF: '#0ea5e9' };
 
 function showMatchHistoryModal(el) {
@@ -1755,20 +1760,56 @@ function showMatchHistoryModal(el) {
     if (!raw) return '';
     return raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
       .map(k => `<span style="color:${KIMARITE_MODAL_COLOR[k] || '#94a3b8'};font-weight:700;">${escHtml(k)}</span>`)
-      .join(', ');
+      .join('・');
+  };
+
+  // 左=自分 / 右=相手。片側しか無ければ「/」を出さない
+  const fmtKimaritePair = (own, opp) => {
+    const a = fmtKimarite(own);
+    const b = fmtKimarite(opp);
+    if (a && b) return `${a} <span style="color:#e2e8f0;font-weight:700;">/</span> ${b}`;
+    return a || b || '';
+  };
+
+  // P列・Q列の両方が数値として有効なときだけスコアを表示する
+  const parseScore = (v) => {
+    const s = (v == null ? '' : String(v)).replace(/,/g, '').trim();
+    if (s === '' || !/^\d+$/.test(s)) return null;
+    return s;
+  };
+
+  // 名簿(Webデータ出力の1列目)に存在する選手のみリンク化する
+  const isKnownPlayer = (n) => {
+    if (!n || !allPlayers) return false;
+    return allPlayers.some(r => (r[0] || '').trim() === n);
   };
 
   const rowsHtml = matches.length ? matches.map(d => {
     const resultColor = d.isWin ? '#22c55e' : '#ff0055';
     const resultLabel = d.isWin ? 'WIN' : 'LOSE';
-    const kimariteHtml = d.isWin ? fmtKimarite(d.kimarite) : fmtKimarite(d.kimarite_received);
+    const kimariteHtml = fmtKimaritePair(d.kimarite, d.kimarite_received);
+
+    // スコア: 左が必ず自分。色を変えるのは自分側のみ(相手側は常に #e2e8f0)
+    const sOwn = parseScore(d.scoreOwn);
+    const sOpp = parseScore(d.scoreOpp);
+    const scoreHtml = (sOwn !== null && sOpp !== null)
+      ? `<div style="font-family:'Orbitron',monospace;font-size:16px;color:#e2e8f0;letter-spacing:.05em;white-space:nowrap;flex-shrink:0;"><span style="color:${resultColor};">${escHtml(sOwn)}</span>-${escHtml(sOpp)}</div>`
+      : '';
+
+    // 対戦相手名: 名簿にいる場合のみクリックでジャンプ検索
+    const oppName = (d.opp || '').trim();
+    const oppHtml = isKnownPlayer(oppName)
+      ? `<span onclick="jumpToRivalFromModal('${oppName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" title="${escHtml(oppName)}を検索" style="color:#0ea5e9;border-bottom:1px dotted #0ea5e9;cursor:pointer;touch-action:manipulation;">${escHtml(oppName)}</span><span style="color:#0ea5e9;font-size:10px;margin-left:3px;">↗</span>`
+      : escHtml(oppName || '不明');
+
     return `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(4,7,15,0.6);border:1px solid rgba(14,165,233,0.15);border-left:3px solid ${resultColor};border-radius:4px;">
         <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:12px;color:${resultColor};min-width:44px;">${resultLabel}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#e2e8f0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ${escHtml(d.opp || '不明')}</div>
+          <div style="font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#e2e8f0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ${oppHtml}</div>
           <div style="font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#94a3b8;margin-top:2px;">${d.round ? escHtml(d.round) + '　' : ''}${kimariteHtml}</div>
         </div>
+        ${scoreHtml}
       </div>`;
   }).join('') : `<div style="text-align:center;color:#94a3b8;font-family:'Noto Sans JP',sans-serif;padding:20px 0;">対戦データがありません</div>`;
 
