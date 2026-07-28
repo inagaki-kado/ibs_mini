@@ -1084,13 +1084,47 @@
   .rank-3 .history-result-rank { color: #cd7f32; }
   .rank-4 .history-result-rank { color: rgba(255,255,255,0.3); }
 
-  .history-result-name {
+  .history-result-name-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .history-result-name-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .history-result-name-link:hover {
+    color: var(--neon-blue);
+    text-decoration: underline;
+  }
+  .history-result-bey {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.1rem;
+  }
+  .history-result-team {
     font-size: 0.82rem;
     font-weight: 700;
     color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .history-result-team a.history-result-name-link {
+    color: #fff;
+  }
+  .history-result-team a.history-result-name-link:hover {
+    color: var(--neon-blue);
   }
 
   .history-comment {
@@ -1633,6 +1667,59 @@ async function loadInformation() {
 // ─── HISTORY ──────────────────────────────────────────
 const HISTORY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=1119901333&single=true&output=csv';
 
+// ベイ使用履歴（入賞者の使用ベイ表示用）: player_stats.html と同じスプレッドシート・APIキーを使用
+const BEY_HIST_SHEET_ID = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
+const BEY_HIST_API_KEY  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
+const BEY_HIST_RANGE    = encodeURIComponent("'🌀 ベイ使用履歴'!A2:H");
+const BEY_HIST_URL      = `https://sheets.googleapis.com/v4/spreadsheets/${BEY_HIST_SHEET_ID}/values/${BEY_HIST_RANGE}?key=${BEY_HIST_API_KEY}`;
+
+// key: `${大会名}|${選手名}` → 使用ベイ配列（フル優先、なければブレードのみ、なければ除外）
+let beyHistMap = new Map();
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// 大会名と日付から「イベント名（YY年M月）」候補も含めてベイ使用履歴を検索
+function getBeyList(eventName, dateStr, playerName) {
+  if (!eventName || !playerName) return null;
+  const candidates = [eventName];
+  const d = new Date((dateStr || '').replace(/\//g, '-'));
+  if (!isNaN(d)) {
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = d.getMonth() + 1;
+    candidates.push(`${eventName}（${yy}年${mm}月）`);
+  }
+  for (const c of candidates) {
+    const list = beyHistMap.get(`${c}|${playerName}`);
+    if (list && list.length) return list;
+  }
+  return null;
+}
+
+// 入賞ランクのセル文字列（チーム表記・複数名タイを含む）をリンク付きHTMLに変換
+function playerLink(name) {
+  const href = `player_stats.html?player=${encodeURIComponent(name)}`;
+  return `<a class="history-result-name-link" href="${href}">${escapeHtml(name)}</a>`;
+}
+
+function renderRankNameBlock(rawName, eventName, dateStr) {
+  const segments = rawName.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return segments.map(seg => {
+    const teamMatch = seg.match(/^【(.+?)】(.*)$/s);
+    if (teamMatch) {
+      const members = teamMatch[1].split(/[／\/]/).map(s => s.trim()).filter(Boolean);
+      const linksHtml = members.map(playerLink).join('／');
+      return `<div class="history-result-team">【${linksHtml}】${escapeHtml(teamMatch[2].trim())}</div>`;
+    }
+    const beyList = getBeyList(eventName, dateStr, seg);
+    const beyHtml = beyList ? `<div class="history-result-bey">🎯 ${beyList.map(escapeHtml).join(' / ')}</div>` : '';
+    return `<div class="history-result-name-wrap">${playerLink(seg)}${beyHtml}</div>`;
+  }).join('');
+}
+
 const HCOL = {
   name:         0,
   date:         1,
@@ -1705,7 +1792,7 @@ function renderHistoryCard(row) {
           ${ranks.map(r => `
             <div class="history-result-item ${r.cls}">
               <div class="history-result-rank">${r.label}</div>
-              <div class="history-result-name">${r.name}</div>
+              ${renderRankNameBlock(r.name, name, dateStr)}
             </div>
           `).join('')}
         </div>
@@ -1729,10 +1816,31 @@ async function loadHistory() {
   const container = document.getElementById('history-container');
   const countEl = document.getElementById('history-count');
   try {
-    const res = await fetch(HISTORY_CSV_URL);
+    const [res, beyRes] = await Promise.all([
+      fetch(HISTORY_CSV_URL),
+      fetch(BEY_HIST_URL).catch(() => null),
+    ]);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const rows = parseCSV(text).slice(1).filter(r => r.some(c => c.trim()));
+
+    beyHistMap = new Map();
+    if (beyRes && beyRes.ok) {
+      try {
+        const beyJson = await beyRes.json();
+        (beyJson.values || []).forEach(r => {
+          const tName  = (r[0] || '').trim();
+          const player = (r[1] || '').trim();
+          if (!tName || !player) return;
+          const blade = [(r[2] || '').trim(), (r[3] || '').trim(), (r[4] || '').trim()];
+          const full  = [(r[5] || '').trim(), (r[6] || '').trim(), (r[7] || '').trim()];
+          const list = [0, 1, 2].map(i => full[i] || blade[i]).filter(Boolean);
+          if (list.length) beyHistMap.set(`${tName}|${player}`, list);
+        });
+      } catch (e) {
+        console.error('ベイ使用履歴の解析に失敗', e);
+      }
+    }
 
     rows.sort((a, b) => {
       const da = new Date((a[HCOL.date] || '').replace(/\//g, '-'));
