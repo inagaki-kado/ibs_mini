@@ -144,6 +144,7 @@
               </select>
             </label>
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+            <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -886,6 +887,7 @@
     let swapPending = null;
 
     let isEffectOn = true;
+    let isCommentOn = true;
 
     function getTournamentPhase() {
       if (!isSetupDone) return 'waiting';
@@ -936,6 +938,26 @@
             btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
             btn.innerText = "✨ 演出: OFF";
         }
+        saveState();
+    }
+
+    function updateCommentButton() {
+        const btn = document.getElementById('btn-toggle-comment');
+        if (!btn) return;
+        if (isCommentOn) {
+            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
+            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "💬 コメント: ON";
+        } else {
+            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
+            btn.innerText = "💬 コメント: OFF";
+        }
+    }
+
+    function toggleCommentMode() {
+        isCommentOn = !isCommentOn;
+        updateCommentButton();
         saveState();
     }
 
@@ -1808,7 +1830,8 @@
       conn.send({ type: 'MATCH_COMMENT', comment, highlights });
     }
 
-    async function onMatchFinished(data) {
+    async function onMatchFinished(data, targetMatch) {
+      if (!isCommentOn) return;
       // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
       const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
         .filter(s => s && String(s).trim())
@@ -1817,7 +1840,12 @@
         fetchBeyUsageTop5(data.winner),
         fetchBeyUsageTop5(data.loser)
       ]);
-      sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+      const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
+      if (targetMatch) {
+        targetMatch.comment = comment;
+        saveState();
+      }
+      sendMatchComment(comment, highlights);
     }
 
     function handleRemoteWinner(side) {
@@ -1853,7 +1881,7 @@
           tournamentName: tournamentName,
           events: remoteMatchEvents.slice(),
           winnerIsP1: isP1Winner
-        });
+        }, match);
         // ▲ 試合コメント生成・送信ここまで
 
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -2376,37 +2404,43 @@
       }
     }
 
+    function getBladeOnly(bey) {
+        const p = bey.parts;
+        if (!p || !p.type) return bey.name || '';
+        if (p.type === 'BX')   return p.BX || '';
+        if (p.type === 'UX')   return p.UX || '';
+        // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
+        if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
+        if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
+        return bey.name || '';
+    }
+
     function exportParticipantsCSV() {
         if (participants.length === 0) {
             showAlert("参加者がいません。");
             return;
         }
-        
-        // CSVテキストを生成
-        let csvContent = '\uFEFF'; // BOM（UTF-8）
-        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
-        
+
+        // タブ区切りテキストを生成（BOM・ヘッダー行なし）
+        let csvContent = '';
+        const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
+
         participants.forEach(p => {
             const name = p.name || '';
-            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
-            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
-            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
-            
-            // CSVエスケープ処理
-            const escapeCsv = (str) => {
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-            
-            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
+            const beys = p.beyblades || [];
+            const blade1 = beys[0] ? clean(getBladeOnly(beys[0])) : '';
+            const blade2 = beys[1] ? clean(getBladeOnly(beys[1])) : '';
+            const blade3 = beys[2] ? clean(getBladeOnly(beys[2])) : '';
+            const full1  = beys[0] ? clean(beys[0].name) : '';
+            const full2  = beys[1] ? clean(beys[1].name) : '';
+            const full3  = beys[2] ? clean(beys[2].name) : '';
+            csvContent += `${clean(name)}\t${blade1}\t${blade2}\t${blade3}\t${full1}\t${full2}\t${full3}\n`;
         });
-        
+
         // クリップボードにコピーを試みる
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(csvContent).then(() => {
-                showAlert("📋 CSVテキストをクリップボードにコピーしました！");
+                showAlert("📝 参加者データ（ブレード＋フルカスタム）をコピーしました！");
             }).catch(err => {
                 // コピー失敗時はテキストエリアに表示
                 showCSVModal(csvContent);
@@ -2416,22 +2450,11 @@
             showCSVModal(csvContent);
         }
     }
-    
+
     function exportBladeOnlyText() {
         if (participants.length === 0) {
             showAlert("参加者がいません。");
             return;
-        }
-
-        function getBladeOnly(bey) {
-            const p = bey.parts;
-            if (!p || !p.type) return bey.name || '';
-            if (p.type === 'BX')   return p.BX || '';
-            if (p.type === 'UX')   return p.UX || '';
-            // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
-            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
-            return bey.name || '';
         }
 
         let text = '';
@@ -3044,17 +3067,18 @@
 
     function openExportModal() {
       let exportText = "";
+      const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
       const getRoundLabel = (block, roundIdx) => {
         if (block === 'finals') {
-          if (roundIdx === 'sf') return '準決勝';
-          if (roundIdx === 'f') return '決勝';
-          if (roundIdx === 'third') return '3位決定戦';
+          if (roundIdx === 'sf')    return 'SEMI FINAL';
+          if (roundIdx === 'f')     return 'FINAL';
+          if (roundIdx === 'third') return '3RD PLACE';
           return 'FINAL';
         }
         if (blockMatches[block]) {
           const totalRounds = blockMatches[block].length;
-          if (roundIdx === totalRounds - 1) return `${block}ブロック最終`;
-          return `${block}ブロック${roundIdx + 1}回戦`;
+          if (roundIdx === totalRounds - 1) return `BLOCK ${block} FINAL`;
+          return `BLOCK ${block} R${roundIdx + 1}`;
         }
         return '';
       };
@@ -3063,13 +3087,11 @@
           const p1Name = m.p1.name;
           const p2Name = m.p2.name;
           const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          const score = m.score || '';
           const round = getRoundLabel(block, roundIdx);
           const kp1 = m.kimarite_p1 || '';
           const kp2 = m.kimarite_p2 || '';
-          const bey1 = m.p1BeyUsed || '';
-          const bey2 = m.p2BeyUsed || '';
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t\t${round}\t\t\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
+          const comment = m.comment || '';
+          exportText += `${clean(p1Name)}\t${clean(p2Name)}\t${clean(winnerName)}\t${clean(round)}\t${clean(kp1)}\t${clean(kp2)}\t${clean(comment)}\n`;
         }
       };
       ['A', 'B', 'C', 'D'].forEach(bName => {
@@ -3106,7 +3128,7 @@
         const state = {
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
-          blockActivePositions, blockMatches, finals, isEffectOn,
+          blockActivePositions, blockMatches, finals, isEffectOn, isCommentOn,
           hudPreviewBackground
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
@@ -3141,6 +3163,7 @@
         blockMatches = s.blockMatches || {};
         finals = s.finals || {};
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        isCommentOn = s.isCommentOn !== false;
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
@@ -3166,6 +3189,7 @@
       document.getElementById('mainManagementSection').classList.add('flex');
       const effectBtn = document.getElementById('btn-toggle-effect');
       if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
+      updateCommentButton();
       recalculateAllStats();
       renderParticipants();
       if (isTournamentStarted) {

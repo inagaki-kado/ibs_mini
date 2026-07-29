@@ -1412,7 +1412,7 @@
       conn.send({ type: 'MATCH_COMMENT', comment, highlights });
     }
 
-    async function onMatchFinished(data) {
+    async function onMatchFinished(data, targetMatch) {
       if (isCommentOn) {
         // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
         const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
@@ -1422,7 +1422,12 @@
           fetchBeyUsageTop5(data.winner),
           fetchBeyUsageTop5(data.loser)
         ]);
-        sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+        const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
+        if (targetMatch) {
+          targetMatch.comment = comment;
+          saveState();
+        }
+        sendMatchComment(comment, highlights);
       }
       void syncToSheets();
     }
@@ -1460,7 +1465,7 @@
           tournamentName: leagueName,
           events: remoteMatchEvents.slice(),
           winnerIsP1: isP1Winner
-        });
+        }, currentRemoteMatch);
         // ▲ 試合コメント生成・送信ここまで
 
         recalculateAllStats();
@@ -2257,6 +2262,7 @@
     // ==========================================
     function openExportModal() {
       let exportText = "";
+      const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
       leagueMatches.forEach(m => {
         if (m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.winner !== null) {
           const p1Name = m.p1.name;
@@ -2264,10 +2270,8 @@
           const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
           const kp1 = m.kimarite_p1 || '';
           const kp2 = m.kimarite_p2 || '';
-          const score = `${m.s1}-${m.s2}`;
-          const bey1 = m.p1BeyUsed || '';
-          const bey2 = m.p2BeyUsed || '';
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t${score}\t総当たり\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
+          const comment = m.comment || '';
+          exportText += `${clean(p1Name)}\t${clean(p2Name)}\t${clean(winnerName)}\t総当たり\t${clean(kp1)}\t${clean(kp2)}\t${clean(comment)}\n`;
         }
       });
       document.getElementById('exportArea').value = exportText;

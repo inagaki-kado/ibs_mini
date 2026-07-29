@@ -160,6 +160,7 @@
               </select>
             </label>
             <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+            <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -919,6 +920,7 @@
     let swapPending = null;
 
     let isEffectOn = true;
+    let isCommentOn = true;
     let isProgressGuideOn = true;
     let suggestedWbMatchKey = null;
     let suggestedWbMatchLabel = '';
@@ -1019,6 +1021,26 @@
             btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
             btn.innerText = "✨ 演出: OFF";
         }
+        saveState();
+    }
+
+    function updateCommentButton() {
+        const btn = document.getElementById('btn-toggle-comment');
+        if (!btn) return;
+        if (isCommentOn) {
+            btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
+            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.innerText = "💬 コメント: ON";
+        } else {
+            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
+            btn.innerText = "💬 コメント: OFF";
+        }
+    }
+
+    function toggleCommentMode() {
+        isCommentOn = !isCommentOn;
+        updateCommentButton();
         saveState();
     }
 
@@ -1814,13 +1836,13 @@
       const pattern = flow ? flow.pattern : null;
       if (pattern === 'comeback') {
         return pickRandom([
-          `終盤まで勝敗の行方が分からない、逆転劇にふさわしい一戦だった。`,
+          `終盤まで勝敗の行方が分からない、まさに逆転劇と言える一戦！`,
           `最後まで目が離せない、記憶に残る大逆転劇となった。`,
-          `終盤の逆転劇が光る、印象に残る一戦となった。`,
+          `終盤の逆転劇が光る、印象に残る名勝負となった。`,
           `最後まで緊張感が続く、劇的な展開の試合だった。`,
           `勝負の綾が凝縮された、見応えのある逆転劇だった。`,
           `終盤まで結果が読めない、白熱の一戦となった。`,
-          `劇的な幕切れとなった、記憶に残る一戦だった。`,
+          `劇的な幕切れとなった、記憶に残る名勝負だった。`,
           `最後まで諦めない姿勢が結果に結びついた一戦だった。`
         ]);
       }
@@ -1843,9 +1865,9 @@
           `隙のない試合運びが際立つ内容だった。`,
           `安定感の高さを印象づける一戦となった。`,
           `終始主導権を手放さない、堂々たる試合内容だった。`,
-          `危なげない試合運びが光る一戦となった。`,
+          `展開以上に水面下の駆け引きが熱い名試合だった。`,
           `勝者の技量の高さが印象的な一戦だった。`,
-          `終始ペースを乱さない、盤石な内容だった。`
+          `終始ペースを乱さない、盤石な試合展開だった。`
         ]);
       }
       if (shutout) {
@@ -1971,7 +1993,8 @@
       conn.send({ type: 'MATCH_COMMENT', comment, highlights });
     }
 
-    async function onMatchFinished(data) {
+    async function onMatchFinished(data, targetMatch) {
+      if (!isCommentOn) return;
       // プレイヤー名・ベイ名をハイライト対象としてscore.htmlに渡す（長い文字列を優先して置換）
       const highlights = [data.winner, data.loser, data.winnerBey, data.loserBey]
         .filter(s => s && String(s).trim())
@@ -1980,7 +2003,12 @@
         fetchBeyUsageTop5(data.winner),
         fetchBeyUsageTop5(data.loser)
       ]);
-      sendMatchComment(generateLocalComment(data, winnerBeyTop5, loserBeyTop5), highlights);
+      const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
+      if (targetMatch) {
+        targetMatch.comment = comment;
+        saveState();
+      }
+      sendMatchComment(comment, highlights);
     }
 
     function handleRemoteWinner(side) {
@@ -2016,7 +2044,7 @@
           tournamentName: tournamentName,
           events: remoteMatchEvents.slice(),
           winnerIsP1: isP1Winner
-        });
+        }, match);
         // ▲ 試合コメント生成・送信ここまで
 
         setWinner(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx, winnerVal);
@@ -2528,37 +2556,43 @@
       }
     }
 
+    function getBladeOnly(bey) {
+        const p = bey.parts;
+        if (!p || !p.type) return bey.name || '';
+        if (p.type === 'BX')   return p.BX || '';
+        if (p.type === 'UX')   return p.UX || '';
+        // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
+        if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
+        if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
+        return bey.name || '';
+    }
+
     function exportParticipantsCSV() {
         if (participants.length === 0) {
             showAlert("参加者がいません。");
             return;
         }
-        
-        // CSVテキストを生成
-        let csvContent = '\uFEFF'; // BOM（UTF-8）
-        csvContent += '参加者名,使用ベイ1,使用ベイ2,使用ベイ3\n';
-        
+
+        // タブ区切りテキストを生成（BOM・ヘッダー行なし）
+        let csvContent = '';
+        const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
+
         participants.forEach(p => {
             const name = p.name || '';
-            const bey1 = (p.beyblades && p.beyblades[0]) ? p.beyblades[0].name : '';
-            const bey2 = (p.beyblades && p.beyblades[1]) ? p.beyblades[1].name : '';
-            const bey3 = (p.beyblades && p.beyblades[2]) ? p.beyblades[2].name : '';
-            
-            // CSVエスケープ処理
-            const escapeCsv = (str) => {
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-            
-            csvContent += `${escapeCsv(name)},${escapeCsv(bey1)},${escapeCsv(bey2)},${escapeCsv(bey3)}\n`;
+            const beys = p.beyblades || [];
+            const blade1 = beys[0] ? clean(getBladeOnly(beys[0])) : '';
+            const blade2 = beys[1] ? clean(getBladeOnly(beys[1])) : '';
+            const blade3 = beys[2] ? clean(getBladeOnly(beys[2])) : '';
+            const full1  = beys[0] ? clean(beys[0].name) : '';
+            const full2  = beys[1] ? clean(beys[1].name) : '';
+            const full3  = beys[2] ? clean(beys[2].name) : '';
+            csvContent += `${clean(name)}\t${blade1}\t${blade2}\t${blade3}\t${full1}\t${full2}\t${full3}\n`;
         });
-        
+
         // クリップボードにコピーを試みる
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(csvContent).then(() => {
-                showAlert("📋 CSVテキストをクリップボードにコピーしました！");
+                showAlert("📝 参加者データ（ブレード＋フルカスタム）をコピーしました！");
             }).catch(err => {
                 // コピー失敗時はテキストエリアに表示
                 showCSVModal(csvContent);
@@ -2568,22 +2602,11 @@
             showCSVModal(csvContent);
         }
     }
-    
+
     function exportBladeOnlyText() {
         if (participants.length === 0) {
             showAlert("参加者がいません。");
             return;
-        }
-
-        function getBladeOnly(bey) {
-            const p = bey.parts;
-            if (!p || !p.type) return bey.name || '';
-            if (p.type === 'BX')   return p.BX || '';
-            if (p.type === 'UX')   return p.UX || '';
-            // CX / CX(EX): ロックチップ＋メインブレードのみ（アシストブレードは含めない）
-            if (p.type === 'CX')   return (p.RC || '') + (p.CX || '');
-            if (p.type === 'CXEX') return (p.RC || '') + (p.MB || '');
-            return bey.name || '';
         }
 
         let text = '';
@@ -3185,6 +3208,12 @@
       const lbSaved = losersBracket.map(round => round.map(m => ({
         winner: m.winner,
         score: m.score,
+        kimarite: m.kimarite,
+        kimarite_p1: m.kimarite_p1,
+        kimarite_p2: m.kimarite_p2,
+        comment: m.comment,
+        p1BeyUsed: m.p1BeyUsed,
+        p2BeyUsed: m.p2BeyUsed,
         key: rosterPairKey(m.p1, m.p2)
       })));
 
@@ -3205,6 +3234,12 @@
           if (s.winner !== null && s.key && key === s.key) {
             m.winner = s.winner;
             m.score = s.score;
+            m.kimarite = s.kimarite;
+            m.kimarite_p1 = s.kimarite_p1;
+            m.kimarite_p2 = s.kimarite_p2;
+            m.comment = s.comment;
+            m.p1BeyUsed = s.p1BeyUsed;
+            m.p2BeyUsed = s.p2BeyUsed;
           }
         }));
       };
@@ -3943,10 +3978,11 @@
 
     function openExportModal() {
       let exportText = "";
+      const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
       const getRoundLabel = (block, roundIdx) => {
-        if (block === 'losers') return `ルーザーズ ${roundIdx + 1}回戦`;
-        if (block === 'lbThirdPlace') return 'ルーザーズ 3位決定戦';
-        if (block === 'grandFinalReset') return 'GFリセット戦';
+        if (block === 'losers')          return getDeRoundLabel('lb', roundIdx, 0);
+        if (block === 'lbThirdPlace')    return getDeRoundLabel('lb3rd', 0, 0);
+        if (block === 'grandFinalReset') return getDeRoundLabel('gf_reset', 0, 0);
         return getDeRoundLabel(block, roundIdx, 0);
       };
       const addMatch = (m, block, roundIdx) => {
@@ -3954,25 +3990,25 @@
           const p1Name = m.p1.name;
           const p2Name = m.p2.name;
           const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          const score = m.score || '';
           const round = getRoundLabel(block, roundIdx);
           const kp1 = m.kimarite_p1 || '';
           const kp2 = m.kimarite_p2 || '';
-          const bey1 = m.p1BeyUsed || '';
-          const bey2 = m.p2BeyUsed || '';
-          exportText += `${p1Name}\t\t${p2Name}\t\t${winnerName}\t\t\t${score}\t${round}\t\t\t${kp1}\t${kp2}\t${bey1}\t${bey2}\n`;
+          const comment = m.comment || '';
+          exportText += `${clean(p1Name)}\t${clean(p2Name)}\t${clean(winnerName)}\t${clean(round)}\t${clean(kp1)}\t${clean(kp2)}\t${clean(comment)}\n`;
         }
       };
       winnersBracket.forEach((round, roundIdx) => round.forEach(match => addMatch(match, 'wb', roundIdx)));
-      if (grandFinal) addMatch(grandFinal, 'gf', 0);
 
-      // ルーザーズ側（DE: LB各ラウンド → LB3位決定戦 → GFリセット戦）
+      // ルーザーズ側（DE: LB各ラウンド → LB3位決定戦）
       if (Array.isArray(losersBracket)) {
         losersBracket.forEach((round, roundIdx) => {
           if (Array.isArray(round)) round.forEach(match => addMatch(match, 'losers', roundIdx));
         });
       }
       if (lbThirdPlace) addMatch(lbThirdPlace, 'lbThirdPlace', 0);
+
+      // GRAND FINAL / GF RESET は最後
+      if (grandFinal) addMatch(grandFinal, 'gf', 0);
       if (grandFinalReset) addMatch(grandFinalReset, 'grandFinalReset', 0);
 
       document.getElementById('exportArea').value = exportText;
@@ -4000,7 +4036,7 @@
           tournamentName, globalBlockSize, isSetupDone, isTournamentStarted,
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, winnersBracket, losersBracket, grandFinal, grandFinalReset,
-          lbThirdPlace, bracketSize, playedPairs, gfResetRequired, deSubTab, isEffectOn,
+          lbThirdPlace, bracketSize, playedPairs, gfResetRequired, deSubTab, isEffectOn, isCommentOn,
           isProgressGuideOn, hudPreviewBackground
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
@@ -4043,6 +4079,7 @@
         deSubTab = s.deSubTab || 'wb';
         ensureDeBracketIntegrity();
         isEffectOn = s.isEffectOn !== undefined ? s.isEffectOn : true;
+        isCommentOn = s.isCommentOn !== false;
         isProgressGuideOn = s.isProgressGuideOn !== undefined ? s.isProgressGuideOn : true;
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
@@ -4069,6 +4106,7 @@
       document.getElementById('mainManagementSection').classList.add('flex');
       const effectBtn = document.getElementById('btn-toggle-effect');
       if (effectBtn) effectBtn.innerText = isEffectOn ? '✨ 演出: ON' : '✨ 演出: OFF';
+      updateCommentButton();
       updateProgressGuideButton();
       recalculateAllStats();
       renderParticipants();
