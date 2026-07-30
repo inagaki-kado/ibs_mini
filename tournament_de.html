@@ -11,6 +11,7 @@
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -283,9 +284,43 @@
           <div><h3 class="text-base md:text-lg text-orange-400 font-sf mb-1">🥉 3RD PLACE</h3><p class="text-lg md:text-xl font-bold text-white" id="res3"></p></div>
           <div><h3 class="text-base md:text-lg text-cyber-text font-sf mb-1 opacity-70">4TH PLACE</h3><p class="text-lg md:text-xl font-bold text-gray-400" id="res4"></p></div>
         </div>
-        <div class="flex justify-center gap-4 mt-4 md:mt-6">
-          <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
-          <button onclick="closeResults()" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+        <div class="flex justify-center gap-4 mt-4 md:mt-6 flex-wrap">
+          <button id="results-export-csv-btn" onclick="openExportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button id="results-report-btn" onclick="openReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📰 EVENT REPORT</button>
+          <button onclick="closeResults()" style="touch-action:manipulation" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- イベントレポート（PNG新聞）モーダル -->
+    <div id="reportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-pink flex flex-col relative my-8 max-h-[95vh]">
+        <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
+          <h2 class="text-xl md:text-2xl font-sf text-cyber-pink tracking-widest">📰 EVENT REPORT</h2>
+          <button onclick="closeReportModal()" style="touch-action:manipulation" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
+        </div>
+        <div class="flex flex-col gap-4 overflow-y-auto">
+          <div>
+            <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">大会実施日</label>
+            <input type="date" id="reportDateInput" onchange="onReportDateChange()" style="touch-action:manipulation" class="w-full p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text font-sf outline-none focus:border-cyber-green">
+          </div>
+          <div>
+            <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">記念撮影写真</label>
+            <input type="file" accept="image/*" id="reportPhotoInput" onchange="onReportPhotoSelected(event)" class="hidden">
+            <div class="flex gap-2">
+              <button type="button" onclick="document.getElementById('reportPhotoInput').click()" id="reportPhotoPickBtn" style="touch-action:manipulation" class="flex-1 bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-sf text-sm hover:bg-cyber-blue hover:text-cyber-bg transition-colors">📷 写真を選択</button>
+              <button type="button" onclick="removeReportPhoto()" id="reportPhotoRemoveBtn" style="touch-action:manipulation" class="hidden flex-1 bg-cyber-bg border border-cyber-pink text-cyber-pink px-3 py-2 rounded font-sf text-sm hover:bg-cyber-pink hover:text-white transition-colors">🗑 写真を外す</button>
+            </div>
+          </div>
+          <div style="width:100%; max-width:600px; margin:0 auto;">
+            <div id="reportPreviewBox" style="position:relative; width:100%; aspect-ratio:1200/1500; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
+          </div>
+          <div id="reportGenStatus" class="hidden text-center text-cyber-orange font-sf text-sm">⏳ 生成中…</div>
+          <div class="flex flex-wrap gap-3 justify-center pt-2 pb-1">
+            <button type="button" onclick="downloadReportPng()" id="reportSaveBtn" style="touch-action:manipulation" class="bg-cyber-blue text-cyber-bg px-5 py-2 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9] disabled:opacity-40">💾 PNGを保存</button>
+            <button type="button" onclick="openReportPngInNewTab()" id="reportOpenTabBtn" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 新しいタブで開く</button>
+            <button type="button" onclick="closeReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-table-border text-cyber-text px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">閉じる</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4023,6 +4058,989 @@
       const btn = event.currentTarget; const originalText = btn.innerText; btn.innerText = "✅ COPIED!"; btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
       setTimeout(() => { btn.innerText = originalText; btn.classList.replace('bg-cyber-green', 'bg-cyber-blue'); }, 2000);
     }
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— データ集計層
+    // ==========================================
+    const KIMARITE_POINTS = { XF: 3, BF: 2, OF: 2, SF: 1 };
+    const KIMARITE_BASELINE_PERCENT = { SF: 57, OF: 18, XF: 18, BF: 7 };
+
+    function reportFormatDate(d) {
+      const dt = d || new Date();
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}.${m}.${day}`;
+    }
+
+    function reportFormatScore(scoreStr) {
+      if (!scoreStr) return '';
+      return String(scoreStr).replace('-', '－');
+    }
+
+    function reportFirstSentence(text) {
+      if (!text) return '';
+      const s = String(text).trim();
+      const m = s.match(/^(.+?[。！？])/);
+      return m ? m[1] : s;
+    }
+
+    // 実際に大会に参加した参加者（4色ブロック抽選に組み込まれた人）
+    function getReportEntrants() {
+      return participants.filter(p => p.color !== null);
+    }
+
+    // WB・LB の決着済み通常対戦（GF/GFリセットは含まない）
+    function getReportAllMatches() {
+      const list = [];
+      (winnersBracket || []).forEach((round, roundIdx) => {
+        (round || []).forEach(m => {
+          if (m && m.winner !== null && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE') {
+            list.push({ match: m, bracket: 'wb', roundIdx });
+          }
+        });
+      });
+      (losersBracket || []).forEach((round, roundIdx) => {
+        (round || []).forEach(m => {
+          if (m && m.winner !== null && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE') {
+            list.push({ match: m, bracket: 'lb', roundIdx });
+          }
+        });
+      });
+      return list;
+    }
+
+    // グランドファイナル・GFリセットの決着済み対戦
+    function getReportFinalMatches() {
+      const list = [];
+      if (grandFinal && grandFinal.winner !== null && grandFinal.p1 && grandFinal.p2) {
+        list.push({ match: grandFinal, bracket: 'gf', roundIdx: 0 });
+      }
+      if (grandFinalReset && grandFinalReset.winner !== null && grandFinalReset.p1 && grandFinalReset.p2) {
+        list.push({ match: grandFinalReset, bracket: 'gf_reset', roundIdx: 0 });
+      }
+      if (lbThirdPlace && lbThirdPlace.winner !== null && lbThirdPlace.p1 && lbThirdPlace.p2) {
+        list.push({ match: lbThirdPlace, bracket: 'lb3rd', roundIdx: 0 });
+      }
+      return list;
+    }
+
+    // WB R1 (winnersBracket[0]) の並び順から初戦シード番号を割り出す（目安）
+    function getReportSeedMap() {
+      const map = {};
+      if (!winnersBracket[0]) return map;
+      let seed = 1;
+      winnersBracket[0].forEach(m => {
+        if (m.p1 && m.p1.id !== 'BYE') map[m.p1.id] = seed;
+        seed++;
+        if (m.p2 && m.p2.id !== 'BYE') map[m.p2.id] = seed;
+        seed++;
+      });
+      return map;
+    }
+
+    // ラウンド名 + 既存の試合後コメント1文目
+    function reportRoundNote(entry) {
+      const label = getDeRoundLabel(entry.bracket, entry.roundIdx, 0);
+      const comment = reportFirstSentence(entry.match.comment);
+      return comment ? `${label}、${comment}` : `${label}の一戦`;
+    }
+
+    // kimarite（全体・時系列）と kimarite_p1/p2（各選手の得点順）を突き合わせて
+    // 「どちらの得点か」を時系列で再構成する。突合できない場合は null。
+    function reconstructMatchTimeline(match) {
+      const full = parseKimariteStored(match.kimarite);
+      const p1 = parseKimariteStored(match.kimarite_p1);
+      const p2 = parseKimariteStored(match.kimarite_p2);
+      if (full.length === 0 || full.length !== p1.length + p2.length) return null;
+      const events = [];
+      let i = 0, j = 0;
+      for (const k of full) {
+        const p1Next = i < p1.length && p1[i] === k;
+        const p2Next = j < p2.length && p2[j] === k;
+        if (p1Next && !p2Next) { events.push({ who: 'p1', k }); i++; }
+        else if (p2Next && !p1Next) { events.push({ who: 'p2', k }); j++; }
+        else if (p1Next && p2Next) {
+          const p1Remaining = p1.length - i, p2Remaining = p2.length - j;
+          if (p1Remaining >= p2Remaining) { events.push({ who: 'p1', k }); i++; }
+          else { events.push({ who: 'p2', k }); j++; }
+        } else {
+          return null;
+        }
+      }
+      if (i !== p1.length || j !== p2.length) return null;
+      return events;
+    }
+
+    // 勝者が試合中に2点以上のビハインドを負っていたか（大逆転判定）
+    function wasComebackWin(match) {
+      if (match.winner !== 1 && match.winner !== 2) return false;
+      const events = reconstructMatchTimeline(match);
+      if (!events) return false;
+      const winnerKey = match.winner === 1 ? 'p1' : 'p2';
+      let s1 = 0, s2 = 0, wasBehindByTwo = false;
+      events.forEach(ev => {
+        const pts = KIMARITE_POINTS[ev.k] || 1;
+        if (ev.who === 'p1') s1 += pts; else s2 += pts;
+        const winnerScore = winnerKey === 'p1' ? s1 : s2;
+        const loserScore = winnerKey === 'p1' ? s2 : s1;
+        if (loserScore - winnerScore >= 2) wasBehindByTwo = true;
+      });
+      return wasBehindByTwo;
+    }
+
+    function getReportStandings() {
+      const out = [];
+      const champM = getChampionMatch();
+      if (champM) {
+        const w = getW(champM), l = getL(champM);
+        if (w && w.id !== 'BYE') out.push({ rank: 1, participant: w });
+        if (l && l.id !== 'BYE') out.push({ rank: 2, participant: l });
+      }
+      // 3位決定戦が実施されている場合はそちらを優先
+      if (lbThirdPlace && lbThirdPlace.winner !== null) {
+        const w3 = getW(lbThirdPlace), l4 = getL(lbThirdPlace);
+        if (w3 && w3.id !== 'BYE') out.push({ rank: 3, participant: w3 });
+        if (l4 && l4.id !== 'BYE') out.push({ rank: 4, participant: l4 });
+      } else if (bracketSize > 2 && Array.isArray(losersBracket) && losersBracket.length > 0) {
+        const lbFinal = losersBracket[losersBracket.length - 1] && losersBracket[losersBracket.length - 1][0];
+        const lbSemiFinal = losersBracket.length >= 2 ? (losersBracket[losersBracket.length - 2] && losersBracket[losersBracket.length - 2][0]) : null;
+        if (lbFinal && lbFinal.winner !== null) {
+          const l3 = getL(lbFinal);
+          if (l3 && l3.id !== 'BYE') out.push({ rank: 3, participant: l3 });
+        }
+        if (lbSemiFinal && lbSemiFinal.winner !== null) {
+          const l4 = getL(lbSemiFinal);
+          if (l4 && l4.id !== 'BYE') out.push({ rank: 4, participant: l4 });
+        }
+      }
+      return out.map(s => ({
+        rank: s.rank,
+        name: s.participant.name || '',
+        beys: (s.participant.beyblades || []).map(b => b && b.name).filter(Boolean)
+      }));
+    }
+
+    function getReportHeadline() {
+      const champM = getChampionMatch();
+      if (!champM || !champM.p1 || !champM.p2) return null;
+      const w = getW(champM), l = getL(champM);
+      if (!w || !l || w.id === 'BYE' || l.id === 'BYE') return null;
+      return {
+        winner: w.name || '',
+        loser: l.name || '',
+        score: reportFormatScore(champM.score),
+        isReset: !!(grandFinalReset && champM === grandFinalReset),
+        comment: champM.comment || ''
+      };
+    }
+
+    function getReportHighlights() {
+      const champM = getChampionMatch();
+      const excluded = new Set();
+      if (champM) excluded.add(champM);
+      if (grandFinal) excluded.add(grandFinal);
+      if (grandFinalReset) excluded.add(grandFinalReset);
+
+      const matches = getReportAllMatches()
+        .concat(lbThirdPlace && lbThirdPlace.winner !== null && lbThirdPlace.p1 && lbThirdPlace.p2
+          ? [{ match: lbThirdPlace, bracket: 'lb3rd', roundIdx: 0 }] : [])
+        .filter(e => !excluded.has(e.match));
+      const seedMap = getReportSeedMap();
+      const picks = [];
+      const usedCategories = new Set();
+
+      const tryAdd = (category, entry) => {
+        if (usedCategories.has(category)) return false;
+        const m = entry.match;
+        const w = getW(m), l = getL(m);
+        if (!w || !l) return false;
+        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatScore(m.score), note: reportRoundNote(entry) });
+        usedCategories.add(category);
+        return true;
+      };
+
+      // 優先1: フルスコア（得点差1点）
+      for (const entry of matches) {
+        const parts = String(entry.match.score || '').split('-').map(n => parseInt(n, 10));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && Math.abs(parts[0] - parts[1]) === 1) {
+          if (tryAdd('フルスコア', entry)) break;
+        }
+      }
+      // 優先2: 大逆転（2点以上のビハインドから勝利）
+      for (const entry of matches) {
+        if (wasComebackWin(entry.match)) {
+          if (tryAdd('大逆転', entry)) break;
+        }
+      }
+      // 優先3: 番狂わせ（初戦シード差8以上）
+      for (const entry of matches) {
+        const w = getW(entry.match), l = getL(entry.match);
+        if (!w || !l) continue;
+        const wSeed = seedMap[w.id], lSeed = seedMap[l.id];
+        if (wSeed != null && lSeed != null && (wSeed - lSeed) >= 8) {
+          if (tryAdd('番狂わせ', entry)) break;
+        }
+      }
+      // 優先4: 完封（敗者0点）
+      for (const entry of matches) {
+        const parts = String(entry.match.score || '').split('-').map(n => parseInt(n, 10));
+        if (parts.length === 2 && (parts[0] === 0 || parts[1] === 0)) {
+          if (tryAdd('完封', entry)) break;
+        }
+      }
+      // 優先5: XF連発（1試合中にXFが3回以上）
+      for (const entry of matches) {
+        const m = entry.match;
+        const full = (m.kimarite && m.kimarite.length) ? parseKimariteStored(m.kimarite) : parseKimariteStored(`${m.kimarite_p1 || ''},${m.kimarite_p2 || ''}`);
+        if (full.filter(k => k === 'XF').length >= 3) {
+          if (tryAdd('XF連発', entry)) break;
+        }
+      }
+
+      return picks.slice(0, 3);
+    }
+
+    // ベイの種別(BX/UX/CX)からメインブレード名を取り出す。CX(EX)はメインブレード相当が
+    // MB(集計対象外パーツ)のため、仕様通りBLADE集計の対象外として扱う。
+    function reportGetBladeName(bey) {
+      if (!bey || !bey.parts) return null;
+      if (bey.type === 'BX') return bey.parts.BX || null;
+      if (bey.type === 'UX') return bey.parts.UX || null;
+      if (bey.type === 'CX') return bey.parts.CX || null;
+      return null;
+    }
+
+    function getReportPartsRanking() {
+      const bladeCounts = {}, ratchetCounts = {}, bitCounts = {};
+      getReportEntrants().forEach(p => {
+        (p.beyblades || []).forEach(bey => {
+          if (!bey) return;
+          if (!bey.parts) { console.warn('[イベントレポート] パーツ情報のないベイをスキップ:', bey.name); return; }
+          const bladeName = reportGetBladeName(bey);
+          if (bladeName) bladeCounts[bladeName] = (bladeCounts[bladeName] || 0) + 1;
+          else if (bey.type === 'BX' || bey.type === 'UX' || bey.type === 'CX') {
+            console.warn('[イベントレポート] BLADEパーツ名が取得できないベイをスキップ:', bey.name);
+          }
+          if (bey.parts.RC2) ratchetCounts[bey.parts.RC2] = (ratchetCounts[bey.parts.RC2] || 0) + 1;
+          if (bey.parts.BT) bitCounts[bey.parts.BT] = (bitCounts[bey.parts.BT] || 0) + 1;
+        });
+      });
+      const top3 = (counts) => Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 3);
+      return { blade: top3(bladeCounts), ratchet: top3(ratchetCounts), bit: top3(bitCounts) };
+    }
+
+    function getReportCxRatio() {
+      const entrants = getReportEntrants();
+      const total = entrants.length;
+      const count = entrants.filter(p => (p.beyblades || []).some(b => b && (b.type === 'CX' || b.type === 'CX(EX)'))).length;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { count, total, percent };
+    }
+
+    // LB敗退ラウンド（＋GF/GFリセット）から「どこまで勝ち上がったか」の深さを算出し、
+    // 上位8名（ベスト8相当）で最も使われたBLADEパーツを一言メモにする
+    function getReportBestEightNote() {
+      const depth = {};
+      (losersBracket || []).forEach((round, roundIdx) => {
+        (round || []).forEach(m => {
+          if (m && m.winner !== null) {
+            const l = getL(m);
+            if (l && l.id !== 'BYE') depth[l.id] = roundIdx + 1;
+          }
+        });
+      });
+      const lbRounds = (losersBracket || []).length;
+      const champM = getChampionMatch();
+      if (champM) {
+        const w = getW(champM), l = getL(champM);
+        if (w && w.id !== 'BYE') depth[w.id] = lbRounds + 2;
+        if (l && l.id !== 'BYE') depth[l.id] = lbRounds + 1;
+      }
+      if (lbThirdPlace && lbThirdPlace.winner !== null) {
+        const w3 = getW(lbThirdPlace), l4 = getL(lbThirdPlace);
+        if (w3 && w3.id !== 'BYE') depth[w3.id] = lbRounds;
+        if (l4 && l4.id !== 'BYE') depth[l4.id] = lbRounds - 0.5;
+      }
+      const ranked = getReportEntrants()
+        .filter(p => depth[p.id] != null)
+        .sort((a, b) => depth[b.id] - depth[a.id])
+        .slice(0, 8);
+      if (ranked.length < 8) return '';
+
+      const counts = {};
+      ranked.forEach(p => {
+        const bladesUsed = new Set();
+        (p.beyblades || []).forEach(bey => {
+          const bladeName = reportGetBladeName(bey);
+          if (bladeName) bladesUsed.add(bladeName);
+        });
+        bladesUsed.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+      });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      if (!top || top[1] < 2) return '';
+      return `ベスト8では${top[0]}が${top[1]}名を占めた。`;
+    }
+
+    function getReportKimariteDist() {
+      const dist = { XF: 0, BF: 0, OF: 0, SF: 0, total: 0 };
+      const entries = getReportAllMatches().concat(getReportFinalMatches());
+      entries.forEach(entry => {
+        const m = entry.match;
+        const full = (m.kimarite && m.kimarite.length) ? parseKimariteStored(m.kimarite) : parseKimariteStored(`${m.kimarite_p1 || ''},${m.kimarite_p2 || ''}`);
+        full.forEach(k => { if (dist[k] != null) { dist[k]++; dist.total++; } });
+      });
+      return dist;
+    }
+
+    function getReportKimariteNote(dist) {
+      if (!dist || !dist.total) return '';
+      let best = null;
+      ['SF', 'OF', 'XF', 'BF'].forEach(code => {
+        const actualPercent = (dist[code] / dist.total) * 100;
+        const ratio = KIMARITE_BASELINE_PERCENT[code] > 0 ? actualPercent / KIMARITE_BASELINE_PERCENT[code] : 0;
+        const deviation = Math.abs(ratio - 1);
+        if (!best || deviation > best.deviation) best = { code, ratio, deviation };
+      });
+      if (!best) return '';
+      const baselineText = `SF${KIMARITE_BASELINE_PERCENT.SF} / OF${KIMARITE_BASELINE_PERCENT.OF} / XF${KIMARITE_BASELINE_PERCENT.XF} / BF${KIMARITE_BASELINE_PERCENT.BF}`;
+      return `全${dist.total}本の決まり手内訳。全体平均（${baselineText}）と比べ${best.code}が${best.ratio.toFixed(1)}倍。`;
+    }
+
+    function collectReportData() {
+      const standings = getReportStandings();
+      const headline = getReportHeadline();
+      const highlights = getReportHighlights();
+      const partsRanking = getReportPartsRanking();
+      const cxRatio = getReportCxRatio();
+      const bestEightNote = getReportBestEightNote();
+      const kimariteDist = getReportKimariteDist();
+      const kimariteNote = getReportKimariteNote(kimariteDist);
+      const entrants = getReportEntrants();
+
+      return {
+        tournamentName: tournamentName || '',
+        dateStr: reportFormatDate(),
+        participantCount: entrants.length,
+        standings,
+        headline,
+        highlights,
+        partsRanking,
+        cxRatio,
+        bestEightNote,
+        kimariteDist,
+        kimariteNote
+      };
+    }
+
+    window.collectReportData = collectReportData;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— 紙面レンダリング
+    // ==========================================
+    const REPORT_LOGO_CANDIDATES = [
+      { src: 'maintitle_white_trim.png', mastheadHeight: 96 },
+      { src: 'maintitle_white.png', mastheadHeight: 190, isFallback: true }
+    ];
+    const REPORT_HIGHLIGHT_COLORS = {
+      'フルスコア': '#ff0055', '大逆転': '#ffaa00', '番狂わせ': '#22c55e', '完封': '#ff4500', 'XF連発': '#0ea5e9'
+    };
+    const REPORT_KIMARITE_BAR_ORDER = ['SF', 'XF', 'OF', 'BF'];
+    const REPORT_KIMARITE_BAR_COLORS = { SF: '#0ea5e9', XF: '#ffaa00', OF: '#ff4500', BF: '#ff0055' };
+    const REPORT_KIMARITE_TEXT_COLORS = { SF: '#042c53', XF: '#412402', OF: '#4a1b0c', BF: '#501313' };
+
+    let reportLogoDataUrlCache = null; // 成功時のみキャッシュ（404を試す度に固定化しない）
+
+    function reportEscapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function reportLoadImageAsDataUrl(url) {
+      return fetch(url)
+        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+        .then(blob => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+          reader.readAsDataURL(blob);
+        }));
+    }
+
+    // maintitle_white_trim.png → maintitle_white.png の順でdataURL化を試みる。
+    // 全滅した場合はnullを返し、呼び出し側はロゴなしで紙面を成立させる。
+    async function reportGetLogo() {
+      if (reportLogoDataUrlCache) return reportLogoDataUrlCache;
+      for (const cand of REPORT_LOGO_CANDIDATES) {
+        try {
+          const dataUrl = await reportLoadImageAsDataUrl(cand.src);
+          reportLogoDataUrlCache = { ...cand, dataUrl };
+          return reportLogoDataUrlCache;
+        } catch (e) {
+          console.warn('[イベントレポート] ロゴ画像の読み込みに失敗:', cand.src, e);
+        }
+      }
+      return null;
+    }
+
+    function reportBuildMasthead(logo) {
+      const logoHtml = logo
+        ? `<img id="report-masthead-logo" src="${logo.dataUrl}" style="height:${logo.mastheadHeight}px; width:auto; display:block; flex:none;" alt="ITABASHI BEYBLADE CLUB">`
+        : '';
+      return `
+        <div id="report-masthead" style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #0ea5e9; padding-bottom:16px;">
+          <div id="report-masthead-title" style="font-family:'Orbitron', sans-serif; font-weight:700; font-size:34px; letter-spacing:7px; color:#e2e8f0; white-space:nowrap;">ITABASHI BBX NEWS</div>
+          ${logoHtml}
+        </div>`;
+    }
+
+    function reportFitMastheadTitle() {
+      const wrap = document.getElementById('report-masthead');
+      const title = document.getElementById('report-masthead-title');
+      if (!wrap || !title) return;
+      const logo = document.getElementById('report-masthead-logo');
+      const logoWidth = logo ? logo.getBoundingClientRect().width : 0;
+      const available = wrap.clientWidth - logoWidth - 16;
+      const sizes = [34, 30, 26];
+      for (const size of sizes) {
+        title.style.fontSize = size + 'px';
+        if (title.scrollWidth <= available) break;
+      }
+    }
+
+    function reportBuildNameBand(data) {
+      const name = (data.tournamentName && data.tournamentName.trim()) ? data.tournamentName.trim() : '板橋ベイブレード会';
+      return `
+        <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; background:#0ea5e9; padding:8px 18px;">
+          <div id="report-nameband-title" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:19px; color:#042c53; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; color:#042c53; white-space:nowrap; flex:none; margin-left:12px;">${reportEscapeHtml(data.dateStr)}　参加${data.participantCount}名　DOUBLE ELIMINATION</div>
+        </div>`;
+    }
+
+    function reportFitNameBand() {
+      const title = document.getElementById('report-nameband-title');
+      if (!title) return;
+      const sizes = [19, 17, 15];
+      for (const size of sizes) {
+        title.style.fontSize = size + 'px';
+        if (title.scrollWidth <= title.clientWidth) break;
+      }
+      // 最小サイズでも収まらない場合は CSS の text-overflow:ellipsis に委ねる
+    }
+
+    function reportBuildHeadlineTitle(h) {
+      const label = h.isReset ? 'GFリセット制し優勝' : '優勝';
+      return `${h.winner}、${label}　${h.score}で${h.loser}を下す`;
+    }
+
+    function reportBuildFallbackComment(h) {
+      const resetLead = h.isReset ? 'ロスチーム側から勝ち上がった末のグランドファイナルリセット。' : '';
+      return `${resetLead}${h.winner}が${h.score}のスコアで${h.loser}を下し、頂点に立った。見事な戦いぶりで会場を沸かせた。`;
+    }
+
+    function reportBuildHeadline(data) {
+      if (!data.headline) return '';
+      const h = data.headline;
+      const label = h.isReset ? 'GRAND FINAL RESET' : 'GRAND FINAL';
+      const title = reportBuildHeadlineTitle(h);
+      const comment = (h.comment && h.comment.trim()) ? h.comment.trim() : reportBuildFallbackComment(h);
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#0ea5e9; margin-bottom:8px;">${label}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:28px; line-height:1.35; color:#e2e8f0; margin-bottom:10px;">${reportEscapeHtml(title)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:17px; line-height:1.7; color:#94a3b8;">${reportEscapeHtml(comment)}</div>
+        </div>`;
+    }
+
+    function reportBuildStandings(data) {
+      if (!data.standings || !data.standings.length) return '';
+      const rows = data.standings.map((s, idx) => {
+        const isLast = idx === data.standings.length - 1;
+        const rankColor = s.rank === 1 ? '#ffaa00' : '#94a3b8';
+        const beysText = (s.beys || []).join('　／　');
+        return `
+          <div style="display:flex; align-items:baseline; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #1f2937;'}">
+            <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; font-weight:700; color:${rankColor};">${s.rank}</div>
+            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
+            <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#94a3b8; white-space:normal; line-height:1.5;">${reportEscapeHtml(beysText)}</div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto; background:#111827; border-radius:10px; padding:16px 18px;">
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; letter-spacing:2px; color:#64748b; margin-bottom:8px;">FINAL STANDINGS　／　使用ベイ</div>
+          ${rows}
+        </div>`;
+    }
+
+    function reportFitStandingsNames(data) {
+      if (!data.standings) return;
+      data.standings.forEach((s, idx) => {
+        const el = document.getElementById(`report-stand-name-${idx}`);
+        if (!el) return;
+        const sizes = [19, 17, 15];
+        for (const size of sizes) {
+          el.style.fontSize = size + 'px';
+          if (el.scrollWidth <= el.clientWidth) break;
+        }
+        // 最小サイズでも収まらない場合は CSS の nowrap + ellipsis を最終手段として維持
+      });
+    }
+
+    function reportFitStandingsRows(data) {
+      if (!data.standings) return;
+      data.standings.forEach((s, idx) => {
+        const el = document.getElementById(`report-stand-bey-${idx}`);
+        if (!el) return;
+        const sizes = [15, 13, 12];
+        for (const size of sizes) {
+          el.style.fontSize = size + 'px';
+          const lineHeight = size * 1.5;
+          // 2行分 + 誤差1px の余裕を見て判定
+          if (el.scrollHeight <= lineHeight * 2 + 1) return;
+        }
+        console.warn(`[イベントレポート] ${idx + 1}位のベイ名が12pxでも2行に収まりません（3行以上になります）`);
+      });
+    }
+
+    function reportBuildPhoto(photoDataUrl) {
+      if (!photoDataUrl) return '';
+      return `
+        <div style="position:relative; flex:1 1 auto; min-height:220px; background:#111827; border:1px solid #1f2937; border-radius:10px; overflow:hidden;">
+          <img src="${photoDataUrl}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="記念撮影">
+          <div style="position:absolute; left:0; right:0; bottom:0; background:rgba(10,14,23,0.85); padding:9px 18px;">
+            <span style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#94a3b8;">入賞者一同</span>
+          </div>
+        </div>`;
+    }
+
+    function reportBuildHighlights(data) {
+      if (!data.highlights || !data.highlights.length) return '';
+      const cards = data.highlights.map(h => {
+        const color = REPORT_HIGHLIGHT_COLORS[h.tag] || '#0ea5e9';
+        return `
+          <div style="background:#111827; border-left:4px solid ${color}; border-radius:0; padding:12px 14px;">
+            <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:14px; color:${color}; margin-bottom:6px;">${reportEscapeHtml(h.tag)}</div>
+            <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:18px; color:#e2e8f0; margin-bottom:6px;">${reportEscapeHtml(h.p1)} ${reportEscapeHtml(h.score)} ${reportEscapeHtml(h.p2)}</div>
+            <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; line-height:1.45; color:#64748b;">${reportEscapeHtml(h.note)}</div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#ec4899; margin-bottom:10px;">本日の激闘</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+        </div>`;
+    }
+
+    function reportBuildPartsCard(label, items) {
+      const rows = (items || []).map((item, idx) => {
+        const rankColor = idx === 0 ? '#ffaa00' : '#475569';
+        return `
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:4px 0;">
+            <div style="display:flex; align-items:baseline; gap:8px; min-width:0; overflow:hidden;">
+              <span style="font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
+              <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(item.name)}</span>
+            </div>
+            <span style="font-family:'Orbitron', sans-serif; font-size:16px; color:#64748b; flex:none; margin-left:8px;">${item.count}</span>
+          </div>`;
+      }).join('');
+      return `
+        <div style="background:#111827; border-radius:10px; padding:14px;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:1px; color:#64748b; margin-bottom:8px;">${label}</div>
+          ${rows}
+        </div>`;
+    }
+
+    function reportBuildParts(data) {
+      const pr = data.partsRanking || { blade: [], ratchet: [], bit: [] };
+      const cards = [
+        reportBuildPartsCard('BLADE', pr.blade),
+        reportBuildPartsCard('RATCHET', pr.ratchet),
+        reportBuildPartsCard('BIT', pr.bit)
+      ].join('');
+      const cx = data.cxRatio || { count: 0, total: 0, percent: 0 };
+      let noteText = `CXライン採用率 ${cx.percent}%（${cx.total}名中${cx.count}名）。`;
+      if (data.bestEightNote) noteText += data.bestEightNote;
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#0ea5e9; margin-bottom:10px;">本日のパーツ事情</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#64748b; margin-top:10px;">${reportEscapeHtml(noteText)}</div>
+        </div>`;
+    }
+
+    // 各セグメントを個別に丸めると合計が99%/101%になり得るため、丸め後に
+    // 最大件数のセグメントへ差分を吸収させてラベル表示上の合計を100%に揃える
+    function reportGetKimaritePercents(dist) {
+      const rounded = {};
+      let sum = 0;
+      let maxCode = null, maxCount = -1;
+      REPORT_KIMARITE_BAR_ORDER.forEach(code => {
+        const count = dist[code] || 0;
+        const p = Math.round((count / dist.total) * 100);
+        rounded[code] = p;
+        sum += p;
+        if (count > maxCount) { maxCount = count; maxCode = code; }
+      });
+      if (maxCode) rounded[maxCode] += (100 - sum);
+      return rounded;
+    }
+
+    function reportBuildKimariteBar(data) {
+      const dist = data.kimariteDist;
+      if (!dist || !dist.total) return '';
+      const percents = reportGetKimaritePercents(dist);
+      const segs = REPORT_KIMARITE_BAR_ORDER.map(code => {
+        const count = dist[code] || 0;
+        if (count <= 0) return '';
+        const percent = percents[code];
+        const showLabel = percent >= 5;
+        return `
+          <div style="flex:${count}; background:${REPORT_KIMARITE_BAR_COLORS[code]}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            ${showLabel ? `<span style="font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; color:${REPORT_KIMARITE_TEXT_COLORS[code]}; white-space:nowrap;">${code} ${percent}%</span>` : ''}
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="height:26px; border-radius:5px; overflow:hidden; display:flex;">${segs}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#64748b; margin-top:8px;">${reportEscapeHtml(data.kimariteNote || '')}</div>
+        </div>`;
+    }
+
+    function reportBuildFooter(logo) {
+      const logoHtml = logo
+        ? `<img src="${logo.dataUrl}" style="height:24px; width:auto; opacity:0.6; display:block;" alt="ITABASHI BEYBLADE CLUB">`
+        : '';
+      return `
+        <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-top:1px solid #1f2937; padding-top:10px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            ${logoHtml}
+            <span style="font-family:'Orbitron', sans-serif; font-size:14px; color:#475569;">ITABASHI BEYBLADE CLUB</span>
+          </div>
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; color:#475569;">@yamizaki</div>
+        </div>`;
+    }
+
+    // data: collectReportData() の返り値 / photoDataUrl: リサイズ済みdataURL文字列 or null
+    async function buildReportHtml(data, photoDataUrl) {
+      if (!data || !data.headline) {
+        await showAlert('大会が終了していません。グランドファイナルの結果が確定してからレポートを生成してください。');
+        return null;
+      }
+
+      const existing = document.getElementById('report-canvas');
+      if (existing) existing.remove();
+
+      const logo = await reportGetLogo();
+
+      const photoHtml = reportBuildPhoto(photoDataUrl);
+      const spacerHtml = photoHtml ? '' : `<div style="flex:1 1 auto;"></div>`;
+
+      const sections = [
+        reportBuildMasthead(logo),
+        reportBuildNameBand(data),
+        reportBuildHeadline(data),
+        reportBuildStandings(data),
+        photoHtml,
+        spacerHtml,
+        reportBuildHighlights(data),
+        reportBuildParts(data),
+        reportBuildKimariteBar(data),
+        reportBuildFooter(logo)
+      ].filter(Boolean).join('');
+
+      const canvas = document.createElement('div');
+      canvas.id = 'report-canvas';
+      canvas.style.cssText = 'position:absolute; left:-9999px; top:0; width:1200px; height:1500px; box-sizing:border-box; padding:36px; background:#0a0e17; display:flex; flex-direction:column; gap:18px; font-family:"Noto Sans JP", sans-serif;';
+      canvas.innerHTML = sections;
+      document.body.appendChild(canvas);
+
+      try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      reportFitMastheadTitle();
+      reportFitNameBand();
+      reportFitStandingsNames(data);
+      reportFitStandingsRows(data);
+
+      const overflow = canvas.scrollHeight - 1500;
+      if (overflow > 0) {
+        console.warn(`[イベントレポート] 紙面が ${overflow}px 超過しています（scrollHeight=${canvas.scrollHeight}）`);
+      }
+
+      return canvas;
+    }
+
+    // デバッグ用: #report-canvas を画面内に一時表示/非表示
+    function showReportDebug() {
+      const el = document.getElementById('report-canvas');
+      if (!el) { console.warn('[イベントレポート] report-canvas が未生成です。先に buildReportHtml() を実行してください。'); return; }
+      el.style.left = '0';
+      el.style.zIndex = '99999';
+      el.style.outline = '4px solid #ff0055';
+    }
+    function hideReportDebug() {
+      const el = document.getElementById('report-canvas');
+      if (!el) return;
+      el.style.left = '-9999px';
+      el.style.zIndex = '';
+      el.style.outline = '';
+    }
+
+    window.buildReportHtml = buildReportHtml;
+    window.showReportDebug = showReportDebug;
+    window.hideReportDebug = hideReportDebug;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— モーダルUI・写真・PNG出力
+    // ==========================================
+    const REPORT_PHOTO_KEY = 'tbh_de_report_photo'; // tbh_tournament_de(SAVE_KEY)とは別キー。絶対に混在させない
+    let reportPhotoDataUrl = null; // メモリ上のリサイズ済み写真dataURL（JPEG, 長辺1200px以内）
+    let reportPngGenerating = false;
+
+    async function openReportModal() {
+      if (!isTournamentFinished()) {
+        await showAlert('大会が終了していません。グランドファイナルの結果が確定してからレポートを生成してください。');
+        return;
+      }
+
+      try {
+        const saved = localStorage.getItem(REPORT_PHOTO_KEY);
+        if (saved) reportPhotoDataUrl = saved;
+      } catch (e) {
+        console.warn('[イベントレポート] 写真の復元に失敗:', e);
+      }
+      updateReportPhotoButtons();
+
+      const dateInput = document.getElementById('reportDateInput');
+      if (dateInput && !dateInput.value) {
+        const now = new Date();
+        dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+
+      document.getElementById('reportModal').classList.remove('hidden');
+      document.getElementById('reportModal').classList.add('flex');
+
+      await regenerateReportPreview();
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+      document.getElementById('reportModal').classList.remove('flex');
+    }
+
+    function onReportDateChange() {
+      void regenerateReportPreview();
+    }
+
+    function updateReportPhotoButtons() {
+      const pickBtn = document.getElementById('reportPhotoPickBtn');
+      const removeBtn = document.getElementById('reportPhotoRemoveBtn');
+      if (!pickBtn || !removeBtn) return;
+      pickBtn.textContent = reportPhotoDataUrl ? '📷 写真を変更' : '📷 写真を選択';
+      removeBtn.classList.toggle('hidden', !reportPhotoDataUrl);
+    }
+
+    function reportDateStrFromInput() {
+      const el = document.getElementById('reportDateInput');
+      if (!el || !el.value) return reportFormatDate();
+      const [y, m, d] = el.value.split('-');
+      return `${y}.${m}.${d}`;
+    }
+
+    function reportFilenameDateStr() {
+      const el = document.getElementById('reportDateInput');
+      if (el && el.value) return el.value.replace(/-/g, '');
+      const now = new Date();
+      return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function reportSanitizeFilename(name) {
+      return String(name || '').replace(/[\/\\:\*\?"<>\|\s]+/g, '_');
+    }
+
+    function reportComputePreviewScale() {
+      const box = document.getElementById('reportPreviewBox');
+      const w = box ? box.clientWidth : 0;
+      return w > 0 ? w / 1200 : 0.5;
+    }
+
+    // #report-canvas をプレビュー枠内に縮小配置する（枠幅から算出したscaleでレスポンシブ対応）
+    function reportMountPreview(canvas) {
+      const box = document.getElementById('reportPreviewBox');
+      if (!box || !canvas) return;
+      const scale = reportComputePreviewScale();
+      box.innerHTML = '';
+      canvas.style.position = 'absolute';
+      canvas.style.left = '0';
+      canvas.style.top = '0';
+      canvas.style.transform = `scale(${scale})`;
+      canvas.style.transformOrigin = 'top left';
+      box.appendChild(canvas);
+    }
+
+    async function regenerateReportPreview() {
+      const data = collectReportData();
+      data.dateStr = reportDateStrFromInput();
+      const canvas = await buildReportHtml(data, reportPhotoDataUrl);
+      if (!canvas) return; // 大会未終了などでbuildReportHtml側が中止した場合
+      reportMountPreview(canvas);
+    }
+
+    // File → dataURL → Image → canvas(長辺1200px) → JPEG dataURL。
+    // 元画像のdataURLはこの関数のローカルスコープ内でのみ使い、呼び出し元には残さない。
+    function reportResizePhotoFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Image decode failed'));
+          img.onload = () => {
+            const maxEdge = 1200;
+            let width = img.naturalWidth, height = img.naturalHeight;
+            if (width > maxEdge || height > maxEdge) {
+              if (width >= height) { height = Math.round(height * (maxEdge / width)); width = maxEdge; }
+              else { width = Math.round(width * (maxEdge / height)); height = maxEdge; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function onReportPhotoSelected(event) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      input.value = ''; // 同じファイルを連続選択できるようにリセット
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        await showAlert('ファイルサイズが20MBを超えています。別の画像を選んでください。');
+        return;
+      }
+
+      try {
+        const resized = await reportResizePhotoFile(file);
+        reportPhotoDataUrl = resized;
+        try {
+          localStorage.setItem(REPORT_PHOTO_KEY, resized);
+        } catch (e) {
+          console.warn('[イベントレポート] 写真のlocalStorage保存に失敗:', e);
+          await showAlert('写真は保存されませんが、レポート生成には使えます。');
+        }
+        updateReportPhotoButtons();
+        await regenerateReportPreview();
+      } catch (e) {
+        console.warn('[イベントレポート] 写真の読み込みに失敗:', e);
+        await showAlert('画像を読み込めませんでした。HEIC形式の可能性があります。iPhoneの写真アプリから選び直すか、JPEG／PNGに変換してからお試しください。');
+        // モーダルは閉じない。写真なし状態を維持する（reportPhotoDataUrlは変更しない）
+      }
+    }
+
+    function removeReportPhoto() {
+      reportPhotoDataUrl = null;
+      try { localStorage.removeItem(REPORT_PHOTO_KEY); } catch (e) { console.warn('[イベントレポート] 写真の削除に失敗:', e); }
+      updateReportPhotoButtons();
+      void regenerateReportPreview();
+    }
+
+    function setReportGenerating(flag) {
+      reportPngGenerating = flag;
+      const status = document.getElementById('reportGenStatus');
+      const saveBtn = document.getElementById('reportSaveBtn');
+      const tabBtn = document.getElementById('reportOpenTabBtn');
+      if (status) status.classList.toggle('hidden', !flag);
+      if (saveBtn) saveBtn.disabled = flag;
+      if (tabBtn) tabBtn.disabled = flag;
+    }
+
+    // #report-canvas を撮影用に一時的にオフスクリーン等倍へ戻し、html2canvasでPNG化してから
+    // プレビュー枠内の縮小表示に復元する
+    async function reportCapturePng() {
+      const canvas = document.getElementById('report-canvas');
+      if (!canvas) throw new Error('report-canvas not found');
+
+      const previewBox = document.getElementById('reportPreviewBox');
+      const wasInPreview = !!(previewBox && previewBox.contains(canvas));
+
+      canvas.style.transform = 'none';
+      canvas.style.position = 'absolute';
+      canvas.style.left = '-9999px';
+      canvas.style.top = '0';
+      if (wasInPreview) document.body.appendChild(canvas);
+
+      try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      try {
+        const rendered = await html2canvas(canvas, {
+          width: 1200, height: 1500, scale: 1,
+          backgroundColor: '#0a0e17', useCORS: true, logging: false
+        });
+        return await new Promise((resolve, reject) => {
+          rendered.toBlob(blob => { if (blob) resolve(blob); else reject(new Error('toBlob failed')); }, 'image/png');
+        });
+      } finally {
+        if (wasInPreview) {
+          const scale = reportComputePreviewScale();
+          previewBox.appendChild(canvas);
+          canvas.style.left = '0';
+          canvas.style.top = '0';
+          canvas.style.transform = `scale(${scale})`;
+          canvas.style.transformOrigin = 'top left';
+        }
+      }
+    }
+
+    async function downloadReportPng() {
+      if (reportPngGenerating) return;
+      setReportGenerating(true);
+      try {
+        const blob = await reportCapturePng();
+        const url = URL.createObjectURL(blob);
+        const name = reportSanitizeFilename(tournamentName || '板橋ベイブレード会');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}_report_${reportFilenameDateStr()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('[イベントレポート] PNG保存に失敗:', e);
+        await showAlert('PNGの生成に失敗しました。時間をおいて再度お試しください。');
+      } finally {
+        setReportGenerating(false);
+      }
+    }
+
+    async function openReportPngInNewTab() {
+      if (reportPngGenerating) return;
+      setReportGenerating(true);
+      try {
+        const blob = await reportCapturePng();
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if (!win) {
+          URL.revokeObjectURL(url);
+          await showAlert('新しいタブを開けませんでした。ポップアップブロックを解除してから再度お試しください。');
+        } else {
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+      } catch (e) {
+        console.warn('[イベントレポート] PNG表示に失敗:', e);
+        await showAlert('PNGの生成に失敗しました。時間をおいて再度お試しください。');
+      } finally {
+        setReportGenerating(false);
+      }
+    }
+
+    window.openReportModal = openReportModal;
+    window.closeReportModal = closeReportModal;
 
 
     // ==========================================
