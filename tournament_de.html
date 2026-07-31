@@ -4520,7 +4520,7 @@
       const name = (data.tournamentName && data.tournamentName.trim()) ? data.tournamentName.trim() : '板橋ベイブレード会';
       return `
         <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; background:#0ea5e9; padding:8px 18px;">
-          <div id="report-nameband-title" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:19px; color:#042c53; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
+          <div id="report-nameband-title" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:19px; line-height:1.4; color:#042c53; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; color:#042c53; white-space:nowrap; flex:none; margin-left:12px;">${reportEscapeHtml(data.dateStr)}　参加${data.participantCount}名　DOUBLE ELIMINATION</div>
         </div>`;
     }
@@ -4610,7 +4610,7 @@
         return `
           <div style="display:flex; align-items:baseline; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #1f2937;'}">
             <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; font-weight:700; color:${rankColor};">${s.rank}</div>
-            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
+            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.4; font-weight:700; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
             <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#94a3b8; white-space:normal; line-height:1.5;">${reportEscapeHtml(beysText)}</div>
           </div>`;
       }).join('');
@@ -4744,7 +4744,7 @@
           <div style="display:flex; align-items:baseline; justify-content:space-between; padding:4px 0;">
             <div style="display:flex; align-items:baseline; gap:8px; min-width:0; overflow:hidden;">
               <span style="font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
-              <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(item.name)}</span>
+              <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.4; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(item.name)}</span>
             </div>
             <span style="font-family:'Orbitron', sans-serif; font-size:16px; color:#64748b; flex:none; margin-left:8px;">${item.count}</span>
           </div>`;
