@@ -311,6 +311,14 @@
               <button type="button" onclick="document.getElementById('reportPhotoInput').click()" id="reportPhotoPickBtn" style="touch-action:manipulation" class="flex-1 bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-sf text-sm hover:bg-cyber-blue hover:text-cyber-bg transition-colors">📷 写真を選択</button>
               <button type="button" onclick="removeReportPhoto()" id="reportPhotoRemoveBtn" style="touch-action:manipulation" class="hidden flex-1 bg-cyber-bg border border-cyber-pink text-cyber-pink px-3 py-2 rounded font-sf text-sm hover:bg-cyber-pink hover:text-white transition-colors">🗑 写真を外す</button>
             </div>
+            <div id="reportCropControls" class="hidden flex flex-col gap-1 mt-2">
+              <div class="text-[11px] text-cyber-text opacity-60 font-sf">📌 プレビュー内の写真をドラッグで位置調整・スライダーで拡大縮小できます</div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-cyber-text font-sf">🔍</span>
+                <input type="range" id="reportZoomSlider" min="1" max="3" step="0.01" value="1" oninput="onReportZoomChange()" onchange="onReportZoomCommit()" style="touch-action:manipulation" class="flex-1 accent-cyber-blue">
+                <button type="button" onclick="resetReportCrop()" style="touch-action:manipulation" class="text-xs text-cyber-text border border-cyber-table-border px-2 py-1 rounded font-sf hover:bg-gray-800 transition-colors whitespace-nowrap">位置リセット</button>
+              </div>
+            </div>
           </div>
           <div style="width:100%; max-width:600px; margin:0 auto;">
             <div id="reportPreviewBox" style="position:relative; width:100%; aspect-ratio:1200/1500; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
@@ -4528,14 +4536,55 @@
       // 最小サイズでも収まらない場合は CSS の text-overflow:ellipsis に委ねる
     }
 
+    const REPORT_HEADLINE_TITLES_NORMAL = [
+      h => `${h.winner}、${h.score}で${h.loser}を下し優勝`,
+      h => `${h.winner}が頂点に立つ　${h.score}で${h.loser}を撃破`,
+      h => `激闘を制したのは${h.winner}　${h.score}で${h.loser}を下す`,
+      h => `${h.winner}が栄冠　${h.loser}との激戦を${h.score}で制す`,
+      h => `頂点は${h.winner}の手に　${h.score}で${h.loser}を退ける`,
+      h => `${h.winner}、貫禄の優勝　${h.loser}を${h.score}で突き放す`
+    ];
+    const REPORT_HEADLINE_TITLES_RESET = [
+      h => `${h.winner}、敗者復活から頂点へ　GFリセット制し${h.score}で優勝`,
+      h => `${h.winner}が大逆転優勝　GFリセットの末${h.score}で${h.loser}を破る`,
+      h => `一度は敗れた${h.winner}がリセットで巻き返し優勝　${h.score}で${h.loser}を下す`,
+      h => `${h.winner}、土俵際からの逆襲　GFリセット制し${h.score}で${h.loser}を下す`,
+      h => `敗者復活からの快進撃　${h.winner}がGFリセットで${h.loser}を${h.score}で下す`,
+      h => `${h.winner}が意地を見せる　GFリセット制し${h.score}で${h.loser}を下す`
+    ];
+
     function reportBuildHeadlineTitle(h) {
-      const label = h.isReset ? 'GFリセット制し優勝' : '優勝';
-      return `${h.winner}、${label}　${h.score}で${h.loser}を下す`;
+      const pool = h.isReset ? REPORT_HEADLINE_TITLES_RESET : REPORT_HEADLINE_TITLES_NORMAL;
+      return pickRandom(pool)(h);
     }
 
+    const REPORT_FALLBACK_OPENINGS_NORMAL = [
+      h => `${h.winner}が${h.score}のスコアで${h.loser}を下し、頂点に立った。`,
+      h => `激戦を制したのは${h.winner}。${h.loser}を${h.score}で振り切っての優勝となった。`,
+      h => `${h.winner}が終始安定した強さを見せ、${h.score}で${h.loser}を下して優勝を飾った。`,
+      h => `${h.score}のスコアで${h.loser}を下した${h.winner}が、見事栄冠を手にした。`
+    ];
+    const REPORT_FALLBACK_OPENINGS_RESET = [
+      h => `一度はグランドファイナルで敗れた${h.winner}が、リセット戦で${h.loser}を${h.score}で下し逆転優勝を果たした。`,
+      h => `敗者復活からの勝ち上がりを経て、${h.winner}がグランドファイナルリセットを${h.score}で制した。`,
+      h => `土俵際に追い込まれた${h.winner}が、リセット戦で底力を見せ${h.score}で${h.loser}を下した。`
+    ];
+    const REPORT_FALLBACK_CLOSINGS_NORMAL = [
+      '見事な戦いぶりで会場を沸かせた。',
+      '力強い勝ちっぷりに大きな拍手が送られた。',
+      '決勝にふさわしい熱戦となった。',
+      '優勝おめでとうございます。'
+    ];
+    const REPORT_FALLBACK_CLOSINGS_RESET = [
+      '見事な逆転劇に会場が沸いた。',
+      '諦めない戦いぶりが大きな感動を呼んだ。',
+      '劇的な幕切れとなった。'
+    ];
+
     function reportBuildFallbackComment(h) {
-      const resetLead = h.isReset ? 'ロスチーム側から勝ち上がった末のグランドファイナルリセット。' : '';
-      return `${resetLead}${h.winner}が${h.score}のスコアで${h.loser}を下し、頂点に立った。見事な戦いぶりで会場を沸かせた。`;
+      const openings = h.isReset ? REPORT_FALLBACK_OPENINGS_RESET : REPORT_FALLBACK_OPENINGS_NORMAL;
+      const closings = h.isReset ? REPORT_FALLBACK_CLOSINGS_RESET : REPORT_FALLBACK_CLOSINGS_NORMAL;
+      return `${pickRandom(openings)(h)}${pickRandom(closings)}`;
     }
 
     function reportBuildHeadline(data) {
@@ -4602,15 +4651,72 @@
       });
     }
 
+    // html2canvas は <img> の object-fit を正しく再現できないことがあるため、
+    // 写真は <canvas> に事前描画したピクセルとして埋め込む（ズーム・位置調整もここで反映）
     function reportBuildPhoto(photoDataUrl) {
       if (!photoDataUrl) return '';
       return `
-        <div style="position:relative; flex:1 1 auto; min-height:220px; background:#111827; border:1px solid #1f2937; border-radius:10px; overflow:hidden;">
-          <img src="${photoDataUrl}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="記念撮影">
+        <div id="report-photo-box" style="position:relative; flex:1 1 auto; min-height:220px; background:#111827; border:1px solid #1f2937; border-radius:10px; overflow:hidden;">
+          <canvas id="report-photo-canvas" style="width:100%; height:100%; display:block; touch-action:none;"></canvas>
           <div style="position:absolute; left:0; right:0; bottom:0; background:rgba(10,14,23,0.85); padding:9px 18px;">
             <span style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#94a3b8;">入賞者一同</span>
           </div>
         </div>`;
+    }
+
+    let reportPhotoImgCache = { url: null, img: null };
+    let reportPhotoNaturalSize = null; // { w, h } 直近に描画した画像の自然サイズ（ドラッグ換算に使用）
+
+    function reportClamp01(v) { return Math.max(0, Math.min(1, v == null ? 0.5 : v)); }
+
+    function reportLoadImageElement(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = src;
+      });
+    }
+
+    // object-fit:cover 相当のクロップ矩形（ズーム・焦点位置つき）をソース画像座標で算出
+    function reportComputeCoverCrop(srcW, srcH, boxW, boxH, zoom, focalX, focalY) {
+      const baseScale = Math.max(boxW / srcW, boxH / srcH);
+      const scale = baseScale * Math.max(1, zoom || 1);
+      const dispW = srcW * scale, dispH = srcH * scale;
+      const excessW = Math.max(0, dispW - boxW);
+      const excessH = Math.max(0, dispH - boxH);
+      const offsetX = excessW * reportClamp01(focalX);
+      const offsetY = excessH * reportClamp01(focalY);
+      return { sx: offsetX / scale, sy: offsetY / scale, sw: boxW / scale, sh: boxH / scale };
+    }
+
+    // #report-photo-box の実測サイズ（1200×1500座標系での真の値。transform:scaleの影響を受けない）
+    // に合わせて #report-photo-canvas へ描画する。画像はキャッシュして再デコードを避け、
+    // ドラッグ中の連続呼び出しでも同期的に再描画できるようにしている。
+    function reportRenderPhotoCanvas(photoDataUrl, crop) {
+      const box = document.getElementById('report-photo-box');
+      const canvasEl = document.getElementById('report-photo-canvas');
+      if (!box || !canvasEl || !photoDataUrl) return Promise.resolve();
+      const w = Math.max(1, box.offsetWidth);
+      const h = Math.max(1, box.offsetHeight);
+      canvasEl.width = w;
+      canvasEl.height = h;
+      const draw = (img) => {
+        const c = crop || { zoom: 1, x: 0.5, y: 0.5 };
+        const { sx, sy, sw, sh } = reportComputeCoverCrop(img.naturalWidth, img.naturalHeight, w, h, c.zoom, c.x, c.y);
+        const ctx = canvasEl.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+      };
+      if (reportPhotoImgCache.url === photoDataUrl && reportPhotoImgCache.img) {
+        draw(reportPhotoImgCache.img);
+        return Promise.resolve();
+      }
+      return reportLoadImageElement(photoDataUrl).then(img => {
+        reportPhotoImgCache = { url: photoDataUrl, img };
+        reportPhotoNaturalSize = { w: img.naturalWidth, h: img.naturalHeight };
+        draw(img);
+      }).catch(e => console.warn('[イベントレポート] 写真の描画に失敗:', e));
     }
 
     function reportBuildHighlights(data) {
@@ -4721,7 +4827,8 @@
     }
 
     // data: collectReportData() の返り値 / photoDataUrl: リサイズ済みdataURL文字列 or null
-    async function buildReportHtml(data, photoDataUrl) {
+    // photoCrop: { zoom, x, y }（省略時は等倍中央）。x/yは0〜1の焦点位置（object-position相当）
+    async function buildReportHtml(data, photoDataUrl, photoCrop) {
       if (!data || !data.headline) {
         await showAlert('大会が終了していません。グランドファイナルの結果が確定してからレポートを生成してください。');
         return null;
@@ -4755,6 +4862,10 @@
       document.body.appendChild(canvas);
 
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      if (photoDataUrl) {
+        await reportRenderPhotoCanvas(photoDataUrl, photoCrop || { zoom: 1, x: 0.5, y: 0.5 });
+      }
 
       reportFitMastheadTitle();
       reportFitNameBand();
@@ -4794,6 +4905,8 @@
     // ==========================================
     const REPORT_PHOTO_KEY = 'tbh_de_report_photo'; // tbh_tournament_de(SAVE_KEY)とは別キー。絶対に混在させない
     let reportPhotoDataUrl = null; // メモリ上のリサイズ済み写真dataURL（JPEG, 長辺1200px以内）
+    let reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // ズーム倍率・焦点位置（0〜1、object-position相当）
+    let reportPhotoSaveWarned = false; // localStorage保存失敗の警告を1セッション1回に抑える
     let reportPngGenerating = false;
 
     async function openReportModal() {
@@ -4802,9 +4915,24 @@
         return;
       }
 
+      reportPhotoSaveWarned = false;
       try {
-        const saved = localStorage.getItem(REPORT_PHOTO_KEY);
-        if (saved) reportPhotoDataUrl = saved;
+        const raw = localStorage.getItem(REPORT_PHOTO_KEY);
+        if (raw) {
+          let parsed = null;
+          try { parsed = JSON.parse(raw); } catch (e) { /* 旧形式（生のdataURL文字列）の可能性 */ }
+          if (parsed && typeof parsed === 'object' && parsed.dataUrl) {
+            reportPhotoDataUrl = parsed.dataUrl;
+            reportPhotoCrop = {
+              zoom: (parsed.crop && parsed.crop.zoom) || 1,
+              x: (parsed.crop && parsed.crop.x != null) ? parsed.crop.x : 0.5,
+              y: (parsed.crop && parsed.crop.y != null) ? parsed.crop.y : 0.5
+            };
+          } else if (raw.startsWith('data:')) {
+            reportPhotoDataUrl = raw; // 旧形式（クロップ情報なし）
+            reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+          }
+        }
       } catch (e) {
         console.warn('[イベントレポート] 写真の復元に失敗:', e);
       }
@@ -4834,10 +4962,98 @@
     function updateReportPhotoButtons() {
       const pickBtn = document.getElementById('reportPhotoPickBtn');
       const removeBtn = document.getElementById('reportPhotoRemoveBtn');
+      const cropControls = document.getElementById('reportCropControls');
+      const slider = document.getElementById('reportZoomSlider');
       if (!pickBtn || !removeBtn) return;
       pickBtn.textContent = reportPhotoDataUrl ? '📷 写真を変更' : '📷 写真を選択';
       removeBtn.classList.toggle('hidden', !reportPhotoDataUrl);
+      if (cropControls) cropControls.classList.toggle('hidden', !reportPhotoDataUrl);
+      if (slider) slider.value = String(reportPhotoCrop.zoom || 1);
     }
+
+    // 写真dataURL＋クロップ状態をまとめて保存。失敗時の警告はモーダル1セッションにつき1回のみ
+    function reportPersistPhoto() {
+      if (!reportPhotoDataUrl) return;
+      try {
+        localStorage.setItem(REPORT_PHOTO_KEY, JSON.stringify({ dataUrl: reportPhotoDataUrl, crop: reportPhotoCrop }));
+      } catch (e) {
+        console.warn('[イベントレポート] 写真のlocalStorage保存に失敗:', e);
+        if (!reportPhotoSaveWarned) {
+          reportPhotoSaveWarned = true;
+          void showAlert('写真は保存されませんが、レポート生成には使えます。');
+        }
+      }
+    }
+
+    function onReportZoomChange() {
+      const slider = document.getElementById('reportZoomSlider');
+      if (!slider) return;
+      reportPhotoCrop.zoom = parseFloat(slider.value) || 1;
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    function onReportZoomCommit() {
+      reportPersistPhoto();
+    }
+
+    function resetReportCrop() {
+      reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+      const slider = document.getElementById('reportZoomSlider');
+      if (slider) slider.value = '1';
+      reportPersistPhoto();
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    // #report-photo-canvas 上のドラッグでトリミング位置（焦点）を調整する。
+    // #reportPreviewBox は再生成時も破棄されない固定要素なので、ここに一度だけイベント委譲で登録する。
+    function reportApplyPhotoDrag(dxPx, dyPx, boxW, boxH) {
+      if (!reportPhotoNaturalSize) return;
+      const { w: srcW, h: srcH } = reportPhotoNaturalSize;
+      const baseScale = Math.max(boxW / srcW, boxH / srcH);
+      const scale = baseScale * Math.max(1, reportPhotoCrop.zoom || 1);
+      const excessW = Math.max(0, srcW * scale - boxW);
+      const excessH = Math.max(0, srcH * scale - boxH);
+      if (excessW > 0) reportPhotoCrop.x = reportClamp01(reportPhotoCrop.x - dxPx / excessW);
+      if (excessH > 0) reportPhotoCrop.y = reportClamp01(reportPhotoCrop.y - dyPx / excessH);
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    function setupReportPhotoDrag() {
+      const box = document.getElementById('reportPreviewBox');
+      if (!box || box.dataset.dragBound) return;
+      box.dataset.dragBound = '1';
+      let dragging = false;
+      let lastX = 0, lastY = 0;
+
+      box.addEventListener('pointerdown', (ev) => {
+        const canvasEl = ev.target && ev.target.closest && ev.target.closest('#report-photo-canvas');
+        if (!canvasEl) return;
+        dragging = true;
+        lastX = ev.clientX; lastY = ev.clientY;
+        try { canvasEl.setPointerCapture(ev.pointerId); } catch (e) { /* 非対応環境は無視 */ }
+        ev.preventDefault();
+      });
+      box.addEventListener('pointermove', (ev) => {
+        if (!dragging) return;
+        const photoBox = document.getElementById('report-photo-box');
+        if (!photoBox) return;
+        const scale = reportComputePreviewScale() || 1;
+        const dx = (ev.clientX - lastX) / scale;
+        const dy = (ev.clientY - lastY) / scale;
+        lastX = ev.clientX; lastY = ev.clientY;
+        reportApplyPhotoDrag(dx, dy, photoBox.offsetWidth, photoBox.offsetHeight);
+        ev.preventDefault();
+      });
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        reportPersistPhoto();
+      };
+      box.addEventListener('pointerup', endDrag);
+      box.addEventListener('pointercancel', endDrag);
+      box.addEventListener('pointerleave', endDrag);
+    }
+    setupReportPhotoDrag();
 
     function reportDateStrFromInput() {
       const el = document.getElementById('reportDateInput');
@@ -4880,7 +5096,7 @@
     async function regenerateReportPreview() {
       const data = collectReportData();
       data.dateStr = reportDateStrFromInput();
-      const canvas = await buildReportHtml(data, reportPhotoDataUrl);
+      const canvas = await buildReportHtml(data, reportPhotoDataUrl, reportPhotoCrop);
       if (!canvas) return; // 大会未終了などでbuildReportHtml側が中止した場合
       reportMountPreview(canvas);
     }
@@ -4927,12 +5143,9 @@
       try {
         const resized = await reportResizePhotoFile(file);
         reportPhotoDataUrl = resized;
-        try {
-          localStorage.setItem(REPORT_PHOTO_KEY, resized);
-        } catch (e) {
-          console.warn('[イベントレポート] 写真のlocalStorage保存に失敗:', e);
-          await showAlert('写真は保存されませんが、レポート生成には使えます。');
-        }
+        reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // 新しい写真なのでクロップは初期化
+        reportPhotoSaveWarned = false;
+        reportPersistPhoto();
         updateReportPhotoButtons();
         await regenerateReportPreview();
       } catch (e) {
@@ -4944,6 +5157,7 @@
 
     function removeReportPhoto() {
       reportPhotoDataUrl = null;
+      reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
       try { localStorage.removeItem(REPORT_PHOTO_KEY); } catch (e) { console.warn('[イベントレポート] 写真の削除に失敗:', e); }
       updateReportPhotoButtons();
       void regenerateReportPreview();
