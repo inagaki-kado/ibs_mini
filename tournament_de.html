@@ -2758,7 +2758,12 @@
       const slotsPerBlock = P / colors.length;
       const byeMatchCount = slotsPerBlock / 2;
       const slots = new Array(P).fill(BYE);
-      colors.forEach((c, bi) => {
+      // ブラケットの並び順を blockMap のブロック文字(A→B→C→D)順に揃える。
+      // colors('赤','青','黄','緑') の固定順で詰めると、initApp() で A/B/C/D を
+      // シャッフル割当している都合上、参加者リストの表示順とブラケット順がズレる。
+      const orderedColors = [...colors].sort((a, b) =>
+        (blockMap[a] || a).localeCompare(blockMap[b] || b));
+      orderedColors.forEach((c, bi) => {
         const base = bi * slotsPerBlock;
         const ps = blockActivePositions[c].map(pos => blockData[c][pos]).filter(p => p);
         const realMatches = Math.max(0, ps.length - byeMatchCount);
