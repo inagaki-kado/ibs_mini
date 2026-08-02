@@ -1803,79 +1803,99 @@
 
       if (loserFinishes.includes('XF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せた。`,
-          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示した。`,
-          `敗れた${loser}も${bey}力強いXFで会場を沸かせた。`,
-          `敗れた${loser}も${bey}XFを決め意地を示した。`,
-          `敗れた${loser}も${bey}鋭いXFで一矢報いた。`,
-          `敗れた${loser}も${bey}XFの一撃で存在感を放った。`,
-          `敗れた${loser}も${bey}見事なXFを披露し健闘した。`,
-          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せた。`
+          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せ、`,
+          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示し、`,
+          `敗れた${loser}も${bey}力強いXFで会場を沸かせ、`,
+          `敗れた${loser}も${bey}XFを決めて意地を示し、`,
+          `敗れた${loser}も${bey}鋭いXFで一矢報い、`,
+          `敗れた${loser}も${bey}XFの一撃で存在感を放ち、`,
+          `敗れた${loser}も${bey}見事なXFを披露して健闘し、`,
+          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せ、`
         ]);
       }
       if (loserFinishes.includes('BF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}バーストを決める鋭さを見せた。`,
-          `敗れた${loser}も${bey}バーストを奪い意地を見せた。`,
-          `敗れた${loser}も${bey}鮮やかなバーストで反撃した。`,
-          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせた。`,
-          `敗れた${loser}も${bey}バーストを決め食い下がった。`,
-          `敗れた${loser}も${bey}バーストを奪う技巧を見せた。`,
-          `敗れた${loser}も${bey}見事なバーストで一矢報いた。`,
-          `敗れた${loser}も${bey}バーストを決め最後まで粘りを見せた。`
+          `敗れた${loser}も${bey}バーストを決める鋭さを見せ、`,
+          `敗れた${loser}も${bey}バーストを奪って意地を見せ、`,
+          `敗れた${loser}も${bey}鮮やかなバーストで反撃し、`,
+          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせ、`,
+          `敗れた${loser}も${bey}バーストを決めて食い下がり、`,
+          `敗れた${loser}も${bey}バーストを奪う技巧を見せ、`,
+          `敗れた${loser}も${bey}見事なバーストで一矢報い、`,
+          `敗れた${loser}も${bey}バーストを決めて最後まで粘りを見せ、`
         ]);
       }
       if (flow && (flow.pattern === 'comeback')) {
         // 逆転された＝敗者は先行していた
         return pickRandom([
-          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せた。`,
-          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せた。`,
-          `敗れた${loser}も${bey}試合序盤は主導権を握っていた。`,
-          `敗れた${loser}も${bey}一時は優勢に試合を進めていた。`,
-          `敗れた${loser}も${bey}先行してリードを広げる場面を作った。`,
-          `敗れた${loser}も${bey}序盤は攻勢を強め主導権を握った。`,
-          `敗れた${loser}も${bey}一時はリードを奪う展開を作った。`,
-          `敗れた${loser}も${bey}試合を優位に進める時間帯があった。`
+          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せ、`,
+          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せ、`,
+          `敗れた${loser}も${bey}試合序盤は主導権を握り、`,
+          `敗れた${loser}も${bey}一時は優勢に試合を進め、`,
+          `敗れた${loser}も${bey}先行してリードを広げる場面を作り、`,
+          `敗れた${loser}も${bey}序盤は攻勢を強めて主導権を握り、`,
+          `敗れた${loser}も${bey}一時はリードを奪う展開を作り、`,
+          `敗れた${loser}も${bey}試合を優位に進める時間帯を作り、`
         ]);
       }
       if (closeGame) {
         return pickRandom([
-          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じた。`,
-          `敗れた${loser}も${bey}わずか1点差まで肉薄した。`,
-          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せた。`,
-          `敗れた${loser}も${bey}僅差の勝負に持ち込んだ。`,
-          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫いた。`,
-          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せた。`
+          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じ、`,
+          `敗れた${loser}も${bey}わずか1点差まで肉薄し、`,
+          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せ、`,
+          `敗れた${loser}も${bey}僅差の勝負に持ち込み、`,
+          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫き、`,
+          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せ、`
         ]);
       }
       if (shutout) {
         return pickRandom([
-          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫いた。`,
-          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑んだ。`,
-          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さなかった。`,
-          `敗れた${loser}も${bey}果敢に食らいつく姿を見せた。`,
-          `敗れた${loser}も${bey}最後まで戦う姿勢を貫いた。`,
-          `敗れた${loser}も${bey}粘り強く食い下がった。`,
-          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せた。`,
-          `敗れた${loser}も${bey}真っ向勝負を最後まで貫いた。`
+          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫き、`,
+          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑み、`,
+          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さず、`,
+          `敗れた${loser}も${bey}果敢に食らいつく姿を見せ、`,
+          `敗れた${loser}も${bey}最後まで戦う姿勢を貫き、`,
+          `敗れた${loser}も${bey}粘り強く食い下がり、`,
+          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せ、`,
+          `敗れた${loser}も${bey}真っ向勝負を最後まで貫き、`
         ]);
       }
       return pickRandom([
-        `敗れた${loser}も${bey}随所に見せ場を作った。`,
-        `敗れた${loser}も${bey}好プレーで観客を沸かせた。`,
-        `敗れた${loser}も${bey}健闘が光る内容だった。`,
-        `敗れた${loser}も${bey}見応えのある試合を展開した。`,
-        `敗れた${loser}も${bey}実力の一端を示した。`,
-        `敗れた${loser}も${bey}力の拮抗した試合を演じた。`,
-        `敗れた${loser}も${bey}随所に好プレーを見せた。`,
-        `敗れた${loser}も${bey}持ち味を発揮する場面があった。`
+        `敗れた${loser}も${bey}随所に見せ場を作り、`,
+        `敗れた${loser}も${bey}好プレーで観客を沸かせ、`,
+        `敗れた${loser}も${bey}健闘が光り、`,
+        `敗れた${loser}も${bey}見応えのある試合を展開し、`,
+        `敗れた${loser}も${bey}実力の一端を示し、`,
+        `敗れた${loser}も${bey}力の拮抗した試合を演じ、`,
+        `敗れた${loser}も${bey}随所に好プレーを見せ、`,
+        `敗れた${loser}も${bey}持ち味を発揮する場面を作り、`
       ]);
     }
 
-    // 展開パターン別の総括1文を返す
-    function buildSummary(flow, gap, shutout) {
+    // 節目の試合（GF / GF RESET / WB FINAL / LB FINAL / 3位決定戦）のみ、
+    // 汎用まとめの代わりに次の段階を示すまとめ文を返す。通常回戦は null（従来の汎用まとめを使用）。
+    function buildRoundSummary(ctx) {
+      if (!ctx || !ctx.label) return null;
+      const w = ctx.winner;
+      switch (ctx.label) {
+        case 'GRAND FINAL':
+          return ctx.isGfResetTrigger
+            ? `${w}がブラケットリセットに成功し優勝決定戦へ持ち込んだ。`
+            : `${w}が優勝を飾った。`;
+        case 'GF RESET':       return `${w}が土壇場で優勝をもぎ取った。`;
+        case 'WB FINAL':       return `${w}がグランドファイナル進出を決めた。`;
+        case 'LB FINAL':       return `${w}が敗者側を勝ち上がりグランドファイナルへ駒を進めた。`;
+        case '3RD PLACE (LB)': return `${w}が3位入賞を確定させた。`;
+        default:               return null;
+      }
+    }
+
+    // 展開パターン別の総括1文を返す（節目の試合は回戦別のまとめを優先）
+    function buildSummary(flow, gap, shutout, roundCtx) {
+      const roundSummary = buildRoundSummary(roundCtx);
+      if (roundSummary) return roundSummary;
       const pattern = flow ? flow.pattern : null;
       if (pattern === 'comeback') {
         return pickRandom([
@@ -1956,11 +1976,18 @@
       const shutout = Math.min(wScore, lScore) === 0;
       const scoreText = `${wScore}－${lScore}`;
 
-      const styleText = {
-        attack: '怒涛のXFで畳み掛けて',
-        grind: '最後まで回転を残す粘りを見せて',
-        burst: 'バーストで一気に決めて',
-        balance: '堅実な戦いを見せて'
+      // 文1を1文に統合するため、連体形（〜した◯◯が）と連用形（〜し）の2種を用意する
+      const styleAdn = {
+        attack: '怒涛のXFで畳み掛けた',
+        grind: '最後まで回転を残す粘りを見せた',
+        burst: 'バーストで一気に決めた',
+        balance: '堅実な戦いを見せた'
+      }[style];
+      const styleRen = {
+        attack: '怒涛のXFで畳み掛け',
+        grind: '最後まで回転を残す粘りを見せ',
+        burst: 'バーストで一気に決め',
+        balance: '堅実な戦いを見せ'
       }[style];
       const closeText = shutout ? '完封の圧倒的な強さ'
         : gap === 1 ? '一歩も引かない攻防' : '実力を見せつけた';
@@ -1980,28 +2007,28 @@
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドを跳ね返す逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}と押し切った。`,
-          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
-          `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
+          `${flow.maxWinnerDeficit}点差を追う展開から、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ち。`,
+          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と値千金の逆転勝ち。`,
+          `一時は${flow.maxWinnerDeficit}点のリードを許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
           `${flow.maxWinnerDeficit}点のビハインドをはねのけ、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝利を収めた。`,
           `${data.loser}に${flow.maxWinnerDeficit}点先行を許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}まで追い上げ逆転に成功した。`,
           `序盤の劣勢をものともせず、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終盤${finishBey}${flow.finishPhrase}を決めて${scoreText}で逆転を果たした。`,
-          `${flow.maxWinnerDeficit}点差を最後にひっくり返したのは${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
-          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れが一変。${scoreText}で逆転勝利を手にした。`
+          `${flow.maxWinnerDeficit}点差を最後にひっくり返した${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
+          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れを変え${scoreText}で逆転勝利を手にした。`
         ]);
       } else if (flow && flow.pattern === 'seesaw') {
         const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `一進一退のシーソーゲームを制したのは${data.winner}。${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
-          `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
+          `一進一退のシーソーゲームを制した${data.winner}が、${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
+          `リードが目まぐるしく入れ替わる熱戦を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と制した。`,
           `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とものにした。`,
-          `一進一退の攻防を制したのは${data.winner}。${finishBey}${flow.finishPhrase}が${scoreText}の決め手となった。`,
+          `一進一退の攻防を制した${data.winner}が、${finishBey}${flow.finishPhrase}を決め手に${scoreText}とした。`,
           `目まぐるしくリードが入れ替わる展開の末、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`,
           `勝敗の行方が読めない拮抗した試合は、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし決着した。`,
-          `激しい主導権争いを制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
-          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし競り勝った。`
+          `激しい主導権争いを制した${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
+          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`
         ]);
       } else if (flow && flow.pattern === 'wire') {
         firstSentence = pickRandom([
@@ -2016,19 +2043,19 @@
         ]);
       } else {
         firstSentence = pickRandom([
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を下した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を突き放した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}見事に勝利を収めた。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}白星を積み重ねた。`,
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${scoreText}で${closeText}。${styleText}${data.loser}を退けた。`,
-          `${data.winner}が${scoreText}のスコアで${closeText}。${styleText}勝利をつかんだ。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}とし${closeText}。${styleText}実力の差を見せつけた。`,
-          `${scoreText}のスコアで${data.winner}が${closeText}。${styleText}${data.loser}に土をつけた。`
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${data.loser}を下した。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${closeText}。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${data.loser}を突き放した。`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${styleRen}${scoreText}と白星を積み重ねた。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で勝利を収めた。`,
+          `${scoreText}のスコアで${styleAdn}${data.winner}が${data.loser}に土をつけた。`,
+          `${styleAdn}${data.winner}が${scoreText}で${closeText}。`
         ]);
       }
       // ▲ 試合展開の分析ここまで
 
-      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout);
+      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout, data.roundCtx);
     }
 
     function sendMatchComment(comment, highlights) {
@@ -2077,6 +2104,12 @@
 
         // ▼ 試合コメント生成・送信
         const isP1Winner = (winnerVal === 1);
+        // 節目の試合でまとめ文を回戦別に差し替えるための情報。gf で p2（LB側）が勝つとGFリセットが発生する
+        const roundCtx = {
+          label: getDeRoundLabel(currentRemoteMatch.block, currentRemoteMatch.roundIdx, currentRemoteMatch.matchIdx),
+          winner: isP1Winner ? match.p1.name : match.p2.name,
+          isGfResetTrigger: (currentRemoteMatch.block === 'gf' && !isP1Winner)
+        };
         onMatchFinished({
           winner: isP1Winner ? match.p1.name : match.p2.name,
           loser:  isP1Winner ? match.p2.name : match.p1.name,
@@ -2086,7 +2119,8 @@
           finishHistory: isP1Winner ? [...remoteKimariteP1] : [...remoteKimariteP2],
           tournamentName: tournamentName,
           events: remoteMatchEvents.slice(),
-          winnerIsP1: isP1Winner
+          winnerIsP1: isP1Winner,
+          roundCtx: roundCtx
         }, match);
         // ▲ 試合コメント生成・送信ここまで
 
@@ -4091,6 +4125,21 @@
       return String(scoreStr).replace('-', '－');
     }
 
+    // match.score は常に「p1-p2」の生スコア。勝者視点（勝者-敗者）に組み替えてから表示用に整形する
+    function reportWinnerLoserScore(match) {
+      const parts = String((match && match.score) || '').split('-').map(n => parseInt(n, 10));
+      if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return { winnerScore: null, loserScore: null };
+      if (match.winner === 1) return { winnerScore: parts[0], loserScore: parts[1] };
+      if (match.winner === 2) return { winnerScore: parts[1], loserScore: parts[0] };
+      return { winnerScore: null, loserScore: null };
+    }
+
+    function reportFormatMatchScore(match) {
+      const { winnerScore, loserScore } = reportWinnerLoserScore(match);
+      if (winnerScore == null || loserScore == null) return reportFormatScore(match && match.score);
+      return reportFormatScore(`${winnerScore}-${loserScore}`);
+    }
+
     function reportFirstSentence(text) {
       if (!text) return '';
       const s = String(text).trim();
@@ -4229,6 +4278,7 @@
       }
       return out.map(s => ({
         rank: s.rank,
+        id: s.participant.id,
         name: s.participant.name || '',
         beys: (s.participant.beyblades || []).map(b => b && b.name).filter(Boolean)
       }));
@@ -4242,7 +4292,7 @@
       return {
         winner: w.name || '',
         loser: l.name || '',
-        score: reportFormatScore(champM.score),
+        score: reportFormatMatchScore(champM),
         isReset: !!(grandFinalReset && champM === grandFinalReset),
         comment: champM.comment || ''
       };
@@ -4268,7 +4318,7 @@
         const m = entry.match;
         const w = getW(m), l = getL(m);
         if (!w || !l) return false;
-        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatScore(m.score), note: reportRoundNote(entry) });
+        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatMatchScore(m), note: reportRoundNote(entry) });
         usedCategories.add(category);
         return true;
       };
@@ -4351,9 +4401,9 @@
       return { count, total, percent };
     }
 
-    // LB敗退ラウンド（＋GF/GFリセット）から「どこまで勝ち上がったか」の深さを算出し、
-    // 上位8名（ベスト8相当）で最も使われたBLADEパーツを一言メモにする
-    function getReportBestEightNote() {
+    // LB敗退ラウンド（＋GF/GFリセット/LB3rd）から「どこまで勝ち上がったか」の深さを算出する。
+    // 深いほど上位。getReportBestEightNote・getReportAllStandings・記録/オンリーワンの同順位判定で共有する
+    function getReportDepthMap() {
       const depth = {};
       (losersBracket || []).forEach((round, roundIdx) => {
         (round || []).forEach(m => {
@@ -4375,6 +4425,12 @@
         if (w3 && w3.id !== 'BYE') depth[w3.id] = lbRounds;
         if (l4 && l4.id !== 'BYE') depth[l4.id] = lbRounds - 0.5;
       }
+      return { depth, lbRounds };
+    }
+
+    // 上位8名（ベスト8相当）で最も使われたBLADEパーツを一言メモにする
+    function getReportBestEightNote() {
+      const { depth } = getReportDepthMap();
       const ranked = getReportEntrants()
         .filter(p => depth[p.id] != null)
         .sort((a, b) => depth[b.id] - depth[a.id])
@@ -4393,6 +4449,141 @@
       const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
       if (!top || top[1] < 2) return '';
       return `ベスト8では${top[0]}が${top[1]}名を占めた。`;
+    }
+
+    // 選手ごとの決まり手本数・完封勝ち・最長試合を集計し、各項目の1位を返す（該当者なしはnull）
+    function getReportRecords() {
+      const entries = getReportAllMatches().concat(getReportFinalMatches());
+      const finishCounts = { XF: {}, BF: {}, OF: {}, SF: {} };
+      const shutoutCounts = {};
+      let longest = null;
+
+      entries.forEach(entry => {
+        const m = entry.match;
+        if (m.p1 && m.p1.id !== 'BYE') {
+          parseKimariteStored(m.kimarite_p1).forEach(k => {
+            if (finishCounts[k]) finishCounts[k][m.p1.id] = (finishCounts[k][m.p1.id] || 0) + 1;
+          });
+        }
+        if (m.p2 && m.p2.id !== 'BYE') {
+          parseKimariteStored(m.kimarite_p2).forEach(k => {
+            if (finishCounts[k]) finishCounts[k][m.p2.id] = (finishCounts[k][m.p2.id] || 0) + 1;
+          });
+        }
+
+        const w = getW(m), l = getL(m);
+        const { winnerScore, loserScore } = reportWinnerLoserScore(m);
+        if (w && l && w.id !== 'BYE' && l.id !== 'BYE' && winnerScore != null) {
+          if (loserScore === 0) shutoutCounts[w.id] = (shutoutCounts[w.id] || 0) + 1;
+          const total = winnerScore + loserScore;
+          if (!longest || total > longest.total) {
+            longest = { total, name: `${w.name || ''} vs ${l.name || ''}` };
+          }
+        }
+      });
+
+      const entrants = getReportEntrants();
+      const nameOfId = (id) => { const p = entrants.find(e => e.id === id); return p ? (p.name || '') : ''; };
+      const { depth } = getReportDepthMap();
+
+      // 件数最大の選手を選ぶ。同数なら最終順位が上（depthが大きい）方を優先
+      const pickTop = (counts) => {
+        const list = Object.entries(counts).filter(([, v]) => v > 0);
+        if (!list.length) return null;
+        list.sort((a, b) => (b[1] - a[1]) || ((depth[b[0]] || -1) - (depth[a[0]] || -1)));
+        const [id, value] = list[0];
+        return { name: nameOfId(id), value };
+      };
+
+      const toEntry = (top, unit) => top ? { name: top.name, value: top.value, unit } : null;
+
+      return {
+        xf: toEntry(pickTop(finishCounts.XF), '本'),
+        bf: toEntry(pickTop(finishCounts.BF), '本'),
+        of: toEntry(pickTop(finishCounts.OF), '本'),
+        sf: toEntry(pickTop(finishCounts.SF), '本'),
+        shutout: toEntry(pickTop(shutoutCounts), '回'),
+        longest: longest ? { name: longest.name, value: longest.total, unit: '本' } : null
+      };
+    }
+
+    // ブレード・ラチェット・ビットの使用パーツ集合が最も他人と被らない選手を選出する（参加10名未満はnull）
+    function getReportOnlyOne() {
+      if (getReportEntrants().length < 10) return null;
+
+      const candidates = getReportEntrants().filter(p => (p.beyblades || []).length > 0);
+      const perPlayer = {};
+      candidates.forEach(p => {
+        const set = new Set();
+        (p.beyblades || []).forEach(bey => {
+          if (!bey || !bey.parts) return;
+          const blade = reportGetBladeName(bey);
+          if (blade) set.add('BLADE:' + blade);
+          if (bey.parts.RC2) set.add('RATCHET:' + bey.parts.RC2);
+          if (bey.parts.BT) set.add('BIT:' + bey.parts.BT);
+        });
+        perPlayer[p.id] = set;
+      });
+
+      const usageCount = {};
+      Object.values(perPlayer).forEach(set => set.forEach(part => { usageCount[part] = (usageCount[part] || 0) + 1; }));
+
+      const { depth } = getReportDepthMap();
+      let best = null;
+      candidates.forEach(p => {
+        const set = perPlayer[p.id];
+        if (!set || set.size === 0) return;
+        let sumOthers = 0, exclusiveCount = 0;
+        set.forEach(part => {
+          const others = (usageCount[part] || 1) - 1;
+          sumOthers += others;
+          if (others === 0) exclusiveCount++;
+        });
+        const avg = sumOthers / set.size;
+        const isBetter = !best
+          || avg < best.avg - 1e-9
+          || (Math.abs(avg - best.avg) < 1e-9 && exclusiveCount > best.exclusiveCount)
+          || (Math.abs(avg - best.avg) < 1e-9 && exclusiveCount === best.exclusiveCount && (depth[p.id] || -1) > (depth[best.id] || -1));
+        if (isBetter) best = { id: p.id, name: p.name || '', participant: p, avg, exclusiveCount, set };
+      });
+
+      if (!best || best.exclusiveCount === 0) return null;
+
+      const uniqueParts = Array.from(best.set)
+        .filter(part => (usageCount[part] || 0) === 1)
+        .map(part => part.replace(/^(BLADE|RATCHET|BIT):/, ''));
+
+      return {
+        name: best.name,
+        beys: (best.participant.beyblades || []).map(b => b && b.name).filter(Boolean),
+        totalParts: best.set.size,
+        uniqueParts,
+        uniqueCount: best.exclusiveCount
+      };
+    }
+
+    // 5位以下を、敗退の深さが同じ選手同士でグループ化して返す（1〜4位はgetReportStandings()が担当）
+    function getReportAllStandings() {
+      const top = getReportStandings();
+      const excludeIds = new Set(top.map(s => s.id));
+      const { depth } = getReportDepthMap();
+      const rest = getReportEntrants()
+        .filter(p => p.id !== 'BYE' && !excludeIds.has(p.id) && depth[p.id] != null)
+        .sort((a, b) => depth[b.id] - depth[a.id]);
+
+      const groups = [];
+      let rankCounter = top.length + 1;
+      let i = 0;
+      while (i < rest.length) {
+        let j = i + 1;
+        while (j < rest.length && depth[rest[j].id] === depth[rest[i].id]) j++;
+        const groupMembers = rest.slice(i, j);
+        const label = groupMembers.length > 1 ? `${rankCounter}位タイ` : `${rankCounter}位`;
+        groups.push({ label, names: groupMembers.map(p => p.name || '') });
+        rankCounter += groupMembers.length;
+        i = j;
+      }
+      return groups;
     }
 
     function getReportKimariteDist() {
@@ -4429,6 +4620,9 @@
       const bestEightNote = getReportBestEightNote();
       const kimariteDist = getReportKimariteDist();
       const kimariteNote = getReportKimariteNote(kimariteDist);
+      const records = getReportRecords();
+      const onlyOne = getReportOnlyOne();
+      const allStandings = getReportAllStandings();
       const entrants = getReportEntrants();
 
       return {
@@ -4442,11 +4636,151 @@
         cxRatio,
         bestEightNote,
         kimariteDist,
-        kimariteNote
+        kimariteNote,
+        records,
+        onlyOne,
+        allStandings
       };
     }
 
     window.collectReportData = collectReportData;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— 次回大会予定の取得
+    // ==========================================
+    const REPORT_NEXT_EVENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=0&single=true&output=csv';
+    const REPORT_NEXT_EVENT_WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+    // RFC4180相当のクォート対応CSVパーサ（ダブルクォート内のカンマ・改行・エスケープ"" を処理する）
+    function reportParseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = '';
+      let inQuotes = false;
+      const len = text.length;
+      let i = 0;
+      while (i < len) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+            inQuotes = false; i++; continue;
+          }
+          field += c; i++; continue;
+        }
+        if (c === '"') { inQuotes = true; i++; continue; }
+        if (c === ',') { row.push(field); field = ''; i++; continue; }
+        if (c === '\r') { i++; continue; }
+        if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+        field += c; i++;
+      }
+      row.push(field);
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      return rows;
+    }
+
+    function reportParseYmdSlash(str) {
+      const m = String(str || '').trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+      if (!m) return null;
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+
+    function reportParseYmdDash(str) {
+      const m = String(str || '').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (!m) return null;
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+
+    function reportFormatDateJpWithWeekday(date) {
+      return `${date.getMonth() + 1}月${date.getDate()}日（${REPORT_NEXT_EVENT_WEEKDAY_JA[date.getDay()]}）`;
+    }
+
+    // "18:20"→"18時20分" / "18:00"→"18時"。H:MM形式でなければそのまま返す
+    function reportFormatTimeJp(str) {
+      const s = String(str || '').trim();
+      const m = s.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return s;
+      const h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
+      return mi === 0 ? `${h}時` : `${h}時${mi}分`;
+    }
+
+    function reportBuildNextEventText(dateJp, eventNames, venue, startTimeRaw, receptionTimeRaw) {
+      let timeClause = '';
+      if (startTimeRaw && startTimeRaw.trim()) {
+        timeClause = `${reportFormatTimeJp(startTimeRaw)}開始予定`;
+        if (receptionTimeRaw && receptionTimeRaw.trim()) timeClause += `（受付${reportFormatTimeJp(receptionTimeRaw)}～）`;
+      } else if (receptionTimeRaw && receptionTimeRaw.trim()) {
+        timeClause = `受付${reportFormatTimeJp(receptionTimeRaw)}開始予定`;
+      }
+      const timeSentence = timeClause ? `${timeClause}です。` : '開催予定です。';
+      return `次回は${dateJp}${eventNames}、${venue}にて\n${timeSentence}`;
+    }
+
+    // 別スプレッドシート（次回大会予定用）をCSVで取得し、指定日より後で最も早い「公開」予定を返す。
+    // 会場の通信が不安定な状況で使うため、失敗時は必ずnullを返してレポート生成自体は止めない
+    async function fetchNextEvent(afterDateStr) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      let text;
+      try {
+        const res = await fetch(REPORT_NEXT_EVENT_CSV_URL, { signal: controller.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        text = await res.text();
+      } catch (e) {
+        console.warn('[イベントレポート] 次回大会予定の取得に失敗:', e);
+        return null;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      let rows;
+      try {
+        rows = reportParseCsv(text).slice(1); // ヘッダー除去
+      } catch (e) {
+        console.warn('[イベントレポート] 次回大会予定CSVの解析に失敗:', e);
+        return null;
+      }
+
+      const cutoff = reportParseYmdDash(afterDateStr) || new Date();
+      const candidates = [];
+      rows.forEach(r => {
+        if ((r[0] || '').trim() !== '公開') return;
+        const date = reportParseYmdSlash(r[2]);
+        if (!date || date.getTime() <= cutoff.getTime()) return;
+        candidates.push({ row: r, date });
+      });
+      if (!candidates.length) return null;
+
+      candidates.sort((a, b) => a.date.getTime() - b.date.getTime());
+      const earliestTime = candidates[0].date.getTime();
+      const sameDay = candidates.filter(c => c.date.getTime() === earliestTime).map(c => c.row);
+
+      const eventNames = sameDay.map(r => (r[1] || '').trim()).filter(Boolean).join('／');
+      const venue = (sameDay[0][11] || '').trim();
+      const startTimeRaw = (sameDay[0][4] || '').trim();
+      const receptionTimeRaw = (sameDay[0][3] || '').trim();
+      const dateJp = reportFormatDateJpWithWeekday(candidates[0].date);
+
+      return {
+        dateJp,
+        eventNames,
+        venue,
+        text: reportBuildNextEventText(dateJp, eventNames, venue, startTimeRaw, receptionTimeRaw)
+      };
+    }
+
+    window.fetchNextEvent = fetchNextEvent;
+
+    window.__reportDebug = {
+      getReportHeadline,
+      getReportHighlights,
+      getReportStandings,
+      getReportRecords,
+      getReportOnlyOne,
+      getReportAllStandings,
+      fetchNextEvent,
+      collectReportData
+    };
 
     // ==========================================
     // イベントレポート（PNG新聞）— 紙面レンダリング
