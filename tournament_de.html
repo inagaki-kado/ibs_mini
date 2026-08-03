@@ -4521,7 +4521,9 @@
       });
 
       const entrants = getReportEntrants();
-      const nameOfId = (id) => { const p = entrants.find(e => e.id === id); return p ? (p.name || '') : ''; };
+      // Object.entries()から取り出すidは必ず文字列になる。participant.idは数値(pidCounter由来)のため
+      // String()で揃えないと常に不一致になり選手名が空になる
+      const nameOfId = (id) => { const p = entrants.find(e => String(e.id) === String(id)); return p ? (p.name || '') : ''; };
       const { depth } = getReportDepthMap();
 
       // 件数最大の選手を選ぶ。同数なら最終順位が上（depthが大きい）方を優先
@@ -4907,7 +4909,7 @@
         : `${reportEscapeHtml(data.dateStr)}　DATA & DIGEST`;
       return `
         <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-top:3px solid #14161a; border-bottom:1px solid #14161a; padding:10px 2px;">
-          <div id="report-nameband-title-${page}" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:20px; line-height:1.4; color:#14161a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
+          <div id="report-nameband-title-${page}" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:20px; line-height:1.6; color:#14161a; white-space:nowrap; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; color:#57534e; white-space:nowrap; flex:none; margin-left:12px;">${rightText}</div>
         </div>`;
     }
@@ -4920,7 +4922,7 @@
         title.style.fontSize = size + 'px';
         if (title.scrollWidth <= title.clientWidth) break;
       }
-      // 最小サイズでも収まらない場合は CSS の text-overflow:ellipsis に委ねる
+      // text-overflow:ellipsisはhtml2canvasが再現できないため使わない。最小サイズでも収まらない場合はそのまま右に伸びる
     }
 
     const REPORT_HEADLINE_TITLES_NORMAL = [
@@ -4974,12 +4976,26 @@
       return `${pickRandom(openings)(h)}${pickRandom(closings)}`;
     }
 
+    // generateLocalComment() が埋め込むスコアは p1−p2 順のため、勝者がp2の試合では
+    // 見出し（勝者−敗者順）と食い違う。逆順パターンが含まれる場合のみ入れ替える。
+    // reportFormatScore()は全角マイナス「－」(U+FF0D)を使うため、それを含む区切り文字を対象にする
+    function reportFixCommentScore(comment, h) {
+      if (!comment || !h) return comment;
+      const parts = String(h.score || '').split(/[－−\-–—]/);
+      if (parts.length !== 2) return comment;
+      const [win, lose] = parts.map(s => s.trim());
+      if (!win || !lose || win === lose) return comment;
+      const reversed = new RegExp(`${lose}\\s*([－−\\-–—])\\s*${win}`, 'g');
+      return comment.replace(reversed, `${win}$1${lose}`);
+    }
+
     function reportBuildHeadline(data) {
       if (!data.headline) return '';
       const h = data.headline;
       const label = h.isReset ? 'GRAND FINAL RESET' : 'GRAND FINAL';
       const title = reportBuildHeadlineTitle(h);
-      const comment = (h.comment && h.comment.trim()) ? h.comment.trim() : reportBuildFallbackComment(h);
+      const rawComment = (h.comment && h.comment.trim()) ? h.comment.trim() : reportBuildFallbackComment(h);
+      const comment = reportFixCommentScore(rawComment, h);
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:8px;">${label}</div>
@@ -4996,8 +5012,8 @@
         const beysText = (s.beys || []).join('　／　');
         return `
           <div style="display:flex; align-items:center; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #d6d1c4;'}">
-            <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; line-height:1.4; font-weight:700; color:${rankColor};">${s.rank}</div>
-            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.4; font-weight:700; color:#14161a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
+            <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:${rankColor};">${s.rank}</div>
+            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:#14161a; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
             <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#3f3f46; white-space:normal; line-height:1.5;">${reportEscapeHtml(beysText)}</div>
           </div>`;
       }).join('');
@@ -5018,7 +5034,7 @@
           el.style.fontSize = size + 'px';
           if (el.scrollWidth <= el.clientWidth) break;
         }
-        // 最小サイズでも収まらない場合は CSS の nowrap + ellipsis を最終手段として維持
+        // text-overflow:ellipsisはhtml2canvasが再現できないため使わない。最小サイズでも収まらない場合はそのまま右に伸びる
       });
     }
 
@@ -5124,16 +5140,16 @@
         </div>`;
     }
 
-    function reportBuildPartsCard(label, items) {
+    function reportBuildPartsCard(label, items, category) {
       const rows = (items || []).map((item, idx) => {
         const rankColor = idx === 0 ? '#a8321e' : '#a8a29e';
         return `
           <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0;">
             <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-              <span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.4; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
-              <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.4; color:#14161a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${reportEscapeHtml(item.name)}</span>
+              <span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
+              <span id="report-part-${category}-${idx}" style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.6; color:#14161a; white-space:nowrap; flex:1 1 auto; min-width:0;">${reportEscapeHtml(item.name)}</span>
             </div>
-            <span style="font-family:'Orbitron', sans-serif; font-size:16px; line-height:1.4; color:#57534e; flex:none; margin-left:8px;">${item.count}</span>
+            <span style="font-family:'Orbitron', sans-serif; font-size:16px; line-height:1.6; color:#57534e; flex:none; margin-left:8px;">${item.count}</span>
           </div>`;
       }).join('');
       return `
@@ -5143,12 +5159,28 @@
         </div>`;
     }
 
+    // パーツ名が枠幅を超える場合にフォントを段階的に縮小する
+    // （text-overflow:ellipsis は html2canvas が再現できないため使わない）
+    function reportFitPartsNames(data) {
+      const pr = data.partsRanking || {};
+      ['blade', 'ratchet', 'bit'].forEach(cat => {
+        (pr[cat] || []).forEach((item, idx) => {
+          const el = document.getElementById(`report-part-${cat}-${idx}`);
+          if (!el) return;
+          for (const size of [16, 14, 12]) {
+            el.style.fontSize = size + 'px';
+            if (el.scrollWidth <= el.clientWidth) break;
+          }
+        });
+      });
+    }
+
     function reportBuildParts(data) {
       const pr = data.partsRanking || { blade: [], ratchet: [], bit: [] };
       const cards = [
-        reportBuildPartsCard('BLADE', pr.blade),
-        reportBuildPartsCard('RATCHET', pr.ratchet),
-        reportBuildPartsCard('BIT', pr.bit)
+        reportBuildPartsCard('BLADE', pr.blade, 'blade'),
+        reportBuildPartsCard('RATCHET', pr.ratchet, 'ratchet'),
+        reportBuildPartsCard('BIT', pr.bit, 'bit')
       ].join('');
       const cx = data.cxRatio || { count: 0, total: 0, percent: 0 };
       let noteText = `CXライン採用率 ${cx.percent}%（${cx.total}名中${cx.count}名）。`;
@@ -5189,13 +5221,13 @@
         const percent = percents[code];
         const showLabel = percent >= 5;
         return `
-          <div style="flex:${count}; background:${REPORT_KIMARITE_BAR_COLORS[code]}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-            ${showLabel ? `<span style="font-family:'Orbitron', sans-serif; font-size:14px; font-weight:700; color:#ffffff; white-space:nowrap;">${code} ${percent}%</span>` : ''}
+          <div style="flex:${count}; background:${REPORT_KIMARITE_BAR_COLORS[code]}; display:flex; align-items:center; justify-content:center;">
+            ${showLabel ? `<span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:#ffffff; white-space:nowrap;">${code} ${percent}%</span>` : ''}
           </div>`;
       }).join('');
       return `
         <div style="flex:0 0 auto; margin-top:12px;">
-          <div style="height:26px; border-radius:5px; overflow:hidden; display:flex; border:1px solid #14161a;">${segs}</div>
+          <div style="height:34px; border-radius:5px; overflow:hidden; display:flex; border:1px solid #14161a;">${segs}</div>
           <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:8px;">${reportEscapeHtml(data.kimariteNote || '')}</div>
         </div>`;
     }
@@ -5289,17 +5321,16 @@
       const hasNote = !!(noteText && noteText.trim());
       const hasNext = !!(nextEventText && nextEventText.trim());
       if (!hasNote && !hasNext) return '';
+      // <br>変換ではなくwhite-space:pre-wrapで改行を扱う。html2canvasでの折り返し行ずれを避けるため
       const noteHtml = hasNote
-        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.8; color:#3f3f46;">${reportEscapeHtml(noteText.trim()).replace(/\n/g, '<br>')}</div>`
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.8; color:#3f3f46; white-space:pre-wrap; text-indent:0; margin:0;">${reportEscapeHtml(noteText.trim())}</div>`
         : '';
       const nextHtml = hasNext
-        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#14161a; margin-top:10px;">${reportEscapeHtml(nextEventText.trim()).replace(/\n/g, '<br>')}</div>`
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#14161a; margin-top:10px; white-space:pre-wrap; text-indent:0;">${reportEscapeHtml(nextEventText.trim())}</div>`
         : '';
       return `
         <div style="flex:1 1 auto; background:#ffffff; border:1px solid #d6d1c4; padding:12px 15px;">
-          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">編集後記</div>
-          ${noteHtml}
-          ${nextHtml}
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">編集後記</div>${noteHtml}${nextHtml}
         </div>`;
     }
 
@@ -5369,6 +5400,7 @@
       reportFitNameBand(2);
       reportFitStandingsNames(data);
       reportFitStandingsRows(data);
+      reportFitPartsNames(data);
 
       [canvas1, canvas2].forEach((canvas, idx) => {
         const overflow = canvas.scrollHeight - 1350;
