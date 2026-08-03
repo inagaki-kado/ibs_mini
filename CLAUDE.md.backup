@@ -130,8 +130,6 @@
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
-| `maintitle_white.png` | クラブロゴ（白抜き・945×945、透明余白あり） | — |
-| `maintitle_white_trim.png` | 同ロゴの透明余白除去版（773×481）。**イベントレポート専用**。削除禁止 | — |
 
 ---
 
@@ -160,10 +158,6 @@
 - **PeerJS v1.5.2** (CDN) — `https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js`
 - **Orbitron** (Google Fonts) — 英数字UI用
 - **Noto Sans JP** (Google Fonts) — 日本語UI用
-
-### tournament_de.html 専用
-- **html2canvas 1.4.1** (CDN) — イベントレポートのPNG生成
-  `https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js`
 
 ### score.html 専用
 - **Chakra Petch** (Google Fonts) — スコアボード用
@@ -243,21 +237,6 @@
 - `fetch('parts.csv')` はローカルの `file://` では動作しない
 - 開発時は **Live Server**（VS Code 拡張等）でサーバー経由アクセスすること
 
-### 6. localStorage キーの分離
-
-`tournament_de.html` のイベントレポート機能は、大会本体とは**別のキー**にデータを保存する。
-
-| キー | 内容 |
-|---|---|
-| `tbh_tournament_de` | 大会状態（`saveState()` / `loadState()`） |
-| `tbh_de_report_photo` | 記念撮影写真（dataURL + クロップ情報） |
-| `tbh_de_report_note` | 編集後記のテキスト |
-
-- **写真・編集後記を `tbh_tournament_de` に混ぜてはならない。** 写真は圧縮後でも300KB前後あり、
-  混ぜると localStorage の容量上限に達したとき**大会データごと保存に失敗する**
-- レポート機能の実装時に `saveState()` / `loadState()` を変更しないこと
-- **写真データを PeerJS メッセージや Google Sheets の同期ペイロードに含めないこと**
-
 ---
 
 ## PeerJS REMOTE_CMD コマンド一覧
@@ -329,52 +308,6 @@
 - 手動入替: **WT R1 のみ**（`winnersBracket[0]`）
 - TVモード: `buildTvTournamentHtml()` は WB/LB 2カラム + FINAL STAGE
 
-### イベントレポート機能
-
-大会終了後、その日の戦績・使用パーツ・記念写真をまとめた**新聞スタイルのPNG画像を2枚**生成する。
-
-- 出力: **1200×1350 × 2枚**（`{大会名}_report_{YYYYMMDD}_p1.png` / `_p2.png`）
-- 起動: `resultsModal` 内の「📰 EVENT REPORT」ボタン → `openReportModal()`
-- 紙面要素: `#report-canvas-1` / `#report-canvas-2`（`position:absolute; left:-9999px` でオフスクリーン保持）
-
-**紙面構成**
-
-| 枚目 | セクション |
-|---|---|
-| 1 | マストヘッド（黒帯＋ロゴ）／大会名帯／見出し記事／FINAL STANDINGS（1〜4位＋使用ベイ）／本日の激闘／記念撮影写真 |
-| 2 | マストヘッド（簡略）／大会名帯／本日のパーツ事情＋決まり手バー／本日の記録／本日のオンリーワン／全参加者最終順位／編集後記 |
-
-**主要関数**
-
-| 関数 | 役割 |
-|---|---|
-| `collectReportData()` | 紙面用データの集約 |
-| `getReportHighlights()` | 「本日の激闘」抽出（フルスコア／大逆転／番狂わせ／完封／XF連発） |
-| `getReportRecords()` | 決まり手別の最多記録・完封勝ち・最長試合 |
-| `getReportOnlyOne()` | 最も他人と被らないパーツ構成の選手 |
-| `getReportAllStandings()` | 5位以下の同順位グループ |
-| `fetchNextEvent()` | 次回大会予定の取得（別スプレッドシート） |
-| `buildReportHtml()` | 紙面2枚の生成。戻り値は `[canvas1, canvas2]` |
-| `reportCapturePng(pageNum)` | html2canvas でPNG化 |
-
-**⚠️ 実装上の必須制約**
-
-- **紙面内で使えないCSS**: `box-shadow` / `text-shadow` / `filter` / `backdrop-filter` /
-  グラデーション / CSS変数 / Tailwind クラス。html2canvas が再現できず紙面が崩れる。
-  紙面はインラインstyleで単色のみを使うこと
-- **`await document.fonts.ready` を必ず挟む**。フォント読み込み前に幅を実測すると、
-  フォールバックフォントの幅で判定してしまい「初回だけレイアウトが崩れる」不具合になる
-- **撮影前に `transform` を解除する**。プレビューは `scale()` で縮小表示しているため、
-  解除せずに撮ると縮小されたPNGが出る
-- 各セクションに **`flex:0 0 auto`** を付ける。付けないとコンテンツ超過時にセクションが
-  押し潰され、`scrollHeight` が1350のままになり**超過を検知できない**
-- ロゴは **`maintitle_white_trim.png`** を使う。元の `maintitle_white.png` は945×945で
-  透明余白が大きく、`height` 指定すると実寸が約半分に見える
-- **紙面は新聞配色（明るい背景）だが、アプリ本体のUIはサイバーダークのまま。**
-  紙面の配色をモーダルやボタンに波及させないこと
-- ロゴが白抜きのため、**マストヘッドのみ黒帯（`#14161a`）**にしている。
-  明るい背景の上にロゴを置かないこと
-
 ### 保守方針
 
 - **新規DE機能は `tournament_de.html` に追加**。`tournament.html` に DE モードを統合しない
@@ -412,7 +345,6 @@
 | サービス | 用途 |
 |---|---|
 | **Google Sheets** | player_stats・BP計算・イベント履歴のデータバックエンド（CSV公開URL経由）|
-| **Google Sheets（大会予定）** | イベントレポートの次回大会予告。**`player_stats.html` とは別のスプレッドシート**。CSV公開URL経由・5秒タイムアウト・失敗時はフォールバック |
 | **PeerJS v1.5.2** | アプリ間リアルタイム通信 |
 | **OBS** | 配信。score.htmlをブラウザソースとして使用 |
 | **Tonamel** | 事前参加登録・公開イベントページのみ（API連携なし） |
@@ -477,11 +409,9 @@
 | 機能 | 対象ファイル | ステータス |
 |---|---|---|
 | DE: LB未対戦優先落下順 | `tournament_de.html` | 📋 検討中 |
-| 決まり手トラッキング | `tournament_de.html` | ✅ 実装済（レポートで決まり手分布・記録を集計） |
-| 決まり手統計（フィニッシュタイプ別） | `tournament_de.html` | ✅ 実装済（イベントレポート内。`player_stats.html` 側は未着手のため別行） |
-| 決まり手統計（ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
+| 決まり手トラッキング | `tournament.html`, `player_stats.html`, Google Sheets | 🔍 調査中 |
+| 決まり手統計（フィニッシュタイプ別・ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
 | PeerJS URL parameter自動接続（`score.html?peer=1234`） | `score.html` | ✅ 実装済 |
 | PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中 |
 | BX-09 Battle Pass Bluetooth連携 | — | 🔍 Bluefy経由で調査中 |
 | クラブ間リーグ提案 | `showcase.html` | 📋 企画中 |
-| レポート機能の他アプリ展開（`tournament.html` / `souatari.html`） | 各管理アプリ | 📋 検討中 |
