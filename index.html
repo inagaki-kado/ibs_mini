@@ -898,7 +898,8 @@
   .history-toggle {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.8rem;
     cursor: pointer;
     user-select: none;
     padding: 0.9rem 1.2rem;
@@ -925,12 +926,16 @@
     font-family: 'Rajdhani', sans-serif;
     font-size: 0.85rem;
     font-weight: 700;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-dim);
+    min-width: 0;
+    flex: 1 1 auto;
   }
   .history-toggle-count {
     margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
     font-family: 'Orbitron', monospace;
     font-size: 0.75rem;
     color: var(--neon-pink);
@@ -950,7 +955,7 @@
     border: 1px solid rgba(236,72,153,0.12);
     overflow: hidden;
     display: grid;
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 90px minmax(0, 1fr);
     position: relative;
     transition: border-color 0.3s, box-shadow 0.3s;
   }
@@ -1021,6 +1026,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
+    min-width: 0;
+    overflow: hidden;
   }
   .history-kind {
     font-family: 'Rajdhani', sans-serif;
@@ -1036,6 +1043,9 @@
     font-weight: 700;
     color: #fff;
     line-height: 1.3;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .history-meta-row {
     display: flex;
@@ -1050,6 +1060,8 @@
     padding: 0.15rem 0.5rem;
     border: 1px solid;
     text-transform: uppercase;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
   .history-tag.blue  { color: var(--neon-blue);  border-color: rgba(14,165,233,0.3);  background: rgba(14,165,233,0.05); }
   .history-tag.green { color: var(--neon-green); border-color: rgba(0,255,136,0.3);   background: rgba(0,255,136,0.05); }
@@ -1057,7 +1069,7 @@
 
   .history-results {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.4rem;
   }
   .history-result-item {
@@ -1066,6 +1078,8 @@
     background: rgba(0,0,0,0.2);
     padding: 0.35rem 0.5rem;
     border-left: 2px solid;
+    min-width: 0;
+    overflow: hidden;
   }
   .history-result-item.rank-1 { border-color: var(--neon-yellow); }
   .history-result-item.rank-2 { border-color: #b0bec5; }
@@ -1116,6 +1130,7 @@
     font-size: 0.82rem;
     font-weight: 700;
     color: #fff;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1133,6 +1148,8 @@
     padding: 0.5rem 0.8rem;
     font-size: 0.78rem;
     color: #fff;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .history-empty {
@@ -1151,8 +1168,180 @@
     letter-spacing: 0.1em;
   }
 
+
+  /* ─── EVENT REPORT ─── */
+  #event-report { background: var(--bg3); }
+
+  .report-event-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .report-event-name .report-event-date {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.78rem;
+    color: var(--neon-yellow);
+    opacity: 0.85;
+  }
+
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+  .report-card {
+    position: relative;
+    display: block;
+    min-width: 0;
+    border: 1px solid rgba(250,204,21,0.3);
+    background: rgba(250,204,21,0.03);
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .report-card:hover {
+    border-color: rgba(250,204,21,0.7);
+    box-shadow: 0 0 26px rgba(250,204,21,0.15);
+    transform: translateY(-3px);
+  }
+  .report-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+  .report-card-label {
+    position: absolute;
+    top: 0.9rem; left: 0.9rem;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--neon-yellow);
+    background: rgba(4,7,15,0.8);
+    border: 1px solid rgba(250,204,21,0.4);
+    padding: 0.2rem 0.55rem;
+    pointer-events: none;
+  }
+  .report-card-hint {
+    position: absolute;
+    bottom: 0.9rem; right: 0.9rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text);
+    background: rgba(4,7,15,0.75);
+    padding: 0.15rem 0.5rem;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  /* ─── REPORT LIGHTBOX ─── */
+  .report-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(4,7,15,0.94);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 3.2rem 1rem 3.4rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .report-lightbox.open { display: flex; }
+  .report-lb-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid rgba(250,204,21,0.35);
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .report-lb-btn {
+    position: absolute;
+    background: rgba(4,7,15,0.7);
+    border: 1px solid rgba(250,204,21,0.35);
+    color: var(--neon-yellow);
+    font-family: 'Orbitron', monospace;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .report-lb-btn:hover { background: rgba(250,204,21,0.15); border-color: rgba(250,204,21,0.7); }
+  .report-lb-close {
+    top: 0.7rem; right: 0.8rem;
+    font-size: 1.5rem;
+    width: 2.4rem; height: 2.4rem;
+  }
+  .report-lb-nav {
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.8rem;
+    width: 2.6rem; height: 3.6rem;
+  }
+  .report-lb-nav.prev { left: 0.6rem; }
+  .report-lb-nav.next { right: 0.6rem; }
+  .report-lb-caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0.7rem;
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    padding: 0 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .report-lb-caption a {
+    color: var(--neon-yellow);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(250,204,21,0.4);
+  }
+
+  /* 開催履歴カード内のレポートチップ */
+  .history-name-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.5rem;
+    min-width: 0;
+  }
+  .history-report-chip {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--neon-yellow);
+    border: 1px solid rgba(250,204,21,0.45);
+    background: rgba(250,204,21,0.08);
+    padding: 0.12rem 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .history-report-chip:hover {
+    background: rgba(250,204,21,0.2);
+    border-color: rgba(250,204,21,0.8);
+  }
+
   @media (max-width: 600px) {
-    .history-card { grid-template-columns: 1fr; }
+    .history-card { grid-template-columns: minmax(0, 1fr); }
     .history-date-block {
       border-right: none;
       border-bottom: 1px solid rgba(236,72,153,0.12);
@@ -1162,6 +1351,17 @@
       align-items: center;
       padding: 0.8rem 1rem;
     }
+    .history-body { padding: 0.9rem 0.9rem; }
+    .history-results { grid-template-columns: minmax(0, 1fr); }
+    .history-result-name-link,
+    .history-result-team { white-space: normal; overflow-wrap: anywhere; }
+    .history-result-bey { white-space: normal; overflow-wrap: anywhere; }
+    .history-toggle { padding: 0.9rem 1rem; }
+    .history-toggle-label { letter-spacing: 0.06em; font-size: 0.82rem; }
+
+    .report-grid { grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
+    .report-lightbox { padding: 3rem 0.5rem 3.2rem; }
+    .report-lb-nav { width: 2.2rem; height: 3rem; font-size: 1.5rem; }
   }
 </style>
 </head>
@@ -1286,6 +1486,17 @@
   </div>
 </section>
 
+<!-- EVENT REPORT -->
+<section id="event-report" style="display:none;">
+  <div class="section-inner">
+    <p class="section-label reveal">// EVENT REPORT</p>
+    <h2 class="section-title reveal">大会レポート</h2>
+    <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-yellow), transparent);"></div>
+    <div class="report-event-name reveal" id="report-event-name"></div>
+    <div class="report-grid reveal" id="report-grid"></div>
+  </div>
+</section>
+
 <!-- EVENTS -->
 <section id="events">
   <div class="section-inner">
@@ -1386,6 +1597,18 @@
     </div>
   </div>
 </section>
+
+<!-- REPORT LIGHTBOX -->
+<div class="report-lightbox" id="report-lightbox" onclick="closeReportLightbox(event)">
+  <button class="report-lb-btn report-lb-close" onclick="closeReportLightbox()" aria-label="閉じる">×</button>
+  <button class="report-lb-btn report-lb-nav prev" id="report-lb-prev" onclick="stepReport(event,-1)" aria-label="前の画像">‹</button>
+  <img class="report-lb-img" id="report-lb-img" src="" alt="大会レポート">
+  <button class="report-lb-btn report-lb-nav next" id="report-lb-next" onclick="stepReport(event,1)" aria-label="次の画像">›</button>
+  <div class="report-lb-caption">
+    <span id="report-lb-title"></span>
+    <a id="report-lb-raw" href="#" target="_blank" rel="noopener" onclick="event.stopPropagation()">原寸で開く ↗</a>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
@@ -1733,7 +1956,136 @@ const HCOL = {
   rank3:        9,
   rank4:        10,
   comment:      11,
+  report1:      12,
+  report2:      13,
 };
+
+// ─── EVENT REPORT / LIGHTBOX ──────────────────────────
+// 各カードのレポート画像セットを登録し、インデックスでライトボックスから参照する
+let reportSets = [];
+let reportLbSet = null;
+let reportLbIndex = 0;
+
+function registerReportSet(title, urls) {
+  reportSets.push({ title: title, urls: urls });
+  return reportSets.length - 1;
+}
+
+function openReportLightbox(setIndex, imgIndex) {
+  const set = reportSets[setIndex];
+  if (!set || !set.urls.length) return;
+  reportLbSet = set;
+  reportLbIndex = Math.max(0, Math.min(imgIndex || 0, set.urls.length - 1));
+  updateReportLightbox();
+  document.getElementById('report-lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function updateReportLightbox() {
+  if (!reportLbSet) return;
+  const url = reportLbSet.urls[reportLbIndex];
+  const multi = reportLbSet.urls.length > 1;
+  document.getElementById('report-lb-img').src = url;
+  document.getElementById('report-lb-title').textContent =
+    `${reportLbSet.title}　レポート${reportLbIndex + 1} / ${reportLbSet.urls.length}`;
+  document.getElementById('report-lb-raw').href = url;
+  document.getElementById('report-lb-prev').style.display = multi ? '' : 'none';
+  document.getElementById('report-lb-next').style.display = multi ? '' : 'none';
+}
+
+function stepReport(e, dir) {
+  if (e) e.stopPropagation();
+  if (!reportLbSet) return;
+  const n = reportLbSet.urls.length;
+  reportLbIndex = (reportLbIndex + dir + n) % n;
+  updateReportLightbox();
+}
+
+function closeReportLightbox(e) {
+  // 画像そのものをタップした場合は閉じない
+  if (e && e.target && e.target.id === 'report-lb-img') return;
+  document.getElementById('report-lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('report-lightbox');
+  if (!lb || !lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeReportLightbox();
+  else if (e.key === 'ArrowLeft')  stepReport(null, -1);
+  else if (e.key === 'ArrowRight') stepReport(null, 1);
+});
+
+// スワイプ送り（iOS/Android）
+(function () {
+  let sx = 0, sy = 0;
+  document.addEventListener('touchstart', e => {
+    const lb = document.getElementById('report-lightbox');
+    if (!lb || !lb.classList.contains('open')) return;
+    sx = e.changedTouches[0].clientX;
+    sy = e.changedTouches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const lb = document.getElementById('report-lightbox');
+    if (!lb || !lb.classList.contains('open')) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) stepReport(null, dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+
+// レポート画像が読めなかった場合はその要素を隠す（X画像のリンク切れ対策）
+function hideBrokenReport(el) {
+  const card = el.closest('.report-card');
+  if (card) card.style.display = 'none';
+  const grid = document.getElementById('report-grid');
+  const section = document.getElementById('event-report');
+  if (grid && section && !grid.querySelector('.report-card:not([style*="none"])')) {
+    section.style.display = 'none';
+  }
+}
+
+// 最新のレポート付き大会を EVENT REPORT セクションに表示（日付降順ソート済みの rows を渡す）
+function renderLatestReport(rows) {
+  const section = document.getElementById('event-report');
+  const grid    = document.getElementById('report-grid');
+  const nameEl  = document.getElementById('report-event-name');
+  if (!section || !grid) return;
+
+  const row = rows.find(r =>
+    ((r[HCOL.report1] || '').trim() || (r[HCOL.report2] || '').trim())
+  );
+  if (!row) { section.style.display = 'none'; return; }
+
+  const name    = (row[HCOL.name] || '').trim();
+  const dateStr = (row[HCOL.date] || '').trim();
+  const urls = [
+    (row[HCOL.report1] || '').trim(),
+    (row[HCOL.report2] || '').trim()
+  ].filter(Boolean);
+
+  const setIndex = registerReportSet(name, urls);
+
+  let dateLabel = '';
+  const d = new Date(dateStr.replace(/\//g, '-'));
+  if (!isNaN(d)) {
+    dateLabel = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  nameEl.innerHTML =
+    `<span>${escapeHtml(name)}</span>` +
+    (dateLabel ? `<span class="report-event-date">${dateLabel}</span>` : '');
+
+  grid.innerHTML = urls.map((u, i) => `
+    <div class="report-card" onclick="openReportLightbox(${setIndex}, ${i})">
+      <img src="${escapeHtml(u)}" alt="${escapeHtml(name)} レポート${i + 1}" loading="lazy" onerror="hideBrokenReport(this)">
+      <div class="report-card-label">REPORT ${i + 1}</div>
+      <div class="report-card-hint">タップで拡大</div>
+    </div>
+  `).join('');
+
+  section.style.display = '';
+}
 
 function renderHistoryCard(row) {
   const name         = (row[HCOL.name]         || '').trim();
@@ -1748,6 +2100,18 @@ function renderHistoryCard(row) {
   const rank3        = (row[HCOL.rank3]        || '').trim();
   const rank4        = (row[HCOL.rank4]        || '').trim();
   const comment      = (row[HCOL.comment]      || '').trim();
+  const reportUrls   = [
+    (row[HCOL.report1] || '').trim(),
+    (row[HCOL.report2] || '').trim()
+  ].filter(Boolean);
+
+  let reportChips = '';
+  if (reportUrls.length) {
+    const setIndex = registerReportSet(name, reportUrls);
+    reportChips = reportUrls.map((u, i) =>
+      `<span class="history-report-chip" onclick="openReportLightbox(${setIndex}, ${i})">📰 レポート${i + 1}</span>`
+    ).join('');
+  }
 
   let dateDisplay = { year: '', month: '---', day: '--', dow: '-' };
   if (dateStr) {
@@ -1781,7 +2145,10 @@ function renderHistoryCard(row) {
     </div>
     <div class="history-body">
       ${kind ? `<div class="history-kind">${kind}</div>` : ''}
-      <div class="history-name">${name}</div>
+      <div class="history-name-row">
+        <div class="history-name">${name}</div>
+        ${reportChips}
+      </div>
       <div class="history-meta-row">
         ${format       ? `<span class="history-tag blue">${format}</span>` : ''}
         ${stadium      ? `<span class="history-tag green">${stadium}</span>` : ''}
@@ -1856,7 +2223,16 @@ async function loadHistory() {
       countEl.textContent = '0 件';
       return;
     }
-    countEl.textContent = `${rows.length} 件`;
+
+    // 最新のレポート付き大会を EVENT REPORT セクションへ
+    reportSets = [];
+    renderLatestReport(rows);
+
+    const reportCount = rows.filter(r =>
+      ((r[HCOL.report1] || '').trim() || (r[HCOL.report2] || '').trim())
+    ).length;
+    countEl.textContent = `${rows.length} 件` + (reportCount ? ` ・ 📰 ${reportCount}` : '');
+
     rows.forEach(row => container.appendChild(renderHistoryCard(row)));
   } catch(e) {
     console.error(e);
