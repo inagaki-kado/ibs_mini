@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script>
@@ -309,9 +310,63 @@
 
       <div id="res-match-list" class="text-left"></div>
 
-      <div class="flex justify-center gap-4 mt-4 md:mt-6">
+      <div class="flex justify-center gap-4 mt-4 md:mt-6 flex-wrap">
         <button id="results-export-csv-btn" onclick="openExportModal()" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+        <button id="results-report-btn" onclick="openReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📰 EVENT REPORT</button>
         <button onclick="closeResults()" class="bg-cyber-green text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#22c55e]">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-95 flex-col items-center justify-center z-[100] p-4 overflow-y-auto">
+    <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border-2 border-cyber-pink flex flex-col relative my-8 max-h-[95vh]">
+      <div class="flex justify-between items-center mb-4 border-b border-cyber-table-border pb-3 shrink-0">
+        <h2 class="text-xl md:text-2xl font-sf text-cyber-pink tracking-widest">📰 EVENT REPORT</h2>
+        <button onclick="closeReportModal()" style="touch-action:manipulation" class="text-cyber-text hover:text-cyber-pink font-bold font-sf transition-colors text-xl">✖</button>
+      </div>
+      <div class="flex flex-col gap-4 overflow-y-auto">
+        <div>
+          <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">リーグ実施日</label>
+          <input type="date" id="reportDateInput" onchange="onReportDateChange()" style="touch-action:manipulation" class="w-full p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text font-sf outline-none focus:border-cyber-green">
+        </div>
+        <div>
+          <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">記念撮影写真</label>
+          <input type="file" accept="image/*" id="reportPhotoInput" onchange="onReportPhotoSelected(event)" class="hidden">
+          <div class="flex gap-2">
+            <button type="button" onclick="document.getElementById('reportPhotoInput').click()" id="reportPhotoPickBtn" style="touch-action:manipulation" class="flex-1 bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-sf text-sm hover:bg-cyber-blue hover:text-cyber-bg transition-colors">📷 写真を選択</button>
+            <button type="button" onclick="removeReportPhoto()" id="reportPhotoRemoveBtn" style="touch-action:manipulation" class="hidden flex-1 bg-cyber-bg border border-cyber-pink text-cyber-pink px-3 py-2 rounded font-sf text-sm hover:bg-cyber-pink hover:text-white transition-colors">🗑 写真を外す</button>
+          </div>
+          <div id="reportCropControls" class="hidden flex flex-col gap-1 mt-2">
+            <div class="text-[11px] text-cyber-text opacity-60 font-sf">📌 プレビュー内の写真をドラッグで位置調整・スライダーで拡大縮小できます</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-cyber-text font-sf">🔍</span>
+              <input type="range" id="reportZoomSlider" min="1" max="3" step="0.01" value="1" oninput="onReportZoomChange()" onchange="onReportZoomCommit()" style="touch-action:manipulation" class="flex-1 accent-cyber-blue">
+              <button type="button" onclick="resetReportCrop()" style="touch-action:manipulation" class="text-xs text-cyber-text border border-cyber-table-border px-2 py-1 rounded font-sf hover:bg-gray-800 transition-colors whitespace-nowrap">位置リセット</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">編集後記</label>
+          <textarea id="reportNoteInput" onblur="onReportNoteChange()" rows="4" placeholder="今回のリーグの振り返りを書いてください" style="touch-action:manipulation" class="w-full p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text font-sf text-sm outline-none focus:border-cyber-green resize-none"></textarea>
+          <div id="reportNextEventStatus" class="text-[11px] text-cyber-text opacity-60 font-sf mt-1">次回大会の予定を取得中…</div>
+        </div>
+        <div style="width:100%; max-width:500px; margin:0 auto; display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <div class="text-[11px] text-cyber-text opacity-60 font-sf mb-1">1 / 2</div>
+            <div id="reportPreviewBox1" style="position:relative; width:100%; aspect-ratio:1200/1350; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
+          </div>
+          <div>
+            <div class="text-[11px] text-cyber-text opacity-60 font-sf mb-1">2 / 2</div>
+            <div id="reportPreviewBox2" style="position:relative; width:100%; aspect-ratio:1200/1350; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
+          </div>
+        </div>
+        <div id="reportGenStatus" class="hidden text-center text-cyber-orange font-sf text-sm">⏳ 生成中…</div>
+        <div class="flex flex-wrap gap-3 justify-center pt-2 pb-1">
+          <button type="button" onclick="downloadReportPng()" id="reportSaveBtn" style="touch-action:manipulation" class="bg-cyber-blue text-cyber-bg px-5 py-2 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9] disabled:opacity-40">💾 PNGを保存</button>
+          <button type="button" onclick="openReportPngInNewTab(1)" id="reportOpenTabBtn1" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 1枚目を開く</button>
+          <button type="button" onclick="openReportPngInNewTab(2)" id="reportOpenTabBtn2" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 2枚目を開く</button>
+          <button type="button" onclick="closeReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-table-border text-cyber-text px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">閉じる</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1180,73 +1235,73 @@
 
       if (loserFinishes.includes('XF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せた。`,
-          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示した。`,
-          `敗れた${loser}も${bey}力強いXFで会場を沸かせた。`,
-          `敗れた${loser}も${bey}XFを決め意地を示した。`,
-          `敗れた${loser}も${bey}鋭いXFで一矢報いた。`,
-          `敗れた${loser}も${bey}XFの一撃で存在感を放った。`,
-          `敗れた${loser}も${bey}見事なXFを披露し健闘した。`,
-          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せた。`
+          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せ、`,
+          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示し、`,
+          `敗れた${loser}も${bey}力強いXFで会場を沸かせ、`,
+          `敗れた${loser}も${bey}XFを決めて意地を示し、`,
+          `敗れた${loser}も${bey}鋭いXFで一矢報い、`,
+          `敗れた${loser}も${bey}XFの一撃で存在感を放ち、`,
+          `敗れた${loser}も${bey}見事なXFを披露して健闘し、`,
+          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せ、`
         ]);
       }
       if (loserFinishes.includes('BF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}バーストを決める鋭さを見せた。`,
-          `敗れた${loser}も${bey}バーストを奪い意地を見せた。`,
-          `敗れた${loser}も${bey}鮮やかなバーストで反撃した。`,
-          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせた。`,
-          `敗れた${loser}も${bey}バーストを決め食い下がった。`,
-          `敗れた${loser}も${bey}バーストを奪う技巧を見せた。`,
-          `敗れた${loser}も${bey}見事なバーストで一矢報いた。`,
-          `敗れた${loser}も${bey}バーストを決め最後まで粘りを見せた。`
+          `敗れた${loser}も${bey}バーストを決める鋭さを見せ、`,
+          `敗れた${loser}も${bey}バーストを奪って意地を見せ、`,
+          `敗れた${loser}も${bey}鮮やかなバーストで反撃し、`,
+          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせ、`,
+          `敗れた${loser}も${bey}バーストを決めて食い下がり、`,
+          `敗れた${loser}も${bey}バーストを奪う技巧を見せ、`,
+          `敗れた${loser}も${bey}見事なバーストで一矢報い、`,
+          `敗れた${loser}も${bey}バーストを決めて最後まで粘りを見せ、`
         ]);
       }
       if (flow && (flow.pattern === 'comeback')) {
         return pickRandom([
-          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せた。`,
-          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せた。`,
-          `敗れた${loser}も${bey}試合序盤は主導権を握っていた。`,
-          `敗れた${loser}も${bey}一時は優勢に試合を進めていた。`,
-          `敗れた${loser}も${bey}先行してリードを広げる場面を作った。`,
-          `敗れた${loser}も${bey}序盤は攻勢を強め主導権を握った。`,
-          `敗れた${loser}も${bey}一時はリードを奪う展開を作った。`,
-          `敗れた${loser}も${bey}試合を優位に進める時間帯があった。`
+          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せ、`,
+          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せ、`,
+          `敗れた${loser}も${bey}試合序盤は主導権を握り、`,
+          `敗れた${loser}も${bey}一時は優勢に試合を進め、`,
+          `敗れた${loser}も${bey}先行してリードを広げる場面を作り、`,
+          `敗れた${loser}も${bey}序盤は攻勢を強めて主導権を握り、`,
+          `敗れた${loser}も${bey}一時はリードを奪う展開を作り、`,
+          `敗れた${loser}も${bey}試合を優位に進める時間帯を作り、`
         ]);
       }
       if (closeGame) {
         return pickRandom([
-          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じた。`,
-          `敗れた${loser}も${bey}わずか1点差まで肉薄した。`,
-          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せた。`,
-          `敗れた${loser}も${bey}僅差の勝負に持ち込んだ。`,
-          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫いた。`,
-          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せた。`
+          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じ、`,
+          `敗れた${loser}も${bey}わずか1点差まで肉薄し、`,
+          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せ、`,
+          `敗れた${loser}も${bey}僅差の勝負に持ち込み、`,
+          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫き、`,
+          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せ、`
         ]);
       }
       if (shutout) {
         return pickRandom([
-          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫いた。`,
-          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑んだ。`,
-          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さなかった。`,
-          `敗れた${loser}も${bey}果敢に食らいつく姿を見せた。`,
-          `敗れた${loser}も${bey}最後まで戦う姿勢を貫いた。`,
-          `敗れた${loser}も${bey}粘り強く食い下がった。`,
-          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せた。`,
-          `敗れた${loser}も${bey}真っ向勝負を最後まで貫いた。`
+          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫き、`,
+          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑み、`,
+          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さず、`,
+          `敗れた${loser}も${bey}果敢に食らいつく姿を見せ、`,
+          `敗れた${loser}も${bey}最後まで戦う姿勢を貫き、`,
+          `敗れた${loser}も${bey}粘り強く食い下がり、`,
+          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せ、`,
+          `敗れた${loser}も${bey}真っ向勝負を最後まで貫き、`
         ]);
       }
       return pickRandom([
-        `敗れた${loser}も${bey}随所に見せ場を作った。`,
-        `敗れた${loser}も${bey}好プレーで観客を沸かせた。`,
-        `敗れた${loser}も${bey}健闘が光る内容だった。`,
-        `敗れた${loser}も${bey}見応えのある試合を展開した。`,
-        `敗れた${loser}も${bey}実力の一端を示した。`,
-        `敗れた${loser}も${bey}力の拮抗した試合を演じた。`,
-        `敗れた${loser}も${bey}随所に好プレーを見せた。`,
-        `敗れた${loser}も${bey}持ち味を発揮する場面があった。`
+        `敗れた${loser}も${bey}随所に見せ場を作り、`,
+        `敗れた${loser}も${bey}好プレーで観客を沸かせ、`,
+        `敗れた${loser}も${bey}健闘が光り、`,
+        `敗れた${loser}も${bey}見応えのある試合を展開し、`,
+        `敗れた${loser}も${bey}実力の一端を示し、`,
+        `敗れた${loser}も${bey}力の拮抗した試合を演じ、`,
+        `敗れた${loser}も${bey}随所に好プレーを見せ、`,
+        `敗れた${loser}も${bey}持ち味を発揮する場面を作り、`
       ]);
     }
 
@@ -1255,13 +1310,13 @@
       const pattern = flow ? flow.pattern : null;
       if (pattern === 'comeback') {
         return pickRandom([
-          `終盤まで勝敗の行方が分からない、逆転劇にふさわしい一戦だった。`,
+          `終盤まで勝敗の行方が分からない、まさに逆転劇と言える一戦！`,
           `最後まで目が離せない、記憶に残る大逆転劇となった。`,
-          `終盤の逆転劇が光る、印象に残る一戦となった。`,
+          `終盤の逆転劇が光る、印象に残る名勝負となった。`,
           `最後まで緊張感が続く、劇的な展開の試合だった。`,
           `勝負の綾が凝縮された、見応えのある逆転劇だった。`,
           `終盤まで結果が読めない、白熱の一戦となった。`,
-          `劇的な幕切れとなった、記憶に残る一戦だった。`,
+          `劇的な幕切れとなった、記憶に残る名勝負だった。`,
           `最後まで諦めない姿勢が結果に結びついた一戦だった。`
         ]);
       }
@@ -1284,9 +1339,9 @@
           `隙のない試合運びが際立つ内容だった。`,
           `安定感の高さを印象づける一戦となった。`,
           `終始主導権を手放さない、堂々たる試合内容だった。`,
-          `危なげない試合運びが光る一戦となった。`,
+          `展開以上に水面下の駆け引きが熱い名試合だった。`,
           `勝者の技量の高さが印象的な一戦だった。`,
-          `終始ペースを乱さない、盤石な内容だった。`
+          `終始ペースを乱さない、盤石な試合展開だった。`
         ]);
       }
       if (shutout) {
@@ -1332,11 +1387,18 @@
       const shutout = Math.min(wScore, lScore) === 0;
       const scoreText = `${wScore}－${lScore}`;
 
-      const styleText = {
-        attack: '怒涛のXFで畳み掛けて',
-        grind: '最後まで回転を残す粘りを見せて',
-        burst: 'バーストで一気に決めて',
-        balance: '堅実な戦いを見せて'
+      // 文1を1文に統合するため、連体形（〜した◯◯が）と連用形（〜し）の2種を用意する
+      const styleAdn = {
+        attack: '怒涛のXFで畳み掛けた',
+        grind: '最後まで回転を残す粘りを見せた',
+        burst: 'バーストで一気に決めた',
+        balance: '堅実な戦いを見せた'
+      }[style];
+      const styleRen = {
+        attack: '怒涛のXFで畳み掛け',
+        grind: '最後まで回転を残す粘りを見せ',
+        burst: 'バーストで一気に決め',
+        balance: '堅実な戦いを見せ'
       }[style];
       const closeText = shutout ? '完封の圧倒的な強さ'
         : gap === 1 ? '一歩も引かない攻防' : '実力を見せつけた';
@@ -1356,28 +1418,28 @@
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドを跳ね返す逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}と押し切った。`,
-          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
-          `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
+          `${flow.maxWinnerDeficit}点差を追う展開から、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ち。`,
+          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と値千金の逆転勝ち。`,
+          `一時は${flow.maxWinnerDeficit}点のリードを許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
           `${flow.maxWinnerDeficit}点のビハインドをはねのけ、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝利を収めた。`,
           `${data.loser}に${flow.maxWinnerDeficit}点先行を許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}まで追い上げ逆転に成功した。`,
           `序盤の劣勢をものともせず、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終盤${finishBey}${flow.finishPhrase}を決めて${scoreText}で逆転を果たした。`,
-          `${flow.maxWinnerDeficit}点差を最後にひっくり返したのは${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
-          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れが一変。${scoreText}で逆転勝利を手にした。`
+          `${flow.maxWinnerDeficit}点差を最後にひっくり返した${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
+          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れを変え${scoreText}で逆転勝利を手にした。`
         ]);
       } else if (flow && flow.pattern === 'seesaw') {
         const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `一進一退のシーソーゲームを制したのは${data.winner}。${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
-          `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
+          `一進一退のシーソーゲームを制した${data.winner}が、${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
+          `リードが目まぐるしく入れ替わる熱戦を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と制した。`,
           `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とものにした。`,
-          `一進一退の攻防を制したのは${data.winner}。${finishBey}${flow.finishPhrase}が${scoreText}の決め手となった。`,
+          `一進一退の攻防を制した${data.winner}が、${finishBey}${flow.finishPhrase}を決め手に${scoreText}とした。`,
           `目まぐるしくリードが入れ替わる展開の末、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`,
           `勝敗の行方が読めない拮抗した試合は、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし決着した。`,
-          `激しい主導権争いを制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
-          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし競り勝った。`
+          `激しい主導権争いを制した${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
+          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`
         ]);
       } else if (flow && flow.pattern === 'wire') {
         firstSentence = pickRandom([
@@ -1392,14 +1454,14 @@
         ]);
       } else {
         firstSentence = pickRandom([
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を下した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を突き放した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}見事に勝利を収めた。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}白星を積み重ねた。`,
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${scoreText}で${closeText}。${styleText}${data.loser}を退けた。`,
-          `${data.winner}が${scoreText}のスコアで${closeText}。${styleText}勝利をつかんだ。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}とし${closeText}。${styleText}実力の差を見せつけた。`,
-          `${scoreText}のスコアで${data.winner}が${closeText}。${styleText}${data.loser}に土をつけた。`
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${data.loser}を下した。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${closeText}。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${data.loser}を突き放した。`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${styleRen}${scoreText}と白星を積み重ねた。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で勝利を収めた。`,
+          `${scoreText}のスコアで${styleAdn}${data.winner}が${data.loser}に土をつけた。`,
+          `${styleAdn}${data.winner}が${scoreText}で${closeText}。`
         ]);
       }
       // ▲ 試合展開の分析ここまで
@@ -2200,16 +2262,24 @@
       }
     }
 
-    function showResults() {
-      let standingsMap = {}; participants.forEach(p => { standingsMap[p.id] = { id: p.id, name: p.name, wins: 0, pts: 0, lost: 0, diff: 0, tieBreaker: p.tieBreaker || 0 }; });
-      leagueMatches.forEach(m => { if (m.winner !== null) { let st1 = standingsMap[m.p1.id]; let st2 = standingsMap[m.p2.id]; st1.pts += m.s1; st1.lost += m.s2; st1.diff = st1.pts - st1.lost; st2.pts += m.s2; st2.lost += m.s1; st2.diff = st2.pts - st2.lost; if (m.winner === 1) st1.wins++; else st2.wins++; } });
-      let stds = Object.values(standingsMap).sort((a, b) => {
+    // リーグ順位表を算出する共通関数（showResults() / イベントレポートのデータ集計層から共用）。
+    // 勝数→得失点差→tieBreaker→直接対決の順で判定するロジックは従来のshowResults()内実装のまま。
+    // 戻り値には従来の id/name/wins/pts/lost/diff/tieBreaker に加え、消化試合数 games を含める。
+    function computeLeagueStandings() {
+      let standingsMap = {};
+      participants.forEach(p => { standingsMap[p.id] = { id: p.id, name: p.name, games: 0, wins: 0, pts: 0, lost: 0, diff: 0, tieBreaker: p.tieBreaker || 0 }; });
+      leagueMatches.forEach(m => { if (m.winner !== null) { let st1 = standingsMap[m.p1.id]; let st2 = standingsMap[m.p2.id]; st1.games++; st2.games++; st1.pts += m.s1; st1.lost += m.s2; st1.diff = st1.pts - st1.lost; st2.pts += m.s2; st2.lost += m.s1; st2.diff = st2.pts - st2.lost; if (m.winner === 1) st1.wins++; else st2.wins++; } });
+      return Object.values(standingsMap).sort((a, b) => {
         if (b.wins !== a.wins) return b.wins - a.wins; if (b.diff !== a.diff) return b.diff - a.diff;
         if (b.tieBreaker !== a.tieBreaker) return b.tieBreaker - a.tieBreaker;
         const h2h = leagueMatches.find(m => (m.p1.id === a.id && m.p2.id === b.id) || (m.p1.id === b.id && m.p2.id === a.id));
-        if (h2h && h2h.winner !== null) { if (h2h.p1.id === a.id) return h2h.winner === 1 ? -1 : 1; else return h2h.winner === 2 ? -1 : 1; } 
+        if (h2h && h2h.winner !== null) { if (h2h.p1.id === a.id) return h2h.winner === 1 ? -1 : 1; else return h2h.winner === 2 ? -1 : 1; }
         return 0;
       });
+    }
+
+    function showResults() {
+      let stds = computeLeagueStandings();
 
       document.getElementById('resultLeagueName').innerText = leagueName;
       document.getElementById('res1').innerText = stds[0] ? stds[0].name : '-'; document.getElementById('res2').innerText = stds[1] ? stds[1].name : '-'; document.getElementById('res3').innerText = stds[2] ? stds[2].name : '-'; document.getElementById('res4').innerText = stds[3] ? stds[3].name : '-';
@@ -2306,6 +2376,1473 @@
         btn.classList.replace('bg-cyber-blue', 'bg-cyber-green');
       }, 2000);
     }
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— データ集計層
+    // ※本セクションはデータ集計のみ。UI・描画・PNG出力は未実装（次回対応）
+    // ==========================================
+    const KIMARITE_POINTS = { XF: 3, BF: 2, OF: 2, SF: 1 };
+    const KIMARITE_BASELINE_PERCENT = { SF: 57, OF: 18, XF: 18, BF: 7 };
+
+    function reportFormatDate(d) {
+      const dt = d || new Date();
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}.${m}.${day}`;
+    }
+
+    function reportFormatScore(scoreStr) {
+      if (!scoreStr) return '';
+      return String(scoreStr).replace('-', '－');
+    }
+
+    // souatariのmatchはscore文字列ではなくs1/s2の数値を持つため、勝者視点（勝者-敗者）への
+    // 組み替えはs1/s2とwinnerから算出する
+    function reportWinnerLoserScore(match) {
+      if (!match || match.s1 == null || match.s2 == null) return { winnerScore: null, loserScore: null };
+      if (match.winner === 1) return { winnerScore: match.s1, loserScore: match.s2 };
+      if (match.winner === 2) return { winnerScore: match.s2, loserScore: match.s1 };
+      return { winnerScore: null, loserScore: null };
+    }
+
+    function reportFormatMatchScore(match) {
+      const { winnerScore, loserScore } = reportWinnerLoserScore(match);
+      if (winnerScore == null || loserScore == null) return '';
+      return reportFormatScore(`${winnerScore}-${loserScore}`);
+    }
+
+    // 実際に大会に参加した参加者
+    function getReportEntrants() {
+      return participants.filter(p => p.id !== 'BYE');
+    }
+
+    // 決着済みの通常対戦（BYE戦を除く）
+    function getReportAllMatches() {
+      return leagueMatches
+        .filter(m => m.winner !== null && m.p1.id !== 'BYE' && m.p2.id !== 'BYE')
+        .map(m => ({ match: m }));
+    }
+
+    // 勝者/敗者の参加者オブジェクトを返す簡易ヘルパー（DE版のgetW/getLに相当）
+    function getW(match) { if (match.winner === 1) return match.p1; if (match.winner === 2) return match.p2; return null; }
+    function getL(match) { if (match.winner === 1) return match.p2; if (match.winner === 2) return match.p1; return null; }
+
+    // kimarite（全体・時系列）と kimarite_p1/p2（各選手の得点順）を突き合わせて
+    // 「どちらの得点か」を時系列で再構成する。突合できない場合は null。
+    function reconstructMatchTimeline(match) {
+      const full = parseKimariteStored(match.kimarite);
+      const p1 = parseKimariteStored(match.kimarite_p1);
+      const p2 = parseKimariteStored(match.kimarite_p2);
+      if (full.length === 0 || full.length !== p1.length + p2.length) return null;
+      const events = [];
+      let i = 0, j = 0;
+      for (const k of full) {
+        const p1Next = i < p1.length && p1[i] === k;
+        const p2Next = j < p2.length && p2[j] === k;
+        if (p1Next && !p2Next) { events.push({ who: 'p1', k }); i++; }
+        else if (p2Next && !p1Next) { events.push({ who: 'p2', k }); j++; }
+        else if (p1Next && p2Next) {
+          const p1Remaining = p1.length - i, p2Remaining = p2.length - j;
+          if (p1Remaining >= p2Remaining) { events.push({ who: 'p1', k }); i++; }
+          else { events.push({ who: 'p2', k }); j++; }
+        } else {
+          return null;
+        }
+      }
+      if (i !== p1.length || j !== p2.length) return null;
+      return events;
+    }
+
+    // 勝者が試合中に2点以上のビハインドを負っていたか（大逆転判定）
+    function wasComebackWin(match) {
+      if (match.winner !== 1 && match.winner !== 2) return false;
+      const events = reconstructMatchTimeline(match);
+      if (!events) return false;
+      const winnerKey = match.winner === 1 ? 'p1' : 'p2';
+      let s1 = 0, s2 = 0, wasBehindByTwo = false;
+      events.forEach(ev => {
+        const pts = KIMARITE_POINTS[ev.k] || 1;
+        if (ev.who === 'p1') s1 += pts; else s2 += pts;
+        const winnerScore = winnerKey === 'p1' ? s1 : s2;
+        const loserScore = winnerKey === 'p1' ? s2 : s1;
+        if (loserScore - winnerScore >= 2) wasBehindByTwo = true;
+      });
+      return wasBehindByTwo;
+    }
+
+    // 上位4名を { rank, id, name, beys } で返す
+    function getReportStandings() {
+      return computeLeagueStandings().slice(0, 4).map((s, idx) => {
+        const p = participants.find(pp => pp.id === s.id);
+        return {
+          rank: idx + 1,
+          id: s.id,
+          name: s.name || '',
+          beys: ((p && p.beyblades) || []).map(b => b && b.name).filter(Boolean)
+        };
+      });
+    }
+
+    function getReportHeadline() {
+      const allDone = leagueMatches.length > 0 && leagueMatches.every(m => m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner !== null);
+      if (!allDone) return null;
+      const standings = computeLeagueStandings();
+      const champion = standings[0];
+      if (!champion) return null;
+      const runnerUp = standings[1] || null;
+      const h2h = runnerUp
+        ? leagueMatches.find(m => (m.p1.id === champion.id && m.p2.id === runnerUp.id) || (m.p1.id === runnerUp.id && m.p2.id === champion.id))
+        : null;
+      return {
+        champion,
+        games: champion.games,
+        wins: champion.wins,
+        leagueName: leagueName || '',
+        comment: (h2h && h2h.comment) || '',
+        directScore: (h2h && h2h.s1 != null && h2h.s2 != null) ? reportFormatScore(`${h2h.s1}-${h2h.s2}`) : null
+      };
+    }
+
+    // カテゴリ別の note 定型文。すべて勝者視点、または中立の描写にすること。
+    const REPORT_HIGHLIGHT_NOTES = {
+      'フルスコア': [
+        '最終ラウンドまでもつれる死闘',
+        '一歩も譲らず、わずか1点差の決着',
+        '最後の一戦まで勝敗の読めない攻防'
+      ],
+      '大逆転': [
+        '2点のビハインドから怒涛の巻き返し',
+        '追い詰められてからの逆襲で勝利',
+        '劣勢を跳ね返した驚異の粘り'
+      ],
+      '完封': [
+        '相手に1点も許さない完勝',
+        '序盤から主導権を握り完封',
+        '危なげない試合運びで零封'
+      ],
+      'XF連発': [
+        'XTREME3連発で圧倒',
+        '豪快なXTREMEフィニッシュが炸裂',
+        '高得点フィニッシュを連発して押し切る'
+      ]
+    };
+
+    // 激闘カードの note。リーグ戦にはラウンド区分がないため、カテゴリ別の定型文のみを返す。
+    function reportRoundNote(entry, category) {
+      const pool = REPORT_HIGHLIGHT_NOTES[category];
+      return pool ? pickRandom(pool) : '互いに譲らない好勝負';
+    }
+
+    // 優先順位: 1.フルスコア(1点差) 2.大逆転 3.完封 4.XF連発（各カテゴリ1件・最大3件）
+    function getReportHighlights() {
+      const matches = getReportAllMatches();
+      const picks = [];
+      const usedCategories = new Set();
+
+      const tryAdd = (category, entry) => {
+        if (usedCategories.has(category)) return false;
+        const m = entry.match;
+        const w = getW(m), l = getL(m);
+        if (!w || !l) return false;
+        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatMatchScore(m), note: reportRoundNote(entry, category) });
+        usedCategories.add(category);
+        return true;
+      };
+
+      // 優先1: フルスコア（得点差1点）
+      for (const entry of matches) {
+        const m = entry.match;
+        if (m.s1 != null && m.s2 != null && Math.abs(m.s1 - m.s2) === 1) {
+          if (tryAdd('フルスコア', entry)) break;
+        }
+      }
+      // 優先2: 大逆転（2点以上のビハインドから勝利）
+      for (const entry of matches) {
+        if (wasComebackWin(entry.match)) {
+          if (tryAdd('大逆転', entry)) break;
+        }
+      }
+      // 優先3: 完封（敗者0点）
+      for (const entry of matches) {
+        const m = entry.match;
+        if (m.s1 === 0 || m.s2 === 0) {
+          if (tryAdd('完封', entry)) break;
+        }
+      }
+      // 優先4: XF連発（1試合中にXFが3回以上）
+      for (const entry of matches) {
+        const m = entry.match;
+        const full = (m.kimarite && m.kimarite.length) ? parseKimariteStored(m.kimarite) : parseKimariteStored(`${m.kimarite_p1 || ''},${m.kimarite_p2 || ''}`);
+        if (full.filter(k => k === 'XF').length >= 3) {
+          if (tryAdd('XF連発', entry)) break;
+        }
+      }
+
+      return picks.slice(0, 3);
+    }
+
+    // 5位以下を、勝数と得失点差が同値の選手同士でグループ化して返す（1〜4位はgetReportStandings()が担当）
+    function getReportAllStandings() {
+      const all = computeLeagueStandings();
+      const top = getReportStandings();
+      const excludeIds = new Set(top.map(s => s.id));
+      const rest = all.filter(s => !excludeIds.has(s.id));
+
+      const groups = [];
+      let rankCounter = top.length + 1;
+      let i = 0;
+      while (i < rest.length) {
+        let j = i + 1;
+        while (j < rest.length && rest[j].wins === rest[i].wins && rest[j].diff === rest[i].diff) j++;
+        const groupMembers = rest.slice(i, j);
+        const label = groupMembers.length > 1 ? `${rankCounter}位タイ` : `${rankCounter}位`;
+        groups.push({ label, names: groupMembers.map(s => s.name || '') });
+        rankCounter += groupMembers.length;
+        i = j;
+      }
+      return groups;
+    }
+
+    function getReportKimariteDist() {
+      const dist = { XF: 0, BF: 0, OF: 0, SF: 0, total: 0 };
+      const entries = getReportAllMatches();
+      entries.forEach(entry => {
+        const m = entry.match;
+        const full = (m.kimarite && m.kimarite.length) ? parseKimariteStored(m.kimarite) : parseKimariteStored(`${m.kimarite_p1 || ''},${m.kimarite_p2 || ''}`);
+        full.forEach(k => { if (dist[k] != null) { dist[k]++; dist.total++; } });
+      });
+      return dist;
+    }
+
+    function getReportKimariteNote(dist) {
+      if (!dist || !dist.total) return '';
+      let best = null;
+      ['SF', 'OF', 'XF', 'BF'].forEach(code => {
+        const actualPercent = (dist[code] / dist.total) * 100;
+        const ratio = KIMARITE_BASELINE_PERCENT[code] > 0 ? actualPercent / KIMARITE_BASELINE_PERCENT[code] : 0;
+        const deviation = Math.abs(ratio - 1);
+        if (!best || deviation > best.deviation) best = { code, ratio, deviation };
+      });
+      if (!best) return '';
+      const baselineText = `SF${KIMARITE_BASELINE_PERCENT.SF} / OF${KIMARITE_BASELINE_PERCENT.OF} / XF${KIMARITE_BASELINE_PERCENT.XF} / BF${KIMARITE_BASELINE_PERCENT.BF}`;
+      return `全${dist.total}本の決まり手内訳。全体平均（${baselineText}）と比べ${best.code}が${best.ratio.toFixed(1)}倍。`;
+    }
+
+    // 選手ごとの決まり手本数・完封勝ち・最長試合を集計し、各項目の1位を返す（該当者なしはnull）
+    function getReportRecords() {
+      const entries = getReportAllMatches();
+      const finishCounts = { XF: {}, BF: {}, OF: {}, SF: {} };
+      const shutoutCounts = {};
+      let longest = null;
+
+      entries.forEach(entry => {
+        const m = entry.match;
+        if (m.p1 && m.p1.id !== 'BYE') {
+          parseKimariteStored(m.kimarite_p1).forEach(k => {
+            if (finishCounts[k]) finishCounts[k][m.p1.id] = (finishCounts[k][m.p1.id] || 0) + 1;
+          });
+        }
+        if (m.p2 && m.p2.id !== 'BYE') {
+          parseKimariteStored(m.kimarite_p2).forEach(k => {
+            if (finishCounts[k]) finishCounts[k][m.p2.id] = (finishCounts[k][m.p2.id] || 0) + 1;
+          });
+        }
+
+        const w = getW(m), l = getL(m);
+        const { winnerScore, loserScore } = reportWinnerLoserScore(m);
+        if (w && l && w.id !== 'BYE' && l.id !== 'BYE' && winnerScore != null) {
+          if (loserScore === 0) shutoutCounts[w.id] = (shutoutCounts[w.id] || 0) + 1;
+          const total = winnerScore + loserScore;
+          if (!longest || total > longest.total) {
+            longest = { total, name: `${w.name || ''} vs ${l.name || ''}` };
+          }
+        }
+      });
+
+      const entrants = getReportEntrants();
+      // Object.entries()から取り出すidは必ず文字列になるためString()で揃えて比較する
+      const nameOfId = (id) => { const p = entrants.find(e => String(e.id) === String(id)); return p ? (p.name || '') : ''; };
+      // 同数の場合はリーグ順位が上の選手を優先する（DE版のdepthに相当。リーグ戦にはdepthがないため順位で代替）
+      const standings = computeLeagueStandings();
+      const rankOfId = (id) => { const idx = standings.findIndex(s => String(s.id) === String(id)); return idx === -1 ? standings.length : idx; };
+
+      const pickTop = (counts) => {
+        const list = Object.entries(counts).filter(([, v]) => v > 0);
+        if (!list.length) return null;
+        list.sort((a, b) => (b[1] - a[1]) || (rankOfId(a[0]) - rankOfId(b[0])));
+        const [id, value] = list[0];
+        return { name: nameOfId(id), value };
+      };
+
+      const toEntry = (top, unit) => top ? { name: top.name, value: top.value, unit } : null;
+
+      return {
+        xf: toEntry(pickTop(finishCounts.XF), '本'),
+        bf: toEntry(pickTop(finishCounts.BF), '本'),
+        of: toEntry(pickTop(finishCounts.OF), '本'),
+        sf: toEntry(pickTop(finishCounts.SF), '本'),
+        shutout: toEntry(pickTop(shutoutCounts), '回'),
+        longest: longest ? { name: longest.name, value: longest.total, unit: '本' } : null
+      };
+    }
+
+    function collectReportData() {
+      const standings = getReportStandings();
+      const headline = getReportHeadline();
+      const highlights = getReportHighlights();
+      const kimariteDist = getReportKimariteDist();
+      const kimariteNote = getReportKimariteNote(kimariteDist);
+      const records = getReportRecords();
+      const allStandings = getReportAllStandings();
+      const entrants = getReportEntrants();
+
+      return {
+        leagueName: leagueName || '',
+        dateStr: reportFormatDate(),
+        participantCount: entrants.length,
+        standings,
+        headline,
+        highlights,
+        kimariteDist,
+        kimariteNote,
+        records,
+        allStandings
+      };
+    }
+
+    window.collectReportData = collectReportData;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— 次回大会予定の取得
+    // ==========================================
+    const REPORT_NEXT_EVENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7fEnaDRl87GMImRiTYBWubjfSSt94wk1ZEhAqqLKcAHPpAha/pub?gid=0&single=true&output=csv';
+    const REPORT_NEXT_EVENT_WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+    // RFC4180相当のクォート対応CSVパーサ（ダブルクォート内のカンマ・改行・エスケープ"" を処理する）
+    function reportParseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = '';
+      let inQuotes = false;
+      const len = text.length;
+      let i = 0;
+      while (i < len) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+            inQuotes = false; i++; continue;
+          }
+          field += c; i++; continue;
+        }
+        if (c === '"') { inQuotes = true; i++; continue; }
+        if (c === ',') { row.push(field); field = ''; i++; continue; }
+        if (c === '\r') { i++; continue; }
+        if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+        field += c; i++;
+      }
+      row.push(field);
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      return rows;
+    }
+
+    function reportParseYmdSlash(str) {
+      const m = String(str || '').trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+      if (!m) return null;
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+
+    function reportParseYmdDash(str) {
+      const m = String(str || '').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (!m) return null;
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+
+    function reportFormatDateJpWithWeekday(date) {
+      return `${date.getMonth() + 1}月${date.getDate()}日（${REPORT_NEXT_EVENT_WEEKDAY_JA[date.getDay()]}）`;
+    }
+
+    // "18:20"→"18時20分" / "18:00"→"18時"。H:MM形式でなければそのまま返す
+    function reportFormatTimeJp(str) {
+      const s = String(str || '').trim();
+      const m = s.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return s;
+      const h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
+      return mi === 0 ? `${h}時` : `${h}時${mi}分`;
+    }
+
+    function reportBuildNextEventText(dateJp, eventNames, venue, startTimeRaw, receptionTimeRaw) {
+      let timeClause = '';
+      if (startTimeRaw && startTimeRaw.trim()) {
+        timeClause = `${reportFormatTimeJp(startTimeRaw)}開始予定`;
+        if (receptionTimeRaw && receptionTimeRaw.trim()) timeClause += `（受付${reportFormatTimeJp(receptionTimeRaw)}～）`;
+      } else if (receptionTimeRaw && receptionTimeRaw.trim()) {
+        timeClause = `受付${reportFormatTimeJp(receptionTimeRaw)}開始予定`;
+      }
+      const timeSentence = timeClause ? `${timeClause}です。` : '開催予定です。';
+      return `次回は${dateJp}${eventNames}、${venue}にて\n${timeSentence}`;
+    }
+
+    // 別スプレッドシート（次回大会予定用）をCSVで取得し、指定日より後で最も早い「公開」予定を返す。
+    // 会場の通信が不安定な状況で使うため、失敗時は必ずnullを返してレポート生成自体は止めない
+    async function fetchNextEvent(afterDateStr) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      let text;
+      try {
+        const res = await fetch(REPORT_NEXT_EVENT_CSV_URL, { signal: controller.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        text = await res.text();
+      } catch (e) {
+        console.warn('[イベントレポート] 次回大会予定の取得に失敗:', e);
+        return null;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      let rows;
+      try {
+        rows = reportParseCsv(text).slice(1); // ヘッダー除去
+      } catch (e) {
+        console.warn('[イベントレポート] 次回大会予定CSVの解析に失敗:', e);
+        return null;
+      }
+
+      const cutoff = reportParseYmdDash(afterDateStr) || new Date();
+      const candidates = [];
+      rows.forEach(r => {
+        if ((r[0] || '').trim() !== '公開') return;
+        const date = reportParseYmdSlash(r[2]);
+        if (!date || date.getTime() <= cutoff.getTime()) return;
+        candidates.push({ row: r, date });
+      });
+      if (!candidates.length) return null;
+
+      candidates.sort((a, b) => a.date.getTime() - b.date.getTime());
+      const earliestTime = candidates[0].date.getTime();
+      const sameDay = candidates.filter(c => c.date.getTime() === earliestTime).map(c => c.row);
+
+      const eventNames = sameDay.map(r => (r[1] || '').trim()).filter(Boolean).join('／');
+      const venue = (sameDay[0][11] || '').trim();
+      const startTimeRaw = (sameDay[0][4] || '').trim();
+      const receptionTimeRaw = (sameDay[0][3] || '').trim();
+      const dateJp = reportFormatDateJpWithWeekday(candidates[0].date);
+
+      return {
+        dateJp,
+        eventNames,
+        venue,
+        text: reportBuildNextEventText(dateJp, eventNames, venue, startTimeRaw, receptionTimeRaw)
+      };
+    }
+
+    window.fetchNextEvent = fetchNextEvent;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— 紙面レンダリング
+    // ※本セクションは描画のみ。モーダルUI・写真選択・PNG保存は未実装（次回対応）
+    // ==========================================
+    const REPORT_LOGO_CANDIDATES = [
+      { src: 'maintitle_white_trim.png' },
+      { src: 'maintitle_white.png', isFallback: true }
+    ];
+    // 新聞配色（明るい紙面用に彩度を落とした色）
+    const REPORT_HIGHLIGHT_COLORS = {
+      'フルスコア': '#b91c1c', '大逆転': '#b45309', '完封': '#b45309', 'XF連発': '#1d4ed8'
+    };
+    const REPORT_KIMARITE_BAR_ORDER = ['SF', 'XF', 'OF', 'BF'];
+    const REPORT_KIMARITE_BAR_COLORS = { SF: '#1d4ed8', XF: '#b45309', OF: '#c2410c', BF: '#be123c' };
+    const REPORT_MASTHEAD_VARIANTS = {
+      1: { padding: '14px 24px', titleSizes: [34, 30, 26], logoHeight: 78 },
+      2: { padding: '12px 24px', titleSizes: [26, 22, 19], logoHeight: 52 }
+    };
+
+    let reportLogoDataUrlCache = null; // 成功時のみキャッシュ（404を試す度に固定化しない）
+
+    function reportEscapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function reportLoadImageAsDataUrl(url) {
+      return fetch(url)
+        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+        .then(blob => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+          reader.readAsDataURL(blob);
+        }));
+    }
+
+    // 透明余白を実行時にトリムする。maintitle_white_trim.png を別途用意する必要をなくす。
+    // 余白がない画像に対しては何もせず元のdataURLを返すため、トリム済み画像でも安全。
+    function reportTrimTransparent(dataUrl, alphaThreshold = 8) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement('canvas');
+            c.width = img.naturalWidth; c.height = img.naturalHeight;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+            let minX = width, minY = height, maxX = -1, maxY = -1;
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                if (data[(y * width + x) * 4 + 3] > alphaThreshold) {
+                  if (x < minX) minX = x;
+                  if (x > maxX) maxX = x;
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                }
+              }
+            }
+            if (maxX < minX || maxY < minY) return resolve(dataUrl);
+            const w = maxX - minX + 1, h = maxY - minY + 1;
+            if (w === width && h === height) return resolve(dataUrl);
+            const out = document.createElement('canvas');
+            out.width = w; out.height = h;
+            out.getContext('2d').drawImage(c, minX, minY, w, h, 0, 0, w, h);
+            resolve(out.toDataURL('image/png'));
+          } catch (e) {
+            console.warn('[イベントレポート] ロゴの余白トリムに失敗（元画像を使用）:', e);
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    // maintitle_white_trim.png → maintitle_white.png の順でdataURL化を試みる。
+    // 見つかった画像は透明余白を自動トリムするため、trim済み画像・素の945×945画像のどちらでも正しく表示される。
+    // 全滅した場合はnullを返し、呼び出し側はロゴなしで紙面を成立させる。
+    async function reportGetLogo() {
+      if (reportLogoDataUrlCache) return reportLogoDataUrlCache;
+      for (const cand of REPORT_LOGO_CANDIDATES) {
+        try {
+          const raw = await reportLoadImageAsDataUrl(cand.src);
+          const dataUrl = await reportTrimTransparent(raw);
+          reportLogoDataUrlCache = { ...cand, dataUrl };
+          return reportLogoDataUrlCache;
+        } catch (e) {
+          console.warn('[イベントレポート] ロゴ画像の読み込みに失敗:', cand.src, e);
+        }
+      }
+      return null;
+    }
+
+    // page: 1（1枚目・フルサイズ）/ 2（2枚目・簡略版）。マストヘッドは常に黒帯＋白抜き（明るい紙面でも視認性を保つ）
+    function reportBuildMasthead(logo, page) {
+      const variant = REPORT_MASTHEAD_VARIANTS[page];
+      const logoHtml = logo
+        ? `<img id="report-masthead-logo-${page}" src="${logo.dataUrl}" style="height:${variant.logoHeight}px; width:auto; display:block; flex:none;" alt="ITABASHI BEYBLADE CLUB">`
+        : '';
+      return `
+        <div id="report-masthead-${page}" style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; background:#14161a; padding:${variant.padding};">
+          <div id="report-masthead-title-${page}" style="font-family:'Orbitron', sans-serif; font-weight:700; font-size:${variant.titleSizes[0]}px; letter-spacing:7px; color:#ffffff; white-space:nowrap;">ITABASHI BBX NEWS</div>
+          ${logoHtml}
+        </div>`;
+    }
+
+    function reportFitMastheadTitle(page) {
+      const variant = REPORT_MASTHEAD_VARIANTS[page];
+      const wrap = document.getElementById(`report-masthead-${page}`);
+      const title = document.getElementById(`report-masthead-title-${page}`);
+      if (!wrap || !title) return;
+      const logo = document.getElementById(`report-masthead-logo-${page}`);
+      const logoWidth = logo ? logo.getBoundingClientRect().width : 0;
+      const available = wrap.clientWidth - logoWidth - 16;
+      for (const size of variant.titleSizes) {
+        title.style.fontSize = size + 'px';
+        if (title.scrollWidth <= available) break;
+      }
+    }
+
+    // page: 1（右に参加人数・形式）/ 2（右にDATA & DIGEST）。青ベタ塗りは廃止し、罫線で挟む
+    function reportBuildNameBand(data, page) {
+      const name = (data.leagueName && data.leagueName.trim()) ? data.leagueName.trim() : '板橋ベイブレード会';
+      const rightText = page === 1
+        ? `${reportEscapeHtml(data.dateStr)}　参加${data.participantCount}名　ROUND ROBIN LEAGUE`
+        : `${reportEscapeHtml(data.dateStr)}　DATA & DIGEST`;
+      return `
+        <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-top:3px solid #14161a; border-bottom:1px solid #14161a; padding:10px 2px;">
+          <div id="report-nameband-title-${page}" style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:20px; line-height:1.6; color:#14161a; white-space:nowrap; flex:1 1 auto; min-width:0;">${reportEscapeHtml(name)}</div>
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; color:#57534e; white-space:nowrap; flex:none; margin-left:12px;">${rightText}</div>
+        </div>`;
+    }
+
+    function reportFitNameBand(page) {
+      const title = document.getElementById(`report-nameband-title-${page}`);
+      if (!title) return;
+      const sizes = [20, 18, 16];
+      for (const size of sizes) {
+        title.style.fontSize = size + 'px';
+        if (title.scrollWidth <= title.clientWidth) break;
+      }
+      // text-overflow:ellipsisはhtml2canvasが再現できないため使わない。最小サイズでも収まらない場合はそのまま右に伸びる
+    }
+
+    // リーグ優勝の見出しタイトル。h = data.headline（{ champion, games, wins, leagueName, comment, directScore }）
+    const REPORT_HEADLINE_TITLES_LEAGUE = [
+      h => `${h.champion.name}、${h.games}戦${h.wins}勝で${h.leagueName}を制す`,
+      h => `${h.champion.name}が${h.leagueName}を制覇　${h.games}戦${h.wins}勝の堂々たる戦績`,
+      h => `${h.games}戦${h.wins}勝　${h.champion.name}が${h.leagueName}の頂点に立つ`,
+      h => `${h.leagueName}を制したのは${h.champion.name}　${h.games}戦${h.wins}勝`
+    ];
+
+    function reportBuildHeadlineTitle(h) {
+      return pickRandom(REPORT_HEADLINE_TITLES_LEAGUE)(h);
+    }
+
+    // 開幕文はリーグ用に新規作成。締めは既存NORMAL版をそのまま流用
+    const REPORT_FALLBACK_OPENINGS_LEAGUE = [
+      h => `${h.champion.name}が${h.games}戦${h.wins}勝の成績で${h.leagueName}を制した。`,
+      h => `総当たり戦を勝ち抜いたのは${h.champion.name}。${h.games}戦${h.wins}勝という堂々たる成績を残した。`,
+      h => `${h.games}戦${h.wins}勝の好成績で、${h.champion.name}が${h.leagueName}を制覇した。`
+    ];
+    const REPORT_FALLBACK_CLOSINGS_NORMAL = [
+      '見事な戦いぶりで会場を沸かせた。',
+      '力強い勝ちっぷりに大きな拍手が送られた。',
+      '決勝にふさわしい熱戦となった。',
+      '優勝おめでとうございます。'
+    ];
+
+    function reportBuildFallbackComment(h) {
+      return `${pickRandom(REPORT_FALLBACK_OPENINGS_LEAGUE)(h)}${pickRandom(REPORT_FALLBACK_CLOSINGS_NORMAL)}`;
+    }
+
+    // generateLocalComment() が埋め込むスコアは勝者-敗者順とは限らないため、
+    // h.directScore（直接対決のスコア）がある場合のみ勝者−敗者順に入れ替える。ない場合はそのまま返す
+    function reportFixCommentScore(comment, h) {
+      if (!comment || !h || !h.directScore) return comment;
+      const parts = String(h.directScore || '').split(/[－−\-–—]/);
+      if (parts.length !== 2) return comment;
+      const [win, lose] = parts.map(s => s.trim());
+      if (!win || !lose || win === lose) return comment;
+      const reversed = new RegExp(`${lose}\\s*([－−\\-–—])\\s*${win}`, 'g');
+      return comment.replace(reversed, `${win}$1${lose}`);
+    }
+
+    function reportBuildHeadline(data) {
+      if (!data.headline) return '';
+      const h = data.headline;
+      const leagueNameDisplay = (h.leagueName && h.leagueName.trim()) ? h.leagueName.trim() : '板橋ベイブレード会';
+      const hh = Object.assign({}, h, { leagueName: leagueNameDisplay });
+      const label = 'ROUND ROBIN LEAGUE';
+      const title = reportBuildHeadlineTitle(hh);
+      const rawComment = (h.comment && h.comment.trim()) ? h.comment.trim() : reportBuildFallbackComment(hh);
+      const comment = reportFixCommentScore(rawComment, h);
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:8px;">${label}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:32px; line-height:1.35; color:#14161a; margin-bottom:10px;">${reportEscapeHtml(title)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:17px; line-height:1.7; color:#3f3f46;">${reportEscapeHtml(comment)}</div>
+        </div>`;
+    }
+
+    function reportBuildStandings(data) {
+      if (!data.standings || !data.standings.length) return '';
+      const rows = data.standings.map((s, idx) => {
+        const isLast = idx === data.standings.length - 1;
+        const rankColor = s.rank === 1 ? '#a8321e' : '#a8a29e';
+        const beysText = (s.beys || []).join('　／　');
+        return `
+          <div style="display:flex; align-items:center; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #d6d1c4;'}">
+            <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:${rankColor};">${s.rank}</div>
+            <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:#14161a; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
+            <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#3f3f46; white-space:normal; line-height:1.5;">${reportEscapeHtml(beysText)}</div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto; background:#ffffff; border:1px solid #d6d1c4; border-radius:10px; padding:16px 18px;">
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; letter-spacing:2px; color:#57534e; margin-bottom:8px;">FINAL STANDINGS　／　使用ベイ</div>
+          ${rows}
+        </div>`;
+    }
+
+    function reportFitStandingsNames(data) {
+      if (!data.standings) return;
+      data.standings.forEach((s, idx) => {
+        const el = document.getElementById(`report-stand-name-${idx}`);
+        if (!el) return;
+        const sizes = [19, 17, 15];
+        for (const size of sizes) {
+          el.style.fontSize = size + 'px';
+          if (el.scrollWidth <= el.clientWidth) break;
+        }
+        // text-overflow:ellipsisはhtml2canvasが再現できないため使わない。最小サイズでも収まらない場合はそのまま右に伸びる
+      });
+    }
+
+    function reportFitStandingsRows(data) {
+      if (!data.standings) return;
+      data.standings.forEach((s, idx) => {
+        const el = document.getElementById(`report-stand-bey-${idx}`);
+        if (!el) return;
+        const sizes = [15, 13, 12];
+        for (const size of sizes) {
+          el.style.fontSize = size + 'px';
+          const lineHeight = size * 1.5;
+          // 2行分 + 誤差1px の余裕を見て判定
+          if (el.scrollHeight <= lineHeight * 2 + 1) return;
+        }
+        console.warn(`[イベントレポート] ${idx + 1}位のベイ名が12pxでも2行に収まりません（3行以上になります）`);
+      });
+    }
+
+    // html2canvas は <img> の object-fit を正しく再現できないことがあるため、
+    // 写真は <canvas> に事前描画したピクセルとして埋め込む（ズーム・位置調整もここで反映）
+    function reportBuildPhoto(photoDataUrl) {
+      if (!photoDataUrl) return '';
+      return `
+        <div id="report-photo-box" style="position:relative; flex:1 1 auto; min-height:180px; background:#ffffff; border:1px solid #b9b4a8; border-radius:10px; overflow:hidden;">
+          <canvas id="report-photo-canvas" style="width:100%; height:100%; display:block; touch-action:none;"></canvas>
+          <div style="position:absolute; left:0; right:0; bottom:0; background:rgba(20,22,26,0.82); padding:9px 18px;">
+            <span style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#ffffff;">入賞者一同</span>
+          </div>
+        </div>`;
+    }
+
+    let reportPhotoImgCache = { url: null, img: null };
+    let reportPhotoNaturalSize = null; // { w, h } 直近に描画した画像の自然サイズ（ドラッグ換算に使用）
+
+    function reportClamp01(v) { return Math.max(0, Math.min(1, v == null ? 0.5 : v)); }
+
+    function reportLoadImageElement(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = src;
+      });
+    }
+
+    // object-fit:cover 相当のクロップ矩形（ズーム・焦点位置つき）をソース画像座標で算出
+    function reportComputeCoverCrop(srcW, srcH, boxW, boxH, zoom, focalX, focalY) {
+      const baseScale = Math.max(boxW / srcW, boxH / srcH);
+      const scale = baseScale * Math.max(1, zoom || 1);
+      const dispW = srcW * scale, dispH = srcH * scale;
+      const excessW = Math.max(0, dispW - boxW);
+      const excessH = Math.max(0, dispH - boxH);
+      const offsetX = excessW * reportClamp01(focalX);
+      const offsetY = excessH * reportClamp01(focalY);
+      return { sx: offsetX / scale, sy: offsetY / scale, sw: boxW / scale, sh: boxH / scale };
+    }
+
+    // #report-photo-box の実測サイズ（1200×1350座標系での真の値。transform:scaleの影響を受けない）
+    // に合わせて #report-photo-canvas へ描画する。画像はキャッシュして再デコードを避け、
+    // ドラッグ中の連続呼び出しでも同期的に再描画できるようにしている。
+    function reportRenderPhotoCanvas(photoDataUrl, crop) {
+      const box = document.getElementById('report-photo-box');
+      const canvasEl = document.getElementById('report-photo-canvas');
+      if (!box || !canvasEl || !photoDataUrl) return Promise.resolve();
+      const w = Math.max(1, box.offsetWidth);
+      const h = Math.max(1, box.offsetHeight);
+      canvasEl.width = w;
+      canvasEl.height = h;
+      const draw = (img) => {
+        const c = crop || { zoom: 1, x: 0.5, y: 0.5 };
+        const { sx, sy, sw, sh } = reportComputeCoverCrop(img.naturalWidth, img.naturalHeight, w, h, c.zoom, c.x, c.y);
+        const ctx = canvasEl.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+      };
+      if (reportPhotoImgCache.url === photoDataUrl && reportPhotoImgCache.img) {
+        draw(reportPhotoImgCache.img);
+        return Promise.resolve();
+      }
+      return reportLoadImageElement(photoDataUrl).then(img => {
+        reportPhotoImgCache = { url: photoDataUrl, img };
+        reportPhotoNaturalSize = { w: img.naturalWidth, h: img.naturalHeight };
+        draw(img);
+      }).catch(e => console.warn('[イベントレポート] 写真の描画に失敗:', e));
+    }
+
+    function reportBuildHighlights(data) {
+      if (!data.highlights || !data.highlights.length) return '';
+      const cards = data.highlights.map(h => {
+        const color = REPORT_HIGHLIGHT_COLORS[h.tag] || '#a8321e';
+        return `
+          <div style="background:#ffffff; border:1px solid #d6d1c4; border-left:4px solid ${color}; border-radius:0; padding:12px 14px;">
+            <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:14px; color:${color}; margin-bottom:6px;">${reportEscapeHtml(h.tag)}</div>
+            <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:18px; color:#14161a; margin-bottom:6px;">${reportEscapeHtml(h.p1)} ${reportEscapeHtml(h.score)} ${reportEscapeHtml(h.p2)}</div>
+            <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; line-height:1.6; color:#57534e;">${reportEscapeHtml(h.note)}</div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の激闘</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+        </div>`;
+    }
+
+    // 各セグメントを個別に丸めると合計が99%/101%になり得るため、丸め後に
+    // 最大件数のセグメントへ差分を吸収させてラベル表示上の合計を100%に揃える
+    function reportGetKimaritePercents(dist) {
+      const rounded = {};
+      let sum = 0;
+      let maxCode = null, maxCount = -1;
+      REPORT_KIMARITE_BAR_ORDER.forEach(code => {
+        const count = dist[code] || 0;
+        const p = Math.round((count / dist.total) * 100);
+        rounded[code] = p;
+        sum += p;
+        if (count > maxCount) { maxCount = count; maxCode = code; }
+      });
+      if (maxCode) rounded[maxCode] += (100 - sum);
+      return rounded;
+    }
+
+    function reportBuildKimariteBar(data) {
+      const dist = data.kimariteDist;
+      if (!dist || !dist.total) return '';
+      const percents = reportGetKimaritePercents(dist);
+      const segs = REPORT_KIMARITE_BAR_ORDER.map(code => {
+        const count = dist[code] || 0;
+        if (count <= 0) return '';
+        const percent = percents[code];
+        const showLabel = percent >= 5;
+        return `
+          <div style="flex:${count}; background:${REPORT_KIMARITE_BAR_COLORS[code]}; display:flex; align-items:center; justify-content:center;">
+            ${showLabel ? `<span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:#ffffff; white-space:nowrap;">${code} ${percent}%</span>` : ''}
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto; margin-top:12px;">
+          <div style="height:34px; border-radius:5px; overflow:hidden; display:flex; border:1px solid #14161a;">${segs}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:8px;">${reportEscapeHtml(data.kimariteNote || '')}</div>
+        </div>`;
+    }
+
+    // page: 1（右に "1 / 2"）/ 2（右に "2 / 2　@yamizaki"）。ロゴは明るい背景に置けないため外し、テキストのみにする
+    function reportBuildFooter(page) {
+      const rightText = page === 1 ? '1 / 2' : '2 / 2　@yamizaki';
+      return `
+        <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-top:3px solid #14161a; padding-top:10px;">
+          <span style="font-family:'Orbitron', sans-serif; font-size:14px; color:#57534e;">ITABASHI BEYBLADE CLUB</span>
+          <span style="font-family:'Orbitron', sans-serif; font-size:14px; color:#57534e;">${reportEscapeHtml(rightText)}</span>
+        </div>`;
+    }
+
+    const REPORT_RECORD_LABELS = [
+      ['xf', '最多エクストリームフィニッシュ'],
+      ['bf', '最多バーストフィニッシュ'],
+      ['of', '最多オーバーフィニッシュ'],
+      ['sf', '最多スピンフィニッシュ'],
+      ['shutout', '完封勝ち'],
+      ['longest', '最長試合']
+    ];
+
+    function reportBuildRecordCard(label, entry) {
+      return `
+        <div style="background:#ffffff; border:1px solid #d6d1c4; padding:10px 13px;">
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; color:#57534e; margin-bottom:4px;">${reportEscapeHtml(label)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#14161a;">${reportEscapeHtml(entry.name)}<span style="font-family:'Orbitron', sans-serif; font-size:15px; color:#a8321e; margin-left:7px;">${entry.value}${reportEscapeHtml(entry.unit)}</span></div>
+        </div>`;
+    }
+
+    // getReportRecords() の6項目を3カラム×2行で並べる。null の項目は枠ごと省いて詰めて配置する
+    function reportBuildRecords(data) {
+      const records = data.records || {};
+      const cards = REPORT_RECORD_LABELS
+        .filter(([key]) => records[key])
+        .map(([key, label]) => reportBuildRecordCard(label, records[key]))
+        .join('');
+      if (!cards) return '';
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の記録</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); column-gap:14px; row-gap:12px;">${cards}</div>
+        </div>`;
+    }
+
+    // getReportAllStandings() の5位以下グループを一覧表示。空配列ならセクションごと非表示
+    function reportBuildAllStandings(data) {
+      const groups = data.allStandings;
+      if (!groups || !groups.length) return '';
+      const rows = groups.map((g, idx) => {
+        const isLast = idx === groups.length - 1;
+        return `
+          <div style="display:flex; align-items:flex-start; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #ded9cd;'}">
+            <div style="width:96px; flex:none; font-family:'Orbitron', sans-serif; font-size:15px; font-weight:700; color:#57534e;">${reportEscapeHtml(g.label)}</div>
+            <div style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:17px; color:#14161a; line-height:1.5;">${reportEscapeHtml((g.names || []).join('　'))}</div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">全参加者 最終順位</div>
+          ${rows}
+        </div>`;
+    }
+
+    // noteText: 編集後記の自由入力（textarea） / nextEventText: fetchNextEvent() の生成文（null可）。
+    // 両方空の場合はセクションごと非表示。残り高さを吸収するため flex:1 1 auto
+    function reportBuildEditorial(noteText, nextEventText) {
+      const hasNote = !!(noteText && noteText.trim());
+      const hasNext = !!(nextEventText && nextEventText.trim());
+      if (!hasNote && !hasNext) return '';
+      // <br>変換ではなくwhite-space:pre-wrapで改行を扱う。html2canvasでの折り返し行ずれを避けるため
+      const noteHtml = hasNote
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.8; color:#3f3f46; white-space:pre-wrap; text-indent:0; margin:0;">${reportEscapeHtml(noteText.trim())}</div>`
+        : '';
+      const nextHtml = hasNext
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#14161a; margin-top:10px; white-space:pre-wrap; text-indent:0;">${reportEscapeHtml(nextEventText.trim())}</div>`
+        : '';
+      return `
+        <div style="flex:1 1 auto; background:#ffffff; border:1px solid #d6d1c4; padding:12px 15px;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">編集後記</div>${noteHtml}${nextHtml}
+        </div>`;
+    }
+
+    // data: collectReportData() の返り値 / photoDataUrl: リサイズ済みdataURL文字列 or null
+    // photoCrop: { zoom, x, y }（省略時は等倍中央）。x/yは0〜1の焦点位置（object-position相当）
+    // noteText: 編集後記の自由入力 / nextEventText: fetchNextEvent() の生成文（いずれも省略可）
+    // 戻り値: [canvas1, canvas2]（1200×1350の2ページ）
+    async function buildReportHtml(data, photoDataUrl, photoCrop, noteText, nextEventText) {
+      if (!data || !data.headline) {
+        await showAlert('リーグ戦が終了していません。全試合の結果が確定してからレポートを生成してください。');
+        return null;
+      }
+
+      ['report-canvas-1', 'report-canvas-2'].forEach(id => {
+        const existing = document.getElementById(id);
+        if (existing) existing.remove();
+      });
+
+      const logo = await reportGetLogo();
+
+      const photoHtml = reportBuildPhoto(photoDataUrl);
+      const spacerHtml = photoHtml ? '' : `<div style="flex:1 1 auto;"></div>`;
+
+      const page1Sections = [
+        reportBuildMasthead(logo, 1),
+        reportBuildNameBand(data, 1),
+        reportBuildHeadline(data),
+        reportBuildStandings(data),
+        reportBuildHighlights(data),
+        photoHtml,
+        spacerHtml,
+        reportBuildFooter(1)
+      ].filter(Boolean).join('');
+
+      const page2Sections = [
+        reportBuildMasthead(logo, 2),
+        reportBuildNameBand(data, 2),
+        reportBuildRecords(data),
+        reportBuildAllStandings(data),
+        reportBuildEditorial(noteText, nextEventText),
+        reportBuildFooter(2)
+      ].filter(Boolean).join('');
+
+      const makePage = (id, sectionsHtml) => {
+        const el = document.createElement('div');
+        el.id = id;
+        el.style.cssText = 'position:absolute; left:-9999px; top:0; width:1200px; height:1350px; box-sizing:border-box; padding:36px; background:#f2f0ea; display:flex; flex-direction:column; gap:16px; font-family:"Noto Sans JP", sans-serif;';
+        el.innerHTML = sectionsHtml;
+        document.body.appendChild(el);
+        return el;
+      };
+
+      const canvas1 = makePage('report-canvas-1', page1Sections);
+      const canvas2 = makePage('report-canvas-2', page2Sections);
+
+      try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      // dataURLの<img>はこの時点でまだデコード完了していないことがあり、reportFitMastheadTitle()が
+      // 幅0のロゴで計測してタイトルが右に溢れることがあるため、ロゴの読み込み完了を待つ
+      await Promise.all(['report-masthead-logo-1', 'report-masthead-logo-2'].map(id => {
+        const el = document.getElementById(id);
+        if (!el || el.complete) return Promise.resolve();
+        return new Promise(r => { el.onload = r; el.onerror = r; });
+      }));
+
+      if (photoDataUrl) {
+        await reportRenderPhotoCanvas(photoDataUrl, photoCrop || { zoom: 1, x: 0.5, y: 0.5 });
+      }
+
+      reportFitMastheadTitle(1);
+      reportFitMastheadTitle(2);
+      reportFitNameBand(1);
+      reportFitNameBand(2);
+      reportFitStandingsNames(data);
+      reportFitStandingsRows(data);
+
+      [canvas1, canvas2].forEach((canvas, idx) => {
+        const overflow = canvas.scrollHeight - 1350;
+        if (overflow > 0) {
+          console.warn(`[イベントレポート] ${idx + 1}枚目の紙面が ${overflow}px 超過しています（scrollHeight=${canvas.scrollHeight}）`);
+        }
+      });
+
+      return [canvas1, canvas2];
+    }
+
+    // デバッグ用: #report-canvas-1/2 を画面内に一時表示/非表示
+    function showReportDebug() {
+      ['report-canvas-1', 'report-canvas-2'].forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (!el) { console.warn(`[イベントレポート] ${id} が未生成です。先に buildReportHtml() を実行してください。`); return; }
+        el.style.left = (idx * 1220) + 'px';
+        el.style.top = '0';
+        el.style.zIndex = '99999';
+        el.style.outline = '4px solid #ff0055';
+      });
+    }
+    function hideReportDebug() {
+      ['report-canvas-1', 'report-canvas-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.left = '-9999px';
+        el.style.zIndex = '';
+        el.style.outline = '';
+      });
+    }
+
+    window.buildReportHtml = buildReportHtml;
+    window.showReportDebug = showReportDebug;
+    window.hideReportDebug = hideReportDebug;
+
+    // ==========================================
+    // イベントレポート（PNG新聞）— モーダルUI・写真・PNG出力
+    // ==========================================
+    const REPORT_PHOTO_KEY = 'tbh_league_report_photo'; // SAVE_KEY(tbh_league)とは別キー。絶対に混在させない
+    const REPORT_NOTE_KEY = 'tbh_league_report_note'; // SAVE_KEY(tbh_league)とは別キー。絶対に混在させない
+    let reportPhotoDataUrl = null; // メモリ上のリサイズ済み写真dataURL（JPEG, 長辺1200px以内）
+    let reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // ズーム倍率・焦点位置（0〜1、object-position相当）
+    let reportPhotoSaveWarned = false; // localStorage保存失敗の警告を1セッション1回に抑える
+    let reportPngGenerating = false;
+    let reportNextEventInfo = null; // fetchNextEvent() の結果（未取得/失敗時はnull）
+    let reportNextEventStatus = 'idle'; // 'loading' | 'success' | 'none'
+
+    function loadReportNote() {
+      try {
+        return localStorage.getItem(REPORT_NOTE_KEY) || '';
+      } catch (e) {
+        console.warn('[イベントレポート] 編集後記の復元に失敗:', e);
+        return '';
+      }
+    }
+
+    function saveReportNote(text) {
+      try {
+        localStorage.setItem(REPORT_NOTE_KEY, text);
+      } catch (e) {
+        console.warn('[イベントレポート] 編集後記のlocalStorage保存に失敗:', e);
+      }
+    }
+
+    // blur時に保存＋紙面へ反映する（入力毎の再生成は重いため）
+    function onReportNoteChange() {
+      saveReportNote(getReportNoteValue());
+      void regenerateReportPreview();
+    }
+
+    function updateReportNextEventStatus() {
+      const el = document.getElementById('reportNextEventStatus');
+      if (!el) return;
+      if (reportNextEventStatus === 'loading') {
+        el.textContent = '次回大会の予定を取得中…';
+      } else if (reportNextEventStatus === 'success' && reportNextEventInfo) {
+        el.textContent = reportNextEventInfo.text;
+      } else {
+        el.textContent = '次回大会の予定を取得できませんでした（編集後記に手入力してください）';
+      }
+    }
+
+    // 全 leagueMatches（BYE除く）の winner が確定しているかで大会終了を判定する
+    function isLeagueFinished() {
+      return leagueMatches.length > 0 && leagueMatches.every(m => m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner !== null);
+    }
+
+    async function openReportModal() {
+      if (!isLeagueFinished()) {
+        await showAlert('リーグが終了していません。全試合の結果が確定してからレポートを生成してください。');
+        return;
+      }
+
+      reportPhotoSaveWarned = false;
+      try {
+        const raw = localStorage.getItem(REPORT_PHOTO_KEY);
+        if (raw) {
+          let parsed = null;
+          try { parsed = JSON.parse(raw); } catch (e) { /* 旧形式（生のdataURL文字列）の可能性 */ }
+          if (parsed && typeof parsed === 'object' && parsed.dataUrl) {
+            reportPhotoDataUrl = parsed.dataUrl;
+            reportPhotoCrop = {
+              zoom: (parsed.crop && parsed.crop.zoom) || 1,
+              x: (parsed.crop && parsed.crop.x != null) ? parsed.crop.x : 0.5,
+              y: (parsed.crop && parsed.crop.y != null) ? parsed.crop.y : 0.5
+            };
+          } else if (raw.startsWith('data:')) {
+            reportPhotoDataUrl = raw; // 旧形式（クロップ情報なし）
+            reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+          }
+        }
+      } catch (e) {
+        console.warn('[イベントレポート] 写真の復元に失敗:', e);
+      }
+      updateReportPhotoButtons();
+
+      const dateInput = document.getElementById('reportDateInput');
+      if (dateInput && !dateInput.value) {
+        const now = new Date();
+        dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+
+      const noteInput = document.getElementById('reportNoteInput');
+      if (noteInput) noteInput.value = loadReportNote();
+
+      reportNextEventInfo = null;
+      reportNextEventStatus = 'loading';
+      updateReportNextEventStatus();
+
+      // 取得を待たずに即座にモーダルを開く。5秒待たされるのを避けるため
+      document.getElementById('reportModal').classList.remove('hidden');
+      document.getElementById('reportModal').classList.add('flex');
+
+      await regenerateReportPreview();
+
+      const cutoffDateStr = dateInput ? dateInput.value : '';
+      fetchNextEvent(cutoffDateStr).then(info => {
+        reportNextEventInfo = info;
+        reportNextEventStatus = info ? 'success' : 'none';
+        updateReportNextEventStatus();
+        void regenerateReportPreview();
+      });
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+      document.getElementById('reportModal').classList.remove('flex');
+    }
+
+    function onReportDateChange() {
+      void regenerateReportPreview();
+    }
+
+    function updateReportPhotoButtons() {
+      const pickBtn = document.getElementById('reportPhotoPickBtn');
+      const removeBtn = document.getElementById('reportPhotoRemoveBtn');
+      const cropControls = document.getElementById('reportCropControls');
+      const slider = document.getElementById('reportZoomSlider');
+      if (!pickBtn || !removeBtn) return;
+      pickBtn.textContent = reportPhotoDataUrl ? '📷 写真を変更' : '📷 写真を選択';
+      removeBtn.classList.toggle('hidden', !reportPhotoDataUrl);
+      if (cropControls) cropControls.classList.toggle('hidden', !reportPhotoDataUrl);
+      if (slider) slider.value = String(reportPhotoCrop.zoom || 1);
+    }
+
+    // 写真dataURL＋クロップ状態をまとめて保存。失敗時の警告はモーダル1セッションにつき1回のみ
+    function reportPersistPhoto() {
+      if (!reportPhotoDataUrl) return;
+      try {
+        localStorage.setItem(REPORT_PHOTO_KEY, JSON.stringify({ dataUrl: reportPhotoDataUrl, crop: reportPhotoCrop }));
+      } catch (e) {
+        console.warn('[イベントレポート] 写真のlocalStorage保存に失敗:', e);
+        if (!reportPhotoSaveWarned) {
+          reportPhotoSaveWarned = true;
+          void showAlert('写真は保存されませんが、レポート生成には使えます。');
+        }
+      }
+    }
+
+    function onReportZoomChange() {
+      const slider = document.getElementById('reportZoomSlider');
+      if (!slider) return;
+      reportPhotoCrop.zoom = parseFloat(slider.value) || 1;
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    function onReportZoomCommit() {
+      reportPersistPhoto();
+    }
+
+    function resetReportCrop() {
+      reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+      const slider = document.getElementById('reportZoomSlider');
+      if (slider) slider.value = '1';
+      reportPersistPhoto();
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    // #report-photo-canvas 上のドラッグでトリミング位置（焦点）を調整する。
+    // #reportPreviewBox1 は再生成時も破棄されない固定要素なので、ここに一度だけイベント委譲で登録する。
+    function reportApplyPhotoDrag(dxPx, dyPx, boxW, boxH) {
+      if (!reportPhotoNaturalSize) return;
+      const { w: srcW, h: srcH } = reportPhotoNaturalSize;
+      const baseScale = Math.max(boxW / srcW, boxH / srcH);
+      const scale = baseScale * Math.max(1, reportPhotoCrop.zoom || 1);
+      const excessW = Math.max(0, srcW * scale - boxW);
+      const excessH = Math.max(0, srcH * scale - boxH);
+      if (excessW > 0) reportPhotoCrop.x = reportClamp01(reportPhotoCrop.x - dxPx / excessW);
+      if (excessH > 0) reportPhotoCrop.y = reportClamp01(reportPhotoCrop.y - dyPx / excessH);
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    // 写真は1枚目にのみ存在するため、ドラッグ操作は #reportPreviewBox1 にのみ登録する
+    function setupReportPhotoDrag() {
+      const box = document.getElementById('reportPreviewBox1');
+      if (!box || box.dataset.dragBound) return;
+      box.dataset.dragBound = '1';
+      let dragging = false;
+      let lastX = 0, lastY = 0;
+
+      box.addEventListener('pointerdown', (ev) => {
+        const canvasEl = ev.target && ev.target.closest && ev.target.closest('#report-photo-canvas');
+        if (!canvasEl) return;
+        dragging = true;
+        lastX = ev.clientX; lastY = ev.clientY;
+        try { canvasEl.setPointerCapture(ev.pointerId); } catch (e) { /* 非対応環境は無視 */ }
+        ev.preventDefault();
+      });
+      box.addEventListener('pointermove', (ev) => {
+        if (!dragging) return;
+        const photoBox = document.getElementById('report-photo-box');
+        if (!photoBox) return;
+        const scale = reportComputePreviewScale(box) || 1;
+        const dx = (ev.clientX - lastX) / scale;
+        const dy = (ev.clientY - lastY) / scale;
+        lastX = ev.clientX; lastY = ev.clientY;
+        reportApplyPhotoDrag(dx, dy, photoBox.offsetWidth, photoBox.offsetHeight);
+        ev.preventDefault();
+      });
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        reportPersistPhoto();
+      };
+      box.addEventListener('pointerup', endDrag);
+      box.addEventListener('pointercancel', endDrag);
+      box.addEventListener('pointerleave', endDrag);
+    }
+    setupReportPhotoDrag();
+
+    function reportDateStrFromInput() {
+      const el = document.getElementById('reportDateInput');
+      if (!el || !el.value) return reportFormatDate();
+      const [y, m, d] = el.value.split('-');
+      return `${y}.${m}.${d}`;
+    }
+
+    function reportFilenameDateStr() {
+      const el = document.getElementById('reportDateInput');
+      if (el && el.value) return el.value.replace(/-/g, '');
+      const now = new Date();
+      return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function reportSanitizeFilename(name) {
+      return String(name || '').replace(/[\/\\:\*\?"<>\|\s]+/g, '_');
+    }
+
+    // box: プレビュー枠のDOM要素（#reportPreviewBox1 / #reportPreviewBox2）。幅基準でscaleを算出する
+    function reportComputePreviewScale(box) {
+      const w = box ? box.clientWidth : 0;
+      return w > 0 ? w / 1200 : 0.5;
+    }
+
+    // canvas(#report-canvas-{pageNum})をプレビュー枠内に縮小配置する（枠幅から算出したscaleでレスポンシブ対応）
+    function reportMountPreview(canvas, pageNum) {
+      const box = document.getElementById(`reportPreviewBox${pageNum}`);
+      if (!box || !canvas) return;
+      const scale = reportComputePreviewScale(box);
+      box.innerHTML = '';
+      canvas.style.position = 'absolute';
+      canvas.style.left = '0';
+      canvas.style.top = '0';
+      canvas.style.transform = `scale(${scale})`;
+      canvas.style.transformOrigin = 'top left';
+      box.appendChild(canvas);
+    }
+
+    function getReportNoteValue() {
+      const el = document.getElementById('reportNoteInput');
+      return el ? el.value : '';
+    }
+
+    async function regenerateReportPreview() {
+      const data = collectReportData();
+      data.dateStr = reportDateStrFromInput();
+      const noteText = getReportNoteValue();
+      const nextEventText = reportNextEventInfo ? reportNextEventInfo.text : null;
+      const canvases = await buildReportHtml(data, reportPhotoDataUrl, reportPhotoCrop, noteText, nextEventText);
+      if (!canvases) return; // リーグ未終了などでbuildReportHtml側が中止した場合
+      reportMountPreview(canvases[0], 1);
+      reportMountPreview(canvases[1], 2);
+    }
+
+    // File → dataURL → Image → canvas(長辺1200px) → JPEG dataURL。
+    // 元画像のdataURLはこの関数のローカルスコープ内でのみ使い、呼び出し元には残さない。
+    function reportResizePhotoFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Image decode failed'));
+          img.onload = () => {
+            const maxEdge = 1200;
+            let width = img.naturalWidth, height = img.naturalHeight;
+            if (width > maxEdge || height > maxEdge) {
+              if (width >= height) { height = Math.round(height * (maxEdge / width)); width = maxEdge; }
+              else { width = Math.round(width * (maxEdge / height)); height = maxEdge; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function onReportPhotoSelected(event) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      input.value = ''; // 同じファイルを連続選択できるようにリセット
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        await showAlert('ファイルサイズが20MBを超えています。別の画像を選んでください。');
+        return;
+      }
+
+      try {
+        const resized = await reportResizePhotoFile(file);
+        reportPhotoDataUrl = resized;
+        reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // 新しい写真なのでクロップは初期化
+        reportPhotoSaveWarned = false;
+        reportPersistPhoto();
+        updateReportPhotoButtons();
+        await regenerateReportPreview();
+      } catch (e) {
+        console.warn('[イベントレポート] 写真の読み込みに失敗:', e);
+        await showAlert('画像を読み込めませんでした。HEIC形式の可能性があります。iPhoneの写真アプリから選び直すか、JPEG／PNGに変換してからお試しください。');
+        // モーダルは閉じない。写真なし状態を維持する（reportPhotoDataUrlは変更しない）
+      }
+    }
+
+    function removeReportPhoto() {
+      reportPhotoDataUrl = null;
+      reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+      try { localStorage.removeItem(REPORT_PHOTO_KEY); } catch (e) { console.warn('[イベントレポート] 写真の削除に失敗:', e); }
+      updateReportPhotoButtons();
+      void regenerateReportPreview();
+    }
+
+    function setReportGenerating(flag) {
+      reportPngGenerating = flag;
+      const status = document.getElementById('reportGenStatus');
+      const saveBtn = document.getElementById('reportSaveBtn');
+      const tabBtn1 = document.getElementById('reportOpenTabBtn1');
+      const tabBtn2 = document.getElementById('reportOpenTabBtn2');
+      if (status) status.classList.toggle('hidden', !flag);
+      if (saveBtn) saveBtn.disabled = flag;
+      if (tabBtn1) tabBtn1.disabled = flag;
+      if (tabBtn2) tabBtn2.disabled = flag;
+    }
+
+    // #report-canvas-{pageNum} を撮影用に一時的にオフスクリーン等倍へ戻し、html2canvasでPNG化してから
+    // プレビュー枠内の縮小表示に復元する
+    async function reportCapturePng(pageNum) {
+      const canvas = document.getElementById(`report-canvas-${pageNum}`);
+      if (!canvas) throw new Error(`report-canvas-${pageNum} not found`);
+
+      const previewBox = document.getElementById(`reportPreviewBox${pageNum}`);
+      const wasInPreview = !!(previewBox && previewBox.contains(canvas));
+
+      canvas.style.transform = 'none';
+      canvas.style.position = 'absolute';
+      canvas.style.left = '-9999px';
+      canvas.style.top = '0';
+      if (wasInPreview) document.body.appendChild(canvas);
+
+      try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      try {
+        const rendered = await html2canvas(canvas, {
+          width: 1200, height: 1350, scale: 1,
+          backgroundColor: '#f2f0ea', useCORS: true, logging: false
+        });
+        return await new Promise((resolve, reject) => {
+          rendered.toBlob(blob => { if (blob) resolve(blob); else reject(new Error('toBlob failed')); }, 'image/png');
+        });
+      } finally {
+        if (wasInPreview) {
+          const scale = reportComputePreviewScale(previewBox);
+          previewBox.appendChild(canvas);
+          canvas.style.left = '0';
+          canvas.style.top = '0';
+          canvas.style.transform = `scale(${scale})`;
+          canvas.style.transformOrigin = 'top left';
+        }
+      }
+    }
+
+    function reportDownloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // 2枚を順にダウンロードする。連続ダウンロードはブラウザにブロックされることがあるため2枚目は300ms待つ
+    async function downloadReportPng() {
+      if (reportPngGenerating) return;
+      setReportGenerating(true);
+      try {
+        const name = reportSanitizeFilename(leagueName || '板橋ベイブレード会');
+        const dateStr = reportFilenameDateStr();
+
+        const blob1 = await reportCapturePng(1);
+        reportDownloadBlob(blob1, `${name}_report_${dateStr}_p1.png`);
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const blob2 = await reportCapturePng(2);
+        reportDownloadBlob(blob2, `${name}_report_${dateStr}_p2.png`);
+      } catch (e) {
+        console.warn('[イベントレポート] PNG保存に失敗:', e);
+        await showAlert('PNGの生成に失敗しました。時間をおいて再度お試しください。');
+      } finally {
+        setReportGenerating(false);
+      }
+    }
+
+    // pageNum: 1 または 2。1回の操作で2タブ開くとポップアップブロックに掛かるため、ボタンごとに1ページのみ開く
+    async function openReportPngInNewTab(pageNum) {
+      if (reportPngGenerating) return;
+      setReportGenerating(true);
+      try {
+        const blob = await reportCapturePng(pageNum);
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if (!win) {
+          URL.revokeObjectURL(url);
+          await showAlert('新しいタブを開けませんでした。ポップアップブロックを解除してから再度お試しください。');
+        } else {
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+      } catch (e) {
+        console.warn('[イベントレポート] PNG表示に失敗:', e);
+        await showAlert('PNGの生成に失敗しました。時間をおいて再度お試しください。');
+      } finally {
+        setReportGenerating(false);
+      }
+    }
+
+    window.openReportModal = openReportModal;
+    window.closeReportModal = closeReportModal;
 
     // ===== カスタム alert / confirm =====
     function showAlert(msg) {

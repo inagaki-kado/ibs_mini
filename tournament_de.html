@@ -1197,6 +1197,79 @@
       }
     }
 
+    // 📋名簿の関係性（親/子/夫婦/サークル/属性/女性）参照。コメント・レポートの枕詞用。
+    const RANGE_ROSTER = encodeURIComponent("'📋 名簿'!A3:T");
+    const ROSTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_ROSTER}?key=${API_KEY_H2H}`;
+    let _rosterRelMap = null;
+
+    async function loadRosterRelations(timeoutMs = 5000) {
+      if (_rosterRelMap) return _rosterRelMap;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(ROSTER_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return null;
+        const json = await res.json();
+        const split = s => String(s || '').split(/[,、]/).map(x => x.trim()).filter(Boolean);
+        const map = new Map();
+        (json.values || []).forEach(r => {
+          const name = String(r[0] || '').trim();
+          if (!name) return;
+          map.set(name, {
+            parents:  split(r[14]),
+            children: split(r[15]),
+            spouses:  split(r[16]),
+            circle:   String(r[17] || '').trim(),
+            attr:     String(r[18] || '').trim(),
+            female:   String(r[19] || '').trim() === '1'
+          });
+        });
+        _rosterRelMap = map;
+        return _rosterRelMap;
+      } catch (e) {
+        console.warn('名簿の関係性取得失敗（枕詞なしで継続）', e);
+        return null;
+      }
+    }
+
+    // 2人の関係を1つだけ返す。優先: 夫婦 > 親子 > きょうだい > 同サークル > 属性一致 > サークル対抗
+    // 女性フラグ(T列)は「母」の呼称判定にのみ使う。女性同士であること自体は出力しない。
+    function getRelation(nameA, nameB) {
+      const map = _rosterRelMap;
+      if (!map || !nameA || !nameB || nameA === nameB) return null;
+      const a = map.get(nameA), b = map.get(nameB);
+      if (!a || !b) return null;
+      if (a.spouses.includes(nameB) || b.spouses.includes(nameA)) return { kind: 'spouse' };
+      if (a.parents.includes(nameB) || b.children.includes(nameA)) return { kind: 'parent_child', parent: nameB, child: nameA, motherSide: b.female };
+      if (b.parents.includes(nameA) || a.children.includes(nameB)) return { kind: 'parent_child', parent: nameA, child: nameB, motherSide: a.female };
+      if (a.parents.length && a.parents.some(p => b.parents.includes(p))) return { kind: 'sibling' };
+      if (a.circle && b.circle && a.circle === b.circle) return { kind: 'same_circle', circle: a.circle };
+      if (a.attr && b.attr && a.attr === b.attr) return { kind: 'same_attr', attr: a.attr };
+      if (a.circle && b.circle && a.circle !== b.circle) return { kind: 'cross_circle', circles: [a.circle, b.circle] };
+      return null;
+    }
+
+    // 試合後コメント先頭の枕詞。該当なしは空文字。
+    function buildRelationPrefix(winnerName, loserName) {
+      const rel = getRelation(winnerName, loserName);
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return pickRandom(['会でも希少な夫婦対決。', '夫婦がスタジアムを挟んで向き合った。']);
+      }
+      if (rel.kind === 'parent_child') {
+        const oya = rel.motherSide ? '母' : '親';
+        return (winnerName === rel.child)
+          ? pickRandom([`${oya}を相手に一歩も引かない親子対決。`, `${oya}の背中を追う子が挑んだ親子対決。`])
+          : pickRandom([`${oya}の貫禄が示された親子対決。`, `子の挑戦を受けて立つ親子対決。`]);
+      }
+      if (rel.kind === 'sibling')      return pickRandom(['きょうだい対決となった一戦。', '同じ家で腕を磨いた者同士の一戦。']);
+      if (rel.kind === 'same_circle')  return pickRandom([`同じ${rel.circle}に集う両者の同門対決。`, `${rel.circle}の内輪を懸けた一戦。`]);
+      if (rel.kind === 'same_attr')    return pickRandom([`ともに${rel.attr}の顔を持つ両者の読み合い。`, `${rel.attr}同士、読み合いの一戦。`]);
+      if (rel.kind === 'cross_circle') return `${rel.circles[0]}と${rel.circles[1]}、サークルの威信を懸けた一戦。`;
+      return '';
+    }
+
     async function loadH2HHistory() {
       if (_h2hCache) return _h2hCache;
       try {
@@ -2068,7 +2141,8 @@
       }
       // ▲ 試合展開の分析ここまで
 
-      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout, data.roundCtx);
+      const relationPrefix = buildRelationPrefix(data.winner, data.loser);
+      return relationPrefix + firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout, data.roundCtx);
     }
 
     function sendMatchComment(comment, highlights) {
@@ -2084,7 +2158,8 @@
         .sort((a, b) => b.length - a.length);
       const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
         fetchBeyUsageTop5(data.winner),
-        fetchBeyUsageTop5(data.loser)
+        fetchBeyUsageTop5(data.loser),
+        loadRosterRelations()
       ]);
       const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
       if (targetMatch) {
@@ -3699,6 +3774,150 @@
       return `<div class="relative flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] ${cardBorder}">${nextBadge}${playNumBadge}${nextBtn}<button class="${p1Class} text-left flex items-center gap-1" ${onclick1}><span class="text-[10px] opacity-70 font-sf">${label1}</span> <span class="truncate">${p1Name}</span></button>${vsArea}<button class="${p2Class} text-right flex items-center justify-end gap-1" ${onclick2}><span class="truncate">${p2Name}</span> <span class="text-[10px] opacity-70 font-sf">${label2}</span></button></div>`;
     }
 
+    // ===== 次戦予告キャッチコピー =====
+    // ランク文字列("80F"/"XF"/"--")を帯index(0..5)に変換。判定不能はnull
+    function cpRankTier(rankStr) {
+      const s = String(rankStr || '').trim().toUpperCase();
+      if (!s || s === '--') return null;
+      if (s.startsWith('X')) return 5;
+      const n = parseInt(s, 10);
+      if (isNaN(n)) return null;
+      if (n < 40) return 0;
+      if (n < 60) return 1;
+      if (n < 80) return 2;
+      if (n < 90) return 3;
+      return 4;
+    }
+    function cpRateNum(rateStr) {
+      const v = parseFloat(String(rateStr || '').replace('%', ''));
+      return isNaN(v) ? null : v;
+    }
+    // 前半×後半を組み合わせる。直前と同一組み合わせなら1回だけ引き直す
+    let _lastCatchphrase = '';
+    function cpCombine(heads, tails) {
+      let out = pickRandom(heads) + pickRandom(tails);
+      if (out === _lastCatchphrase) out = pickRandom(heads) + pickRandom(tails);
+      _lastCatchphrase = out;
+      return out;
+    }
+    // 関係性 → 合成用の短い呼称
+    function cpRelWord(rel) {
+      if (!rel) return '';
+      if (rel.kind === 'spouse') return '夫婦';
+      if (rel.kind === 'parent_child') return rel.motherSide ? '母子' : '親子';
+      if (rel.kind === 'sibling') return 'きょうだい';
+      if (rel.kind === 'same_circle') return '同門';
+      if (rel.kind === 'same_attr') return rel.attr;
+      if (rel.kind === 'cross_circle') return '他流';
+      return '';
+    }
+    // 優先1: 関係性ベース
+    function cpFromRelation(rel) {
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return cpCombine(['愛と闘志の', '誓いを交わした', '家庭を懸けた', '最も近い好敵手、', '譲れぬ'],
+                         ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', 'カップルマッチ！']);
+      }
+      if (rel.kind === 'parent_child') {
+        const kin = rel.motherSide ? '母子' : '親子';
+        return cpCombine(['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '譲れぬ想いの'],
+                         [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, 'ファミリーマッチ！']);
+      }
+      if (rel.kind === 'sibling') {
+        return cpCombine(['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '血で血を洗う'],
+                         ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'ファミリーマッチ！']);
+      }
+      if (rel.kind === 'same_circle') {
+        return cpCombine(['意地とプライドの', '同じ看板の', '手の内知り尽くす', '練習の成果、', '気心知れた'],
+                         ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '仲間割れマッチ！']);
+      }
+      if (rel.kind === 'same_attr') {
+        const a = rel.attr;
+        return cpCombine(['読み合い上等！', '場数を踏んだ', '勝負勘が光る', '反応速度が武器、', '別ジャンルの猛者'],
+                         [`${a}対決！`, `${a}同士の激突！`, `${a}の意地！`, `${a}マッチ！`, `${a}頂上決戦！`]);
+      }
+      if (rel.kind === 'cross_circle') {
+        return cpCombine(['威信を懸けた', '看板を背負う', '越境してきた', '名誉を懸けた', '二つの会が交わる'],
+                         ['サークル対抗戦！', 'クラブ対抗マッチ！', '越境対決！', '他流試合！', '交流戦の頂点！']);
+      }
+      return '';
+    }
+    // 優先0: グランドファイナル×関係性の合成文
+    function cpGrandFinalWithRelation(rel) {
+      const w = cpRelWord(rel);
+      if (!w) return '';
+      return cpCombine([`${w}で挑む`, `${w}が辿り着いた`, `${w}で迎える`, `${w}対決の`, `${w}が交わる`],
+                       ['グランドファイナル！', '最終決戦！', '大会最後の一戦！', '栄冠を懸けた頂上戦！', '運命の決勝！']);
+    }
+    // 優先2: ステージ
+    function cpFromStage(label) {
+      const s = String(label || '').toUpperCase();
+      const raw = String(label || '');
+      if (s.includes('FINAL') || raw.includes('決勝')) {
+        return cpCombine(['栄冠を懸けた', '頂点を賭けた', '全てを出し切る', '王座を懸けた', '誰もが待った'],
+                         ['決勝戦！', 'ファイナルバトル！', '頂上決戦！', '最終決戦！', '大一番！']);
+      }
+      if (s.includes('LOSER') || raw.includes('敗者')) {
+        return cpCombine(['負けられない', '崖っぷちの', '後がない', '生存を懸けた', '意地を見せる'],
+                         ['背水の陣！', 'サバイバルマッチ！', '敗者復活の一戦！', '生き残り決戦！', 'リベンジロード！']);
+      }
+      return '';
+    }
+    // 優先3: H2H
+    function cpFromH2H(w1, w2) {
+      if (w1 == null || w2 == null) return '';
+      if (w1 >= 1 && w2 >= 1) {
+        return cpCombine(['宿命の', '何度目かの', '決着つかぬ', '因縁深き', '譲れぬ'],
+                         ['ライバル対決！', '再戦マッチ！', '好敵手対決！', '決着戦！', 'リマッチ！']);
+      }
+      if (w1 >= 1 || w2 >= 1) {
+        return cpCombine(['執念の', '借りを返す', '雪辱を期す', '過去を塗り替える', '牙を研いだ'],
+                         ['リベンジマッチ！', '仕返しの一戦！', '再戦！', '挑戦状！', '返り討ちなるか！']);
+      }
+      return '';
+    }
+    // 優先5: 初顔合わせ（関係性・ステージ・H2H・戦績のいずれでも決まらない場合の最終手段）
+    function cpFirstMeeting() {
+      return cpCombine(['予測不能の', '手の内知らぬ', '未知数の', 'データなしの', '互いに初めての'],
+                       ['初顔合わせ！', 'ファーストコンタクト！', '初対決！', 'ぶつかり合い！', '未知の激突！']);
+    }
+    // 優先4: 戦績
+    function cpFromStats(p1, p2) {
+      const t1 = cpRankTier(p1.rank), t2 = cpRankTier(p2.rank);
+      if (t1 === null || t2 === null) return '';
+      const r1 = cpRateNum(p1.currentStats && p1.currentStats.rate);
+      const r2 = cpRateNum(p2.currentStats && p2.currentStats.rate);
+      const bp1 = Number(p1.currentStats && p1.currentStats.power) || 0;
+      const bp2 = Number(p2.currentStats && p2.currentStats.power) || 0;
+      const bothTop = (t1 >= 3 && t2 >= 3) || (r1 != null && r2 != null && r1 >= 60 && r2 >= 60);
+      if (bothTop) {
+        return cpCombine(['トップランカーの', '上位陣が激突する', '実力者同士の', '高ランク同士の', '会を代表する'],
+                         ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！']);
+      }
+      if (Math.abs(t1 - t2) >= 2 || Math.abs(bp1 - bp2) >= 3000) {
+        return cpCombine(['魅せろ、', '金星を狙う', '下剋上を狙う', '格上に挑む', '常識を覆す'],
+                         ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！']);
+      }
+      return cpCombine(['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '譲らぬ両者の'],
+                       ['ガチンコバトル！', '真っ向勝負！', '総力戦！', '一騎打ち！', '大接戦必至！']);
+    }
+    // 統括：優先0→1→2→3→4の順に評価し、最初に得られた1文を返す
+    function buildNextBattleCatchphrase(p1, p2, label, h2hP1Wins, h2hP2Wins) {
+      const rel = getRelation(p1.name, p2.name);
+      const s = String(label || '').toUpperCase();
+      const isGf = s.includes('GRAND FINAL') || s.includes('GF RESET');
+      if (isGf && rel) {
+        const gf = cpGrandFinalWithRelation(rel);
+        if (gf) return gf;
+      }
+      return cpFromRelation(rel)
+          || cpFromStage(label)
+          || cpFromH2H(h2hP1Wins, h2hP2Wins)
+          || cpFromStats(p1, p2)
+          || cpFirstMeeting()
+          || '';
+    }
+
     async function sendNextBattle(matchKey, block, roundIdx, matchIdx, stage, round) {
       if (activeNextBattleId === matchKey) {
         if (conn) conn.send({ type: 'HIDE_PREVIEW' });
@@ -3709,13 +3928,15 @@
       if (!match || !match.p1 || !match.p2) return;
       const p1 = match.p1, p2 = match.p2;
       const label = `${stage} - ${round}`;
-      const rows = await loadH2HHistory();
+      const [rows] = await Promise.all([loadH2HHistory(), loadRosterRelations()]);
       const { p1Wins, p2Wins } = calcH2H(rows, p1.name, p2.name);
+      const catchphrase = buildNextBattleCatchphrase(p1, p2, label, p1Wins, p2Wins);
       if (conn) conn.send({
         type: 'SHOW_PREVIEW', p1: p1.name, p2: p2.name, label,
-        p1Stats: { rank: p1.rank, power: p1.currentStats.power },
-        p2Stats: { rank: p2.rank, power: p2.currentStats.power },
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate },
         h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+        catchphrase,
         ...getShowPreviewHudFields()
       });
       activeNextBattleId = matchKey;
@@ -4233,6 +4454,9 @@
         'XTREME3連発で圧倒',
         '豪快なXTREMEフィニッシュが炸裂',
         '高得点フィニッシュを連発して押し切る'
+      ],
+      '因縁の一戦': [
+        '名簿に刻まれた縁が生んだ一戦'
       ]
     };
 
@@ -4351,15 +4575,31 @@
       const picks = [];
       const usedCategories = new Set();
 
-      const tryAdd = (category, entry) => {
+      const tryAdd = (category, entry, noteOverride) => {
         if (usedCategories.has(category)) return false;
         const m = entry.match;
         const w = getW(m), l = getL(m);
         if (!w || !l) return false;
-        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatMatchScore(m), note: reportRoundNote(entry, category) });
+        picks.push({ tag: category, p1: w.name || '', p2: l.name || '', score: reportFormatMatchScore(m), note: noteOverride || reportRoundNote(entry, category) });
         usedCategories.add(category);
         return true;
       };
+
+      // 優先0: 因縁の一戦（名簿の家族関係カードのみ。サークル・属性は対象外）
+      for (const entry of matches) {
+        const w = getW(entry.match), l = getL(entry.match);
+        if (!w || !l) continue;
+        const rel = getRelation(w.name, l.name);
+        if (!rel || (rel.kind !== 'spouse' && rel.kind !== 'parent_child' && rel.kind !== 'sibling')) continue;
+        const relLabel = getDeRoundLabel(entry.bracket, entry.roundIdx, 0);
+        let relPhrase;
+        if (rel.kind === 'spouse') relPhrase = '会でも希少な夫婦対決';
+        else if (rel.kind === 'sibling') relPhrase = 'きょうだい対決を制す';
+        else relPhrase = (w.name === rel.child)
+          ? `${rel.motherSide ? '母' : '親'}を破る子の下剋上`
+          : `${rel.motherSide ? '母' : '親'}の貫禄を示した親子対決`;
+        if (tryAdd('因縁の一戦', entry, `${relLabel}、${relPhrase}`)) break;
+      }
 
       // 優先1: フルスコア（得点差1点）
       for (const entry of matches) {
@@ -4831,7 +5071,7 @@
     ];
     // 新聞配色（明るい紙面用に彩度を落とした色）
     const REPORT_HIGHLIGHT_COLORS = {
-      'フルスコア': '#b91c1c', '大逆転': '#b45309', '番狂わせ': '#15803d', '完封': '#b45309', 'XF連発': '#1d4ed8'
+      'フルスコア': '#b91c1c', '大逆転': '#b45309', '番狂わせ': '#15803d', '完封': '#b45309', 'XF連発': '#1d4ed8', '因縁の一戦': '#7e22ce'
     };
     const REPORT_KIMARITE_BAR_ORDER = ['SF', 'XF', 'OF', 'BF'];
     const REPORT_KIMARITE_BAR_COLORS = { SF: '#1d4ed8', XF: '#b45309', OF: '#c2410c', BF: '#be123c' };
@@ -4858,13 +5098,55 @@
         }));
     }
 
+    // 透明余白を実行時にトリムする。maintitle_white_trim.png を別途用意する必要をなくす。
+    // 余白がない画像に対しては何もせず元のdataURLを返すため、トリム済み画像でも安全。
+    function reportTrimTransparent(dataUrl, alphaThreshold = 8) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement('canvas');
+            c.width = img.naturalWidth; c.height = img.naturalHeight;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+            let minX = width, minY = height, maxX = -1, maxY = -1;
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                if (data[(y * width + x) * 4 + 3] > alphaThreshold) {
+                  if (x < minX) minX = x;
+                  if (x > maxX) maxX = x;
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                }
+              }
+            }
+            if (maxX < minX || maxY < minY) return resolve(dataUrl);
+            const w = maxX - minX + 1, h = maxY - minY + 1;
+            if (w === width && h === height) return resolve(dataUrl);
+            const out = document.createElement('canvas');
+            out.width = w; out.height = h;
+            out.getContext('2d').drawImage(c, minX, minY, w, h, 0, 0, w, h);
+            resolve(out.toDataURL('image/png'));
+          } catch (e) {
+            console.warn('[イベントレポート] ロゴの余白トリムに失敗（元画像を使用）:', e);
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
     // maintitle_white_trim.png → maintitle_white.png の順でdataURL化を試みる。
+    // 見つかった画像は透明余白を自動トリムするため、trim済み画像・素の945×945画像のどちらでも正しく表示される。
     // 全滅した場合はnullを返し、呼び出し側はロゴなしで紙面を成立させる。
     async function reportGetLogo() {
       if (reportLogoDataUrlCache) return reportLogoDataUrlCache;
       for (const cand of REPORT_LOGO_CANDIDATES) {
         try {
-          const dataUrl = await reportLoadImageAsDataUrl(cand.src);
+          const raw = await reportLoadImageAsDataUrl(cand.src);
+          const dataUrl = await reportTrimTransparent(raw);
           reportLogoDataUrlCache = { ...cand, dataUrl };
           return reportLogoDataUrlCache;
         } catch (e) {
@@ -5390,6 +5672,14 @@
 
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
 
+      // dataURLの<img>はこの時点でまだデコード完了していないことがあり、reportFitMastheadTitle()が
+      // 幅0のロゴで計測してタイトルが右に溢れることがあるため、ロゴの読み込み完了を待つ
+      await Promise.all(['report-masthead-logo-1', 'report-masthead-logo-2'].map(id => {
+        const el = document.getElementById(id);
+        if (!el || el.complete) return Promise.resolve();
+        return new Promise(r => { el.onload = r; el.onerror = r; });
+      }));
+
       if (photoDataUrl) {
         await reportRenderPhotoCanvas(photoDataUrl, photoCrop || { zoom: 1, x: 0.5, y: 0.5 });
       }
@@ -5489,6 +5779,7 @@
         await showAlert('大会が終了していません。グランドファイナルの結果が確定してからレポートを生成してください。');
         return;
       }
+      await loadRosterRelations();
 
       reportPhotoSaveWarned = false;
       try {

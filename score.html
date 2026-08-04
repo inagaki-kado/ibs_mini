@@ -468,11 +468,17 @@
         .nb-stats-line { display: block; font-size: clamp(18px, 2.4vw, 34px); font-weight: 700; margin-top: 0.35em; letter-spacing: 0.03em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; line-height: 1.2; color: #38bdf8; }
         .nb-stats-num { color: #facc15; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
+        .nb-catchphrase { font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-size: clamp(16px, 3vw, 42px); font-weight: 900; font-style: italic; color: #facc15; letter-spacing: 0.04em; text-align: center; margin: 0 0 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 10px rgba(250,204,21,0.95), 0 0 28px rgba(250,204,21,0.6), 0 2px 4px rgba(0,0,0,0.8); animation: nb-cp-glow 1.8s ease-in-out infinite alternate; }
+        @keyframes nb-cp-glow {
+            from { text-shadow: 0 0 10px rgba(250,204,21,0.95), 0 0 28px rgba(250,204,21,0.6), 0 2px 4px rgba(0,0,0,0.8); }
+            to   { text-shadow: 0 0 18px rgba(250,204,21,1), 0 0 48px rgba(250,204,21,0.85), 0 2px 4px rgba(0,0,0,0.8); }
+        }
 
         /* iPhone landscape / compact height — NEXT BATTLE 縮小モード */
         @media (max-height: 500px) {
             #next-battle-overlay .next-battle-blink { font-size: clamp(18px,3.8vw,40px) !important; margin-bottom:0.1rem !important; }
             #nb-stage-round { font-size: clamp(9px,1.2vw,13px) !important; margin-bottom:0.5rem !important; }
+            .nb-catchphrase { font-size: clamp(12px,2.6vw,22px) !important; margin-bottom:0.6rem !important; }
             .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
             .nb-player { font-size:clamp(16px,3.6vw,44px) !important; }
             .nb-member-fit { font-size:14px !important; }
@@ -552,7 +558,8 @@
         <img id="next-battle-logo" src="maintitle_white.png" alt="Logo" style="display:none;">
         <div id="next-battle-content">
             <div class="next-battle-blink" style="font-family:'Orbitron',sans-serif;font-size:clamp(28px,6vw,80px);font-weight:900;font-style:italic;color:#fff;letter-spacing:0.25em;text-align:center;margin-bottom:0.5rem;">NEXT BATTLE</div>
-            <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(11px,1.6vw,20px);color:#94a3b8;letter-spacing:0.3em;text-align:center;margin-bottom:2rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div id="nb-stage-round" style="font-family:'Orbitron',sans-serif;font-size:clamp(11px,1.6vw,20px);color:#94a3b8;letter-spacing:0.3em;text-align:center;margin-bottom:1rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div id="nb-catchphrase" class="nb-catchphrase" style="display:none;"></div>
             <div class="nb-vs-container">
                 <div id="nb-p1" class="nb-player nb-p1"></div>
                 <div class="nb-vs">VS</div>
@@ -1611,7 +1618,7 @@
                     }
                     else if (data.type === 'SHOW_PREVIEW') {
                         // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
-                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || [], data.p1Stats, data.p2Stats, data.h2hP1Wins, data.h2hP2Wins);
+                        showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || [], data.p1Stats, data.p2Stats, data.h2hP1Wins, data.h2hP2Wins, data.catchphrase || '');
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -1832,7 +1839,7 @@
             }
         }
 
-        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = [], p1Stats = null, p2Stats = null, h2hP1Wins = null, h2hP2Wins = null) {
+        function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = [], p1Stats = null, p2Stats = null, h2hP1Wins = null, h2hP2Wins = null, catchphrase = '') {
             const overlay = document.getElementById('next-battle-overlay');
             const logo = document.getElementById('next-battle-logo');
             if (logoDataUrl) {
@@ -1862,6 +1869,12 @@
             }
             
             document.getElementById('nb-stage-round').textContent = stageText;
+            const cpEl = document.getElementById('nb-catchphrase');
+            if (cpEl) {
+                const cpText = String(catchphrase || '').trim();
+                cpEl.textContent = cpText;
+                cpEl.style.display = cpText ? 'block' : 'none';
+            }
             const mkStatsLine = (stats, myWins) => {
               if (!stats) return '';
               const power = (stats.power != null) ? Number(stats.power).toLocaleString() : '-';
