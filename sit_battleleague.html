@@ -3,40 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>S.I.T BattleLeague ｜ 新宿 × 板橋 × トラボ 合同リーグ戦</title>
-<meta name="description" content="新宿・板橋・トラボ。3つのストリートが激突する合同リーグ戦「S.I.T BattleLeague」。3on3サバイバル、ホームアドバンテージ、継承トロフィー。">
+<title>S.I.T BattleLeague ｜ 新宿 × 板橋 × トラボCUP 合同リーグ戦</title>
+<meta name="description" content="新宿・板橋・トラボCUP。3つの会が激突する合同リーグ戦「S.I.T BattleLeague」。2026年9月開幕。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;900&family=Orbitron:wght@600;800&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   S.I.T BattleLeague — design tokens
+   S.I.T BattleLeague
+   書体：Oswald（英数字）／ Noto Sans JP（日本語）の2書体のみ
    ============================================================ */
 :root{
-  /* 背景画像（圧縮版）。WebP対応ブラウザはWebP、非対応はJPEGを読む */
   --img-arena:image-set(
     url("sit_bg_arena.webp") type("image/webp"),
     url("sit_bg_arena.jpg")  type("image/jpeg"));
   --img-steel:image-set(
     url("sit_bg_steel.webp") type("image/webp"),
     url("sit_bg_steel.jpg")  type("image/jpeg"));
-  --ink:        #08090c;   /* 墨 */
-  --panel:      #101319;   /* パネル */
-  --panel-2:    #171b23;   /* パネル明 */
-  --line:       #262b35;   /* 罫線 */
-  --steel:      #dde0e6;   /* メタリック本文 */
-  --dim:        #a9b0bd;   /* 補助 */
-  --blood:      #ff1f3d;   /* ネオンレッド：リーグの色 */
-  --shinjuku:   #b026ff;   /* 新宿：歌舞伎町のネオン紫 */
-  --itabashi:   #0ea5e9;   /* 板橋：既存クラブサイト継承のサイバーブルー */
-  --torabo:     #ffa71a;   /* トラボ：アンバー */
 
-  --disp: "Saira Condensed", "Noto Sans JP", sans-serif;
-  --jp:   "Noto Sans JP", sans-serif;
-  --util: "Orbitron", "Saira Condensed", sans-serif;
+  --ink:      #08090c;
+  --panel:    #101319;
+  --panel-2:  #171b23;
+  --line:     #2a303b;
+  --steel:    #dde0e6;
+  --dim:      #a9b0bd;
+  --blood:    #ff1f3d;
+  --shinjuku: #b026ff;
+  --itabashi: #0ea5e9;
+  --torabo:   #ffa71a;
 
-  --pad: clamp(20px, 5vw, 64px);
+  --lat: "Oswald", "Noto Sans JP", sans-serif;
+  --jp:  "Noto Sans JP", sans-serif;
+
+  --pad: 20px;
+  --gap-sec: 64px;
 }
+@media (min-width:768px){  :root{ --pad:40px; --gap-sec:96px;  } }
+@media (min-width:1200px){ :root{ --pad:64px; --gap-sec:128px; } }
 
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -45,54 +48,43 @@ body{
   background:var(--ink);
   color:var(--steel);
   font-family:var(--jp);
-  font-weight:400;
+  font-size:15px;
   line-height:1.9;
   letter-spacing:.02em;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
+@media (min-width:768px){ body{font-size:16px;} }
 img{max-width:100%;display:block;}
 a{color:inherit;}
 
-/* 危険帯：セクション区切りのハザードストライプ */
-.hazard{
-  height:10px;
-  background:repeating-linear-gradient(135deg,
-    var(--blood) 0 14px, transparent 14px 28px);
-  opacity:.55;
+/* 全面フィルムグレイン（走査線CSSの置き換え）
+   実素材のテクスチャに差し替える場合は url() を差し替えるだけでよい */
+body::after{
+  content:"";
+  position:fixed;inset:0;z-index:999;pointer-events:none;
+  opacity:.5;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
 }
 
 .wrap{max-width:1180px;margin:0 auto;padding-inline:var(--pad);}
+.sec{padding-block:var(--gap-sec);}
+.cut{height:6px;background:var(--blood);}
 
-/* 共通：セクション見出し */
+/* --- 見出し：日本語を主役に、英語は連番ラベルへ降格 --- */
 .eyebrow{
-  font-family:var(--util);
-  font-weight:800;
-  font-size:11px;
-  letter-spacing:.34em;
-  color:var(--blood);
-  text-transform:uppercase;
-  margin:0 0 14px;
+  font-family:var(--lat);font-weight:700;
+  font-size:12px;letter-spacing:.28em;
+  color:var(--blood);text-transform:uppercase;
+  margin:0 0 10px;
 }
-.sec-title{
-  font-family:var(--disp);
-  font-weight:900;
-  font-size:clamp(38px,7vw,74px);
-  line-height:.92;
-  letter-spacing:.01em;
-  color:#fff;
-  margin:0 0 6px;
-  text-transform:uppercase;
+.sec-h{
+  font-family:var(--jp);font-weight:900;
+  font-size:26px;line-height:1.3;letter-spacing:.02em;
+  color:#fff;margin:0 0 32px;
 }
-.sec-title-jp{
-  font-family:var(--jp);
-  font-weight:900;
-  font-size:clamp(14px,2.4vw,19px);
-  letter-spacing:.22em;
-  color:var(--dim);
-  margin:0 0 40px;
-}
-.sec{padding-block:clamp(64px,10vw,120px);}
+@media (min-width:768px){  .sec-h{font-size:34px;margin-bottom:44px;} }
+@media (min-width:1200px){ .sec-h{font-size:40px;margin-bottom:56px;} }
 
 /* ============================================================
    HERO
@@ -100,226 +92,151 @@ a{color:inherit;}
 .hero{
   position:relative;
   min-height:100svh;
-  display:flex;
-  align-items:center;
+  display:flex;align-items:center;
   overflow:hidden;
   border-bottom:1px solid var(--line);
-}
-.hero{
   background-image:url("sit_bg_arena.jpg");
   background-image:var(--img-arena);
   background-size:cover;
-  background-position:center 30%;
+  background-position:center 32%;
 }
 .hero::before{
-  content:"";
-  position:absolute;inset:0;
-  background:
-    linear-gradient(180deg, rgba(8,9,12,.82) 0%, rgba(8,9,12,.74) 45%, rgba(8,9,12,.96) 100%),
-    radial-gradient(70% 55% at 12% 8%, rgba(176,38,255,.22), transparent 62%),
-    radial-gradient(60% 50% at 88% 22%, rgba(14,165,233,.18), transparent 62%),
-    radial-gradient(75% 60% at 50% 108%, rgba(255,31,61,.30), transparent 60%);
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(8,9,12,.72) 0%, rgba(8,9,12,.60) 40%, rgba(8,9,12,.97) 100%);
 }
-.hero::after{ /* 走査線 */
-  content:"";
-  position:absolute;inset:0;
-  background:repeating-linear-gradient(0deg, rgba(0,0,0,.42) 0 1px, transparent 1px 3px);
-  opacity:.5;pointer-events:none;
-}
-.hero .wrap{position:relative;z-index:2;width:100%;padding-block:110px 60px;}
+.hero .wrap{position:relative;z-index:2;width:100%;padding-block:104px 92px;}
 
 .hero-tag{
-  display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--util);font-weight:800;font-size:10.5px;letter-spacing:.3em;
+  display:inline-block;
+  font-family:var(--lat);font-weight:700;font-size:12px;letter-spacing:.24em;
   color:#fff;background:var(--blood);
-  padding:7px 14px 6px;
-  margin-bottom:26px;
+  padding:6px 14px 5px;margin-bottom:24px;
 }
 .hero-h1{
   font-family:var(--jp);font-weight:900;
-  font-size:clamp(30px,6.6vw,68px);
-  line-height:1.16;
-  letter-spacing:-.01em;
-  color:#fff;
-  margin:0 0 34px;
-  text-shadow:0 0 34px rgba(255,31,61,.35);
+  font-size:clamp(30px, 6.4vw, 62px);   /* 流体スケールはヒーローのみ */
+  line-height:1.15;letter-spacing:-.01em;
+  color:#fff;margin:0 0 30px;
+  text-shadow:0 2px 20px rgba(0,0,0,.85);
 }
 .hero-h1 span{color:var(--blood);}
 
-/* 三勢力ロゴ行：S × I × T */
-.sit{
-  display:flex;align-items:baseline;flex-wrap:wrap;
-  gap:clamp(8px,2vw,22px);
-  margin-bottom:26px;
-}
+.sit{display:flex;align-items:baseline;flex-wrap:wrap;gap:14px;margin-bottom:26px;}
 .sit b{
-  font-family:var(--disp);font-weight:900;
-  font-size:clamp(46px,11vw,124px);
-  line-height:.8;
-  letter-spacing:-.02em;
+  font-family:var(--lat);font-weight:700;
+  font-size:clamp(48px, 11vw, 118px);   /* 流体スケールはヒーローのみ */
+  line-height:.82;letter-spacing:0;
 }
-.sit .x{
-  font-family:var(--util);font-weight:600;
-  font-size:clamp(14px,2.4vw,26px);
-  color:var(--dim);
-}
+.sit .x{font-family:var(--lat);font-weight:500;font-size:20px;color:var(--dim);}
 .sit small{
-  display:block;
-  font-family:var(--util);font-weight:600;
-  font-size:clamp(9px,1.4vw,12px);
-  letter-spacing:.28em;
-  color:var(--dim);
-  margin-top:10px;
+  display:block;font-family:var(--lat);font-weight:500;
+  font-size:11px;letter-spacing:.24em;color:var(--dim);margin-top:8px;
 }
 .s-shinjuku{color:var(--shinjuku);}
 .s-itabashi{color:var(--itabashi);}
 .s-torabo{color:var(--torabo);}
 
-.hero-lead{
-  max-width:640px;
-  font-size:clamp(14px,1.7vw,17px);
-  color:var(--steel);
-  margin:0 0 40px;
-}
-.hero-cta{display:flex;flex-wrap:wrap;gap:14px;}
+.hero-lead{max-width:640px;color:var(--steel);margin:0 0 36px;text-shadow:0 2px 14px rgba(0,0,0,.8);}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;}
 .btn{
-  display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--util);font-weight:800;font-size:12px;letter-spacing:.2em;
-  text-decoration:none;
-  padding:16px 26px;
-  border:1px solid var(--blood);
-  color:#fff;background:var(--blood);
-  transition:background .18s, color .18s, transform .18s;
+  display:inline-flex;align-items:center;
+  font-family:var(--lat);font-weight:700;font-size:14px;letter-spacing:.14em;
+  text-decoration:none;padding:15px 26px;
+  border:1px solid var(--blood);color:#fff;background:var(--blood);
+  transition:background .15s, color .15s, border-color .15s;
   touch-action:manipulation;
 }
-.btn:hover{transform:translateY(-2px);}
+.btn:hover{background:#e01734;border-color:#e01734;}
 .btn.ghost{background:transparent;color:var(--steel);border-color:var(--line);}
-.btn.ghost:hover{border-color:var(--steel);color:#fff;}
+.btn.ghost:hover{background:transparent;border-color:var(--steel);color:#fff;}
 
-.scroll-hint{
-  position:absolute;left:var(--pad);bottom:26px;z-index:2;
-  font-family:var(--util);font-size:10px;letter-spacing:.3em;color:var(--dim);
+/* スクロール誘導の代わりに次戦情報を置く */
+.hero-next{
+  position:absolute;left:var(--pad);right:var(--pad);bottom:22px;z-index:2;
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  margin:0;border-top:1px solid rgba(255,255,255,.18);padding-top:14px;
 }
+.hero-next b{
+  font-family:var(--lat);font-weight:700;font-size:12px;letter-spacing:.22em;color:var(--blood);
+}
+.hero-next span{font-size:13px;color:var(--steel);}
 
 /* ============================================================
    INTRODUCTION
    ============================================================ */
 .intro{background:var(--ink);}
-.intro-quote{
-  font-family:var(--jp);font-weight:900;
-  font-size:clamp(24px,4.6vw,46px);
-  line-height:1.35;
-  color:#fff;
-  margin:0 0 36px;
-  padding-left:22px;
-  border-left:4px solid var(--blood);
-}
-.intro-grid{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:clamp(24px,4vw,56px);
-}
+.intro-grid{display:grid;grid-template-columns:1fr;gap:24px;}
+@media (min-width:900px){ .intro-grid{grid-template-columns:1fr 1fr;gap:48px;} }
 .intro-grid p{margin:0 0 20px;}
 .intro-grid p:last-child{margin-bottom:0;}
 .intro strong{color:#fff;font-weight:700;}
 
 .trophy{
-  margin-top:clamp(40px,6vw,72px);
+  margin-top:48px;
   border:1px solid var(--line);
-  background:linear-gradient(180deg, var(--panel), var(--ink));
-  padding:clamp(24px,4vw,44px);
-  position:relative;
+  border-left:4px solid var(--blood);
+  background:var(--panel);
+  padding:26px 24px 28px;
 }
-.trophy::before{
-  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blood);
-}
+@media (min-width:768px){ .trophy{margin-top:64px;padding:36px 40px 40px;} }
 .trophy h3{
-  font-family:var(--disp);font-weight:900;text-transform:uppercase;
-  font-size:clamp(24px,3.6vw,38px);line-height:1;color:#fff;margin:0 0 12px;
+  font-family:var(--jp);font-weight:900;font-size:20px;color:#fff;
+  margin:0 0 10px;letter-spacing:.06em;
 }
-.trophy p{margin:0;font-size:15px;}
+.trophy h3 small{
+  display:block;font-family:var(--lat);font-weight:500;font-size:11px;
+  letter-spacing:.24em;color:var(--dim);margin-bottom:6px;
+}
+.trophy p{margin:0;}
 
 /* ============================================================
-   FACTIONS（三竦みトライアングル＝シグネチャー）
+   TEAMS（勢力紹介とメンバー表を1カラムに統合）
    ============================================================ */
-.factions{background:var(--panel);border-block:1px solid var(--line);}
-.tri-layout{
-  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
-  gap:clamp(28px,5vw,64px);align-items:center;
-}
-.tri{width:100%;height:auto;}
-.tri-node text{font-family:var(--disp);font-weight:900;}
-.tri-edge{stroke-dasharray:6 8;animation:flow 2.6s linear infinite;}
-@keyframes flow{to{stroke-dashoffset:-28;}}
+.teams-sec{background:var(--panel);border-block:1px solid var(--line);}
+.teams{display:grid;grid-template-columns:1fr;gap:16px;}
+@media (min-width:900px){ .teams{grid-template-columns:repeat(3,1fr);gap:2px;} }
 
-.faction-list{display:flex;flex-direction:column;gap:2px;}
-.faction{
-  display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;
-  padding:20px 4px;border-top:1px solid var(--line);
+.team{
+  background:var(--ink);
+  border:1px solid var(--line);
+  border-top:3px solid var(--c);
+  padding:24px 22px 26px;
 }
-.faction:last-child{border-bottom:1px solid var(--line);}
-.faction .mark{
-  font-family:var(--disp);font-weight:900;font-size:44px;line-height:.85;
+.team-mark{
+  font-family:var(--lat);font-weight:700;font-size:52px;line-height:.8;
+  color:var(--c);margin:0 0 12px;
 }
-.faction h4{
-  font-family:var(--jp);font-weight:900;font-size:18px;color:#fff;margin:0 0 4px;
-  letter-spacing:.06em;
+.team h3{font-family:var(--jp);font-weight:900;font-size:19px;color:#fff;margin:0 0 6px;letter-spacing:.05em;}
+.team h3 a{text-decoration:none;border-bottom:1px solid var(--line);transition:color .15s,border-color .15s;}
+.team h3 a:hover{color:var(--c);border-color:var(--c);}
+.team-home{
+  font-family:var(--lat);font-weight:500;font-size:11px;letter-spacing:.18em;
+  color:var(--dim);margin:0 0 14px;
 }
-.faction h4 .fx{
-  text-decoration:none;border-bottom:1px solid var(--line);
-  transition:color .18s, border-color .18s;
-}
-.faction h4 .fx:hover{color:var(--blood);border-color:var(--blood);}
-.faction .home{
-  font-family:var(--util);font-size:10px;letter-spacing:.2em;color:var(--dim);
-  display:block;margin-bottom:8px;
-}
-.faction p{margin:0;font-size:14px;color:var(--dim);line-height:1.8;}
+.team-desc{font-size:14px;color:var(--dim);line-height:1.85;margin:0 0 20px;}
 
-/* 出場ブレーダー */
-.roster{
-  margin-top:clamp(34px,5vw,58px);
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px;
-}
-.roster-col{
-  background:var(--ink);border:1px solid var(--line);
-  border-top:3px solid var(--c,var(--line));
-  padding:22px 22px 24px;
-}
-.roster-col h4{
-  font-family:var(--jp);font-weight:900;font-size:14px;color:var(--c,#fff);
-  margin:0 0 14px;letter-spacing:.1em;
-}
-.roster-col ul{list-style:none;margin:0;padding:0;}
-.roster-col li{
+.members{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);}
+.members li{
   display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:11px 0;border-bottom:1px solid var(--line);
 }
-.roster-col li:last-child{border-bottom:none;}
-.roster-col .bn{
-  font-family:var(--jp);font-weight:700;font-size:16px;color:#fff;letter-spacing:.06em;
-}
-.roster-col .bn a{
-  color:#fff;text-decoration:none;border-bottom:1px solid var(--line);
-  transition:color .18s, border-color .18s;
-}
-.roster-col .bn a:hover{color:var(--c,var(--blood));border-color:var(--c,var(--blood));}
-.roster-col .links{display:flex;gap:6px;flex-wrap:wrap;}
-.roster-col .links a{
-  font-family:var(--util);font-weight:600;font-size:9px;letter-spacing:.14em;
+.bn{font-family:var(--jp);font-weight:700;font-size:16px;color:#fff;letter-spacing:.04em;}
+.bn a{color:#fff;text-decoration:none;border-bottom:1px solid var(--line);transition:color .15s,border-color .15s;}
+.bn a:hover{color:var(--c);border-color:var(--c);}
+.links{display:flex;gap:6px;flex-wrap:wrap;}
+.links a{
+  font-family:var(--lat);font-weight:500;font-size:11px;letter-spacing:.1em;
   text-decoration:none;color:var(--dim);
-  border:1px solid var(--line);
-  padding:5px 8px 4px;
-  transition:color .18s, border-color .18s, background .18s;
+  border:1px solid var(--line);padding:4px 9px 3px;
+  transition:color .15s,border-color .15s;
   touch-action:manipulation;white-space:nowrap;
 }
-.roster-col .links a:hover{color:#fff;border-color:var(--c,var(--steel));background:var(--panel);}
+.links a:hover{color:#fff;border-color:var(--c);}
 .reserve-label{
-  font-family:var(--util);font-weight:800;font-size:9.5px;letter-spacing:.28em;
-  color:var(--dim);margin:20px 0 6px;padding-top:14px;border-top:1px dashed var(--line);
+  font-family:var(--lat);font-weight:700;font-size:11px;letter-spacing:.24em;
+  color:var(--dim);margin:18px 0 0;padding-top:14px;border-top:1px dashed var(--line);
 }
-.note{
-  margin:22px 0 0;font-size:12.5px;color:var(--dim);line-height:1.9;
-}
+.note{margin:24px 0 0;font-size:13px;color:var(--dim);line-height:1.9;}
 
 /* ============================================================
    RULES
@@ -330,48 +247,40 @@ a{color:inherit;}
   background:var(--img-steel) center/cover fixed, var(--ink);
 }
 .rules::before{
-  content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg, rgba(8,9,12,.94), rgba(8,9,12,.88));
-  pointer-events:none;
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg, rgba(8,9,12,.93), rgba(8,9,12,.87));
 }
 .rules .wrap{position:relative;z-index:1;}
-.card{backdrop-filter:blur(2px);}
-.rule-block{margin-bottom:clamp(36px,5vw,64px);}
+
+.oath{font-weight:700;color:var(--steel);margin:0 0 36px;}
+.rule-block{margin-bottom:48px;}
+@media (min-width:768px){ .rule-block{margin-bottom:64px;} }
 .rule-block:last-child{margin-bottom:0;}
 .rule-head{
-  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:26px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:24px;
 }
 .rule-head .num{
-  font-family:var(--util);font-weight:800;font-size:11px;letter-spacing:.2em;
-  color:var(--ink);background:var(--steel);padding:5px 10px 4px;
+  font-family:var(--lat);font-weight:700;font-size:12px;letter-spacing:.16em;
+  color:var(--ink);background:var(--steel);padding:4px 10px 3px;
 }
-.rule-head h3{
-  font-family:var(--jp);font-weight:900;font-size:clamp(19px,2.8vw,26px);
-  color:#fff;margin:0;letter-spacing:.04em;
-}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:2px;}
+.rule-head h3{font-family:var(--jp);font-weight:900;font-size:19px;color:#fff;margin:0;letter-spacing:.04em;}
+@media (min-width:768px){ .rule-head h3{font-size:23px;} }
+
+/* 枚数が決まっているので列数を明示する */
+.cards{display:grid;grid-template-columns:1fr;gap:16px;}
+@media (min-width:768px){  .cards{grid-template-columns:repeat(2,1fr);gap:2px;} }
+@media (min-width:1100px){ .cards-3{grid-template-columns:repeat(3,1fr);} }
 .card{
-  background:var(--panel);
-  border:1px solid var(--line);
-  padding:26px 24px 28px;
-  position:relative;
-  transition:border-color .2s, background .2s;
+  background:var(--panel);border:1px solid var(--line);
+  padding:24px 22px 26px;
+  transition:border-color .15s, background .15s;
 }
 .card:hover{border-color:var(--blood);background:var(--panel-2);}
-.card h4{
-  font-family:var(--jp);font-weight:900;font-size:16px;color:#fff;
-  margin:0 0 12px;letter-spacing:.05em;
-}
+.card h4{font-family:var(--jp);font-weight:900;font-size:16px;color:#fff;margin:0 0 12px;letter-spacing:.04em;}
 .card p{margin:0;font-size:14px;color:var(--dim);line-height:1.85;}
 .card .hl{color:var(--blood);font-weight:700;}
 .card .hl-w{color:#fff;font-weight:700;}
-
-.oath{
-  font-family:var(--jp);font-weight:700;
-  font-size:clamp(15px,2vw,18px);color:var(--steel);
-  margin:0 0 40px;
-}
 
 /* ============================================================
    SCHEDULE
@@ -379,31 +288,35 @@ a{color:inherit;}
 .schedule{background:var(--panel);border-block:1px solid var(--line);}
 .rail{border-top:1px solid var(--line);}
 .row{
-  display:grid;
-  grid-template-columns:130px 92px 1fr 200px;
-  gap:20px;align-items:center;
-  padding:22px 6px;
+  display:grid;grid-template-columns:1fr;gap:8px;
+  padding:20px 0 22px 14px;
   border-bottom:1px solid var(--line);
   position:relative;
-  transition:background .2s;
 }
-.row::before{
-  content:"";position:absolute;left:-6px;top:0;bottom:0;width:3px;background:var(--c,var(--line));
+@media (min-width:1000px){
+  .row{grid-template-columns:120px 96px 1fr 260px;gap:20px;align-items:center;padding:22px 0 22px 14px;}
 }
+.row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c);}
 .row:hover{background:var(--panel-2);}
-.date{
-  font-family:var(--util);font-weight:800;font-size:15px;color:#fff;letter-spacing:.06em;
+.date{font-family:var(--lat);font-weight:700;font-size:18px;color:#fff;letter-spacing:.04em;}
+.date small{
+  display:block;font-family:var(--jp);font-weight:400;font-size:11px;
+  color:var(--dim);letter-spacing:.08em;margin-top:2px;
 }
-.date small{display:block;font-family:var(--jp);font-weight:400;font-size:11px;color:var(--dim);letter-spacing:.1em;margin-top:2px;}
 .badge{
-  font-family:var(--util);font-weight:800;font-size:9.5px;letter-spacing:.16em;
-  color:var(--c,var(--steel));border:1px solid var(--c,var(--line));
-  padding:5px 8px 4px;text-align:center;white-space:nowrap;
+  font-family:var(--lat);font-weight:700;font-size:11px;letter-spacing:.12em;
+  color:var(--c);border:1px solid var(--c);
+  padding:4px 8px 3px;text-align:center;white-space:nowrap;justify-self:start;
 }
-.match{font-family:var(--jp);font-weight:700;font-size:15px;color:#fff;letter-spacing:.03em;}
-.match em{font-style:normal;font-weight:700;color:var(--blood);font-size:13px;display:block;margin-top:3px;letter-spacing:.08em;}
-.venue{font-size:13px;color:var(--dim);text-align:right;}
-.row.final{background:linear-gradient(90deg, rgba(255,31,61,.16), transparent 70%);}
+@media (min-width:1000px){ .badge{justify-self:stretch;} }
+.match{font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em;}
+.match em{
+  font-style:normal;font-weight:700;color:var(--blood);font-size:13px;
+  display:block;margin-top:2px;letter-spacing:.06em;
+}
+.venue{font-size:13px;color:var(--dim);line-height:1.75;}
+@media (min-width:1000px){ .venue{text-align:right;} }
+.row.final{background:rgba(255,31,61,.10);}
 .row.final .match{font-size:17px;}
 
 /* ============================================================
@@ -411,69 +324,47 @@ a{color:inherit;}
    ============================================================ */
 .closing{
   position:relative;text-align:center;
-  padding-block:clamp(80px,12vw,150px);
-  background:var(--ink);
+  padding-block:80px;
   overflow:hidden;
-}
-.closing{
   background-image:url("sit_bg_arena.jpg");
   background-image:var(--img-arena);
-  background-size:cover;
-  background-position:center 55%;
+  background-size:cover;background-position:center 55%;
 }
+@media (min-width:768px){ .closing{padding-block:130px;} }
 .closing::before{
   content:"";position:absolute;inset:0;
-  background:
-    radial-gradient(60% 90% at 50% 120%, rgba(255,31,61,.34), transparent 65%),
-    linear-gradient(180deg, rgba(8,9,12,.90), rgba(8,9,12,.80) 50%, rgba(8,9,12,.94));
+  background:linear-gradient(180deg, rgba(8,9,12,.88), rgba(8,9,12,.76) 50%, rgba(8,9,12,.93));
 }
 .closing .wrap{position:relative;z-index:2;}
 .closing h2{
   font-family:var(--jp);font-weight:900;
-  font-size:clamp(26px,5.4vw,58px);line-height:1.25;color:#fff;margin:0 0 14px;
+  font-size:24px;line-height:1.35;color:#fff;margin:0 0 14px;
+  text-shadow:0 2px 20px rgba(0,0,0,.85);
 }
-.closing p{color:var(--dim);margin:0 0 34px;font-size:15px;}
+@media (min-width:768px){ .closing h2{font-size:44px;} }
+.closing p{color:var(--dim);margin:0 0 32px;font-size:14px;}
 
-footer{
-  border-top:1px solid var(--line);
-  padding-block:34px;
-  background:var(--ink);
-}
+footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink);}
 .foot{
   display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
-  font-family:var(--util);font-size:10px;letter-spacing:.22em;color:var(--dim);
+  font-family:var(--lat);font-weight:500;font-size:12px;letter-spacing:.18em;color:var(--dim);
 }
 
 /* ============================================================
-   Reveal
+   Reveal（移動距離を詰め、立ち上がりの鋭いイージングに）
    ============================================================ */
-.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease, transform .7s cubic-bezier(.2,.7,.3,1);}
+.rv{
+  opacity:0;transform:translateY(14px);
+  transition:opacity .45s linear, transform .55s cubic-bezier(.1,1,0,1);
+}
 .rv.in{opacity:1;transform:none;}
-
-/* ============================================================
-   Responsive
-   ============================================================ */
-@media (max-width:1024px){
-  .rules{background-attachment:scroll;}
-}
-@media (max-width:900px){
-  .intro-grid{grid-template-columns:1fr;}
-  .tri-layout{grid-template-columns:1fr;}
-  .row{grid-template-columns:1fr;gap:10px;padding:20px 6px 22px;}
-  .badge{justify-self:start;}
-  .venue{text-align:left;}
-}
-@media (max-width:520px){
-  .hero-h1{font-size:clamp(26px,7.6vw,40px);}
-  .sit b{font-size:clamp(52px,20vw,80px);}
-  .btn{width:100%;justify-content:center;}
-}
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;}
   .rv{opacity:1;transform:none;}
   html{scroll-behavior:auto;}
 }
+@media (max-width:1024px){ .rules{background-attachment:scroll;} }
 :focus-visible{outline:2px solid var(--blood);outline-offset:3px;}
 </style>
 </head>
@@ -482,16 +373,16 @@ footer{
 <!-- ========== HERO ========== -->
 <header class="hero">
   <div class="wrap">
-    <span class="hero-tag">S.I.T BATTLE LEAGUE ／ 合同リーグ戦</span>
+    <span class="hero-tag">S.I.T BATTLE LEAGUE</span>
 
-    <h1 class="hero-h1">シマを賭けろ。<br>掟を守れ。<br><span>最強を証明しろ。</span></h1>
+    <h1 class="hero-h1">シマを賭けろ。<br><span>負けたら、次はない。</span></h1>
 
     <div class="sit">
-      <b class="s-shinjuku">S<small>SHINJUKU</small></b>
+      <b class="s-shinjuku"><span aria-hidden="true">S</span><small>SHINJUKU</small></b>
       <span class="x">×</span>
-      <b class="s-itabashi">I<small>ITABASHI</small></b>
+      <b class="s-itabashi"><span aria-hidden="true">I</span><small>ITABASHI</small></b>
       <span class="x">×</span>
-      <b class="s-torabo">T<small>TORABO</small></b>
+      <b class="s-torabo"><span aria-hidden="true">T</span><small>TORABO</small></b>
     </div>
 
     <p class="hero-lead">交わることのなかった3つのストリートが、今、激突する。</p>
@@ -501,18 +392,15 @@ footer{
       <a class="btn ghost" href="#schedule">抗争の日程を見る</a>
     </div>
   </div>
-  <span class="scroll-hint">SCROLL ↓</span>
+  <p class="hero-next"><b>NEXT</b><span>9月21日（月・祝）新宿ホーム ／ 迎撃：新宿ベイ会 vs 襲撃：トラボCUP ＠歌舞伎町 CURE</span></p>
 </header>
-<div class="hazard"></div>
+<div class="cut"></div>
 
 <!-- ========== INTRODUCTION ========== -->
 <section class="sec intro" id="intro">
   <div class="wrap">
-    <p class="eyebrow rv">Introduction</p>
-    <h2 class="sec-title rv">Concept</h2>
-    <p class="sec-title-jp rv">コンセプト</p>
-
-    <p class="intro-quote rv">「生ぬるい交流会は、もう終わりだ」</p>
+    <p class="eyebrow rv">01 — Concept</p>
+    <h2 class="sec-h rv">生ぬるい交流会は、もう終わりだ</h2>
 
     <div class="intro-grid">
       <div class="rv">
@@ -520,184 +408,108 @@ footer{
         <p>新宿、板橋、そしてトラボCUP。それぞれの地域で独自の進化を遂げた猛者たちが、<strong>3つの勢力</strong>として激突する合同リーグ戦「S.I.T BattleLeague」が幕を開ける。</p>
       </div>
       <div class="rv">
-        <p>環境すべてが牙を剥く<strong>完全アウェイの敵地</strong>に乗り込み、圧倒的なプレッシャーの中で勝ちを毟り取るか。</p>
-        <p>己のシマ（ホーム）で、<strong>大将としての絶対的な意地</strong>と暴力的なまでの強さを見せつけるか。</p>
+        <p>客も、スタジアムも、空気も相手側。<strong>完全アウェイの敵地</strong>で勝ちを毟り取るか。</p>
+        <p>己のシマで、<strong>大将としての意地</strong>を見せつけるか。</p>
       </div>
     </div>
 
     <div class="trophy rv">
-      <h3>The Inherited Trophy</h3>
-      <p>最終決戦の勝者に与えられるのは、個人ではなく<strong>チームに授与される</strong>オンリーワンの「継承トロフィー」。王者はチーム名とメンバー名を<strong>自らの手で書き込む</strong>。そしてトロフィーは次シーズンの開催時に返還され、新たな王者へ引き継がれる。回を重ねるごとに、歴代の名前が並んでいく。言い訳は無用。ストリートに己の生きた証を刻み込め。</p>
+      <h3><small>THE INHERITED TROPHY</small>継承トロフィー</h3>
+      <p>最終決戦の勝者に与えられるのは、個人ではなく<strong>チームに授与される</strong>オンリーワンのトロフィー。王者はチーム名とメンバー名を<strong>自らの手で書き込む</strong>。そしてトロフィーは次シーズンの開催時に返還され、新たな王者へ引き継がれる。回を重ねるごとに、歴代の名前が並んでいく。言い訳は無用。ストリートに己の生きた証を刻み込め。</p>
     </div>
   </div>
 </section>
 
-<!-- ========== FACTIONS（三竦み） ========== -->
-<section class="sec factions" id="factions">
+<!-- ========== TEAMS ========== -->
+<section class="sec teams-sec" id="teams">
   <div class="wrap">
-    <p class="eyebrow rv">Three Streets</p>
-    <h2 class="sec-title rv">Factions</h2>
-    <p class="sec-title-jp rv">三つの勢力</p>
+    <p class="eyebrow rv">02 — Teams</p>
+    <h2 class="sec-h rv">三つの勢力</h2>
 
-    <div class="tri-layout">
-      <!-- シグネチャー：三竦みトライアングル -->
-      <svg class="tri rv" viewBox="0 0 420 380" role="img" aria-label="新宿・板橋・トラボの三勢力が互いに攻め込む関係図">
-        <defs>
-          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#ff1f3d"/>
-          </marker>
-        </defs>
-        <!-- edges -->
-        <line class="tri-edge" x1="196" y1="86" x2="82" y2="272" stroke="#ff1f3d" stroke-width="1.6" marker-end="url(#ar)" opacity=".85"/>
-        <line class="tri-edge" x1="112" y1="292" x2="314" y2="292" stroke="#ff1f3d" stroke-width="1.6" opacity=".85"/>
-        <line class="tri-edge" x1="344" y1="272" x2="228" y2="86" stroke="#ff1f3d" stroke-width="1.6" marker-end="url(#ar)" opacity=".85"/>
-        <!-- nodes -->
-        <g class="tri-node">
-          <circle cx="212" cy="62" r="42" fill="#08090c" stroke="#b026ff" stroke-width="2"/>
-          <text x="212" y="76" font-size="42" fill="#b026ff" text-anchor="middle">S</text>
-          <text x="212" y="20" font-size="11" fill="#a9b0bd" text-anchor="middle" font-family="Orbitron, sans-serif" letter-spacing="3">SHINJUKU</text>
+    <div class="teams">
 
-          <circle cx="70" cy="300" r="42" fill="#08090c" stroke="#0ea5e9" stroke-width="2"/>
-          <text x="70" y="314" font-size="42" fill="#0ea5e9" text-anchor="middle">I</text>
-          <text x="70" y="366" font-size="11" fill="#a9b0bd" text-anchor="middle" font-family="Orbitron, sans-serif" letter-spacing="3">ITABASHI</text>
-
-          <circle cx="356" cy="300" r="42" fill="#08090c" stroke="#ffa71a" stroke-width="2"/>
-          <text x="356" y="314" font-size="42" fill="#ffa71a" text-anchor="middle">T</text>
-          <text x="356" y="366" font-size="11" fill="#a9b0bd" text-anchor="middle" font-family="Orbitron, sans-serif" letter-spacing="3">TORABO</text>
-        </g>
-      </svg>
-
-      <div class="faction-list rv">
-        <div class="faction">
-          <span class="mark s-shinjuku">S</span>
-          <div>
-            <h4><a class="fx" href="https://x.com/toi_bey" target="_blank" rel="noopener">新宿ベイ会</a></h4>
-            <span class="home">HOME ／ 歌舞伎町 CURE</span>
-            <p>ネオンの真下、ホストクラブの一室が闘技場。開幕戦でトラボCUPを迎え撃ち、リーグの口火を切る。</p>
-          </div>
-        </div>
-        <div class="faction">
-          <span class="mark s-itabashi">I</span>
-          <div>
-            <h4><a class="fx" href="https://itabashibayblade.pages.dev/" target="_blank" rel="noopener">板橋ベイブレード会</a></h4>
-            <span class="home">HOME ／ ハイライフいたばし</span>
-            <p>ベイパワーレーティングで戦績を積み上げてきたデータの鬼。ホーム戦では当日の大会優勝者が1名、飛び入りで戦列に加わる。</p>
-          </div>
-        </div>
-        <div class="faction">
-          <span class="mark s-torabo">T</span>
-          <div>
-            <h4><a class="fx" href="https://x.com/legevi_bey_fes" target="_blank" rel="noopener">トラボCUP</a></h4>
-            <span class="home">HOME ／ 抗争終盤の2連戦</span>
-            <p>この抗争の発起人にして第三勢力。ホーム2連戦を最終盤に控え、最後に牙を剥く。</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 出場ブレーダー -->
-    <div class="roster rv">
-
-      <div class="roster-col" style="--c:var(--shinjuku)">
-        <h4>新宿ベイ会</h4>
-        <ul>
+      <article class="team rv" style="--c:var(--shinjuku)">
+        <p class="team-mark">S</p>
+        <h3><a href="https://x.com/toi_bey" target="_blank" rel="noopener">新宿ベイ会</a></h3>
+        <p class="team-home">HOME ／ 歌舞伎町 CURE</p>
+        <p class="team-desc">ネオンの真下、ホストクラブの一室が闘技場。開幕戦でトラボCUPを迎え撃ち、リーグの口火を切る。</p>
+        <ul class="members">
           <li>
             <span class="bn"><a href="https://x.com/Shiny_ny_15" target="_blank" rel="noopener">しゃい兄ぃ</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=しゃい兄ぃ" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=しゃい兄ぃ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/ohamutyan" target="_blank" rel="noopener">まぼちゃん</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/ga_____kun" target="_blank" rel="noopener">トキョモン</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=ガク" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=ガク" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/JING_EDGE" target="_blank" rel="noopener">ジンちゃん</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=ジン" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=ジン" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/toi_bey" target="_blank" rel="noopener">トイちゃん</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=トイ" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=トイ" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
-      </div>
+      </article>
 
-      <div class="roster-col" style="--c:var(--itabashi)">
-        <h4>板橋ベイブレード会</h4>
-        <ul>
+      <article class="team rv" style="--c:var(--itabashi)">
+        <p class="team-mark">I</p>
+        <h3><a href="https://itabashibayblade.pages.dev/" target="_blank" rel="noopener">板橋ベイブレード会</a></h3>
+        <p class="team-home">HOME ／ ハイライフいたばし</p>
+        <p class="team-desc">ベイパワーレーティングで戦績を積み上げてきたデータの鬼。ホーム戦では当日の大会優勝者が1名、飛び入りで戦列に加わる。</p>
+        <ul class="members">
           <li>
             <span class="bn">すが</span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=すが" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=すが" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn">あわ</span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=あわ" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=あわ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/tkintheglobe" target="_blank" rel="noopener">カイヌマ</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=カイヌマ" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=カイヌマ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/libekichi" target="_blank" rel="noopener">りべきち</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=りべきち" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=りべきち" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/dorixiao" target="_blank" rel="noopener">どりでん</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=どりでん" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=どりでん" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
-
         <p class="reserve-label">RESERVE</p>
-        <ul>
+        <ul class="members">
           <li>
             <span class="bn"><a href="https://x.com/Nasca_Korere" target="_blank" rel="noopener">鈴虎(Rico)</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=鈴虎" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=鈴虎" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/AB10os" target="_blank" rel="noopener">AB10</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=AB10" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=AB10" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/minase9999" target="_blank" rel="noopener">からあげ爆弾</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=からあげ爆弾" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=からあげ爆弾" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
             <span class="bn"><a href="https://x.com/yamizaki" target="_blank" rel="noopener">イナッシー</a></span>
-            <span class="links">
-              <a href="https://itabashibayblade.pages.dev/player_stats?player=イナッシー" target="_blank" rel="noopener">STATS</a>
-            </span>
+            <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=イナッシー" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
-      </div>
+      </article>
 
-      <div class="roster-col" style="--c:var(--torabo)">
-        <h4>トラボCUP</h4>
-        <ul>
+      <article class="team rv" style="--c:var(--torabo)">
+        <p class="team-mark">T</p>
+        <h3><a href="https://x.com/legevi_bey_fes" target="_blank" rel="noopener">トラボCUP</a></h3>
+        <p class="team-home">HOME ／ 抗争終盤の2連戦</p>
+        <p class="team-desc">この抗争の発起人。ホームは終盤の2連戦——他の2会がボルテージを上げきった後、最後に受けて立つ。</p>
+        <ul class="members">
           <li>
             <span class="bn"><a href="https://x.com/AyawO_tcg" target="_blank" rel="noopener">アヤヲ</a></span>
             <span class="links">
@@ -734,7 +546,7 @@ footer{
             </span>
           </li>
         </ul>
-      </div>
+      </article>
 
     </div>
     <p class="note rv">※ 各戦は登録メンバーから3名を選出して出場する。板橋ホーム戦のみ、固定メンバー2名＋当日の大会優勝者1名（ゲスト枠）で編成される。<br>※「STATS」は板橋ベイブレード会のベイパワーレーティングによる各ブレーダーの成績ページに繋がる。</p>
@@ -744,9 +556,8 @@ footer{
 <!-- ========== RULES ========== -->
 <section class="sec rules" id="rules">
   <div class="wrap">
-    <p class="eyebrow rv">The Rules</p>
-    <h2 class="sec-title rv">Street Code</h2>
-    <p class="sec-title-jp rv">ストリートの掟</p>
+    <p class="eyebrow rv">03 — Rules</p>
+    <h2 class="sec-h rv">ストリートの掟</h2>
 
     <p class="oath rv">闘うからには、絶対の掟がある。これを破る者に戦う資格はない。</p>
 
@@ -762,7 +573,7 @@ footer{
         </div>
         <div class="card">
           <h4>ホームアドバンテージ</h4>
-          <p>先鋒・次鋒は<span class="hl-w">4ポイント先取</span>で決着。しかし大将戦のみ「<span class="hl">相手がホーム側の大将なら5ポイント先取</span>」という絶対的な有利ルールが適用される。アウェイの理不尽を実力でねじ伏せろ。</p>
+          <p>先鋒・次鋒はどちらも<span class="hl-w">4ポイント先取</span>で決着。だが大将戦だけは違う。<span class="hl">ホーム側の大将を倒すには5ポイント必要</span>——アウェイ側は1点多く削らなければ勝てない。この理不尽を、実力でねじ伏せろ。</p>
         </div>
         <div class="card">
           <h4>大将の意地</h4>
@@ -770,7 +581,7 @@ footer{
         </div>
         <div class="card">
           <h4>板橋ホーム戦のゲスト枠</h4>
-          <p>板橋ホーム戦だけは、固定メンバー2名に<span class="hl">当日の大会優勝者1名</span>が加わって出撃する。その日いちばん強かった男が、そのままシマを背負う。</p>
+          <p>板橋ホーム戦だけは、固定メンバー2名に<span class="hl">当日の大会優勝者1名</span>が加わって出撃する。その日いちばん強かったブレーダーが、そのままシマを背負う。</p>
         </div>
       </div>
     </div>
@@ -780,17 +591,17 @@ footer{
         <span class="num">ROUND 02</span>
         <h3>最終決戦：生き残るのは2チームのみ</h3>
       </div>
-      <div class="cards">
+      <div class="cards cards-3">
         <div class="card">
-          <h4>残酷な選別</h4>
+          <h4>3位は、ここで終わる</h4>
           <p>3月に行われる最終決戦へ進めるのは、予選リーグ<span class="hl-w">1位と2位のチームのみ</span>。<span class="hl">3位は容赦なく敗退だ。</span></p>
         </div>
         <div class="card">
-          <h4>最終戦争</h4>
-          <p>決戦は<span class="hl-w">5人一組・一発勝負の勝ち抜き戦</span>。<span class="hl-w">10ポイント制</span>で争い、予選1位通過チームだけは<span class="hl">13ポイント</span>——「+3」の強烈なアドバンテージを持って乗り込む。5人のデッキにパーツの被りは許されない。</p>
+          <h4>+3を背負って乗り込め</h4>
+          <p>決戦は<span class="hl-w">5人一組・一発勝負の勝ち抜き戦</span>。<span class="hl-w">10ポイント制</span>で争い、予選1位通過チームだけは<span class="hl">13ポイント</span>——「+3」のアドバンテージを持って乗り込む。5人のデッキにパーツの被りは許されない。</p>
         </div>
         <div class="card">
-          <h4>その日の主役は君でもいい</h4>
+          <h4>伝説の目撃者となれ</h4>
           <p>最終決戦の日は、リーグ登録外のブレーダーも来場できるイベントとして開く。<span class="hl-w">サイドトーナメント</span>を用意し、会場の全員が当事者になる一日にする。</p>
         </div>
       </div>
@@ -801,9 +612,9 @@ footer{
 <!-- ========== SCHEDULE ========== -->
 <section class="sec schedule" id="schedule">
   <div class="wrap">
-    <p class="eyebrow rv">The Schedule</p>
-    <h2 class="sec-title rv">Timeline</h2>
-    <p class="sec-title-jp rv">抗争のタイムライン</p>
+    <p class="eyebrow rv">04 — Schedule</p>
+    <h2 class="sec-h rv">抗争のタイムライン</h2>
+
     <p class="oath rv">戦いの舞台はセッティングされた。いつ、どこで血の雨が降るか、見逃すな。</p>
 
     <div class="rail rv">
@@ -853,7 +664,7 @@ footer{
     <p class="note rv">※ 11月以降の日程・会場は調整中。決まり次第、各団体のSNSで告知する。<br>※ リーグ戦は各イベント内の1コーナーとして開催される。当日は通常のプログラムにも参加できる。</p>
   </div>
 </section>
-<div class="hazard"></div>
+<div class="cut"></div>
 
 <!-- ========== CLOSING ========== -->
 <section class="closing">
@@ -875,7 +686,7 @@ footer{
 (function(){
   var els = document.querySelectorAll('.rv');
   if(!('IntersectionObserver' in window)){
-    els.forEach(function(e){e.classList.add('in');});
+    els.forEach(function(e){ e.classList.add('in'); });
     return;
   }
   var io = new IntersectionObserver(function(entries){
@@ -885,11 +696,8 @@ footer{
         io.unobserve(en.target);
       }
     });
-  },{threshold:.12, rootMargin:'0px 0px -8% 0px'});
-  els.forEach(function(e, i){
-    e.style.transitionDelay = (Math.min(i,4)*70) + 'ms';
-    io.observe(e);
-  });
+  }, {threshold:.1, rootMargin:'0px 0px -10% 0px'});
+  els.forEach(function(e){ io.observe(e); });
 })();
 </script>
 </body>
