@@ -220,7 +220,19 @@ body::after{
   display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:11px 0;border-bottom:1px solid var(--line);
 }
-.bn{font-family:var(--jp);font-weight:700;font-size:16px;color:#fff;letter-spacing:.04em;}
+.bn{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--jp);font-weight:700;font-size:16px;color:#fff;letter-spacing:.04em;
+}
+.avatar{
+  width:34px;height:34px;flex:0 0 34px;
+  display:block;
+  border-radius:50%;object-fit:cover;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  transition:border-color .15s;
+}
+.members li:hover .avatar{border-color:var(--c);}
 .bn a{color:#fff;text-decoration:none;border-bottom:1px solid var(--line);transition:color .15s,border-color .15s;}
 .bn a:hover{color:var(--c);border-color:var(--c);}
 .links{display:flex;gap:6px;flex-wrap:wrap;}
@@ -435,22 +447,22 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <p class="team-desc">ネオンの真下、ホストクラブの一室が闘技場。開幕戦でトラボCUPを迎え撃ち、リーグの口火を切る。</p>
         <ul class="members">
           <li>
-            <span class="bn"><a href="https://x.com/Shiny_ny_15" target="_blank" rel="noopener">しゃい兄ぃ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/shainii.webp" alt="しゃい兄ぃ" width="34" height="34" loading="lazy"><a href="https://x.com/Shiny_ny_15" target="_blank" rel="noopener">しゃい兄ぃ</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=しゃい兄ぃ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/ohamutyan" target="_blank" rel="noopener">まぼちゃん</a></span>
+            <span class="bn"><img class="avatar" src="avatars/mabo.webp" alt="まぼちゃん" width="34" height="34" loading="lazy"><a href="https://x.com/ohamutyan" target="_blank" rel="noopener">まぼちゃん</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/ga_____kun" target="_blank" rel="noopener">トキョモン</a></span>
+            <span class="bn"><img class="avatar" src="avatars/tokyomon.webp" alt="トキョモン" width="34" height="34" loading="lazy"><a href="https://x.com/ga_____kun" target="_blank" rel="noopener">トキョモン</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=ガク" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/JING_EDGE" target="_blank" rel="noopener">ジンちゃん</a></span>
+            <span class="bn"><img class="avatar" src="avatars/jin.webp" alt="ジンちゃん" width="34" height="34" loading="lazy"><a href="https://x.com/JING_EDGE" target="_blank" rel="noopener">ジンちゃん</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=ジン" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/toi_bey" target="_blank" rel="noopener">トイちゃん</a></span>
+            <span class="bn"><img class="avatar" src="avatars/toi.webp" alt="トイちゃん" width="34" height="34" loading="lazy"><a href="https://x.com/toi_bey" target="_blank" rel="noopener">トイちゃん</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=トイ" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
@@ -463,42 +475,42 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <p class="team-desc">ベイパワーレーティングで戦績を積み上げてきたデータの鬼。ホーム戦では当日の大会優勝者が1名、飛び入りで戦列に加わる。</p>
         <ul class="members">
           <li>
-            <span class="bn">すが</span>
+            <span class="bn"><img class="avatar" src="avatars/suga.webp" alt="すが" width="34" height="34" loading="lazy">すが</span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=すが" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn">あわ</span>
+            <span class="bn"><img class="avatar" src="avatars/awa.webp" alt="あわ" width="34" height="34" loading="lazy">あわ</span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=あわ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/tkintheglobe" target="_blank" rel="noopener">カイヌマ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/kainuma.webp" alt="カイヌマ" width="34" height="34" loading="lazy"><a href="https://x.com/tkintheglobe" target="_blank" rel="noopener">カイヌマ</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=カイヌマ" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/libekichi" target="_blank" rel="noopener">りべきち</a></span>
+            <span class="bn"><img class="avatar" src="avatars/ribekichi.webp" alt="りべきち" width="34" height="34" loading="lazy"><a href="https://x.com/libekichi" target="_blank" rel="noopener">りべきち</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=りべきち" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/dorixiao" target="_blank" rel="noopener">どりでん</a></span>
+            <span class="bn"><img class="avatar" src="avatars/doriden.webp" alt="どりでん" width="34" height="34" loading="lazy"><a href="https://x.com/dorixiao" target="_blank" rel="noopener">どりでん</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=どりでん" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
         <p class="reserve-label">RESERVE</p>
         <ul class="members">
           <li>
-            <span class="bn"><a href="https://x.com/Nasca_Korere" target="_blank" rel="noopener">鈴虎(Rico)</a></span>
+            <span class="bn"><img class="avatar" src="avatars/rico.webp" alt="鈴虎(Rico)" width="34" height="34" loading="lazy"><a href="https://x.com/Nasca_Korere" target="_blank" rel="noopener">鈴虎(Rico)</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=鈴虎" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/AB10os" target="_blank" rel="noopener">AB10</a></span>
+            <span class="bn"><img class="avatar" src="avatars/ab10.webp" alt="AB10" width="34" height="34" loading="lazy"><a href="https://x.com/AB10os" target="_blank" rel="noopener">AB10</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=AB10" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/minase9999" target="_blank" rel="noopener">からあげ爆弾</a></span>
+            <span class="bn"><img class="avatar" src="avatars/karaage.webp" alt="からあげ爆弾" width="34" height="34" loading="lazy"><a href="https://x.com/minase9999" target="_blank" rel="noopener">からあげ爆弾</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=からあげ爆弾" target="_blank" rel="noopener">STATS</a></span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/yamizaki" target="_blank" rel="noopener">イナッシー</a></span>
+            <span class="bn"><img class="avatar" src="avatars/inassy.webp" alt="イナッシー" width="34" height="34" loading="lazy"><a href="https://x.com/yamizaki" target="_blank" rel="noopener">イナッシー</a></span>
             <span class="links"><a href="https://itabashibayblade.pages.dev/player_stats?player=イナッシー" target="_blank" rel="noopener">STATS</a></span>
           </li>
         </ul>
@@ -511,35 +523,35 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <p class="team-desc">この抗争の発起人。ホームは終盤の2連戦——他の2会がボルテージを上げきった後、最後に受けて立つ。</p>
         <ul class="members">
           <li>
-            <span class="bn"><a href="https://x.com/AyawO_tcg" target="_blank" rel="noopener">アヤヲ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/ayawo.webp" alt="アヤヲ" width="34" height="34" loading="lazy"><a href="https://x.com/AyawO_tcg" target="_blank" rel="noopener">アヤヲ</a></span>
             <span class="links">
               <a href="https://itabashibayblade.pages.dev/player_stats?player=アヤヲ" target="_blank" rel="noopener">STATS</a>
               <a href="https://x.com/legevi_bey_fes/status/2070350906185634207" target="_blank" rel="noopener">INTERVIEW</a>
             </span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/Edono_Zebra" target="_blank" rel="noopener">エドノ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/edono.webp" alt="エドノ" width="34" height="34" loading="lazy"><a href="https://x.com/Edono_Zebra" target="_blank" rel="noopener">エドノ</a></span>
             <span class="links">
               <a href="https://itabashibayblade.pages.dev/player_stats?player=エドノ" target="_blank" rel="noopener">STATS</a>
               <a href="https://x.com/legevi_bey_fes/status/2074790165349089551" target="_blank" rel="noopener">INTERVIEW</a>
             </span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/J_C_Akira" target="_blank" rel="noopener">じゃわ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/jawa.webp" alt="じゃわ" width="34" height="34" loading="lazy"><a href="https://x.com/J_C_Akira" target="_blank" rel="noopener">じゃわ</a></span>
             <span class="links">
               <a href="https://itabashibayblade.pages.dev/player_stats?player=じゃわ" target="_blank" rel="noopener">STATS</a>
               <a href="https://x.com/legevi_bey_fes/status/2070730853832098198" target="_blank" rel="noopener">INTERVIEW</a>
             </span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/trassssshbox" target="_blank" rel="noopener">トラボ</a></span>
+            <span class="bn"><img class="avatar" src="avatars/torabo.webp" alt="トラボ" width="34" height="34" loading="lazy"><a href="https://x.com/trassssshbox" target="_blank" rel="noopener">トラボ</a></span>
             <span class="links">
               <a href="https://itabashibayblade.pages.dev/player_stats?player=トラボ" target="_blank" rel="noopener">STATS</a>
               <a href="https://x.com/legevi_bey_fes/status/2075098931437158806" target="_blank" rel="noopener">INTERVIEW</a>
             </span>
           </li>
           <li>
-            <span class="bn"><a href="https://x.com/ngyk_sundawn" target="_blank" rel="noopener">ながた</a></span>
+            <span class="bn"><img class="avatar" src="avatars/nagata.webp" alt="ながた" width="34" height="34" loading="lazy"><a href="https://x.com/ngyk_sundawn" target="_blank" rel="noopener">ながた</a></span>
             <span class="links">
               <a href="https://itabashibayblade.pages.dev/player_stats?player=ながたマサキ" target="_blank" rel="noopener">STATS</a>
               <a href="https://x.com/legevi_bey_fes/status/2069976158394056862" target="_blank" rel="noopener">INTERVIEW</a>
