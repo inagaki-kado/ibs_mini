@@ -1598,7 +1598,10 @@ function legacySheetsUrl(range) {
 async function fetchStatsRange(rangeKey, legacyRange) {
   try {
     const res = await fetch(`${STATS_API_BASE}?range=${rangeKey}`);
-    if (res.ok) return res;
+    // 静的ホスティング環境ではAPI未実装のルートでも200+HTML（404ページ等）が返ることがあるため、
+    // ステータスだけでなくContent-TypeがJSONであることも確認してからバックエンド応答として採用する
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('json')) return res;
   } catch (e) { /* 中間API未実装 → フォールバックへ */ }
   return fetch(legacySheetsUrl(legacyRange));
 }
