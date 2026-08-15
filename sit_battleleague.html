@@ -230,9 +230,29 @@ body::after{
   border-radius:50%;object-fit:cover;
   background:var(--panel-2);
   border:1px solid var(--line);
-  transition:border-color .15s;
+  cursor:zoom-in;
+  touch-action:manipulation;
+  transform-origin:left center;
+  transition:transform .22s cubic-bezier(.1,1,0,1), border-color .15s, box-shadow .22s;
 }
 .members li:hover .avatar{border-color:var(--c);}
+/* ホバー（PC）／タップ（スマホ）で拡大 */
+.avatar:hover,
+.avatar.is-zoom{
+  transform:scale(2.6);
+  border-color:var(--c);
+  box-shadow:0 8px 28px rgba(0,0,0,.75);
+  position:relative;z-index:20;
+  cursor:zoom-out;
+}
+/* 拡大中の行を前面に出す */
+.members li:hover,
+.members li:has(.avatar.is-zoom){position:relative;z-index:20;}
+/* タッチ端末ではホバー拡大を無効化（タップのみ） */
+@media (hover:none){
+  .avatar:hover{transform:none;box-shadow:none;}
+  .avatar.is-zoom{transform:scale(2.6);box-shadow:0 8px 28px rgba(0,0,0,.75);}
+}
 .bn a{color:#fff;text-decoration:none;border-bottom:1px solid var(--line);transition:color .15s,border-color .15s;}
 .bn a:hover{color:var(--c);border-color:var(--c);}
 .links{display:flex;gap:6px;flex-wrap:wrap;}
@@ -710,6 +730,23 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
     });
   }, {threshold:.1, rootMargin:'0px 0px -10% 0px'});
   els.forEach(function(e){ io.observe(e); });
+})();
+
+/* アイコンのタップ拡大（スマホ）。もう一度タップ、または他所をタップで戻る */
+(function(){
+  var avatars = document.querySelectorAll('.avatar');
+  function clear(except){
+    avatars.forEach(function(a){ if(a !== except) a.classList.remove('is-zoom'); });
+  }
+  avatars.forEach(function(a){
+    a.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var on = a.classList.contains('is-zoom');
+      clear(a);
+      a.classList.toggle('is-zoom', !on);
+    });
+  });
+  document.addEventListener('click', function(){ clear(null); });
 })();
 </script>
 </body>
