@@ -145,6 +145,7 @@
             
             <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
             <button onclick="downloadBayPhotosZip()" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 ベイ写真をZIPダウンロード</button>
+            <button onclick="execClearAllBayPhotos()" id="btn-clear-bay-photos" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors opacity-40" disabled>🗑️ 写真一括削除 <span class="font-sf opacity-70">(0件)</span></button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             
@@ -204,6 +205,7 @@
               </span>
               <h2 class="text-xl md:text-2xl font-sf text-cyber-blue border-l-4 border-cyber-blue pl-4" id="displayTournamentName"></h2>
               <button id="btn-toggle-swap" onclick="toggleSwapMode()" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9]">🔄 WT R1 手動入替</button>
+              <button id="btn-de-undo" onclick="undoDeLastAction()" style="touch-action: manipulation;" class="text-xs bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#0ea5e9] opacity-40" disabled>↩ 1手戻す</button>
               <button id="btn-toggle-progress-guide" onclick="toggleProgressGuide()" class="text-xs bg-yellow-500 border border-yellow-400 text-black px-3 py-1 rounded font-bold transition-colors shadow-[0_0_5px_#facc15]">🎯 進行ガイド: ON</button>
               <button
                 id="btn-break"
@@ -308,7 +310,7 @@
             <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">記念撮影写真</label>
             <input type="file" accept="image/*" id="reportPhotoInput" onchange="onReportPhotoSelected(event)" class="hidden">
             <div class="flex gap-2">
-              <button type="button" onclick="document.getElementById('reportPhotoInput').click()" id="reportPhotoPickBtn" style="touch-action:manipulation" class="flex-1 bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-sf text-sm hover:bg-cyber-blue hover:text-cyber-bg transition-colors">📷 写真を選択</button>
+              <button type="button" onclick="startReportPhotoCapture()" id="reportPhotoPickBtn" style="touch-action:manipulation" class="flex-1 bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-sf text-sm hover:bg-cyber-blue hover:text-cyber-bg transition-colors">📷 写真を選択</button>
               <button type="button" onclick="removeReportPhoto()" id="reportPhotoRemoveBtn" style="touch-action:manipulation" class="hidden flex-1 bg-cyber-bg border border-cyber-pink text-cyber-pink px-3 py-2 rounded font-sf text-sm hover:bg-cyber-pink hover:text-white transition-colors">🗑 写真を外す</button>
             </div>
             <div id="reportCropControls" class="hidden flex flex-col gap-1 mt-2">
@@ -2256,6 +2258,7 @@
       const names = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
       colors.forEach((c, i) => { blockMap[c] = names[i]; blockData[c] = new Array(8).fill(null); });
       if (loadState()) { showResumeBanner(); }
+      updateBayPhotoDeleteButton();
     }
 
     let setupDebounce = false;
@@ -2319,6 +2322,7 @@
     // 参加者管理
     // ==========================================
     let currentBayPhotoParticipantId = null;
+    let bayPhotoProcessingId = null; // 圧縮処理中の participantId（UI表示用。保存はしない）
 
     function getBayPhotoStorageKey(name) {
       return `bayPhoto_${encodeURIComponent(String(name || ''))}`;
@@ -2337,8 +2341,91 @@
       return !!getBayPhotoDataUrlByName(name);
     }
 
+    // localStorage 上のベイ確認写真キーを列挙する。
+    // 現行仕様（bayPhoto_ + encodeURIComponent(name)）と
+    // 旧仕様（bayPhoto_ + 生の名前）の両方が対象。
+    function listBayPhotoKeys() {
+      const keys = [];
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('bayPhoto_')) keys.push(k);
+        }
+      } catch (e) { console.warn('listBayPhotoKeys failed:', e); }
+      return keys;
+    }
+
+    // 写真の件数と概算バイト数を返す。
+    // localStorage は UTF-16 で保持されるため、文字数 × 2 を概算バイト数とする。
+    function getBayPhotoUsage() {
+      const keys = listBayPhotoKeys();
+      let bytes = 0;
+      keys.forEach(k => {
+        try {
+          const v = localStorage.getItem(k);
+          if (v) bytes += (v.length + k.length) * 2;
+        } catch (e) {}
+      });
+      return { count: keys.length, bytes };
+    }
+
+    function formatBayPhotoBytes(bytes) {
+      if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+      if (bytes >= 1024) return Math.round(bytes / 1024) + 'KB';
+      return bytes + 'B';
+    }
+
+    async function execClearAllBayPhotos() {
+      const usage = getBayPhotoUsage();
+      if (usage.count === 0) return showAlert('削除できる写真がありません');
+
+      const sizeText = formatBayPhotoBytes(usage.bytes);
+      const ok = await showConfirm(
+        `保存済みのベイ確認写真 ${usage.count}件（約${sizeText}）をすべて削除します。\n\n` +
+        `この操作は取り消せません。\n` +
+        `トーナメントの進行データは削除されません。`
+      );
+      if (!ok) return;
+
+      const keys = listBayPhotoKeys();
+      let removed = 0;
+      keys.forEach(k => {
+        try { localStorage.removeItem(k); removed++; } catch (e) { console.warn('remove failed:', k, e); }
+      });
+
+      renderParticipants();
+      updateBayPhotoDeleteButton();
+      // ベイブレード管理モーダルが開いている場合はプレビューも更新する
+      if (currentBeybladeParticipantId != null) {
+        const cp = participants.find(x => x.id === currentBeybladeParticipantId);
+        if (cp) updateBayPhotoPreview(cp.name);
+      }
+
+      await showAlert(`写真 ${removed}件を削除しました。\n約${sizeText} の空き容量を確保しました。`);
+    }
+
+    function updateBayPhotoDeleteButton() {
+      const btn = document.getElementById('btn-clear-bay-photos');
+      if (!btn) return;
+      const usage = getBayPhotoUsage();
+      const label = usage.count === 0
+        ? '(0件)'
+        : `(${usage.count}件 / ${formatBayPhotoBytes(usage.bytes)})`;
+      btn.innerHTML = `🗑️ 写真一括削除 <span class="font-sf opacity-70">${label}</span>`;
+      btn.disabled = usage.count === 0;
+      btn.classList.toggle('opacity-40', usage.count === 0);
+      btn.classList.toggle('cursor-not-allowed', usage.count === 0);
+    }
+
     function setBayPhotoDataUrlByName(name, dataUrl) {
-      localStorage.setItem(getBayPhotoStorageKey(name), dataUrl);
+      try {
+        localStorage.setItem(getBayPhotoStorageKey(name), dataUrl);
+        return true;
+      } catch (e) {
+        console.warn('bay photo save failed:', e);
+        showAlert('写真の保存容量が上限に達しました。\n\nツールバーの「🗑️ 写真一括削除」で古い写真を消してから、もう一度撮影してください。\n\nトーナメントの進行データは保護されています。');
+        return false;
+      }
     }
 
     function startBayPhotoCapture(participantId) {
@@ -2348,6 +2435,7 @@
       const input = document.getElementById('bayPhotoInput');
       if (!input) return showAlert('写真入力が見つかりません');
       input.value = '';
+      saveState(); // iOS Safariのカメラ起動によるメモリ解放でページが再読み込みされても進行を失わないため
       input.click();
     }
 
@@ -2540,14 +2628,15 @@
         const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
         const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
         const hasPhoto = hasBayPhoto(p.name);
-        const photoBtnColor = hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        const photoLabel = hasPhoto ? '📷✅' : '📷';
+        const isPhotoProcessing = bayPhotoProcessingId === p.id;
+        const photoBtnColor = isPhotoProcessing ? 'bg-transparent text-yellow-400 border border-yellow-400 opacity-70' : (hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20');
+        const photoLabel = isPhotoProcessing ? '⏳' : (hasPhoto ? '📷✅' : '📷');
         const beyChangeBtnHTML = isTournamentStarted
           ? (p.beyChangeUsed
             ? '<button type="button" disabled class="bg-cyber-dark border border-gray-600 text-gray-500 px-2 py-1 rounded font-bold text-xs cursor-not-allowed opacity-50">✅ 変更済</button>'
             : `<button type="button" onclick="openBeyChangeModal(${p.id})" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded font-bold text-xs transition-colors">🔄 ベイ変更</button>`)
           : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" style="touch-action: manipulation; ${(isSetupSwapMode || isPhotoProcessing) ? 'opacity:0.5;' : ''}" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${(isSetupSwapMode || isPhotoProcessing) ? 'disabled' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -2556,6 +2645,7 @@
       const thNo = document.getElementById('th-no-t'); if(thNo) thNo.classList.toggle('text-cyber-blue', participantSortMode==='id');
       const thNm = document.getElementById('th-name-t'); if(thNm) thNm.classList.toggle('text-cyber-blue', participantSortMode==='name');
       const thLt = document.getElementById('th-lottery-t'); if(thLt) thLt.classList.toggle('text-cyber-blue', participantSortMode==='lottery');
+      updateBayPhotoDeleteButton();
       saveState();
     }
 
@@ -3632,6 +3722,51 @@
       renderTournament();
     }
 
+    // ==========================================
+    // ブラケット操作 UNDO（メモリ内のみ・localStorageには保存しない）
+    // ==========================================
+    const deUndoStack = [];
+    const DE_UNDO_LIMIT = 15;
+
+    function pushDeUndoSnapshot() {
+      try {
+        deUndoStack.push(JSON.stringify({
+          winnersBracket, losersBracket, grandFinal, grandFinalReset,
+          lbThirdPlace, gfResetRequired, playedPairs
+        }));
+        if (deUndoStack.length > DE_UNDO_LIMIT) deUndoStack.shift();
+      } catch (e) { console.warn('undo snapshot failed:', e); }
+      updateDeUndoButtonState();
+    }
+
+    function undoDeLastAction() {
+      if (!deUndoStack.length) return showAlert('戻せる操作がありません');
+      const raw = deUndoStack.pop();
+      let s;
+      try { s = JSON.parse(raw); } catch (e) { return showAlert('復元に失敗しました'); }
+      winnersBracket   = s.winnersBracket;
+      losersBracket    = s.losersBracket;
+      grandFinal       = s.grandFinal;
+      grandFinalReset  = s.grandFinalReset;
+      lbThirdPlace     = s.lbThirdPlace;
+      gfResetRequired  = s.gfResetRequired;
+      playedPairs      = s.playedPairs || {};
+      recalculateAllStats();
+      computeSuggestedWbMatch();
+      renderTournament();
+      saveState();
+      broadcastSubSync();
+      updateDeUndoButtonState();
+    }
+
+    function updateDeUndoButtonState() {
+      const btn = document.getElementById('btn-de-undo');
+      if (!btn) return;
+      const disabled = deUndoStack.length === 0;
+      btn.disabled = disabled;
+      btn.classList.toggle('opacity-40', disabled);
+    }
+
     function handleSwapClick(block, roundIdx, matchIdx, playerSide) {
       if (block !== 'wb' || roundIdx !== 0) return;
       if (!swapPending) {
@@ -3645,6 +3780,7 @@
         ) {
           swapPending = null;
         } else if (swapPending.block === 'wb' && swapPending.roundIdx === 0) {
+          pushDeUndoSnapshot();
           let m1 = winnersBracket[0][swapPending.matchIdx];
           let m2 = winnersBracket[0][matchIdx];
           let p1 = swapPending.playerSide === 1 ? m1.p1 : m1.p2;
@@ -3693,6 +3829,7 @@
       const match = getMatchByCoords(block, roundIdx, matchIdx);
       if (!match || !match.p1 || !match.p2) return;
       if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+      pushDeUndoSnapshot();
       if (match.winner === winnerVal) {
         match.winner = null;
         match.score = null;
@@ -5994,7 +6131,7 @@
 
     // File → dataURL → Image → canvas(長辺1200px) → JPEG dataURL。
     // 元画像のdataURLはこの関数のローカルスコープ内でのみ使い、呼び出し元には残さない。
-    function reportResizePhotoFile(file) {
+    function reportResizePhotoFile(file, maxSide) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
@@ -6002,7 +6139,7 @@
           const img = new Image();
           img.onerror = () => reject(new Error('Image decode failed'));
           img.onload = () => {
-            const maxEdge = 1200;
+            const maxEdge = maxSide || 1200;
             let width = img.naturalWidth, height = img.naturalHeight;
             if (width > maxEdge || height > maxEdge) {
               if (width >= height) { height = Math.round(height * (maxEdge / width)); width = maxEdge; }
@@ -6018,6 +6155,13 @@
         };
         reader.readAsDataURL(file);
       });
+    }
+
+    function startReportPhotoCapture() {
+      const input = document.getElementById('reportPhotoInput');
+      if (!input) return;
+      saveState(); // iOS Safariのカメラ/写真アプリ起動によるメモリ解放でページが再読み込みされても進行を失わないため
+      input.click();
     }
 
     async function onReportPhotoSelected(event) {
@@ -6175,7 +6319,7 @@
           pidCounter, participants, participantSortMode, blockMap, blockData, blockCapacities,
           blockActivePositions, winnersBracket, losersBracket, grandFinal, grandFinalReset,
           lbThirdPlace, bracketSize, playedPairs, gfResetRequired, deSubTab, isEffectOn, isCommentOn,
-          isProgressGuideOn, hudPreviewBackground
+          isProgressGuideOn, hudPreviewBackground, currentBayPhotoParticipantId
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       } catch(e) { console.warn('saveState error:', e); }
@@ -6222,6 +6366,7 @@
         hudPreviewBackground = s.hudPreviewBackground && HUD_PREVIEW_BG_KEYS.includes(s.hudPreviewBackground)
           ? s.hudPreviewBackground
           : 'maintitle_white.png';
+        currentBayPhotoParticipantId = s.currentBayPhotoParticipantId || null;
         return true;
       } catch(e) { console.warn('loadState error:', e); return false; }
     }
@@ -7023,21 +7168,25 @@
 
       const bayPhotoInput = document.getElementById('bayPhotoInput');
       if (bayPhotoInput) {
-        bayPhotoInput.addEventListener('change', (e) => {
+        bayPhotoInput.addEventListener('change', async (e) => {
           const file = e.target && e.target.files ? e.target.files[0] : null;
           if (!file) return;
           const p = participants.find(x => x.id === currentBayPhotoParticipantId);
           if (!p) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            const dataUrl = reader.result;
-            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
-              setBayPhotoDataUrlByName(p.name, dataUrl);
-              renderParticipants();
-              if (currentBeybladeParticipantId === p.id) updateBayPhotoPreview(p.name);
-            }
-          };
-          reader.readAsDataURL(file);
+          bayPhotoProcessingId = p.id;
+          renderParticipants();
+          try {
+            const dataUrl = await reportResizePhotoFile(file, 1280);
+            const saved = setBayPhotoDataUrlByName(p.name, dataUrl);
+            if (saved && currentBeybladeParticipantId === p.id) updateBayPhotoPreview(p.name);
+          } catch (err) {
+            console.warn('[Bay Check] 写真の圧縮に失敗:', err);
+            await showAlert('画像を読み込めませんでした。HEIC形式の可能性があります。別の画像でお試しください。');
+          } finally {
+            bayPhotoProcessingId = null;
+            renderParticipants();
+            updateBayPhotoDeleteButton();
+          }
         });
       }
     });
