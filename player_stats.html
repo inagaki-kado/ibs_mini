@@ -57,12 +57,15 @@ body {
   min-height: 100vh;
 }
 
-/* scanline */
+/* scanline（GPU合成レイヤーに昇格させ、スクロール時の全画面再描画を回避） */
 body::before {
   content: '';
   position: fixed; inset: 0;
   background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+  background-size: 100% 4px;
   pointer-events: none; z-index: 9999;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* grid bg */
@@ -221,6 +224,7 @@ nav {
   letter-spacing: 0.04em;
   white-space: nowrap;
   line-height: 1;
+  text-shadow: 0 0 8px currentColor;
 }
 /* ゾーン境界線（軸ラベルの右に横線） */
 .axis-label::after {
@@ -236,18 +240,19 @@ nav {
 }
 
 /* Zone colors (default dim) — 新カラー */
+/* color は軸ラベル・タワーインジケーターの文字色としても共用 */
 /* 01F-39F: ピュアホワイト */
-.zone-low     { background: rgba(255,255,255,0.04); border-left: 2px solid rgba(255,255,255,0.2); }
+.zone-low     { color: #ffffff; background: rgba(255,255,255,0.04); border-left: 2px solid rgba(255,255,255,0.2); }
 /* 40F-59F: サイバーブルー */
-.zone-40s50s  { background: rgba(14,165,233,0.05);  border-left: 2px solid rgba(14,165,233,0.25); }
+.zone-40s50s  { color: #0ea5e9; background: rgba(14,165,233,0.05);  border-left: 2px solid rgba(14,165,233,0.25); }
 /* 60F-79F: マトリックスグリーン */
-.zone-60s70s  { background: rgba(0,255,65,0.04);    border-left: 2px solid rgba(0,255,65,0.2); }
+.zone-60s70s  { color: #00ff41; background: rgba(0,255,65,0.04);    border-left: 2px solid rgba(0,255,65,0.2); }
 /* 80F-89F: ネオンパープル */
-.zone-80s     { background: rgba(168,85,247,0.05);  border-left: 2px solid rgba(168,85,247,0.25); }
+.zone-80s     { color: #a855f7; background: rgba(168,85,247,0.05);  border-left: 2px solid rgba(168,85,247,0.25); }
 /* 90F-99F: クリムゾンレッド */
-.zone-90s     { background: rgba(239,68,68,0.05);   border-left: 2px solid rgba(239,68,68,0.25); }
+.zone-90s     { color: #ef4444; background: rgba(239,68,68,0.05);   border-left: 2px solid rgba(239,68,68,0.25); }
 /* XF: シャイニングゴールド */
-.zone-xf      { background: rgba(245,158,11,0.07);  border-left: 2px solid rgba(245,158,11,0.35); }
+.zone-xf      { color: #f59e0b; background: rgba(245,158,11,0.07);  border-left: 2px solid rgba(245,158,11,0.35); }
 
 /* Active (player highlight) */
 .floor-seg.active-floor {
@@ -791,19 +796,19 @@ nav {
     gap: 1rem;
     overflow: hidden;
   }
-  /* タワーを縦長に・タイトルと被らないよう高さ明示 */
+  /* タワーを縦長に・aspect-ratioで幅から高さを自然に算出（固定px高さのハックを廃止） */
   .tower-container {
     width: 100%;
     max-width: 260px;
-    height: 800px;
+    aspect-ratio: 2 / 7;
+    height: auto;
     flex: none;
     overflow: hidden;
   }
   .tower-svg-wrap {
     max-width: 200px;
     width: 100%;
-    height: 800px;
-    max-height: 800px;
+    height: 100%;
     overflow: hidden;
   }
   /* インジケーターはスマホでは非表示（overflow:hidden で切れるため） */
@@ -824,9 +829,34 @@ nav {
   .rank-badge { font-size: 1.5rem; }
   .stats-panel { padding: 1rem; }
   .card-body { padding: 1rem; }
-  .tower-container { height: 700px; flex: none; overflow: hidden; }
-  .tower-svg-wrap   { height: 700px; max-height: 700px; overflow: hidden; }
+  /* タワーは900px時点のaspect-ratioルールがそのまま流体的に縮小するため、ここでの上書きは不要 */
   .stats-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── モバイル: Glow演出（box-shadow）の描画負荷を軽減 ─── */
+@media (max-width: 640px) {
+  .zone-low.active-floor    { box-shadow: inset 0 0 10px rgba(255,255,255,0.2); }
+  .zone-40s50s.active-floor { box-shadow: inset 0 0 12px rgba(14,165,233,0.3); }
+  .zone-60s70s.active-floor { box-shadow: inset 0 0 12px rgba(0,255,65,0.3); }
+  .zone-80s.active-floor    { box-shadow: inset 0 0 12px rgba(168,85,247,0.3); }
+  .zone-90s.active-floor    { box-shadow: inset 0 0 12px rgba(239,68,68,0.3); }
+
+  @keyframes goldBreath {
+    0%, 100% { background: rgba(245,158,11,0.25); box-shadow: inset 0 0 12px rgba(245,158,11,0.3); }
+    50%       { background: rgba(245,158,11,0.45); box-shadow: inset 0 0 20px rgba(245,158,11,0.5); }
+  }
+
+  .rank-low, .rank-40s50s, .rank-60s70s, .rank-80s, .rank-90s {
+    text-shadow: none;
+    box-shadow: none;
+  }
+  .rank-xf { box-shadow: 0 0 10px rgba(245,158,11,0.4); }
+  @keyframes goldBadgePulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(245,158,11,0.4); }
+    50%       { box-shadow: 0 0 16px rgba(245,158,11,0.6); }
+  }
+
+  .bey-badge-1, .bey-badge-2, .bey-badge-3, .bey-badge-4, .bey-badge-5 { box-shadow: none; }
 }
 
 /* ─── ABOUT アコーディオン ─── */
@@ -1126,6 +1156,252 @@ nav {
   color: rgba(226, 232, 240, 0.72);
   line-height: 1.75;
 }
+.blader-bio-placeholder { opacity: .35; }
+
+.rival-title-icon { font-size: 1.2rem; }
+.player-matches-icon { margin-right: 4px; opacity: .6; }
+.winrate-pct.pct-blue { color: var(--neon-blue); }
+.winrate-pct.pct-pink { color: var(--neon-pink); }
+
+/* ─── 決まり手(フィニッシュタイプ)配色 ─── モーダル／TOP集計／ライバル比較で共用 */
+.fin-XF      { color: #ff0055; }
+.fin-BF      { color: #ffd700; }
+.fin-OF      { color: #ffaa00; }
+.fin-SF      { color: #0ea5e9; }
+.fin-default { color: #94a3b8; }
+.kimarite-chip { font-weight: 700; }
+
+/* ─── 汎用: 統計パネル・タブ（TOP集計／ライバル比較で共用） ─── */
+.stat-empty {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 15px;
+  color: #475569;
+  text-align: center;
+  padding: 10px 0;
+}
+.stat-panel {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 16px;
+}
+.stat-panel-mt { margin-top: 12px; }
+.stat-panel-outer { margin-top: 12px; }
+.stat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stat-panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  color: #e2e8f0;
+}
+.stat-panel-title-standalone { margin-bottom: 14px; }
+.stat-panel-subtitle {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  color: #475569;
+}
+.stat-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1f2937;
+  margin-bottom: 14px;
+}
+.stat-tab-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: #94a3b8;
+  border-bottom: 2px solid transparent;
+  touch-action: manipulation;
+}
+.stat-tab-btn.is-active { color: #e2e8f0; border-bottom-color: var(--neon-blue); }
+.stat-tab-btn-lg { padding: 8px 16px; font-size: 14px; letter-spacing: .08em; }
+.stat-tab-count { font-size: 12px; color: #475569; margin-left: 4px; }
+
+/* ─── CLUB FINISH RATE（TOPページ集計） ─── */
+.gfr-row {
+  display: grid;
+  grid-template-columns: 64px 56px 48px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.gfr-key { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+.gfr-count { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; color: #e2e8f0; }
+.gfr-pct { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #94a3b8; }
+.gfr-bar-track {
+  height: 8px;
+  background: #0a0e17;
+  border: 1px solid #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.gfr-bar-fill { height: 100%; background: currentColor; }
+
+/* ─── BLADE META SCORE ─── */
+.bm-row {
+  display: grid;
+  align-items: center;
+  column-gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.bm-rank-cell { text-align: center; }
+.bm-rank-medal { font-size: 16px; }
+.bm-rank-num { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #475569; }
+.bm-name-cell { font-family: 'Noto Sans JP', sans-serif; font-size: 15px; white-space: nowrap; color: #e2e8f0; font-weight: 400; }
+.bm-name-cell.is-top3 { font-weight: 700; }
+.bm-score-cell { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; text-align: right; }
+.bm-bar-track {
+  height: 7px;
+  background: #0a0e17;
+  border: 1px solid #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 32px;
+}
+.bm-bar-fill { height: 100%; border-radius: 999px; background: currentColor; }
+.bm-color-1 { color: #ffd700; }
+.bm-color-2 { color: #c0c0c0; }
+.bm-color-3 { color: #cd7f32; }
+.bm-color-default { color: #0ea5e9; }
+
+/* ─── FINISH TYPE（選手個別のライバル比較カード内） ─── */
+.pft-panel { margin-top: 1rem; background: #0a0e17; border: 1px solid #1f2937; border-radius: 14px; padding: 18px; }
+.pft-title { font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: .18em; color: #e2e8f0; margin-bottom: 12px; font-size: 13px; }
+.pft-row {
+  display: grid;
+  grid-template-columns: 64px 60px 52px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.pft-row.is-received { opacity: .68; }
+.pft-key { font-family: 'Orbitron', monospace; font-weight: 800; letter-spacing: .08em; font-size: 13px; }
+.pft-count { font-family: 'Orbitron', monospace; font-weight: 700; color: #e2e8f0; font-size: 14px; }
+.pft-pct { font-family: 'Orbitron', monospace; font-weight: 700; color: #94a3b8; font-size: 14px; }
+.pft-bar-track { height: 10px; background: #111827; border: 1px solid #1f2937; border-radius: 999px; overflow: hidden; }
+.pft-bar-fill { height: 100%; background: currentColor; }
+.pft-rcv-divider-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 10px; }
+.pft-rcv-line { flex: 1; height: 1px; background: #1f2937; }
+.pft-rcv-label { font-family: 'Orbitron', monospace; font-weight: 700; letter-spacing: .14em; color: #94a3b8; font-size: 13px; }
+.pft-rcv-total { font-family: 'Orbitron', monospace; font-weight: 700; color: #94a3b8; font-size: 13px; }
+.pft-rows-wrap { display: flex; flex-direction: column; gap: 10px; }
+.pft-rows-wrap.mt { margin-top: 10px; }
+.pft-total-label { font-family: 'Orbitron', monospace; font-weight: 700; color: #94a3b8; font-size: 14px; }
+
+/* ─── モーダル共通 ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #475569;
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+  line-height: 1;
+  padding: 4px;
+}
+
+/* ─── 対戦履歴モーダル (mhm = Match History Modal) ─── */
+.mhm-card {
+  background: #080d1a;
+  border: 1px solid rgba(14,165,233,0.3);
+  border-radius: 12px;
+  padding: 22px 20px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 0 40px rgba(14,165,233,0.15);
+}
+.mhm-title { font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: .06em; color: #e2e8f0; font-size: 15px; margin-bottom: 2px; padding-right: 24px; }
+.mhm-subtitle { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
+.mhm-rows { display: flex; flex-direction: column; gap: 8px; }
+.mhm-empty { text-align: center; color: #94a3b8; font-family: 'Noto Sans JP', sans-serif; padding: 20px 0; }
+.mhm-row { background: rgba(4,7,15,0.6); border: 1px solid rgba(14,165,233,0.15); border-left: 3px solid #94a3b8; border-radius: 4px; padding: 10px 12px; }
+.mhm-row.is-win { border-left-color: #22c55e; }
+.mhm-row.is-lose { border-left-color: #ff0055; }
+.mhm-row-top { display: flex; align-items: center; gap: 10px; }
+.mhm-result-label { font-family: 'Orbitron', monospace; font-weight: 800; font-size: 12px; min-width: 44px; }
+.mhm-result-label.is-win { color: #22c55e; }
+.mhm-result-label.is-lose { color: #ff0055; }
+.mhm-row-main { flex: 1; min-width: 0; }
+.mhm-vs-line { font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: #e2e8f0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mhm-meta-line { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.mhm-score { font-family: 'Orbitron', monospace; font-size: 16px; color: #e2e8f0; letter-spacing: .05em; white-space: nowrap; flex-shrink: 0; }
+.mhm-score-own.is-win { color: #22c55e; }
+.mhm-score-own.is-lose { color: #ff0055; }
+.mhm-slash { color: #e2e8f0; font-weight: 700; }
+.mhm-opp-link { color: #0ea5e9; border-bottom: 1px dotted #0ea5e9; cursor: pointer; touch-action: manipulation; }
+.mhm-opp-arrow { color: #0ea5e9; font-size: 10px; margin-left: 3px; }
+.mhm-cmt-btn { margin-left: 5px; font-size: 12px; cursor: pointer; touch-action: manipulation; user-select: none; display: inline-block; opacity: 1; }
+.mhm-cmt-btn.is-dimmed { opacity: .55; }
+.mhm-cmt-box { display: none; margin: 8px 0 0 0; padding: 8px 10px; background: rgba(14,165,233,0.06); border-left: 2px solid #94a3b8; border-radius: 0 4px 4px 0; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; line-height: 1.7; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+.mhm-cmt-box.is-win { border-left-color: #22c55e; }
+.mhm-cmt-box.is-lose { border-left-color: #ff0055; }
+.mhm-cmt-box.is-open { display: block; }
+
+/* ─── 共有モーダル ─── */
+.share-card {
+  background: #080d1a;
+  border: 1px solid rgba(0,255,136,0.3);
+  border-radius: 12px;
+  padding: 24px 22px;
+  max-width: 360px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0,255,136,0.1);
+}
+.share-card-title { font-family: 'Orbitron', sans-serif; font-size: 14px; letter-spacing: 2px; color: var(--neon-green); margin-bottom: 16px; }
+.share-card-body { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 0; font-family: 'Orbitron', sans-serif; font-size: 14px; color: #475569; }
+.share-preview-img { width: 100%; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(0,255,136,0.15); }
+.share-btn-col { display: flex; gap: 8px; flex-direction: column; }
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 7px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  touch-action: manipulation;
+  width: 100%;
+}
+.share-btn-green { border: 1px solid rgba(0,255,136,0.35); background: rgba(0,255,136,0.07); color: var(--neon-green); }
+.share-btn-white { border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.04); color: #fff; text-decoration: none; }
+.share-btn-icon { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+.share-btn.is-done { opacity: .7; }
+.share-btn-white.is-copied { border-color: rgba(0,255,136,0.5); }
+
+.clipboard-helper { position: fixed; opacity: 0; }
 </style>
 </head>
 
@@ -1292,24 +1568,40 @@ nav {
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────
-const SHEET_ID  = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
-const API_KEY   = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
-const RANGE     = encodeURIComponent('🌐 Webデータ出力!A2:N');
-const API_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+// データ取得は中間API（/api/get-stats）経由が本来の設計。
+// サーバー側でGoogle Sheetsへのアクセスを代行し、APIキーはクライアントに一切渡さない。
+const STATS_API_BASE = '/api/get-stats';
+
+const RANGE          = encodeURIComponent('🌐 Webデータ出力!A2:N');
 // ベイ集計シート（相棒ベイTOP5取得用）
-const RANGE_BEY = encodeURIComponent('🌀 ベイ集計!A2:F');
-const BEY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY}?key=${API_KEY}`;
+const RANGE_BEY       = encodeURIComponent('🌀 ベイ集計!A2:F');
 // 対戦入力シート（BP推移グラフ・決まり手データ用）
 // A=選手1, B=BP1(現在), C=選手2, D=BP2(現在), E=勝者名, F=変動BP, G=BP1(新), H=BP2(新)
 // I=回戦, J=大会名, K=日付, L=行種別, M=スタジアム, N=決まり手P1, O=決まり手P2, P=P1得点, Q=P2得点, R=コメント
-const RANGE_HISTORY = encodeURIComponent("'⚔️ 対戦入力'!A3:R");
-const HISTORY_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_HISTORY}?key=${API_KEY}`;
+const RANGE_HISTORY  = encodeURIComponent("'⚔️ 対戦入力'!A3:R");
 const RANGE_TOURNEY  = encodeURIComponent("'📅 大会マスター'!A2:H");
-const TOURNEY_URL    = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_TOURNEY}?key=${API_KEY}`;
 const RANGE_BEY_HIST = encodeURIComponent("'🌀 ベイ使用履歴'!A2:E");
-const BEY_HIST_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_BEY_HIST}?key=${API_KEY}`;
-const RANGE_TEAM = encodeURIComponent("'🤝 チーム戦入力'!A3:P");
-const TEAM_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE_TEAM}?key=${API_KEY}`;
+const RANGE_TEAM     = encodeURIComponent("'🤝 チーム戦入力'!A3:P");
+
+// ⚠️ 暫定フォールバック専用（/api/get-stats バックエンド実装後に丸ごと削除すること）
+// バックエンド未実装の間だけ、中間APIが応答しない場合に直接Sheets APIを叩く。
+const LEGACY_SHEET_ID = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
+const LEGACY_API_KEY  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
+function legacySheetsUrl(range) {
+  return `https://sheets.googleapis.com/v4/spreadsheets/${LEGACY_SHEET_ID}/values/${range}?key=${LEGACY_API_KEY}`;
+}
+
+/**
+ * 中間API（/api/get-stats?range=xxx）からデータ取得。
+ * 未応答・未実装（404等）の場合のみ、フォールバックとして直接Sheets APIへ切り替える。
+ */
+async function fetchStatsRange(rangeKey, legacyRange) {
+  try {
+    const res = await fetch(`${STATS_API_BASE}?range=${rangeKey}`);
+    if (res.ok) return res;
+  } catch (e) { /* 中間API未実装 → フォールバックへ */ }
+  return fetch(legacySheetsUrl(legacyRange));
+}
 
 let allPlayers = null; // cache
 let beyMap     = null; // cache: { 選手名: [bey1, bey2, bey3, bey4, bey5] }
@@ -1320,6 +1612,7 @@ let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isW
 let tStadiumMap = null; // { 大会名: 'extreme'|'infinity' } チーム戦スタジアム参照用
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
 let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
+let activeBpCharts = []; // 検索結果カードごとのBP推移Chart.jsインスタンス（再描画前に必ずdestroy()する）
 // ─── TOWER SETUP ──────────────────────────────────────────
 function getZoneClass(rankNum) {
   if (rankNum === 100) return 'zone-xf';
@@ -1348,15 +1641,6 @@ function getRankClass(rankNum) {
   return 'rank-low';
 }
 
-function getIndicatorColor(rankNum) {
-  if (rankNum === 100) return '#f59e0b';
-  if (rankNum >= 90)   return '#ef4444';
-  if (rankNum >= 80)   return '#a855f7';
-  if (rankNum >= 60)   return '#00ff41';
-  if (rankNum >= 40)   return '#0ea5e9';
-  return '#ffffff';
-}
-
 function buildTower() {
   const floorsEl = document.getElementById('towerFloors');
   const axisEl   = document.getElementById('towerAxis');
@@ -1365,16 +1649,6 @@ function buildTower() {
 
   // ゾーン境界でラベルを出す階
   const labelFloors = [1, 40, 60, 80, 90, 100];
-
-  // ゾーンカラーマップ
-  const zoneColor = {
-    'zone-low':    '#ffffff',
-    'zone-40s50s': '#0ea5e9',
-    'zone-60s70s': '#00ff41',
-    'zone-80s':    '#a855f7',
-    'zone-90s':    '#ef4444',
-    'zone-xf':     '#f59e0b',
-  };
 
   for (let f = 1; f <= 100; f++) {
     const zoneClass = getZoneClass(f);
@@ -1398,15 +1672,12 @@ function buildTower() {
       const relTop  = segRect.top - axisRect.top + segRect.height / 2;
 
       const zoneClass = getZoneClass(f);
-      const color     = zoneColor[zoneClass] || '#fff';
       const text      = f === 100 ? 'XF' : f + 'F';
 
       const lbl = document.createElement('div');
-      lbl.className = 'axis-label';
+      lbl.className = 'axis-label ' + zoneClass;
       lbl.textContent = text;
       lbl.style.top   = relTop + 'px';
-      lbl.style.color = color;
-      lbl.style.textShadow = `0 0 8px ${color}`;
       axisEl.appendChild(lbl);
     });
   });
@@ -1439,13 +1710,11 @@ function highlightTower(rankNum) {
   // インジケーター位置：PC=縦タワー(top基準) / スマホ=横タワー(left基準)
   const indicator  = document.getElementById('towerIndicator');
   const label      = document.getElementById('towerIndicatorLabel');
-  const color      = getIndicatorColor(rankNum);
   const floorsEl   = document.getElementById('towerFloors');
   const isMobile   = window.innerWidth <= 900;
 
-  indicator.style.color = color;
+  indicator.className = 'tower-indicator show ' + getZoneClass(rankNum);
   label.textContent = '';
-  indicator.classList.add('show');
 
   const parentRect = floorsEl.parentElement.getBoundingClientRect();
   const segRect    = seg.getBoundingClientRect();
@@ -1466,9 +1735,9 @@ async function fetchPlayers() {
 
   // Webデータ出力・ベイ集計・全対戦履歴 を並列フェッチ
   const [res1, res2, res3, resT, resTeam] = await Promise.all([
-    fetch(API_URL), fetch(BEY_URL), fetch(HISTORY_URL),
-    fetch(TOURNEY_URL).catch(() => ({ ok: false })),
-    fetch(TEAM_URL).catch(() => ({ ok: false }))
+    fetchStatsRange('players', RANGE), fetchStatsRange('bey', RANGE_BEY), fetchStatsRange('history', RANGE_HISTORY),
+    fetchStatsRange('tourney', RANGE_TOURNEY).catch(() => ({ ok: false })),
+    fetchStatsRange('team', RANGE_TEAM).catch(() => ({ ok: false }))
   ]);
   if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
   if (!res2.ok) throw new Error(`HTTP ${res2.status} (ベイ集計)`);
@@ -1699,6 +1968,18 @@ function escHtml(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// 決まり手(フィニッシュタイプ)ごとの表示名・配色クラス。
+// モーダル／TOPページ集計／ライバル比較の全箇所でこのクラス名を共有する。
+const FINISH_TYPE_META = {
+  XF: { label: 'XTREME',   cls: 'fin-XF' },
+  BF: { label: 'BURST',    cls: 'fin-BF' },
+  OF: { label: 'OVER',     cls: 'fin-OF' },
+  SF: { label: 'SURVIVOR', cls: 'fin-SF' },
+};
+function finishTypeClass(k) {
+  return (FINISH_TYPE_META[k] && FINISH_TYPE_META[k].cls) || 'fin-default';
+}
+
 /**
  * 参加履歴テキストをカード表示用HTMLに変換。
  * 対戦データがある大会名の行はクリック可能にし、戦績を表示する。
@@ -1748,8 +2029,6 @@ function jumpToRivalFromModal(name) {
   jumpToRival(name);
 }
 
-const KIMARITE_MODAL_COLOR = { XF: '#ff0055', BF: '#ffd700', OF: '#ffaa00', SF: '#0ea5e9' };
-
 function showMatchHistoryModal(el) {
   const playerName = el.getAttribute('data-player');
   const date = el.getAttribute('data-date');
@@ -1762,7 +2041,7 @@ function showMatchHistoryModal(el) {
   const fmtKimarite = (raw) => {
     if (!raw) return '';
     return raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
-      .map(k => `<span style="color:${KIMARITE_MODAL_COLOR[k] || '#94a3b8'};font-weight:700;">${escHtml(k)}</span>`)
+      .map(k => `<span class="kimarite-chip ${finishTypeClass(k)}">${escHtml(k)}</span>`)
       .join('・');
   };
 
@@ -1770,7 +2049,7 @@ function showMatchHistoryModal(el) {
   const fmtKimaritePair = (own, opp) => {
     const a = fmtKimarite(own);
     const b = fmtKimarite(opp);
-    if (a && b) return `${a} <span style="color:#e2e8f0;font-weight:700;">/</span> ${b}`;
+    if (a && b) return `${a} <span class="mhm-slash">/</span> ${b}`;
     return a || b || '';
   };
 
@@ -1788,55 +2067,55 @@ function showMatchHistoryModal(el) {
   };
 
   const rowsHtml = matches.length ? matches.map((d, i) => {
-    const resultColor = d.isWin ? '#22c55e' : '#ff0055';
+    const resultCls = d.isWin ? 'is-win' : 'is-lose';
     const resultLabel = d.isWin ? 'WIN' : 'LOSE';
     const kimariteHtml = fmtKimaritePair(d.kimarite, d.kimarite_received);
 
-    // スコア: 左が必ず自分。色を変えるのは自分側のみ(相手側は常に #e2e8f0)
+    // スコア: 左が必ず自分。色を変えるのは自分側のみ(相手側は常に既定色)
     const sOwn = parseScore(d.scoreOwn);
     const sOpp = parseScore(d.scoreOpp);
     const scoreHtml = (sOwn !== null && sOpp !== null)
-      ? `<div style="font-family:'Orbitron',monospace;font-size:16px;color:#e2e8f0;letter-spacing:.05em;white-space:nowrap;flex-shrink:0;"><span style="color:${resultColor};">${escHtml(sOwn)}</span>-${escHtml(sOpp)}</div>`
+      ? `<div class="mhm-score"><span class="mhm-score-own ${resultCls}">${escHtml(sOwn)}</span>-${escHtml(sOpp)}</div>`
       : '';
 
     // 対戦相手名: 名簿にいる場合のみクリックでジャンプ検索
     const oppName = (d.opp || '').trim();
     const oppHtml = isKnownPlayer(oppName)
-      ? `<span onclick="jumpToRivalFromModal('${oppName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" title="${escHtml(oppName)}を検索" style="color:#0ea5e9;border-bottom:1px dotted #0ea5e9;cursor:pointer;touch-action:manipulation;">${escHtml(oppName)}</span><span style="color:#0ea5e9;font-size:10px;margin-left:3px;">↗</span>`
+      ? `<span class="mhm-opp-link" onclick="jumpToRivalFromModal('${oppName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" title="${escHtml(oppName)}を検索">${escHtml(oppName)}</span><span class="mhm-opp-arrow">↗</span>`
       : escHtml(oppName || '不明');
 
     // R列コメント: ある対戦のみ 💬 を表示。タップでカード下に展開
     const cmt = (d.comment || '').trim();
     const cmtBtnHtml = cmt
-      ? `<span onclick="toggleMatchComment(this,'mhc-${i}')" title="コメントを見る" style="margin-left:5px;font-size:12px;cursor:pointer;touch-action:manipulation;user-select:none;display:inline-block;">💬</span>`
+      ? `<span class="mhm-cmt-btn" onclick="toggleMatchComment(this,'mhc-${i}')" title="コメントを見る">💬</span>`
       : '';
     const cmtBodyHtml = cmt
-      ? `<div id="mhc-${i}" style="display:none;margin:8px 0 0 0;padding:8px 10px;background:rgba(14,165,233,0.06);border-left:2px solid ${resultColor};border-radius:0 4px 4px 0;font-family:'Noto Sans JP',sans-serif;font-size:12px;line-height:1.7;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;">${escHtml(cmt)}</div>`
+      ? `<div id="mhc-${i}" class="mhm-cmt-box ${resultCls}">${escHtml(cmt)}</div>`
       : '';
 
     return `
-      <div style="background:rgba(4,7,15,0.6);border:1px solid rgba(14,165,233,0.15);border-left:3px solid ${resultColor};border-radius:4px;padding:10px 12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:12px;color:${resultColor};min-width:44px;">${resultLabel}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#e2e8f0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">vs ${oppHtml}${cmtBtnHtml}</div>
-            <div style="font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#94a3b8;margin-top:2px;">${d.round ? escHtml(d.round) + '　' : ''}${kimariteHtml}</div>
+      <div class="mhm-row ${resultCls}">
+        <div class="mhm-row-top">
+          <div class="mhm-result-label ${resultCls}">${resultLabel}</div>
+          <div class="mhm-row-main">
+            <div class="mhm-vs-line">vs ${oppHtml}${cmtBtnHtml}</div>
+            <div class="mhm-meta-line">${d.round ? escHtml(d.round) + '　' : ''}${kimariteHtml}</div>
           </div>
           ${scoreHtml}
         </div>
         ${cmtBodyHtml}
       </div>`;
-  }).join('') : `<div style="text-align:center;color:#94a3b8;font-family:'Noto Sans JP',sans-serif;padding:20px 0;">対戦データがありません</div>`;
+  }).join('') : `<div class="mhm-empty">対戦データがありません</div>`;
 
   const modal = document.createElement('div');
   modal.id = 'matchHistoryModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.className = 'modal-overlay';
   modal.innerHTML = `
-    <div style="background:#080d1a;border:1px solid rgba(14,165,233,0.3);border-radius:12px;padding:22px 20px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 0 40px rgba(14,165,233,0.15);">
-      <button onclick="closeMatchHistoryModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#475569;font-size:18px;cursor:pointer;touch-action:manipulation;line-height:1;padding:4px;">✕</button>
-      <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.06em;color:#e2e8f0;font-size:15px;margin-bottom:2px;padding-right:24px;">${escHtml(tName)}</div>
-      <div style="font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#94a3b8;margin-bottom:14px;">${escHtml(date)} ／ ${escHtml(playerName)}</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">${rowsHtml}</div>
+    <div class="mhm-card">
+      <button class="modal-close-btn" onclick="closeMatchHistoryModal()">✕</button>
+      <div class="mhm-title">${escHtml(tName)}</div>
+      <div class="mhm-subtitle">${escHtml(date)} ／ ${escHtml(playerName)}</div>
+      <div class="mhm-rows">${rowsHtml}</div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) closeMatchHistoryModal(); });
   document.body.appendChild(modal);
@@ -1846,9 +2125,8 @@ function showMatchHistoryModal(el) {
 function toggleMatchComment(btn, id) {
   const box = document.getElementById(id);
   if (!box) return;
-  const open = box.style.display !== 'none';
-  box.style.display = open ? 'none' : 'block';
-  btn.style.opacity = open ? '1' : '0.55';
+  const open = box.classList.toggle('is-open');
+  btn.classList.toggle('is-dimmed', open);
 }
 
 function normalizeStadium(s) {
@@ -1929,59 +2207,46 @@ function calcGlobalKimariteStat(stadiumFilter) {
 function switchFinishTypeTab(tabId, tab) {
   ['all', 'ex', 'inf'].forEach(function(t) {
     var el = document.getElementById(tabId + '_' + t);
-    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (el) el.classList.toggle('hidden', t !== tab);
   });
   var btns = document.querySelectorAll('[data-fttab="' + tabId + '"]');
   btns.forEach(function(b) {
-    b.style.color = b.dataset.ftval === tab ? '#e2e8f0' : '#94a3b8';
-    b.style.borderBottom = b.dataset.ftval === tab ? '2px solid #0ea5e9' : '2px solid transparent';
+    b.classList.toggle('is-active', b.dataset.ftval === tab);
   });
 }
 
 function switchGlobalFt(tab) {
   ['all', 'ex', 'inf'].forEach(function(t) {
     var el = document.getElementById('gt_top_' + t);
-    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (el) el.classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('[data-gttab]').forEach(function(b) {
-    var active = b.dataset.gtval === tab;
-    b.style.color = active ? '#e2e8f0' : '#94a3b8';
-    b.style.borderBottom = active ? '2px solid #0ea5e9' : '2px solid transparent';
+    b.classList.toggle('is-active', b.dataset.gtval === tab);
   });
 }
 
 function buildBladeMetaRowsHtml(rows) {
   if (!rows || rows.length === 0) {
-    return '<div style="color:#475569;font-family:\'Noto Sans JP\',sans-serif;font-size:15px;text-align:center;padding:8px 0;">データなし</div>';
+    return '<div class="stat-empty">データなし</div>';
   }
-  const MEDAL     = ['🥇', '🥈', '🥉'];
-  const TOP_COLOR = ['#ffd700', '#c0c0c0', '#cd7f32'];
-  const nameLen   = rows.reduce(function(m, r) {
+  const MEDAL   = ['🥇', '🥈', '🥉'];
+  const nameLen = rows.reduce(function(m, r) {
     return Math.max(m, (r.blade || '').length);
   }, 0);
-  const nameCol   = nameLen + 'em';
-  const gridCols  = '36px ' + nameCol + ' 2.4em 1fr';
+  const nameCol  = nameLen + 'em';
+  // 全行で共通の桁揃えのため、最長ブレード名から名前列の幅を動的算出（唯一の意図的なinline style）
+  const gridCols = '36px ' + nameCol + ' 2.4em 1fr';
   return rows.map(function(r) {
     const isTop3   = r.rank <= 3;
-    const color    = isTop3 ? TOP_COLOR[r.rank - 1] : '#0ea5e9';
+    const colorCls = isTop3 ? 'bm-color-' + r.rank : 'bm-color-default';
     const rankDisp = isTop3
-      ? '<span style="font-size:16px;">' + MEDAL[r.rank - 1] + '</span>'
-      : '<span style="font-family:\'Orbitron\',monospace;font-size:13px;'
-          + 'font-weight:700;color:#475569;">' + r.rank + '</span>';
-    return '<div style="display:grid;grid-template-columns:' + gridCols + ';'
-      + 'align-items:center;column-gap:10px;padding:7px 0;border-bottom:1px solid #1f2937;">'
-      + '<div style="text-align:center;">' + rankDisp + '</div>'
-      + '<div style="font-family:\'Noto Sans JP\',sans-serif;font-size:15px;'
-      +     'white-space:nowrap;color:' + (isTop3 ? color : '#e2e8f0') + ';font-weight:'
-      +     (isTop3 ? '700' : '400') + ';">' + r.blade + '</div>'
-      + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;'
-      +     'font-weight:700;color:' + color + ';text-align:right;">'
-      +     r.normScore + '</div>'
-      + '<div style="height:7px;background:#0a0e17;border:1px solid #1f2937;'
-      +     'border-radius:999px;overflow:hidden;min-width:32px;">'
-      +   '<div style="height:100%;width:' + r.normScore + '%;background:'
-      +       color + ';border-radius:999px;"></div>'
-      + '</div>'
+      ? '<span class="bm-rank-medal">' + MEDAL[r.rank - 1] + '</span>'
+      : '<span class="bm-rank-num">' + r.rank + '</span>';
+    return '<div class="bm-row" style="grid-template-columns:' + gridCols + '">'
+      + '<div class="bm-rank-cell">' + rankDisp + '</div>'
+      + '<div class="bm-name-cell ' + (isTop3 ? 'is-top3 ' + colorCls : '') + '">' + escHtml(r.blade) + '</div>'
+      + '<div class="bm-score-cell ' + colorCls + '">' + r.normScore + '</div>'
+      + '<div class="bm-bar-track"><div class="bm-bar-fill ' + colorCls + '" style="width:' + r.normScore + '%"></div></div>'
       + '</div>';
   }).join('');
 }
@@ -1989,12 +2254,10 @@ function buildBladeMetaRowsHtml(rows) {
 function switchBladeMetaTab(tab) {
   ['all', 'ex', 'inf'].forEach(function(t) {
     var el = document.getElementById('bladeMeta_' + t);
-    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (el) el.classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('[data-bmtab]').forEach(function(b) {
-    var active = b.dataset.bmval === tab;
-    b.style.color = active ? '#e2e8f0' : '#94a3b8';
-    b.style.borderBottom = active ? '2px solid #0ea5e9' : '2px solid transparent';
+    b.classList.toggle('is-active', b.dataset.bmval === tab);
   });
 }
 
@@ -2090,6 +2353,8 @@ function buildBpGraph(playerName, cardEl) {
     }
   });
 
+  activeBpCharts.push(chartInstance);
+
   // トグルボタン
   cardEl.querySelectorAll('.bp-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2159,11 +2424,10 @@ async function fetchBladeMetaScore() {
   }
 
   // ── 3シートを並列取得 ──
-  // HISTORY_URL は既存定数（⚔️ 対戦入力 A3:Q）をそのまま流用
   const [rT, rH, rB] = await Promise.all([
-    fetch(TOURNEY_URL).then(r => r.json()),
-    fetch(HISTORY_URL).then(r => r.json()),
-    fetch(BEY_HIST_URL).then(r => r.json()),
+    fetchStatsRange('tourney', RANGE_TOURNEY).then(r => r.json()),
+    fetchStatsRange('history', RANGE_HISTORY).then(r => r.json()),
+    fetchStatsRange('beyHist', RANGE_BEY_HIST).then(r => r.json()),
   ]);
 
   // ── ① 大会マスター → Map<大会名, {参加人数, スタジアム}>（ボーナス対象のみ）──
@@ -2277,61 +2541,49 @@ function renderTopStats(players) {
     return keys.size;
   })();
 
-  const FINISH_DEFS_G = [
-    { k: 'XF', label: 'XTREME',   color: '#ff0055' },
-    { k: 'BF', label: 'BURST',    color: '#ffd700' },
-    { k: 'OF', label: 'OVER',     color: '#ffaa00' },
-    { k: 'SF', label: 'SURVIVOR', color: '#0ea5e9' },
-  ];
   const gkt    = calcGlobalKimariteStat();
   const gktEx  = calcGlobalKimariteStat('extreme');
   const gktInf = calcGlobalKimariteStat('infinity');
 
   const buildGlobalRows = function(ftData) {
     if (!ftData) {
-      return '<div style="color:#475569;font-size:16px;font-family:\'Noto Sans JP\',sans-serif;text-align:center;padding:10px 0;">データなし</div>';
+      return '<div class="stat-empty">データなし</div>';
     }
-    return FINISH_DEFS_G.filter(function(x) { return (ftData.counts[x.k] || 0) > 0; })
-      .map(function(x) {
-        const c = ftData.counts[x.k] || 0;
-        const p = ftData.pct[x.k]    || 0;
-        return '<div style="display:grid;grid-template-columns:64px 56px 48px 1fr;align-items:center;gap:10px;margin-bottom:10px;">'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:800;letter-spacing:.06em;color:' + x.color + ';">' + x.k + '</div>'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:14px;font-weight:700;color:#e2e8f0;">' + c + '回</div>'
-          + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#94a3b8;">' + p + '%</div>'
-          + '<div style="height:8px;background:#0a0e17;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">'
-          +   '<div style="height:100%;width:' + Math.max(0, Math.min(p, 100)) + '%;background:' + x.color + ';"></div>'
-          + '</div>'
+    return Object.keys(FINISH_TYPE_META).filter(function(k) { return (ftData.counts[k] || 0) > 0; })
+      .map(function(k) {
+        const c   = ftData.counts[k] || 0;
+        const p   = ftData.pct[k]    || 0;
+        const cls = finishTypeClass(k);
+        return '<div class="gfr-row">'
+          + '<div class="gfr-key ' + cls + '">' + k + '</div>'
+          + '<div class="gfr-count">' + c + '回</div>'
+          + '<div class="gfr-pct">' + p + '%</div>'
+          + '<div class="gfr-bar-track"><div class="gfr-bar-fill ' + cls + '" style="width:' + Math.max(0, Math.min(p, 100)) + '%"></div></div>'
           + '</div>';
       }).join('');
   };
 
   const globalFtHtml = (gkt || gktEx || gktInf) ? `
-    <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:16px;margin-top:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:.18em;color:#e2e8f0;">CLUB FINISH RATE</div>
-        <div style="font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#475569;">全ブレーダー合計</div>
+    <div class="stat-panel stat-panel-mt">
+      <div class="stat-panel-header">
+        <div class="stat-panel-title">CLUB FINISH RATE</div>
+        <div class="stat-panel-subtitle">全ブレーダー合計</div>
       </div>
-      <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">
+      <div class="stat-tabs">
         ${[
-          { val: 'all', label: '総合',     total: gkt    ? gkt.total    : 0 },
           { val: 'ex',  label: 'Extreme',  total: gktEx  ? gktEx.total  : 0 },
           { val: 'inf', label: 'Infinity', total: gktInf ? gktInf.total : 0 },
+          { val: 'all', label: '総合',     total: gkt    ? gkt.total    : 0 },
         ].map(function(tab, i) {
-          return '<button data-gttab data-gtval="' + tab.val + '" onclick="switchGlobalFt(\'' + tab.val + '\')"'
-            + ' style="background:none;border:none;cursor:pointer;padding:6px 14px;'
-            + 'font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;letter-spacing:.06em;'
-            + 'color:' + (i === 0 ? '#e2e8f0' : '#94a3b8') + ';'
-            + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
-            + 'touch-action:manipulation;">'
+          return '<button class="stat-tab-btn' + (i === 0 ? ' is-active' : '') + '" data-gttab data-gtval="' + tab.val + '" onclick="switchGlobalFt(\'' + tab.val + '\')">'
             + tab.label
-            + (tab.total > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.total + '</span>' : '')
+            + (tab.total > 0 ? '<span class="stat-tab-count">' + tab.total + '</span>' : '')
             + '</button>';
         }).join('')}
       </div>
-      <div id="gt_top_all" style="display:block;">${buildGlobalRows(gkt)}</div>
-      <div id="gt_top_ex"  style="display:none;">${buildGlobalRows(gktEx)}</div>
-      <div id="gt_top_inf" style="display:none;">${buildGlobalRows(gktInf)}</div>
+      <div id="gt_top_ex">${buildGlobalRows(gktEx)}</div>
+      <div id="gt_top_inf" class="hidden">${buildGlobalRows(gktInf)}</div>
+      <div id="gt_top_all" class="hidden">${buildGlobalRows(gkt)}</div>
     </div>
   ` : '';
 
@@ -2387,18 +2639,10 @@ function renderTopStats(players) {
       `).join('')}
     </div>
     ${globalFtHtml}
-    <div id="bladeMetaSection" style="margin-top:12px;">
-      <div style="background:#111827;border:1px solid #1f2937;
-                  border-radius:10px;padding:16px;">
-        <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:900;
-                    letter-spacing:.18em;color:#e2e8f0;margin-bottom:14px;">
-          ⚔ BLADE META SCORE
-        </div>
-        <div id="bladeMetaContent"
-             style="color:#475569;font-family:'Noto Sans JP',sans-serif;
-                    font-size:15px;padding:8px 0;">
-          読み込み中...
-        </div>
+    <div id="bladeMetaSection" class="stat-panel-outer">
+      <div class="stat-panel">
+        <div class="stat-panel-title stat-panel-title-standalone">⚔ BLADE META SCORE</div>
+        <div id="bladeMetaContent" class="stat-empty">読み込み中...</div>
       </div>
     </div>
   `;
@@ -2409,28 +2653,23 @@ function renderTopStats(players) {
     if (!contentEl) return;
     const counts = data.counts || {};
     const tabs = [
-      { val: 'all', label: '総合',     rows: data.all || [], count: counts.all || 0 },
       { val: 'ex',  label: 'Extreme',  rows: data.ex  || [], count: counts.ex  || 0 },
       { val: 'inf', label: 'Infinity', rows: data.inf || [], count: counts.inf || 0 },
+      { val: 'all', label: '総合',     rows: data.all || [], count: counts.all || 0 },
     ];
     const tabsHtml = tabs.map(function(tab, i) {
-      return '<button data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')"'
-        + ' style="background:none;border:none;cursor:pointer;padding:6px 14px;'
-        + 'font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;letter-spacing:.06em;'
-        + 'color:' + (i === 0 ? '#e2e8f0' : '#94a3b8') + ';'
-        + 'border-bottom:' + (i === 0 ? '2px solid #0ea5e9' : '2px solid transparent') + ';'
-        + 'touch-action:manipulation;">'
+      return '<button class="stat-tab-btn' + (i === 0 ? ' is-active' : '') + '" data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')">'
         + tab.label
-        + (tab.count > 0 ? '<span style="font-size:12px;color:#475569;margin-left:4px;">' + tab.count + '</span>' : '')
+        + (tab.count > 0 ? '<span class="stat-tab-count">' + tab.count + '</span>' : '')
         + '</button>';
     }).join('');
     const panelsHtml = tabs.map(function(tab, i) {
-      return '<div id="bladeMeta_' + tab.val + '" style="display:' + (i === 0 ? 'block' : 'none') + ';">'
+      return '<div id="bladeMeta_' + tab.val + '"' + (i === 0 ? '' : ' class="hidden"') + '>'
         + buildBladeMetaRowsHtml(tab.rows)
         + '</div>';
     }).join('');
-    contentEl.innerHTML = '<div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:14px;">'
-      + tabsHtml + '</div>' + panelsHtml;
+    contentEl.className = '';
+    contentEl.innerHTML = '<div class="stat-tabs">' + tabsHtml + '</div>' + panelsHtml;
   }).catch(function() {
     const contentEl = document.getElementById('bladeMetaContent');
     if (contentEl) contentEl.textContent = '取得失敗';
@@ -2480,6 +2719,11 @@ function setState(state, msg = '') {
   document.getElementById('stateIdle').classList.add('hidden');
   document.getElementById('stateEmpty').classList.add('hidden');
   document.getElementById('stateError').classList.add('hidden');
+
+  // 直前の検索結果カードに紐づくChart.jsインスタンスを破棄してからDOMを差し替える
+  // （innerHTML='' でcanvasを消してもdestroy()しないとChart.js内部にインスタンスが残り続けてメモリリークする）
+  activeBpCharts.forEach(c => c.destroy());
+  activeBpCharts = [];
   document.getElementById('resultsArea').innerHTML = '';
 
   if (state === 'loading') {
@@ -2620,7 +2864,7 @@ function renderResults(players) {
       }
       rivalHtml = `
         <div class="rival-block">
-          <div class="rival-title"><i class="fa fa-crosshairs" style="font-size:1.2rem"></i> RIVAL</div>
+          <div class="rival-title"><i class="fa fa-crosshairs rival-title-icon"></i> RIVAL</div>
           <div class="rival-name-row">
             <span class="rival-label">ライバル：</span><span class="rival-name" onclick="jumpToRival('${rival.replace(/'/g, "\\'")}')" title="${rival}を検索">${rival}<span class="rival-jump-badge">SEARCH↗</span></span>
           </div>
@@ -2703,26 +2947,18 @@ function renderResults(players) {
 
       const tabId = 'ft_' + name.replace(/[^a-zA-Z0-9]/g, '_');
 
-      const FINISH_DEFS = [
-        { k: 'XF', color: '#ff0055' },
-        { k: 'BF', color: '#ffd700' },
-        { k: 'OF', color: '#ffaa00' },
-        { k: 'SF', color: '#0ea5e9' },
-      ];
-
-      const buildRows = (countsObj, pctObj, alpha) =>
-        FINISH_DEFS.filter(x => (countsObj[x.k] || 0) > 0).map(x => {
-          const c = countsObj[x.k] || 0;
-          const p = pctObj[x.k]    || 0;
-          const barColor  = alpha < 1 ? x.color + '80' : x.color;
-          const textColor = alpha < 1 ? x.color + 'b3' : x.color;
+      const buildRows = (countsObj, pctObj, isReceived) =>
+        Object.keys(FINISH_TYPE_META).filter(k => (countsObj[k] || 0) > 0).map(k => {
+          const c   = countsObj[k] || 0;
+          const p   = pctObj[k]    || 0;
+          const cls = finishTypeClass(k);
           return `
-            <div style="display:grid;grid-template-columns:64px 60px 52px 1fr;align-items:center;gap:12px;">
-              <div style="font-family:'Orbitron',monospace;font-weight:800;letter-spacing:.08em;color:${textColor};font-size:13px;">${x.k}</div>
-              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#e2e8f0;opacity:${alpha};font-size:14px;">${c}回</div>
-              <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;opacity:${alpha};font-size:14px;">${p}%</div>
-              <div style="height:10px;background:#111827;border:1px solid #1f2937;border-radius:999px;overflow:hidden;">
-                <div style="height:100%;width:${Math.max(0, Math.min(p, 100))}%;background:${barColor};"></div>
+            <div class="pft-row ${isReceived ? 'is-received' : ''}">
+              <div class="pft-key ${cls}">${k}</div>
+              <div class="pft-count">${c}回</div>
+              <div class="pft-pct">${p}%</div>
+              <div class="pft-bar-track">
+                <div class="pft-bar-fill ${cls}" style="width:${Math.max(0, Math.min(p, 100))}%"></div>
               </div>
             </div>
           `;
@@ -2730,55 +2966,50 @@ function renderResults(players) {
 
       const buildSection = (ftData) => {
         if (!ftData || (ftData.total === 0 && ftData.totalRcv === 0)) {
-          return `<div style="color:#94a3b8;font-size:16px;font-family:'Noto Sans JP',sans-serif;text-align:center;padding:10px 0;">データなし</div>`;
+          return `<div class="stat-empty">データなし</div>`;
         }
-        const doneRows = ftData.total    > 0 ? buildRows(ftData.counts,    ftData.pct,    1.0) : '';
-        const rcvRows  = ftData.totalRcv > 0 ? buildRows(ftData.countsRcv, ftData.pctRcv, 0.7) : '';
+        const doneRows = ftData.total    > 0 ? buildRows(ftData.counts,    ftData.pct,    false) : '';
+        const rcvRows  = ftData.totalRcv > 0 ? buildRows(ftData.countsRcv, ftData.pctRcv, true) : '';
         const rcvSection = rcvRows ? `
-          <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;">
-            <div style="flex:1;height:1px;background:#1f2937;"></div>
-            <div style="font-family:'Orbitron',monospace;font-weight:700;letter-spacing:.14em;color:#94a3b8;font-size:13px;">RECEIVED</div>
-            <div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:13px;">TOTAL ${ftData.totalRcv}</div>
-            <div style="flex:1;height:1px;background:#1f2937;"></div>
+          <div class="pft-rcv-divider-row">
+            <div class="pft-rcv-line"></div>
+            <div class="pft-rcv-label">RECEIVED</div>
+            <div class="pft-rcv-total">TOTAL ${ftData.totalRcv}</div>
+            <div class="pft-rcv-line"></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:10px;">${rcvRows}</div>
+          <div class="pft-rows-wrap">${rcvRows}</div>
         ` : '';
         const totalLabel = ftData.total > 0
-          ? `<div style="font-family:'Orbitron',monospace;font-weight:700;color:#94a3b8;font-size:14px;">TOTAL ${ftData.total}</div>`
+          ? `<div class="pft-total-label">TOTAL ${ftData.total}</div>`
           : '';
         return `
           ${totalLabel}
-          ${doneRows ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">${doneRows}</div>` : ''}
+          ${doneRows ? `<div class="pft-rows-wrap mt">${doneRows}</div>` : ''}
           ${rcvSection}
         `;
       };
 
       finishTypeHtml = `
-        <div style="margin-top:1rem;background:#0a0e17;border:1px solid #1f2937;border-radius:14px;padding:18px;">
-          <div style="font-family:'Orbitron',monospace;font-weight:900;letter-spacing:.18em;color:#e2e8f0;margin-bottom:12px;font-size:13px;">FINISH TYPE</div>
+        <div class="pft-panel">
+          <div class="pft-title">FINISH TYPE</div>
 
-          <div style="display:flex;gap:0;border-bottom:1px solid #1f2937;margin-bottom:16px;">
+          <div class="stat-tabs">
             ${[
               { val: 'all', label: '総合' },
               { val: 'ex',  label: 'Extreme' },
               { val: 'inf', label: 'Infinity' },
             ].map((tab, i) => `
               <button
+                class="stat-tab-btn stat-tab-btn-lg${i === 0 ? ' is-active' : ''}"
                 data-fttab="${tabId}" data-ftval="${tab.val}"
                 onclick="switchFinishTypeTab('${tabId}','${tab.val}')"
-                style="
-                  background:none;border:none;cursor:pointer;padding:8px 16px;
-                  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:.08em;
-                  color:${i === 0 ? '#e2e8f0' : '#94a3b8'};
-                  border-bottom:${i === 0 ? '2px solid #0ea5e9' : '2px solid transparent'};
-                  touch-action:manipulation;
-                ">${tab.label}</button>
+              >${tab.label}</button>
             `).join('')}
           </div>
 
-          <div id="${tabId}_all" style="display:block;">${buildSection(ft)}</div>
-          <div id="${tabId}_ex"  style="display:none;">${buildSection(ftEx)}</div>
-          <div id="${tabId}_inf" style="display:none;">${buildSection(ftInf)}</div>
+          <div id="${tabId}_all">${buildSection(ft)}</div>
+          <div id="${tabId}_ex" class="hidden">${buildSection(ftEx)}</div>
+          <div id="${tabId}_inf" class="hidden">${buildSection(ftInf)}</div>
         </div>
       `;
     }
@@ -2788,7 +3019,7 @@ function renderResults(players) {
         <div class="player-rank-icon ${rankClass}">${displayRankHtml}</div>
         <div class="player-info">
           <div class="player-name">${name}</div>
-          <div class="player-matches"><i class="fa fa-calendar-check" style="margin-right:4px;opacity:.6"></i>${tournaments} 大会参加</div>
+          <div class="player-matches"><i class="fa fa-calendar-check player-matches-icon"></i>${tournaments} 大会参加</div>
         </div>
       </div>
       <div class="card-body">
@@ -2807,7 +3038,7 @@ function renderResults(players) {
             ${bio ? `
             <span class="blader-bio-icon"><i class="fa fa-robot"></i></span>
             <span class="blader-bio-text">${bio}</span>` : `
-            <span class="blader-bio-text" style="opacity:.35;">—</span>`}
+            <span class="blader-bio-text blader-bio-placeholder">—</span>`}
           </div>
         </div>
 
@@ -2818,14 +3049,14 @@ function renderResults(players) {
           <div class="winrate-bars">
             <div class="winrate-row">
               <div class="winrate-row-label">Extreme</div>
-              <div class="winrate-pct" style="color:var(--neon-blue)">${wrExDisp}</div>
+              <div class="winrate-pct pct-blue">${wrExDisp}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-blue" data-pct="${wrExPct}"></div>
               </div>
             </div>
             <div class="winrate-row">
               <div class="winrate-row-label">Infinity</div>
-              <div class="winrate-pct" style="color:var(--neon-pink)">${wrInfDisp}</div>
+              <div class="winrate-pct pct-pink">${wrInfDisp}</div>
               <div class="winrate-track">
                 <div class="winrate-fill fill-pink" data-pct="${wrInfPct}"></div>
               </div>
@@ -3332,14 +3563,14 @@ async function shareBladerStats(dataset) {
   // ローディングモーダル
   const modal = document.createElement('div');
   modal.id = 'shareModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.className = 'modal-overlay';
   modal.innerHTML = `
-    <div id="shareModalInner" style="background:#080d1a;border:1px solid rgba(0,255,136,0.3);border-radius:12px;padding:24px 22px;max-width:360px;width:100%;position:relative;box-shadow:0 0 40px rgba(0,255,136,0.1);">
-      <div style="font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:2px;color:var(--neon-green);margin-bottom:16px;">SHARE BLADER STATS</div>
-      <div id="shareModalBody" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 0;font-family:'Orbitron',sans-serif;font-size:14px;color:#475569;">
+    <div id="shareModalInner" class="share-card">
+      <div class="share-card-title">SHARE BLADER STATS</div>
+      <div id="shareModalBody" class="share-card-body">
         <i class="fa fa-spinner fa-spin"></i> 画像を生成中...
       </div>
-      <button onclick="document.getElementById('shareModal').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#475569;font-size:18px;cursor:pointer;touch-action:manipulation;line-height:1;padding:4px;">✕</button>
+      <button class="modal-close-btn" onclick="document.getElementById('shareModal').remove()">✕</button>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
@@ -3365,16 +3596,13 @@ async function shareBladerStats(dataset) {
   window._shareTweetText = tweetText;
   window._shareFileName = `blader_stats_${encodeURIComponent(name)}.png`;
   const body = document.getElementById('shareModalBody');
-  const btnStyle = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:7px;font-family:\'Orbitron\',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;touch-action:manipulation;width:100%;';
-  const btnGreen = btnStyle + 'border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.07);color:var(--neon-green);';
-  const btnWhite = btnStyle + 'border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.04);color:#fff;text-decoration:none;';
   body.innerHTML = `
-    ${previewUrl ? `<img src="${previewUrl}" style="width:100%;border-radius:6px;margin-bottom:12px;border:1px solid rgba(0,255,136,0.15);">` : ''}
-    <div style="display:flex;gap:8px;flex-direction:column;">
-      ${previewUrl ? `<button onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='${window._shareFileName}';a.click();})()" style="${btnGreen}"><i class="fa fa-image"></i> 画像を保存</button>` : ''}
-      ${previewUrl ? `<button id="btnCopyImg" onclick="copyShareImage()" style="${btnGreen}"><i class="fa fa-copy"></i> 画像をコピー</button>` : ''}
-      <button onclick="copyShareUrl('${shareUrl}')" style="${btnGreen}"><i class="fa fa-link"></i> URLをコピー</button>
-      <button id="btnTweetWithImg" onclick="tweetWithImage('${encodeURIComponent(tweetText)}')" style="${btnWhite}"><svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Xに投稿</button>
+    ${previewUrl ? `<img class="share-preview-img" src="${previewUrl}">` : ''}
+    <div class="share-btn-col">
+      ${previewUrl ? `<button class="share-btn share-btn-green" onclick="(function(){const a=document.createElement('a');a.href='${previewUrl}';a.download='${window._shareFileName}';a.click();})()"><i class="fa fa-image"></i> 画像を保存</button>` : ''}
+      ${previewUrl ? `<button id="btnCopyImg" class="share-btn share-btn-green" onclick="copyShareImage()"><i class="fa fa-copy"></i> 画像をコピー</button>` : ''}
+      <button class="share-btn share-btn-green" onclick="copyShareUrl('${shareUrl}')"><i class="fa fa-link"></i> URLをコピー</button>
+      <button id="btnTweetWithImg" class="share-btn share-btn-white" onclick="tweetWithImage('${encodeURIComponent(tweetText)}')"><svg class="share-btn-icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Xに投稿</button>
     </div>`;
 }
 
@@ -3383,7 +3611,7 @@ function copyShareUrl(url) {
     showShareToast('🔗 URLをコピーしました');
   }).catch(() => {
     const ta = document.createElement('textarea');
-    ta.value = url; ta.style.cssText = 'position:fixed;opacity:0;';
+    ta.value = url; ta.className = 'clipboard-helper';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     showShareToast('🔗 URLをコピーしました');
   });
@@ -3397,7 +3625,7 @@ async function copyShareImage() {
   try {
     if (navigator.clipboard && window.ClipboardItem) {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      if (btn) { btn.textContent = '✓ コピーしました'; btn.style.opacity = '0.7'; }
+      if (btn) { btn.textContent = '✓ コピーしました'; btn.classList.add('is-done'); }
       showShareToast('📋 画像をクリップボードにコピーしました');
     } else {
       // フォールバック：保存を促す
@@ -3420,7 +3648,7 @@ async function tweetWithImage(encodedText) {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       if (btn) {
         btn.innerHTML = btn.innerHTML.replace('Xに投稿', '画像コピー済 → 投稿画面へ');
-        btn.style.borderColor = 'rgba(0,255,136,0.5)';
+        btn.classList.add('is-copied');
       }
       showShareToast('📋 画像をコピーしました！投稿画面で Ctrl+V / 長押しで貼り付けてください');
       // 少し待ってからX投稿画面を開く（トーストを読む時間を確保）
