@@ -440,12 +440,16 @@
         /* サブテキスト */
         #break-sub {
           font-family: 'Noto Sans JP', sans-serif;
-          font-size: clamp(11px, 1.8vw, 20px);
-          font-weight: 400;
-          color: rgba(255,255,255,0.55);
+          font-size: clamp(13px, 2.1vw, 24px);
+          font-weight: 500;
+          color: #ffffff;
           text-align: center;
           letter-spacing: 0.08em;
           line-height: 1.9;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
+          padding: clamp(6px, 1vw, 12px) clamp(14px, 2.5vw, 28px);
+          background: rgba(10,14,23,0.55);
+          border-radius: 8px;
         }
         
         /* 次戦バー（最下段） */
@@ -710,6 +714,10 @@
     <script>
         let s1 = 0, s2 = 0, winScoreLimit = 4, winPointMode = '4', battleCount = 1, timerDuration = 10;
         let isFinished = false, isCountingDown = false, timerInterval = null;
+        // 大会中に決まったフィニッシュを試合中も反映するため、
+        // 送信側からの通算値(base)と、この試合でこの画面が数えた分(live)を合算して表示する。
+        let finBase = { 1: null, 2: null };
+        let finLive = { 1: { XF:0, BF:0, OF:0, SF:0 }, 2: { XF:0, BF:0, OF:0, SF:0 } };
         let isReplayMode = false, currentStream = null, mediaRecorder = null;
         let effectTimeout = null, cleanupTimeout = null, statusMsgTimeout = null;
         const REPLAY_SPEEDS = [0.5, 0.25, 0.1];
@@ -768,6 +776,7 @@
                 tournamentName: tName1.value,
                 beybladeP1, beybladeP2,
                 activeHistory: Array.from(document.querySelectorAll('.hud-btn.active-history')).map(el => el.id),
+                finLive: JSON.parse(JSON.stringify(finLive)),
                 savedAt: Date.now()
             };
         }
@@ -793,6 +802,7 @@
             winPointMode = st.winPointMode || '4';
             winScoreLimit = Number(st.winScoreLimit) || 4;
             isFinished = !!st.isFinished;
+            if (st.finLive) { finLive = JSON.parse(JSON.stringify(st.finLive)); }
             if (typeof st.name1 === 'string' && st.name1) document.getElementById('name1').value = st.name1;
             if (typeof st.name2 === 'string' && st.name2) document.getElementById('name2').value = st.name2;
             if (typeof st.tournamentName === 'string' && st.tournamentName) tName1.value = st.tournamentName;
@@ -833,6 +843,10 @@
             winPointMode = prev.winPointMode || '4';
             winScoreLimit = Number(prev.winScoreLimit) || 4;
             isFinished = !!prev.isFinished;
+            if (prev.finLive) {
+                finLive = JSON.parse(JSON.stringify(prev.finLive));
+                renderFinishRates(1); renderFinishRates(2);
+            }
             document.getElementById('score1').innerText = s1;
             document.getElementById('score2').innerText = s2;
             document.getElementById('btn-winpoint').innerText = winPointMode;
@@ -1415,7 +1429,8 @@
                 }
             }
             document.getElementById(`p${p}-btn-${t.toLowerCase()}`).classList.add('active-history');
-            
+            addLiveFinish(p, { XTREME:'XF', BURST:'BF', OVER:'OF', SPIN:'SF' }[t]);
+
             // スコア加算（2+モード時は上限なし）
             if (winPointMode === '2+') {
                 if (p === 1) s1 += pts; 
@@ -1456,6 +1471,8 @@
             s1 = 0;
             s2 = 0;
             battleCount = 1;
+            finLive = { 1: { XF:0, BF:0, OF:0, SF:0 }, 2: { XF:0, BF:0, OF:0, SF:0 } };
+            renderFinishRates(1); renderFinishRates(2);
             isFinished = false;
             document.getElementById('score1').innerText = 0;
             document.getElementById('score2').innerText = 0;
@@ -1560,22 +1577,46 @@
             return rateStr.replace(/(\.\d+)/, '<span style="font-size: 11px;">$1</span>');
         }
 
-        function applyFinishRates(side, fin) {
+        function formatFinPct(v) {
+            const s = v.toFixed(2);
+            const i = s.indexOf('.');
+            return s.slice(0, i) + '<span style="font-size: 9px;">' + s.slice(i) + '%</span>';
+        }
+
+        function renderFinishRates(side) {
             const g = document.getElementById('p' + side + '-fin-group');
             if (!g) return;
             const keys = ['xf', 'bf', 'of', 'sf'];
-            const c = fin || null;
-            const total = c ? (Number(c.XF||0) + Number(c.BF||0) + Number(c.OF||0) + Number(c.SF||0)) : 0;
-            if (!total) {
+            const b = finBase[side], l = finLive[side];
+            const c = {};
+            keys.forEach(k => {
+                const K = k.toUpperCase();
+                c[K] = (b ? Number(b[K]) || 0 : 0) + (Number(l[K]) || 0);
+            });
+            const total = c.XF + c.BF + c.OF + c.SF;
+            if (!b && !total) {
                 g.style.visibility = 'hidden';
-                keys.forEach(k => { const el = document.getElementById('p' + side + '-fin-' + k); if (el) el.textContent = '--'; });
+                keys.forEach(k => { const el = document.getElementById('p' + side + '-fin-' + k); if (el) el.innerHTML = '--'; });
                 return;
             }
             g.style.visibility = 'visible';
             keys.forEach(k => {
                 const el = document.getElementById('p' + side + '-fin-' + k);
-                if (el) el.textContent = Math.round((Number(c[k.toUpperCase()]||0) / total) * 100) + '%';
+                if (!el) return;
+                el.innerHTML = total ? formatFinPct((c[k.toUpperCase()] / total) * 100) : formatFinPct(0);
             });
+        }
+
+        function applyFinishRates(side, fin) {
+            finBase[side] = fin || null;
+            finLive[side] = { XF:0, BF:0, OF:0, SF:0 };
+            renderFinishRates(side);
+        }
+
+        function addLiveFinish(side, code) {
+            if (!finLive[side] || !Object.prototype.hasOwnProperty.call(finLive[side], code)) return;
+            finLive[side][code]++;
+            renderFinishRates(side);
         }
 
         function formatRank(rank) {
@@ -1708,12 +1749,9 @@
                     document.getElementById('p1-val-bp').innerText = document.getElementById('p2-val-bp').innerText;
                     document.getElementById('p1-val-wr').innerHTML = document.getElementById('p2-val-wr').innerHTML;
                     document.getElementById('p2-val-rank').innerHTML = r1; document.getElementById('p2-val-bp').innerText = bp1; document.getElementById('p2-val-wr').innerHTML = wr1;
-                    ['xf','bf','of','sf'].forEach(k => {
-                        const a = document.getElementById('p1-fin-' + k), b = document.getElementById('p2-fin-' + k);
-                        if (a && b) { const t = a.textContent; a.textContent = b.textContent; b.textContent = t; }
-                    });
-                    const g1 = document.getElementById('p1-fin-group'), g2 = document.getElementById('p2-fin-group');
-                    if (g1 && g2) { const tv = g1.style.visibility; g1.style.visibility = g2.style.visibility; g2.style.visibility = tv; }
+                    const tmpBase = finBase[1]; finBase[1] = finBase[2]; finBase[2] = tmpBase;
+                    const tmpLive = finLive[1]; finLive[1] = finLive[2]; finLive[2] = tmpLive;
+                    renderFinishRates(1); renderFinishRates(2);
                     // ベイブレード名も入れ替え
                     const tempBey = beybladeP1; beybladeP1 = beybladeP2; beybladeP2 = tempBey;
                     updateBeybladeBar(1, beybladeP1);

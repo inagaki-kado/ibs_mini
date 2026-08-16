@@ -194,11 +194,9 @@
             </div>
           </div>
           
-          <div class="text-center pt-4 shrink-0">
+          <div class="text-center pt-4 shrink-0 flex items-center justify-center gap-3 flex-wrap">
             <button id="btn-start-tournament" onclick="handleStartTournament(event)" class="bg-cyber-green hover:bg-cyber-green/80 text-cyber-bg px-8 py-3 rounded-full font-bold shadow-lg text-xl font-sf neon-green transition-transform active:scale-95">▶ START TOURNAMENT</button>
-            <div class="mt-2">
-              <button onclick="startDebugTournament()" style="touch-action:manipulation" class="text-xs text-yellow-400 border border-yellow-400/40 px-4 py-1 rounded hover:bg-yellow-400/10 transition-colors font-sf">🛠 DEBUG START（抽選スキップ・登録順）</button>
-            </div>
+            <button id="btn-debug-toggle" onclick="toggleDebugMode()" style="touch-action:manipulation; min-height:44px; min-width:44px" class="text-sm text-cyber-text/60 border border-cyber-table-border px-4 py-2 rounded-full font-sf transition-colors">🛠 DEBUG: OFF</button>
           </div>
         </div>
       </div>
@@ -1650,8 +1648,8 @@
         updateRemoteKimariteUI();
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
-                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate, fin: match.p1.finCounts || { XF:0, BF:0, OF:0, SF:0 } },
-                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate, fin: match.p2.finCounts || { XF:0, BF:0, OF:0, SF:0 } }
+                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate, fin: getLiveFinCounts(match.p1) },
+                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate, fin: getLiveFinCounts(match.p2) }
             });
         } else { showAlert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
         currentRemoteMode = 'score'; switchRemoteTab('score');
@@ -2020,6 +2018,28 @@
       ]);
     }
 
+    // buildLoserPraise() は「〜を見せ、」のような連用形で終わるため、
+    // 文末に置けるよう終止形へ変換する。語尾は閉じた集合なので対応表で処理する。
+    const LOSER_PRAISE_ENDINGS = [
+      ['食い下がり', '食い下がった'], ['持ち込み', '持ち込んだ'],
+      ['沸かせ', '沸かせた'], ['見せ', '見せた'], ['示し', '示した'],
+      ['握り', '握った'], ['作り', '作った'], ['演じ', '演じた'],
+      ['進め', '進めた'], ['貫き', '貫いた'], ['報い', '報いた'],
+      ['放ち', '放った'], ['挑み', '挑んだ'], ['光り', '光った'],
+      ['崩さず', '崩さなかった'],
+      ['反撃し', '反撃した'], ['肉薄し', '肉薄した'],
+      ['健闘し', '健闘した'], ['展開し', '展開した']
+    ];
+    function terminateLoserPraise(text) {
+      if (!text) return '';
+      let s = String(text).replace(/、\s*$/, '');
+      for (const [from, to] of LOSER_PRAISE_ENDINGS) {
+        if (s.endsWith(from)) return s.slice(0, s.length - from.length) + to + '。';
+      }
+      // 想定外の語尾はそのまま句点で閉じる（文法崩れより出力欠落を避ける）
+      return s + '。';
+    }
+
     // 節目の試合（GF / GF RESET / WB FINAL / LB FINAL / 3位決定戦）のみ、
     // 汎用まとめの代わりに次の段階を示すまとめ文を返す。通常回戦は null（従来の汎用まとめを使用）。
     function buildRoundSummary(ctx) {
@@ -2115,6 +2135,31 @@
       ]);
     }
 
+    // 大会中に確定した試合の決まり手を集計し、貼り付け時点の通算値に足した値を返す。
+    // ブラケットを毎回スキャンする冪等な実装。UNDO・勝者取り消しでも整合が崩れない。
+    function getLiveFinCounts(player) {
+      const base = (player && player.finCounts) || { XF:0, BF:0, OF:0, SF:0 };
+      const out = { XF: Number(base.XF)||0, BF: Number(base.BF)||0, OF: Number(base.OF)||0, SF: Number(base.SF)||0 };
+      if (!player || player.id == null) return out;
+      const buckets = [];
+      if (Array.isArray(winnersBracket)) winnersBracket.forEach(r => { if (Array.isArray(r)) buckets.push(r); });
+      if (Array.isArray(losersBracket))  losersBracket.forEach(r => { if (Array.isArray(r)) buckets.push(r); });
+      [grandFinal, grandFinalReset, lbThirdPlace].forEach(m => { if (m) buckets.push([m]); });
+      buckets.forEach(round => {
+        round.forEach(m => {
+          if (!m || !m.winner || !m.p1 || !m.p2) return;
+          let stored = null;
+          if (m.p1.id === player.id) stored = m.kimarite_p1;
+          else if (m.p2.id === player.id) stored = m.kimarite_p2;
+          if (!stored) return;
+          String(stored).split(',').map(s => s.trim().toUpperCase()).forEach(k => {
+            if (Object.prototype.hasOwnProperty.call(out, k)) out[k]++;
+          });
+        });
+      });
+      return out;
+    }
+
     function generateLocalComment(data, winnerBeyTop5, loserBeyTop5) {
       const { style } = analyzeFinishPattern(data.finishHistory);
       const [wScore, lScore] = data.score.split('-').map(Number);
@@ -2202,7 +2247,7 @@
       // ▲ 試合展開の分析ここまで
 
       const relationPrefix = buildRelationPrefix(data.winner, data.loser);
-      return relationPrefix + firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout, data.roundCtx);
+      return relationPrefix + firstSentence + terminateLoserPraise(buildLoserPraise(data, flow, loserBeyTop5));
     }
 
     function sendMatchComment(comment, highlights) {
@@ -2328,11 +2373,24 @@
     }
 
     let startDebounce = false;
+    // DEBUG モード: ONのとき START TOURNAMENT が抽選をスキップして登録順で開始する
+    let isDebugMode = false;
+    function toggleDebugMode() {
+      isDebugMode = !isDebugMode;
+      const btn = document.getElementById('btn-debug-toggle');
+      if (!btn) return;
+      btn.innerText = isDebugMode ? '🛠 DEBUG: ON' : '🛠 DEBUG: OFF';
+      btn.classList.toggle('text-yellow-400', isDebugMode);
+      btn.classList.toggle('border-yellow-400/60', isDebugMode);
+      btn.classList.toggle('text-cyber-text/60', !isDebugMode);
+      btn.classList.toggle('border-cyber-table-border', !isDebugMode);
+    }
     async function handleStartTournament(e) {
       if (e) e.preventDefault();
       if (startDebounce) return; startDebounce = true; setTimeout(() => { startDebounce = false; }, 500);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
-      await startTournament();
+      if (isDebugMode) await startDebugTournament();
+      else await startTournament();
     }
 
     function confirmSetup() {
@@ -4051,12 +4109,27 @@
                        ['グランドファイナル！', '最終決戦！', '大会最後の一戦！', '栄冠を懸けた頂上戦！', '運命の決勝！']);
     }
     // 優先2: ステージ
+    // ⚠️ 「決勝戦」「最終決戦」等の“大会の決着”を意味する語は GRAND FINAL / GF RESET 専用。
+    //    WB FINAL / LB FINAL はブラケット内の準決勝相当なので、必ず固有名で呼ぶこと。
+    //    判定順を変えないこと（LB FINAL は LOSER の一般判定より先に評価する必要がある）。
     function cpFromStage(label) {
       const s = String(label || '').toUpperCase();
       const raw = String(label || '');
-      if (s.includes('FINAL') || raw.includes('決勝')) {
+      if (s.includes('GRAND FINAL') || s.includes('GF RESET')) {
         return cpCombine(['栄冠を懸けた', '頂点を賭けた', '全てを出し切る', '王座を懸けた', '誰もが待った'],
-                         ['決勝戦！', 'ファイナルバトル！', '頂上決戦！', '最終決戦！', '大一番！']);
+                         ['グランドファイナル！', 'ファイナルバトル！', '頂上決戦！', '最終決戦！', '大一番！']);
+      }
+      if (s.includes('WB FINAL')) {
+        return cpCombine(['無敗対決！', '土をつけるのはどっちだ、', '一つの負けも許されない', 'GF直行を懸けた', '勝てば頂上戦、'],
+                         ['ウィナーズファイナル！', 'ウィナーズ最終決戦！', 'ウィナーズの頂点争い！', 'ウィナーズ側の大一番！', 'ウィナーズ突破戦！']);
+      }
+      if (s.includes('LB FINAL')) {
+        return cpCombine(['ここで負けたら終わり、', '這い上がってきた両者の', '最後の椅子を懸けた', 'GFへの最終関門、', '生き残るのは一人、'],
+                         ['ルーザーズファイナル！', 'ルーザーズ最終決戦！', 'ルーザーズの生き残り戦！', 'ルーザーズ側の大一番！', 'ルーザーズ突破戦！']);
+      }
+      if (s.includes('3RD PLACE') || raw.includes('3位')) {
+        return cpCombine(['表彰台を懸けた', '意地と誇りの', '最後の一枠を争う', '譲れない', '締めくくりの'],
+                         ['3位決定戦！', '表彰台争い！', 'ブロンズマッチ！', '最後の一戦！', '意地の一番！']);
       }
       if (s.includes('LOSER') || raw.includes('敗者')) {
         return cpCombine(['負けられない', '崖っぷちの', '後がない', '生存を懸けた', '意地を見せる'],
