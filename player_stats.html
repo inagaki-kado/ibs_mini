@@ -357,7 +357,6 @@ nav {
   font-family: 'Noto Sans JP', sans-serif;
   font-size: 1rem;
   padding: 0.85rem 1.2rem 0.85rem 3rem;
-  outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   clip-path: polygon(10px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
 }
@@ -1396,6 +1395,18 @@ nav {
   width: 100%;
 }
 .share-btn-green { border: 1px solid rgba(0,255,136,0.35); background: rgba(0,255,136,0.07); color: var(--neon-green); }
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--neon-yellow);
+  outline-offset: 2px;
+}
+.search-input:focus-visible {
+  outline-offset: 0;
+}
 .share-btn-white { border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.04); color: #fff; text-decoration: none; }
 .share-btn-icon { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
 .share-btn.is-done { opacity: .7; }

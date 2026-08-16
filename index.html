@@ -7,7 +7,7 @@
 <link rel="icon" href="BEYX_logo_amb.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #04070f;
@@ -37,11 +37,12 @@
     line-height: 1.6;
   }
 
-  /* ─── Scanline overlay ─── */
-  body::before {
+  /* ─── Scanline overlay（ヒーローエリアのみ・スクロール時の全画面再描画を回避） ─── */
+  #hero::before {
     content: '';
-    position: fixed;
+    position: absolute;
     inset: 0;
+    z-index: 9;
     background: repeating-linear-gradient(
       0deg,
       transparent,
@@ -50,7 +51,6 @@
       rgba(0,0,0,0.07) 4px
     );
     pointer-events: none;
-    z-index: 9999;
   }
 
   /* ─── Grid BG ─── */
@@ -80,6 +80,9 @@
   }
 
   .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
     font-family: 'Orbitron', monospace;
     font-weight: 900;
     font-size: 1.1rem;
@@ -182,7 +185,7 @@
     align-items: center;
     gap: 0.6rem;
     font-family: 'Orbitron', monospace;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: var(--bg);
@@ -199,7 +202,7 @@
   }
   .hero-stats-btn .stats-sub {
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     font-weight: 400;
     color: rgba(4,7,15,0.65);
     letter-spacing: 0.05em;
@@ -207,6 +210,7 @@
 
   .hero-orb {
     position: absolute;
+    z-index: 5;
     border-radius: 50%;
     filter: blur(80px);
     pointer-events: none;
@@ -218,6 +222,7 @@
   /* Spinning ring */
   .spin-ring {
     position: absolute;
+    z-index: 4;
     width: 600px; height: 600px;
     border-radius: 50%;
     border: 1px solid rgba(0,255,136,0.08);
@@ -244,6 +249,8 @@
   @keyframes spinRing { to { transform: rotate(360deg); } }
 
   .hero-badge {
+    position: relative;
+    z-index: 10;
     display: inline-block;
     font-family: 'Rajdhani', sans-serif;
     font-size: 0.75rem;
@@ -318,7 +325,7 @@
 
   .section-label {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.3em;
     text-transform: uppercase;
@@ -387,7 +394,6 @@
     font-size: 1.4rem;
     font-weight: 700;
     color: var(--neon-green);
-    text-shadow: var(--glow-green);
   }
 
   .stat-label {
@@ -465,7 +471,6 @@
     color: var(--neon-blue);
     letter-spacing: 0.05em;
     margin-bottom: 0.6rem;
-    text-shadow: var(--glow-blue);
   }
 
   .rule-card ul {
@@ -588,7 +593,6 @@
     font-size: 2.2rem;
     line-height: 1;
     color: #fff;
-    text-shadow: var(--glow-green);
     margin-bottom: 0.15rem;
   }
 
@@ -623,7 +627,7 @@
 
   .event-tag {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.08em;
     padding: 0.2rem 0.6rem;
@@ -648,7 +652,7 @@
   }
 
   .event-info-label {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -785,7 +789,7 @@
 
   .footer-copy {
     margin-top: 2rem;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: rgba(148,163,184,0.4);
     font-family: 'Rajdhani', sans-serif;
     letter-spacing: 0.1em;
@@ -851,7 +855,7 @@
     align-items: center;
     gap: 0.35rem;
     font-family: 'Orbitron', monospace;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     padding: 0.3rem 0.8rem;
@@ -868,7 +872,7 @@
     color: var(--neon-yellow);
     border-color: rgba(250,204,21,0.4);
     background: rgba(250,204,21,0.07);
-    animation: badgePulse 1.4s ease-in-out infinite;
+    animation: badgePulse 1.8s ease-in-out infinite;
   }
   .capacity-badge.full {
     color: #ff4d4d;
@@ -882,7 +886,7 @@
   }
   @keyframes badgePulse {
     0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
+    50%       { opacity: 0.72; }
   }
 
   .event-name-row {
@@ -984,7 +988,7 @@
   .history-date-year {
     font-family: 'Noto Sans JP', sans-serif;
     font-weight: 400;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: var(--text-dim);
     margin-bottom: 0.05rem;
     letter-spacing: 0.05em;
@@ -1006,14 +1010,14 @@
   }
   .history-date-dow {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-dim);
     letter-spacing: 0.08em;
   }
   .history-date-time {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--neon-pink);
     letter-spacing: 0.05em;
@@ -1031,7 +1035,7 @@
   }
   .history-kind {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1054,7 +1058,7 @@
   }
   .history-tag {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     padding: 0.15rem 0.5rem;
@@ -1088,7 +1092,7 @@
 
   .history-result-rank {
     font-family: 'Orbitron', monospace;
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     margin-bottom: 0.1rem;
@@ -1118,7 +1122,7 @@
   }
   .history-result-bey {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-dim);
     white-space: nowrap;
@@ -1223,7 +1227,7 @@
     position: absolute;
     top: 0.9rem; left: 0.9rem;
     font-family: 'Orbitron', monospace;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     color: var(--neon-yellow);
@@ -1236,7 +1240,7 @@
     position: absolute;
     bottom: 0.9rem; right: 0.9rem;
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text);
     background: rgba(4,7,15,0.75);
@@ -1323,7 +1327,7 @@
   }
   .history-report-chip {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     color: var(--neon-yellow);
@@ -1363,6 +1367,116 @@
     .report-lightbox { padding: 3rem 0.5rem 3.2rem; }
     .report-lb-nav { width: 2.2rem; height: 3rem; font-size: 1.5rem; }
   }
+
+  /* ─── Utility classes（インラインstyle撤去分） ─── */
+  .is-hidden { display: none; }
+
+  .nav-logo-img { height: 44px; width: auto; display: block; }
+
+  .nav-link-accent { color: var(--neon-blue); }
+  .nav-link-accent:hover { color: var(--neon-blue); text-shadow: var(--glow-blue); }
+
+  .hero-amb-logo {
+    position: absolute;
+    width: min(1040px, 95vw);
+    height: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.18;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    z-index: 8;
+    user-select: none;
+  }
+  .hero-main-logo {
+    position: relative;
+    z-index: 10;
+    width: min(680px, 96vw);
+    height: auto;
+    display: block;
+    margin: 0 auto 0.4rem;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-cta-group {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.2rem;
+  }
+
+  .link-accent { color: var(--neon-green); text-decoration: none; font-weight: 700; }
+  .link-blue-underline { color: var(--neon-blue); text-decoration: underline; }
+
+  .section-title-sm { font-size: 1.2rem; margin-bottom: 1rem; }
+  .section-line-yellow { background: linear-gradient(90deg, var(--neon-yellow), transparent); }
+  .section-line-pink { background: linear-gradient(90deg, var(--neon-pink), transparent); }
+
+  .stats-jump-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.1rem 1.6rem;
+    background: rgba(14,165,233,0.06);
+    border: 1px solid rgba(14,165,233,0.35);
+    text-decoration: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+  .stats-jump-link:hover {
+    border-color: rgba(14,165,233,0.7);
+    box-shadow: 0 0 24px rgba(14,165,233,0.2);
+  }
+  .stats-jump-title {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--neon-blue);
+    letter-spacing: 0.06em;
+    margin-bottom: 0.25rem;
+  }
+  .stats-jump-sub { font-size: 0.78rem; color: var(--text-dim); }
+  .stats-jump-view {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--neon-blue);
+    white-space: nowrap;
+  }
+
+  .footer-logo-img { height: 120px; width: auto; display: block; margin: 0 auto 0.8rem; opacity: 0.95; }
+  .footer-social-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+  .event-kind-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+    margin-bottom: 0.2rem;
+  }
+  .event-venue-sub { color: var(--text-dim); font-size: 0.8rem; }
+  .event-footer-pending {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    padding: 0.5rem;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid #facc15;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 </style>
 </head>
 <body>
@@ -1371,17 +1485,18 @@
 
 <!-- NAV -->
 <nav>
-  <a class="nav-logo" href="#hero" style="display:inline-flex;align-items:center;line-height:1;"><img src="title_white.png" alt="板橋ベイブレード会" style="height:44px;width:auto;display:block;"></a>
+  <a class="nav-logo" href="#hero"><img class="nav-logo-img" src="title_white.png" alt="板橋ベイブレード会"></a>
   <ul class="nav-links">
     <li><a href="#about">ABOUT</a></li>
     <li><a href="#information">INFO</a></li>
     <li><a href="#events">EVENTS</a></li>
     <li><a href="#rules">PRECAUTION</a></li>
     <li><a href="#history">HISTORY</a></li>
-    <li><a href="player_stats.html" style="color:var(--neon-blue);text-shadow:var(--glow-blue);">BLADERS</a></li>
+    <li><a href="player_stats.html" class="nav-link-accent">BLADERS</a></li>
   </ul>
 </nav>
 
+<main>
 <!-- HERO -->
 <section id="hero">
 
@@ -1402,38 +1517,21 @@
   <div class="hero-bottom-fade"></div>
 
   <!-- スピンリング z:4 -->
-  <div class="spin-ring" style="position:absolute;z-index:4;"></div>
-  <div class="spin-ring spin-ring-2" style="position:absolute;z-index:4;"></div>
+  <div class="spin-ring"></div>
+  <div class="spin-ring spin-ring-2"></div>
 
   <!-- hero-orb z:5 -->
-  <div class="hero-orb hero-orb-1" style="z-index:5;"></div>
-  <div class="hero-orb hero-orb-2" style="z-index:5;"></div>
-  <div class="hero-orb hero-orb-3" style="z-index:5;"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
 
   <!-- Ambassador logo background z:8（動画より上・テキストより下） -->
-  <img
-    src="BEYX_logo_amb.png"
-    alt=""
-    aria-hidden="true"
-    style="
-      position: absolute;
-      width: min(1040px, 95vw);
-      height: auto;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.18;
-      mix-blend-mode: screen;
-      pointer-events: none;
-      z-index: 8;
-      user-select: none;
-    "
-  >
+  <img class="hero-amb-logo" src="BEYX_logo_amb.png" alt="" aria-hidden="true">
 
   <!-- テキスト＆ボタン z:10 -->
-  <p class="hero-badge" style="position:relative;z-index:10;">BEYBLADE X EVENT AMBASSADOR PRESENTS</p>
-  <img src="maintitle_white.png" alt="板橋ベイブレード会 MEETUP OF ITABASHI" style="position:relative;z-index:10;width:min(680px,96vw);height:auto;display:block;margin:0 auto 0.4rem;animation:fadeUp 0.8s 0.1s ease both;">
-  <div style="position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:0.6rem;margin-top:0.2rem;">
+  <p class="hero-badge">BEYBLADE X EVENT AMBASSADOR PRESENTS</p>
+  <img class="hero-main-logo" src="maintitle_white.png" alt="板橋ベイブレード会 MEETUP OF ITABASHI">
+  <div class="hero-cta-group">
     <a class="hero-cta" href="#events">▶ イベントを確認する</a>
     <a class="hero-stats-btn" href="player_stats.html">
       📊 BLADER STATS
@@ -1451,13 +1549,13 @@
         <p class="section-label">// ABOUT US</p>
         <h2 class="section-title">板橋ベイブレード会<br>とは？</h2>
         <div class="section-line"></div>
-        <p>「<strong>板橋ベイブレード会</strong>」とは、<a href="https://www.takaratomy.co.jp/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">株式会社タカラトミー</a>公認のイベントアンバサダーである<a href="https://x.com/yamizaki" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;">イナッシー</a>（稲垣ヤミー）が主に東京都板橋区で主催する<a href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" style="color:var(--neon-green);text-decoration:none;font-weight:700;text-shadow:var(--glow-green);">BEYBLADE X</a>のイベントです。</p>
+        <p>「<strong>板橋ベイブレード会</strong>」とは、<a href="https://www.takaratomy.co.jp/" target="_blank" rel="noopener" class="link-accent">株式会社タカラトミー</a>公認のイベントアンバサダーである<a href="https://x.com/yamizaki" target="_blank" rel="noopener" class="link-accent">イナッシー</a>（稲垣ヤミー）が主に東京都板橋区で主催する<a href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" class="link-accent">BEYBLADE X</a>のイベントです。</p>
         <p>気軽な練習会から、公式ルールに準じた本格的なアンバサダー大会まで、幅広いスタイルで定期開催しています。初心者から上級者まで大歓迎！</p>
       </div>
 
       <div class="reveal">
         <p class="section-label">// PROMO VIDEO</p>
-        <h2 class="section-title" style="font-size:1.2rem; margin-bottom:1rem;">イメージ動画</h2>
+        <h2 class="section-title section-title-sm">イメージ動画</h2>
         <div class="video-wrap">
           <iframe
             src="https://www.youtube.com/embed/I_RO4i45jII?si=-IaCVJs0IrivHLSx"
@@ -1487,11 +1585,11 @@
 </section>
 
 <!-- EVENT REPORT -->
-<section id="event-report" style="display:none;">
+<section id="event-report" class="is-hidden">
   <div class="section-inner">
     <p class="section-label reveal">// EVENT REPORT</p>
     <h2 class="section-title reveal">大会レポート</h2>
-    <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-yellow), transparent);"></div>
+    <div class="section-line reveal section-line-yellow"></div>
     <div class="report-event-name reveal" id="report-event-name"></div>
     <div class="report-grid reveal" id="report-grid"></div>
   </div>
@@ -1522,8 +1620,8 @@
       <div class="rule-card reveal rule-card-wide">
         <div class="rule-title">参加の前に</div>
         <ul>
-          <li>参加者およびその保護者の方はベイブレードX公式ページにある<a href="https://beyblade.takaratomy.co.jp/beyblade-x/event/top.html#read" target="_blank" rel="noopener" style="color:var(--neon-blue);text-decoration:underline;">「大会&amp;イベントに行く前に必ずお読みください」</a>の内容をご一読のうえご参加ください。</li>
-          <li>大会レギュレーションは<a href="https://beyblade.takaratomy.co.jp/beyblade-x/_image/regulation.pdf" target="_blank" rel="noopener" style="color:var(--neon-blue);text-decoration:underline;">ベイブレードXレギュレーション</a>に準じて運営します。ただし、以下のルールを含め大会ごとに特別ルールが設定されてる場合があります。<br><br>
+          <li>参加者およびその保護者の方はベイブレードX公式ページにある<a href="https://beyblade.takaratomy.co.jp/beyblade-x/event/top.html#read" target="_blank" rel="noopener" class="link-blue-underline">「大会&amp;イベントに行く前に必ずお読みください」</a>の内容をご一読のうえご参加ください。</li>
+          <li>大会レギュレーションは<a href="https://beyblade.takaratomy.co.jp/beyblade-x/_image/regulation.pdf" target="_blank" rel="noopener" class="link-blue-underline">ベイブレードXレギュレーション</a>に準じて運営します。ただし、以下のルールを含め大会ごとに特別ルールが設定されてる場合があります。<br><br>
             <strong>【板橋ベイブレード会特別ルール】</strong><br>
             ・大会開催前に、大会で使用するベイのチェック・登録を行います。以降、特別な場合を除き大会中の使用ベイの交換および変更はできません（使用する順番は試合ごとに変更して構いません）
           </li>
@@ -1562,30 +1660,15 @@
   <div class="section-inner">
     <p class="section-label reveal">// PAST EVENTS</p>
     <h2 class="section-title reveal">開催履歴</h2>
-    <div class="section-line reveal" style="background: linear-gradient(90deg, var(--neon-pink), transparent);"></div>
+    <div class="section-line reveal section-line-pink"></div>
 
     <!-- BLADER STATS リンクボタン -->
-    <a href="player_stats.html" class="reveal" style="
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      padding: 1.1rem 1.6rem;
-      background: rgba(14,165,233,0.06);
-      border: 1px solid rgba(14,165,233,0.35);
-      text-decoration: none;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
-    "
-    onmouseover="this.style.borderColor='rgba(14,165,233,0.7)';this.style.boxShadow='0 0 24px rgba(14,165,233,0.2)'"
-    onmouseout="this.style.borderColor='rgba(14,165,233,0.35)';this.style.boxShadow='none'"
-    >
+    <a href="player_stats.html" class="reveal stats-jump-link">
       <div>
-        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:0.95rem;color:var(--neon-blue);text-shadow:var(--glow-blue);letter-spacing:0.06em;margin-bottom:0.25rem;">📊 BLADER STATS</div>
-        <div style="font-size:0.78rem;color:var(--text-dim);">ブレーダー戦績・BP・ライバルを検索</div>
+        <div class="stats-jump-title">📊 BLADER STATS</div>
+        <div class="stats-jump-sub">ブレーダー戦績・BP・ライバルを検索</div>
       </div>
-      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:0.15em;color:var(--neon-blue);white-space:nowrap;">VIEW →</div>
+      <div class="stats-jump-view">VIEW →</div>
     </a>
     <div class="history-toggle reveal" id="history-toggle" onclick="toggleHistory()">
       <span class="history-toggle-icon">▶</span>
@@ -1597,6 +1680,7 @@
     </div>
   </div>
 </section>
+</main>
 
 <!-- REPORT LIGHTBOX -->
 <div class="report-lightbox" id="report-lightbox" onclick="closeReportLightbox(event)">
@@ -1612,9 +1696,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <img src="maintitle_white.png" alt="板橋ベイブレード会 MEETUP OF ITABASHI" style="height:120px;width:auto;display:block;margin:0 auto 0.8rem;opacity:0.95;">
+  <img class="footer-logo-img" src="maintitle_white.png" alt="板橋ベイブレード会 MEETUP OF ITABASHI">
   <div class="footer-sub">Powered by Inagaki"INASSY"Yammy</div>
-  <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+  <div class="footer-social-row">
     <a class="footer-x-link" href="https://x.com/yamizaki" target="_blank" rel="noopener">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       @yamizaki をフォロー
@@ -1735,7 +1819,7 @@ function renderCard(row) {
     capacityBadge = `<span class="capacity-badge full">🔴 定員埋まりました</span>`;
   } else if (capacity) {
     // 上記以外の自由テキストはそのまま表示
-    capacityBadge = `<span class="capacity-badge info">📢 ${capacity}</span>`;
+    capacityBadge = `<span class="capacity-badge info">📢 ${escapeHtml(capacity)}</span>`;
   }
 
   // 大会時間を結合（開始〜終了）
@@ -1759,7 +1843,7 @@ function renderCard(row) {
   // 地図embed URL
   const embedUrl = convertMapUrl(mapUrl);
 
-  const card = document.createElement('div');
+  const card = document.createElement('article');
   card.className = 'event-card reveal';
 
   card.innerHTML = `
@@ -1769,33 +1853,33 @@ function renderCard(row) {
       <div class="event-date-dow">${dateDisplay.dow}曜</div>
     </div>
     <div class="event-body">
-      ${kind ? `<div style="font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--neon-blue);margin-bottom:0.2rem;">${kind}</div>` : ''}
+      ${kind ? `<div class="event-kind-label">${escapeHtml(kind)}</div>` : ''}
       <div class="event-name-row">
-        <div class="event-name">${name}</div>
+        <div class="event-name">${escapeHtml(name)}</div>
         ${capacityBadge}
       </div>
 
       <div class="event-meta-row">
-        ${format   ? `<span class="event-tag blue">${format}</span>` : ''}
-        ${qualify  ? `<span class="event-tag pink">${qualify}</span>` : ''}
-        ${fee      ? `<span class="event-tag yellow">参加費: ${fee}</span>` : ''}
-        ${stadium  ? `<span class="event-tag green">${stadium}</span>` : ''}
+        ${format   ? `<span class="event-tag blue">${escapeHtml(format)}</span>` : ''}
+        ${qualify  ? `<span class="event-tag pink">${escapeHtml(qualify)}</span>` : ''}
+        ${fee      ? `<span class="event-tag yellow">参加費: ${escapeHtml(fee)}</span>` : ''}
+        ${stadium  ? `<span class="event-tag green">${escapeHtml(stadium)}</span>` : ''}
       </div>
 
       <div class="event-info-grid">
-        ${reception ? `<div class="event-info-item"><span class="event-info-label">受付</span><span class="event-info-value">${reception}</span></div>` : ''}
-        ${timeStr   ? `<div class="event-info-item"><span class="event-info-label">大会時間（予定）</span><span class="event-info-value">${timeStr}</span></div>` : ''}
-        ${venue     ? `<div class="event-info-item"><span class="event-info-label">会場</span><span class="event-info-value">${venue}${venueSub ? `<br><small style="color:var(--text-dim);font-size:0.8em">${venueSub}</small>` : ''}</span></div>` : ''}
+        ${reception ? `<div class="event-info-item"><span class="event-info-label">受付</span><span class="event-info-value">${escapeHtml(reception)}</span></div>` : ''}
+        ${timeStr   ? `<div class="event-info-item"><span class="event-info-label">大会時間（予定）</span><span class="event-info-value">${escapeHtml(timeStr)}</span></div>` : ''}
+        ${venue     ? `<div class="event-info-item"><span class="event-info-label">会場</span><span class="event-info-value">${escapeHtml(venue)}${venueSub ? `<br><small class="event-venue-sub">${escapeHtml(venueSub)}</small>` : ''}</span></div>` : ''}
       </div>
 
-      ${comment ? `<div class="event-comment">💬 ${comment}</div>` : ''}
+      ${comment ? `<div class="event-comment">💬 ${escapeHtml(comment)}</div>` : ''}
 
-      ${embedUrl ? `<iframe class="event-map" src="${embedUrl}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : ''}
+      ${embedUrl ? `<iframe class="event-map" src="${escapeHtml(embedUrl)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : ''}
 
       <div class="event-footer">
         ${tonamel
-          ? `<a class="btn-tonamel" href="${tonamel}" target="_blank" rel="noopener">🏆 詳細やお申し込みはこちら！</a>`
-          : `<div style="text-align:center;font-size:0.8rem;color:var(--text-dim);padding:0.5rem">申し込みリンクは準備中です</div>`
+          ? `<a class="btn-tonamel" href="${escapeHtml(tonamel)}" target="_blank" rel="noopener">🏆 詳細やお申し込みはこちら！</a>`
+          : `<div class="event-footer-pending">申し込みリンクは準備中です</div>`
         }
       </div>
     </div>
@@ -1878,7 +1962,7 @@ async function loadInformation() {
     container.innerHTML = items.map(t => `
       <div class="info-item">
         <div class="info-item-dot"></div>
-        <div class="info-item-text">${t}</div>
+        <div class="info-item-text">${escapeHtml(t)}</div>
       </div>
     `).join('');
     observeReveal();
@@ -2037,11 +2121,11 @@ document.addEventListener('keydown', e => {
 // レポート画像が読めなかった場合はその要素を隠す（X画像のリンク切れ対策）
 function hideBrokenReport(el) {
   const card = el.closest('.report-card');
-  if (card) card.style.display = 'none';
+  if (card) card.classList.add('is-hidden');
   const grid = document.getElementById('report-grid');
   const section = document.getElementById('event-report');
-  if (grid && section && !grid.querySelector('.report-card:not([style*="none"])')) {
-    section.style.display = 'none';
+  if (grid && section && !grid.querySelector('.report-card:not(.is-hidden)')) {
+    section.classList.add('is-hidden');
   }
 }
 
@@ -2055,7 +2139,7 @@ function renderLatestReport(rows) {
   const row = rows.find(r =>
     ((r[HCOL.report1] || '').trim() || (r[HCOL.report2] || '').trim())
   );
-  if (!row) { section.style.display = 'none'; return; }
+  if (!row) { section.classList.add('is-hidden'); return; }
 
   const name    = (row[HCOL.name] || '').trim();
   const dateStr = (row[HCOL.date] || '').trim();
@@ -2084,7 +2168,7 @@ function renderLatestReport(rows) {
     </div>
   `).join('');
 
-  section.style.display = '';
+  section.classList.remove('is-hidden');
 }
 
 function renderHistoryCard(row) {
@@ -2133,7 +2217,7 @@ function renderHistoryCard(row) {
     { cls: 'rank-4', label: '4TH',   name: rank4 },
   ].filter(r => r.name);
 
-  const card = document.createElement('div');
+  const card = document.createElement('article');
   card.className = 'history-card reveal';
   card.innerHTML = `
     <div class="history-date-block">
@@ -2141,18 +2225,18 @@ function renderHistoryCard(row) {
       <div class="history-date-month">${dateDisplay.month}</div>
       <div class="history-date-day">${dateDisplay.day}</div>
       <div class="history-date-dow">${dateDisplay.dow}曜</div>
-      ${startTime ? `<div class="history-date-time">${startTime}〜</div>` : ''}
+      ${startTime ? `<div class="history-date-time">${escapeHtml(startTime)}〜</div>` : ''}
     </div>
     <div class="history-body">
-      ${kind ? `<div class="history-kind">${kind}</div>` : ''}
+      ${kind ? `<div class="history-kind">${escapeHtml(kind)}</div>` : ''}
       <div class="history-name-row">
-        <div class="history-name">${name}</div>
+        <div class="history-name">${escapeHtml(name)}</div>
         ${reportChips}
       </div>
       <div class="history-meta-row">
-        ${format       ? `<span class="history-tag blue">${format}</span>` : ''}
-        ${stadium      ? `<span class="history-tag green">${stadium}</span>` : ''}
-        ${participants ? `<span class="history-tag pink">参加者数：${participants}名</span>` : ''}
+        ${format       ? `<span class="history-tag blue">${escapeHtml(format)}</span>` : ''}
+        ${stadium      ? `<span class="history-tag green">${escapeHtml(stadium)}</span>` : ''}
+        ${participants ? `<span class="history-tag pink">参加者数：${escapeHtml(participants)}名</span>` : ''}
       </div>
       ${ranks.length > 0 ? `
         <div class="history-results">
@@ -2164,7 +2248,7 @@ function renderHistoryCard(row) {
           `).join('')}
         </div>
       ` : ''}
-      ${comment ? `<div class="history-comment">${comment}</div>` : ''}
+      ${comment ? `<div class="history-comment">${escapeHtml(comment)}</div>` : ''}
     </div>
   `;
   return card;
