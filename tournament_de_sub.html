@@ -228,6 +228,7 @@
   let isSwapped = false;
   let winScoreLimit = 4;
   let kimariteAll = [], kimariteP1 = [], kimariteP2 = [];
+  let battleLog = [];
   let currentTab = 'losers';
 
   // スコアボタン → 決まり手の自動マッピング
@@ -494,12 +495,14 @@
       if (pts > 0 && SCORE_KIMARITE_MAP[type]) {
         const k = SCORE_KIMARITE_MAP[type];
         kimariteAll.push(k); kimariteP1.push(k);
+        battleLog.push({ who: 'p1', k: k, pts: pts, scoreP1: scoreP1, scoreP2: scoreP2, ts: Date.now() });
       }
     } else {
       scoreP2 = Math.max(0, Math.min(scoreP2 + pts, winScoreLimit));
       if (pts > 0 && SCORE_KIMARITE_MAP[type]) {
         const k = SCORE_KIMARITE_MAP[type];
         kimariteAll.push(k); kimariteP2.push(k);
+        battleLog.push({ who: 'p2', k: k, pts: pts, scoreP1: scoreP1, scoreP2: scoreP2, ts: Date.now() });
       }
     }
     refreshMatchUI();
@@ -509,6 +512,7 @@
   function resetMatchScore() {
     scoreP1 = 0; scoreP2 = 0;
     kimariteAll = []; kimariteP1 = []; kimariteP2 = [];
+    battleLog = [];
     refreshMatchUI();
     updateKimariteSummary();
   }
@@ -556,17 +560,20 @@
   // ================================================
   function addKimarite(k) {
     kimariteAll.push(k);
+    battleLog.push({ who: '', k: k, pts: 0, scoreP1: scoreP1, scoreP2: scoreP2, ts: Date.now() });
     updateKimariteSummary();
   }
 
   function clearAllKimarite() {
     kimariteAll = []; kimariteP1 = []; kimariteP2 = [];
+    battleLog = [];
     updateKimariteSummary();
   }
 
   function undoKimarite() {
     if (!kimariteAll.length) return;
     const last = kimariteAll.pop();
+    battleLog.pop();
     const idxP1 = kimariteP1.lastIndexOf(last);
     if (idxP1 !== -1) kimariteP1.splice(idxP1, 1);
     else {
@@ -609,6 +616,7 @@
       kimarite,
       kimarite_p1: kp1,
       kimarite_p2: kp2,
+      battleLog:   battleLog.slice(),
       updatedAt:   Date.now()
     });
     // 送信後即座にUIリセット（ACK受信前でも次の試合へ）

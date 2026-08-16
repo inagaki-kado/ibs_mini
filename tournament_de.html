@@ -30,7 +30,9 @@
             'cyber-red-orange': '#ff4500',
             'cyber-orange': '#ffaa00',
             'cyber-text': '#e2e8f0',
-            'cyber-table-border': '#1f2937'
+            'cyber-table-border': '#1f2937',
+            'cyber-on-blue': '#04263a',
+            'cyber-on-pink': '#2b0c1a'
           }
         }
       }
@@ -42,6 +44,15 @@
     
     .neon-blue { box-shadow: 0 0 10px #0ea5e9; }
     button { touch-action: manipulation; cursor: pointer; }
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 3px solid #facc15;
+      outline-offset: 2px;
+    }
 
     .neon-green { box-shadow: 0 0 10px #22c55e; }
     .neon-pink { box-shadow: 0 0 15px rgba(236,72,153,0.6); }
@@ -161,8 +172,8 @@
                 <option value="none">非表示</option>
               </select>
             </label>
-            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-white border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
-            <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
+            <button onclick="toggleEffectMode()" id="btn-toggle-effect" class="bg-cyber-pink text-cyber-on-pink border border-cyber-pink px-4 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">✨ 演出: ON</button>
+            <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-cyber-on-pink border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
             <button onclick="execClearSave()" class="bg-cyber-dark border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-3 py-2 rounded font-bold shadow text-xs transition-colors whitespace-nowrap" title="データを削除して最初から">🗑 リセット</button>
           </div>
           
@@ -214,7 +225,7 @@
                 style="touch-action: manipulation;"
               >☕ 休憩</button>
             </div>
-            <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
+            <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-cyber-on-pink px-6 py-2 rounded-full font-bold font-sf neon-pink animate-pulse shrink-0">SHOW RESULTS 🏆</button>
           </div>
           
           <div class="flex gap-2 mb-3 shrink-0">
@@ -259,6 +270,11 @@
           下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-green font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
           （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
         </p>
+        <div class="flex gap-2 mb-2">
+          <button id="exportModeMatchBtn" onclick="switchExportMode('match')" style="touch-action:manipulation" class="flex-1 px-3 py-2 rounded border font-sf text-sm font-bold transition-colors">試合単位</button>
+          <button id="exportModeBattleBtn" onclick="switchExportMode('battle')" style="touch-action:manipulation" class="flex-1 px-3 py-2 rounded border font-sf text-sm font-bold transition-colors">バトル単位</button>
+        </div>
+        <p id="exportColumnsHint" class="mb-3 text-cyber-text text-xs opacity-60"></p>
         <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
         <div class="flex gap-4">
           <button onclick="copyExportData()" class="flex-[2] bg-cyber-blue text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#0ea5e9] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
@@ -899,7 +915,7 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <button onclick="sendRemoteCmd('REPLAY_LATEST')" class="col-span-2 py-6 bg-cyber-pink hover:bg-cyber-pink/80 text-white font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_15px_#ec4899]">🔥 LATEST HIGHLIGHT (Enter)</button>
+          <button onclick="sendRemoteCmd('REPLAY_LATEST')" class="col-span-2 py-6 bg-cyber-pink hover:bg-cyber-pink/80 text-cyber-on-pink font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_15px_#ec4899]">🔥 LATEST HIGHLIGHT (Enter)</button>
           <button onclick="sendRemoteCmd('REPLAY_REV')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">⏪ -5 SEC</button>
           <button onclick="sendRemoteCmd('REPLAY_PLAY')" class="py-5 bg-[#0a0e17] border border-cyber-pink text-cyber-pink font-sf font-bold rounded hover:bg-cyber-pink/20 transition-colors text-lg">▶ / ⏸ PLAY / PAUSE</button>
           <button onclick="sendRemoteCmd('REPLAY_FRAME_REV')" class="py-4 bg-[#0a0e17] border border-cyber-orange text-cyber-orange font-sf font-bold rounded hover:bg-cyber-orange/20 transition-colors text-lg">◀ 1F</button>
@@ -933,8 +949,8 @@
           <button type="button" onclick="undoRemoteKimariteLast()" class="w-full mt-1 py-1.5 bg-[#111827] border border-cyber-table-border text-cyber-text/80 font-sf text-[10px] rounded hover:bg-gray-800 transition-colors">← 1つ戻す</button>
         </div>
         <div class="flex gap-4">
-          <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
-          <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
+          <button id="remote-left-win-btn" onclick="handleRemoteWinner('left')" class="flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-cyber-on-blue font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">LEFT WIN 🏆</button>
+          <button id="remote-right-win-btn" onclick="handleRemoteWinner('right')" class="flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-cyber-on-pink font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]">RIGHT WIN 🏆</button>
         </div>
       </div>
     </div>
@@ -1072,10 +1088,10 @@
         if (!btn) return;
         if (isEffectOn) {
             btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
-            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-pink', 'text-cyber-on-pink', 'shadow-[0_0_8px_#ec4899]');
             btn.innerText = "✨ 演出: ON";
         } else {
-            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.remove('bg-cyber-pink', 'text-cyber-on-pink', 'shadow-[0_0_8px_#ec4899]');
             btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
             btn.innerText = "✨ 演出: OFF";
         }
@@ -1087,10 +1103,10 @@
         if (!btn) return;
         if (isCommentOn) {
             btn.classList.remove('bg-cyber-dark', 'text-cyber-pink');
-            btn.classList.add('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.add('bg-cyber-pink', 'text-cyber-on-pink', 'shadow-[0_0_8px_#ec4899]');
             btn.innerText = "💬 コメント: ON";
         } else {
-            btn.classList.remove('bg-cyber-pink', 'text-white', 'shadow-[0_0_8px_#ec4899]');
+            btn.classList.remove('bg-cyber-pink', 'text-cyber-on-pink', 'shadow-[0_0_8px_#ec4899]');
             btn.classList.add('bg-cyber-dark', 'text-cyber-pink');
             btn.innerText = "💬 コメント: OFF";
         }
@@ -1419,6 +1435,20 @@
         m.kimarite = msg.kimarite ?? null;
         m.kimarite_p1 = msg.kimarite_p1 ?? null;
         m.kimarite_p2 = msg.kimarite_p2 ?? null;
+        // サブ機から届いた時系列ログを battles へ変換（サブ機はベイ選択非対応のため Bey は空）
+        if (Array.isArray(msg.battleLog) && msg.battleLog.length > 0) {
+          m.battles = msg.battleLog.map((e, i) => ({
+            no: i + 1,
+            p1Bey: '',
+            p2Bey: '',
+            winner: e.who || '',
+            finish: e.k || '',
+            pts: (typeof e.pts === 'number') ? e.pts : 0,
+            scoreP1: (typeof e.scoreP1 === 'number') ? e.scoreP1 : 0,
+            scoreP2: (typeof e.scoreP2 === 'number') ? e.scoreP2 : 0,
+            ts: (typeof e.ts === 'number') ? e.ts : null
+          }));
+        }
         if (msg.bracket === 'lb3rd') {
           m.winner = msg.winner;
           m.updatedAt = msg.updatedAt ?? Date.now();
@@ -1522,7 +1552,13 @@
             switchRemoteTab('score', { syncHud: false });
         }
         sendRemoteCmd(cmd);
-        if (cmd === 'SYS_RESET') { remoteScoreLeft = 0; remoteScoreRight = 0; remoteMatchEvents = []; }
+        if (cmd === 'SYS_RESET') {
+            remoteScoreLeft = 0; remoteScoreRight = 0; remoteMatchEvents = [];
+            if (currentRemoteMatch && currentRemoteMatch.match) {
+              currentRemoteMatch.match.battles = [];
+              saveState();
+            }
+        }
         else {
             if (side === 'left') remoteScoreLeft = Math.max(0, Math.min(remoteScoreLeft + pts, remoteWinScoreLimit));
             else if (side === 'right') remoteScoreRight = Math.max(0, Math.min(remoteScoreRight + pts, remoteWinScoreLimit));
@@ -1559,14 +1595,30 @@
                   ? (actualWho === 'p1'
                       ? (currentRemoteMatch.match.p1BeyUsed || '')
                       : (currentRemoteMatch.match.p2BeyUsed || ''))
-                  : ''
+                  : '',
+                p1Bey: (currentRemoteMatch && currentRemoteMatch.match) ? (currentRemoteMatch.match.p1BeyUsed || '') : '',
+                p2Bey: (currentRemoteMatch && currentRemoteMatch.match) ? (currentRemoteMatch.match.p2BeyUsed || '') : ''
               });
               // 既存の全体リスト（手動UI用）にも追加（表示のため）
               remoteKimariteList.push(autoKEntry.k);
               updateRemoteKimariteUI();
               if (currentRemoteMatch && currentRemoteMatch.match) {
-                currentRemoteMatch.match.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
-                currentRemoteMatch.match.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
+                const m = currentRemoteMatch.match;
+                // バトル（1本）単位の履歴を永続化（エクスポート用）
+                if (!Array.isArray(m.battles)) m.battles = [];
+                m.battles.push({
+                  no: m.battles.length + 1,
+                  p1Bey: (m.p1BeyUsed || ''),
+                  p2Bey: (m.p2BeyUsed || ''),
+                  winner: actualWho,
+                  finish: autoKEntry.k,
+                  pts: pts,
+                  scoreP1: evScoreP1,
+                  scoreP2: evScoreP2,
+                  ts: Date.now()
+                });
+                m.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
+                m.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
                 saveState();
               }
             }
@@ -1617,14 +1669,14 @@
             leftNameEl.innerText = m.p2.name; rightNameEl.innerText = m.p1.name;
             leftNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-right";
             rightNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-left";
-            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
-            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            leftWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-cyber-on-pink font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            rightWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-cyber-on-blue font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
         } else {
             leftNameEl.innerText = m.p1.name; rightNameEl.innerText = m.p2.name;
             leftNameEl.className = "truncate text-cyber-blue drop-shadow-[0_0_5px_#0ea5e9] text-right";
             rightNameEl.className = "truncate text-cyber-pink drop-shadow-[0_0_5px_#ec4899] text-left";
-            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
-            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-white font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
+            leftWinBtn.innerHTML = `${m.p1.name} WIN 🏆`; leftWinBtn.className = "flex-1 py-4 bg-cyber-blue hover:bg-[#0284c7] text-cyber-on-blue font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]";
+            rightWinBtn.innerHTML = `${m.p2.name} WIN 🏆`; rightWinBtn.className = "flex-1 py-4 bg-cyber-pink hover:bg-[#be185d] text-cyber-on-pink font-bold font-sf rounded text-lg transition-transform active:scale-95 shadow-[0_0_10px_#ec4899]";
         }
     }
 
@@ -1763,9 +1815,15 @@
       if (remoteKimariteP1.length > 0 && remoteKimariteP1[remoteKimariteP1.length - 1] === lastK) {
         remoteKimariteP1.pop();
         remoteMatchEvents.pop();
+        if (currentRemoteMatch && currentRemoteMatch.match && Array.isArray(currentRemoteMatch.match.battles)) {
+          currentRemoteMatch.match.battles.pop();
+        }
       } else if (remoteKimariteP2.length > 0 && remoteKimariteP2[remoteKimariteP2.length - 1] === lastK) {
         remoteKimariteP2.pop();
         remoteMatchEvents.pop();
+        if (currentRemoteMatch && currentRemoteMatch.match && Array.isArray(currentRemoteMatch.match.battles)) {
+          currentRemoteMatch.match.battles.pop();
+        }
       }
       updateRemoteKimariteUI();
       if (currentRemoteMatch && currentRemoteMatch.match) {
@@ -2232,7 +2290,7 @@
                 currentRemoteMode = 'score';
             }
         } else {
-            tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-white rounded transition-all shadow-[0_0_10px_#ec4899]";
+            tabReplay.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink bg-cyber-pink text-cyber-on-pink rounded transition-all shadow-[0_0_10px_#ec4899]";
             tabScore.className = "flex-1 py-3 font-bold font-sf border border-cyber-pink text-cyber-pink hover:bg-cyber-pink/20 rounded transition-all";
             areaReplay.classList.remove('hidden'); areaReplay.classList.add('flex');
             const lbl = document.getElementById('remote-replay-lbl-left');
@@ -2626,7 +2684,7 @@
         }
         const beyCount = (p.beyblades || []).length;
         const checkBtnColor = beyCount > 0 ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20';
-        const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-white px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
+        const beyBadge = beyCount > 0 ? `<span class="absolute -top-1 -right-1 text-[10px] bg-cyber-blue text-cyber-on-blue px-1.5 py-0.5 rounded-full font-bold">${beyCount}</span>` : '';
         const hasPhoto = hasBayPhoto(p.name);
         const isPhotoProcessing = bayPhotoProcessingId === p.id;
         const photoBtnColor = isPhotoProcessing ? 'bg-transparent text-yellow-400 border border-yellow-400 opacity-70' : (hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20');
@@ -2762,7 +2820,7 @@
                 <h2 class="text-2xl md:text-3xl font-sf text-cyber-blue mb-4 truncate w-full px-4">${playerName}</h2>
                 <div class="text-lg md:text-xl text-cyber-text font-bold mb-2 opacity-80 font-sf">Your Battlefield is</div>
                 <div class="text-6xl md:text-7xl font-bold font-sf text-cyber-pink drop-shadow-[0_0_20px_#ec4899] mb-10">【${slotName}】</div>
-                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-white px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
+                <button onclick="confirmLotteryResult()" class="bg-cyber-pink hover:bg-pink-600 text-cyber-on-pink px-10 py-4 rounded-full font-bold font-sf shadow-[0_0_15px_#ec4899] active:scale-95 transition-transform text-xl w-full max-w-[200px] mx-auto relative z-10">OK</button>
             </div>
         `;
 
@@ -3474,6 +3532,7 @@
         comment: m.comment,
         p1BeyUsed: m.p1BeyUsed,
         p2BeyUsed: m.p2BeyUsed,
+        battles: m.battles,
         key: rosterPairKey(m.p1, m.p2)
       })));
 
@@ -3500,6 +3559,7 @@
             m.comment = s.comment;
             m.p1BeyUsed = s.p1BeyUsed;
             m.p2BeyUsed = s.p2BeyUsed;
+            m.battles = s.battles;
           }
         }));
       };
@@ -4429,42 +4489,139 @@
       document.getElementById('resultsModal').classList.remove('flex');
     }
 
-    function openExportModal() {
-      let exportText = "";
-      const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
-      const getRoundLabel = (block, roundIdx) => {
-        if (block === 'losers')          return getDeRoundLabel('lb', roundIdx, 0);
-        if (block === 'lbThirdPlace')    return getDeRoundLabel('lb3rd', 0, 0);
-        if (block === 'grandFinalReset') return getDeRoundLabel('gf_reset', 0, 0);
-        return getDeRoundLabel(block, roundIdx, 0);
+    /**
+     * ベイ名から登録済みパーツを引き、出力用の6項目に正規化する。
+     * 見つからない場合は type に生の名前を入れて他は空にする（データ欠損を握りつぶさない）。
+     * 名前文字列のパースは行わない（連結後の名前は区切り文字がなく復元不能なため、必ず parts を参照する）。
+     */
+    function resolveBeyParts(participant, beyName) {
+      const empty = { type: '', lockChip: '', blade: '', overBlade: '', assistBlade: '', ratchet: '', bit: '' };
+      if (!beyName) return empty;
+      const list = (participant && Array.isArray(participant.beyblades)) ? participant.beyblades : [];
+      const bey = list.find(b => b && b.name === beyName);
+      if (!bey || !bey.parts) return Object.assign({}, empty, { type: beyName });
+      const p = bey.parts;
+      const t = bey.type || p.type || '';
+      // ブレード欄のフォールバック順（CX→MB→BX→UX）は CX(EX) でメタルブレードを優先するためのもの
+      return {
+        type: t,
+        lockChip:    p.RC  || '',
+        blade:       p.CX || p.MB || p.BX || p.UX || '',
+        overBlade:   p.OB  || '',
+        assistBlade: p.AB  || '',
+        ratchet:     p.RC2 || '',
+        bit:         p.BT  || ''
       };
-      const addMatch = (m, block, roundIdx) => {
-        if (m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null) {
-          const p1Name = m.p1.name;
-          const p2Name = m.p2.name;
-          const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
-          const round = getRoundLabel(block, roundIdx);
-          const kp1 = m.kimarite_p1 || '';
-          const kp2 = m.kimarite_p2 || '';
-          const comment = m.comment || '';
-          exportText += `${clean(p1Name)}\t${clean(p2Name)}\t${clean(winnerName)}\t${clean(round)}\t${clean(kp1)}\t${clean(kp2)}\t${clean(comment)}\n`;
-        }
-      };
-      winnersBracket.forEach((round, roundIdx) => round.forEach(match => addMatch(match, 'wb', roundIdx)));
+    }
 
-      // ルーザーズ側（DE: LB各ラウンド → LB3位決定戦）
+    let currentExportMode = 'match';
+
+    const _deExportClean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
+    const _deExportRoundLabel = (block, roundIdx) => {
+      if (block === 'losers')          return getDeRoundLabel('lb', roundIdx, 0);
+      if (block === 'lbThirdPlace')    return getDeRoundLabel('lb3rd', 0, 0);
+      if (block === 'grandFinalReset') return getDeRoundLabel('gf_reset', 0, 0);
+      return getDeRoundLabel(block, roundIdx, 0);
+    };
+    // 試合単位・バトル単位の両出力で共通の走査順（WB各ラウンド→LB各ラウンド→LB3位決定戦→GRAND FINAL→GF RESET）
+    function _deExportForEachMatch(cb) {
+      winnersBracket.forEach((round, roundIdx) => round.forEach(match => cb(match, 'wb', roundIdx)));
       if (Array.isArray(losersBracket)) {
         losersBracket.forEach((round, roundIdx) => {
-          if (Array.isArray(round)) round.forEach(match => addMatch(match, 'losers', roundIdx));
+          if (Array.isArray(round)) round.forEach(match => cb(match, 'losers', roundIdx));
         });
       }
-      if (lbThirdPlace) addMatch(lbThirdPlace, 'lbThirdPlace', 0);
+      if (lbThirdPlace) cb(lbThirdPlace, 'lbThirdPlace', 0);
+      if (grandFinal) cb(grandFinal, 'gf', 0);
+      if (grandFinalReset) cb(grandFinalReset, 'grandFinalReset', 0);
+    }
+    function _deExportIsValidMatch(m) {
+      return !!(m && m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.p1.name !== 'TBD' && m.p2.name !== 'TBD' && m.winner !== null);
+    }
 
-      // GRAND FINAL / GF RESET は最後
-      if (grandFinal) addMatch(grandFinal, 'gf', 0);
-      if (grandFinalReset) addMatch(grandFinalReset, 'grandFinalReset', 0);
+    function buildMatchExportText() {
+      let exportText = "";
+      _deExportForEachMatch((m, block, roundIdx) => {
+        if (!_deExportIsValidMatch(m)) return;
+        const p1Name = m.p1.name;
+        const p2Name = m.p2.name;
+        const winnerName = m.winner === 1 ? p1Name : (m.winner === 2 ? p2Name : "");
+        const round = _deExportRoundLabel(block, roundIdx);
+        const kp1 = m.kimarite_p1 || '';
+        const kp2 = m.kimarite_p2 || '';
+        const comment = m.comment || '';
+        exportText += `${_deExportClean(p1Name)}\t${_deExportClean(p2Name)}\t${_deExportClean(winnerName)}\t${_deExportClean(round)}\t${_deExportClean(kp1)}\t${_deExportClean(kp2)}\t${_deExportClean(comment)}\n`;
+      });
+      return exportText;
+    }
 
-      document.getElementById('exportArea').value = exportText;
+    /** タイムスタンプを 'YYYY-MM-DD HH:MM:SS' に整形。ts がなければ空文字。 */
+    function _deExportTs(ts) {
+      if (typeof ts !== 'number' || !isFinite(ts)) return '';
+      const d = new Date(ts);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} `
+           + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+
+    function buildBattleExportText() {
+      let exportText = "";
+      const roundMatchCounters = {};
+      _deExportForEachMatch((m, block, roundIdx) => {
+        if (!_deExportIsValidMatch(m)) return;
+        if (!Array.isArray(m.battles) || m.battles.length === 0) return; // 過去大会データ（battles未記録）はスキップ
+        const round = _deExportRoundLabel(block, roundIdx);
+        roundMatchCounters[round] = (roundMatchCounters[round] || 0) + 1;
+        const matchNo = roundMatchCounters[round];
+        m.battles.forEach((b) => {
+          const p1Parts = resolveBeyParts(m.p1, b.p1Bey);
+          const p2Parts = resolveBeyParts(m.p2, b.p2Bey);
+          const winnerLabel = b.winner === 'p1' ? 'P1' : (b.winner === 'p2' ? 'P2' : '');
+          const row = [
+            _deExportTs(b.ts),
+            tournamentName,
+            round,
+            matchNo,
+            b.no,
+            m.p1.name, p1Parts.type, p1Parts.lockChip, p1Parts.blade, p1Parts.overBlade, p1Parts.assistBlade, p1Parts.ratchet, p1Parts.bit,
+            m.p2.name, p2Parts.type, p2Parts.lockChip, p2Parts.blade, p2Parts.overBlade, p2Parts.assistBlade, p2Parts.ratchet, p2Parts.bit,
+            winnerLabel, b.finish, b.pts, b.scoreP1, b.scoreP2
+          ].map(_deExportClean).join('\t');
+          exportText += row + '\n';
+        });
+      });
+      return exportText;
+    }
+
+    function renderExportData() {
+      const text = currentExportMode === 'battle' ? buildBattleExportText() : buildMatchExportText();
+      document.getElementById('exportArea').value = text;
+      const matchBtn = document.getElementById('exportModeMatchBtn');
+      const battleBtn = document.getElementById('exportModeBattleBtn');
+      if (matchBtn && battleBtn) {
+        const activeCls = ['bg-cyber-green', 'text-cyber-bg', 'border-cyber-green'];
+        const inactiveCls = ['border-gray-600', 'text-cyber-text'];
+        matchBtn.classList.remove(...activeCls, ...inactiveCls);
+        battleBtn.classList.remove(...activeCls, ...inactiveCls);
+        matchBtn.classList.add(...(currentExportMode === 'match' ? activeCls : inactiveCls));
+        battleBtn.classList.add(...(currentExportMode === 'battle' ? activeCls : inactiveCls));
+      }
+      const hint = document.getElementById('exportColumnsHint');
+      if (hint) {
+        hint.textContent = currentExportMode === 'battle'
+          ? '列: 記録日時/大会名/ラウンド/試合No/本目/P1名〜ビット(7列)/P2名〜ビット(7列)/勝者/決まり手/獲得pt/P1累計/P2累計'
+          : '列: P1/P2/勝者/ラウンド/P1決まり手/P2決まり手/コメント';
+      }
+    }
+
+    function switchExportMode(mode) {
+      currentExportMode = (mode === 'battle') ? 'battle' : 'match';
+      renderExportData();
+    }
+
+    function openExportModal() {
+      currentExportMode = 'match';
+      renderExportData();
       document.getElementById('exportModal').classList.remove('hidden');
       document.getElementById('exportModal').classList.add('flex');
     }
@@ -4482,6 +4639,11 @@
     // ==========================================
     const KIMARITE_POINTS = { XF: 3, BF: 2, OF: 2, SF: 1 };
     const KIMARITE_BASELINE_PERCENT = { SF: 57, OF: 18, XF: 18, BF: 7 };
+
+    // バトル単位分析（パーツ勝率・決まり手相関・逆転劇・ブレードマッチング）の足切り定数
+    const REPORT_BATTLE_MIN_SAMPLES = 8;   // 勝率を語る最低バトル数
+    const REPORT_MATCHUP_MIN_COUNT  = 2;   // マッチングとして掲載する最低対戦回数
+    const REPORT_BLADE_MATCHUP_DISPLAY_COUNT = 3; // 名勝負カードの掲載件数（ページ2が過密な場合は2に減らして調整）
 
     function reportFormatDate(d) {
       const dt = d || new Date();
@@ -5028,6 +5190,218 @@
       return `全${dist.total}本の決まり手内訳。全体平均（${baselineText}）と比べ${best.code}が${best.ratio.toFixed(1)}倍。`;
     }
 
+    // ==========================================
+    // イベントレポート（PNG新聞）— バトル単位分析（m.battles を使った追加集計）
+    // ==========================================
+
+    /**
+     * 大会中の全バトルを1本単位でフラットに列挙する。
+     * includeBeyOnly=true のとき、ベイ情報のないバトル（サブ機由来）を除外する
+     * （パーツを扱う集計A・B・Eで使用。決まり手のみ扱う集計Dはfalseのまま使う）。
+     * b.winner が空文字（サブ機の決まり手ボタン由来で勝者不明）のバトルは常に除外する。
+     */
+    function getReportAllBattles(includeBeyOnly = false) {
+      const entries = getReportAllMatches().concat(getReportFinalMatches());
+      const out = [];
+      entries.forEach(entry => {
+        const m = entry.match;
+        if (!Array.isArray(m.battles) || !m.battles.length) return;
+        m.battles.forEach(b => {
+          if (b.winner !== 'p1' && b.winner !== 'p2') return;
+          const winnerIsP1 = b.winner === 'p1';
+          const winner = winnerIsP1 ? m.p1 : m.p2;
+          const loser = winnerIsP1 ? m.p2 : m.p1;
+          const winnerBey = winnerIsP1 ? b.p1Bey : b.p2Bey;
+          const loserBey = winnerIsP1 ? b.p2Bey : b.p1Bey;
+          if (includeBeyOnly && (!winnerBey || !loserBey)) return;
+          out.push({
+            m, b, entry,
+            p1: m.p1, p2: m.p2,
+            winner, loser,
+            winnerParts: resolveBeyParts(winner, winnerBey),
+            loserParts: resolveBeyParts(loser, loserBey),
+            finish: b.finish
+          });
+        });
+      });
+      return out;
+    }
+
+    // --- A: パーツ勝率ランキング ---------------------------------------
+
+    // カテゴリ（blade/ratchet/bit）1つ分のパーツ別勝敗を集計する。
+    // 同一バトルで両者が同じパーツを使っていた場合、そのパーツに1勝1敗を計上する（相殺しない）
+    function reportTallyPartCategory(battles, field) {
+      const tally = {};
+      battles.forEach(bt => {
+        const winName = bt.winnerParts[field];
+        const loseName = bt.loserParts[field];
+        if (winName) {
+          if (!tally[winName]) tally[winName] = { name: winName, wins: 0, losses: 0 };
+          tally[winName].wins++;
+        }
+        if (loseName) {
+          if (!tally[loseName]) tally[loseName] = { name: loseName, wins: 0, losses: 0 };
+          tally[loseName].losses++;
+        }
+      });
+      return Object.values(tally)
+        .map(t => ({ name: t.name, wins: t.wins, losses: t.losses, total: t.wins + t.losses, winRate: Math.round((t.wins / (t.wins + t.losses)) * 100) }))
+        .filter(t => t.total >= REPORT_BATTLE_MIN_SAMPLES)
+        .sort((a, b) => (b.winRate - a.winRate) || (b.total - a.total))
+        .slice(0, 3);
+    }
+
+    // 使用率トップ3（partsRanking）と勝率トップの突き合わせで、読みどころとなる1文を作る
+    function reportPartsWinRateNote(winRateData, partsRanking) {
+      const categories = ['blade', 'ratchet', 'bit'];
+      let best = null;
+      categories.forEach(cat => {
+        const top = (winRateData[cat] || [])[0];
+        if (top && (!best || top.winRate > best.item.winRate)) best = { item: top, cat };
+      });
+      if (!best) return '';
+      const usageTop3 = (partsRanking && partsRanking[best.cat]) || [];
+      const usageTop3Names = usageTop3.map(p => p.name);
+      const mostUsed = usageTop3[0];
+      const mostUsedStat = mostUsed ? (winRateData[best.cat] || []).find(w => w.name === mostUsed.name) : null;
+
+      if (!usageTop3Names.includes(best.item.name)) {
+        return `${best.item.name}は使用率トップ3圏外ながら勝率${best.item.winRate}%でトップ。使う人は少ないが、使えば勝つ。`;
+      }
+      if (mostUsed && mostUsedStat && mostUsedStat.winRate < 50 && mostUsed.name !== best.item.name) {
+        return `一方、最も使われた${mostUsed.name}は勝率${mostUsedStat.winRate}%と伸び悩んだ。`;
+      }
+      return `勝率トップは${best.item.name}で${best.item.winRate}%。`;
+    }
+
+    function getReportPartsWinRate() {
+      const battles = getReportAllBattles(true);
+      const data = {
+        blade: reportTallyPartCategory(battles, 'blade'),
+        ratchet: reportTallyPartCategory(battles, 'ratchet'),
+        bit: reportTallyPartCategory(battles, 'bit')
+      };
+      data.note = reportPartsWinRateNote(data, getReportPartsRanking());
+      return data;
+    }
+
+    // --- B: 決まり手×パーツの相関 ---------------------------------------
+
+    const REPORT_FINISH_JA_SHORT = { XF: 'エクストリーム', BF: 'バースト', OF: 'オーバー', SF: 'スピン' };
+
+    // 各パーツについて、そのパーツで勝ったバトルの決まり手内訳を集計し、
+    // 全体平均（getReportKimariteDist）からの偏りが最も大きいものを決まり手ごとに1つ選ぶ
+    function getReportFinishByParts() {
+      const baseDist = getReportKimariteDist();
+      if (!baseDist.total) return {};
+      const battles = getReportAllBattles(true);
+
+      const tally = {}; // `${category}:${name}` -> { category, part, wins, finishCounts }
+      const categories = ['blade', 'ratchet', 'bit'];
+      battles.forEach(bt => {
+        const finish = bt.finish;
+        if (!KIMARITE_POINTS[finish]) return;
+        categories.forEach(cat => {
+          const name = bt.winnerParts[cat];
+          if (!name) return;
+          const key = cat + ':' + name;
+          if (!tally[key]) tally[key] = { category: cat, part: name, wins: 0, finishCounts: { XF: 0, BF: 0, OF: 0, SF: 0 } };
+          tally[key].wins++;
+          tally[key].finishCounts[finish]++;
+        });
+      });
+
+      const result = {};
+      ['XF', 'BF', 'OF', 'SF'].forEach(code => {
+        const basePercent = (baseDist[code] / baseDist.total) * 100;
+        if (basePercent <= 0) return;
+        let best = null;
+        Object.values(tally).forEach(t => {
+          if (t.wins < REPORT_BATTLE_MIN_SAMPLES) return;
+          const percent = (t.finishCounts[code] / t.wins) * 100;
+          const ratio = percent / basePercent;
+          if (ratio < 1.3) return;
+          if (!best || ratio > best.ratio) {
+            best = { part: t.part, category: t.category, percent: Math.round(percent), basePercent: Math.round(basePercent), ratio, wins: t.finishCounts[code] };
+          }
+        });
+        if (best) result[code] = best;
+      });
+      return result;
+    }
+
+    // --- D: 逆転劇の検出 -------------------------------------------------
+
+    // 各試合の battles を走査し、最終的な勝者が背負った最大ビハインドを求める。
+    // b.winner が空文字のバトルを含む試合はスコア推移を追えないため除外する
+    function getReportComeback() {
+      const entries = getReportAllMatches().concat(getReportFinalMatches());
+      let best = null;
+      entries.forEach(entry => {
+        const m = entry.match;
+        if (m.winner !== 1 && m.winner !== 2) return;
+        if (!Array.isArray(m.battles) || !m.battles.length) return;
+        if (m.battles.some(b => b.winner !== 'p1' && b.winner !== 'p2')) return;
+
+        const w = getW(m), l = getL(m);
+        if (!w || !l || w.id === 'BYE' || l.id === 'BYE') return;
+        const winnerKey = m.winner === 1 ? 'p1' : 'p2';
+
+        let maxBehind = 0, deepestIdx = -1, deepestWinnerScore = 0, deepestLoserScore = 0;
+        m.battles.forEach((b, idx) => {
+          const winnerScore = winnerKey === 'p1' ? b.scoreP1 : b.scoreP2;
+          const loserScore  = winnerKey === 'p1' ? b.scoreP2 : b.scoreP1;
+          const behind = loserScore - winnerScore;
+          if (behind >= maxBehind) { maxBehind = behind; deepestIdx = idx; deepestWinnerScore = winnerScore; deepestLoserScore = loserScore; }
+        });
+        if (maxBehind <= 1) return;
+
+        let streak = 0;
+        for (let i = deepestIdx + 1; i < m.battles.length; i++) {
+          if (m.battles[i].winner === winnerKey) streak++;
+          else break;
+        }
+
+        const isBetter = !best || maxBehind > best.maxBehind || (maxBehind === best.maxBehind && streak > best.streak);
+        if (isBetter) {
+          best = {
+            winnerName: w.name || '',
+            loserName: l.name || '',
+            maxBehind,
+            behindLabel: `${deepestWinnerScore}-${deepestLoserScore}`,
+            finalScore: reportFormatMatchScore(m),
+            roundLabel: getDeRoundLabel(entry.bracket, entry.roundIdx, 0),
+            streak
+          };
+        }
+      });
+      return best;
+    }
+
+    // --- E: 最多ブレードマッチング ---------------------------------------
+
+    // ブレード名を辞書順ソートして連結した正規化キーで対戦組み合わせを集計する
+    function getReportBladeMatchups() {
+      const battles = getReportAllBattles(true);
+      const tally = {};
+      battles.forEach(bt => {
+        const bladeW = bt.winnerParts.blade;
+        const bladeL = bt.loserParts.blade;
+        if (!bladeW || !bladeL || bladeW === bladeL) return;
+        const [a, b] = [bladeW, bladeL].sort();
+        const key = a + '__' + b;
+        if (!tally[key]) tally[key] = { bladeA: a, bladeB: b, winsA: 0, winsB: 0 };
+        if (bladeW === a) tally[key].winsA++;
+        else tally[key].winsB++;
+      });
+      return Object.values(tally)
+        .map(t => ({ ...t, total: t.winsA + t.winsB }))
+        .filter(t => t.total >= REPORT_MATCHUP_MIN_COUNT)
+        .sort((a, b) => (b.total - a.total) || (Math.abs(b.winsA - b.winsB) - Math.abs(a.winsA - a.winsB)))
+        .slice(0, REPORT_BLADE_MATCHUP_DISPLAY_COUNT);
+    }
+
     function collectReportData() {
       const standings = getReportStandings();
       const headline = getReportHeadline();
@@ -5041,6 +5415,10 @@
       const onlyOne = getReportOnlyOne();
       const allStandings = getReportAllStandings();
       const entrants = getReportEntrants();
+      const partsWinRate = getReportPartsWinRate();
+      const finishByParts = getReportFinishByParts();
+      const comeback = getReportComeback();
+      const bladeMatchups = getReportBladeMatchups();
 
       return {
         tournamentName: tournamentName || '',
@@ -5056,7 +5434,11 @@
         kimariteNote,
         records,
         onlyOne,
-        allStandings
+        allStandings,
+        partsWinRate,
+        finishByParts,
+        comeback,
+        bladeMatchups
       };
     }
 
@@ -5196,7 +5578,12 @@
       getReportOnlyOne,
       getReportAllStandings,
       fetchNextEvent,
-      collectReportData
+      collectReportData,
+      getReportAllBattles,
+      getReportPartsWinRate,
+      getReportFinishByParts,
+      getReportComeback,
+      getReportBladeMatchups
     };
 
     // ==========================================
@@ -5559,6 +5946,22 @@
         </div>`;
     }
 
+    // getReportComeback() が null の場合はセクションごと非表示
+    function reportBuildComeback(data) {
+      const c = data.comeback;
+      if (!c) return '';
+      const streakText = c.streak > 0 ? `${c.streak}連取` : '逆転';
+      const detail = `${reportEscapeHtml(c.behindLabel)}から${streakText}。${reportEscapeHtml(c.roundLabel)}で${reportEscapeHtml(c.loserName)}を撃破`;
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の大逆転</div>
+          <div style="background:#ffffff; border:1px solid #d6d1c4; border-left:5px solid #a8321e; padding:13px 15px; display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
+            <span style="font-family:'Noto Sans JP', sans-serif; font-size:22px; font-weight:700; color:#14161a; flex:none;">${reportEscapeHtml(c.winnerName)}</span>
+            <span style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#a8321e; white-space:nowrap;">${detail}</span>
+          </div>
+        </div>`;
+    }
+
     function reportBuildPartsCard(label, items, category) {
       const rows = (items || []).map((item, idx) => {
         const rankColor = idx === 0 ? '#a8321e' : '#a8a29e';
@@ -5649,6 +6052,134 @@
           <div style="height:34px; border-radius:5px; overflow:hidden; display:flex; border:1px solid #14161a;">${segs}</div>
           <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:8px;">${reportEscapeHtml(data.kimariteNote || '')}</div>
         </div>`;
+    }
+
+    // A: パーツ勝率ランキング（reportBuildParts() の直後に配置）
+    function reportBuildPartsWinRateCard(label, items, category) {
+      const rows = (items || []).map((item, idx) => {
+        const rankColor = idx === 0 ? '#a8321e' : '#a8a29e';
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0;">
+            <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+              <span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
+              <span id="report-partwr-${category}-${idx}" style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.6; color:#14161a; white-space:nowrap; flex:1 1 auto; min-width:0;">${reportEscapeHtml(item.name)}</span>
+            </div>
+            <div style="text-align:right; flex:none; margin-left:8px;">
+              <div style="font-family:'Orbitron', sans-serif; font-size:16px; line-height:1.3; font-weight:700; color:#a8321e;">${item.winRate}%</div>
+              <div style="font-family:'Noto Sans JP', sans-serif; font-size:11px; color:#57534e;">(${item.wins}勝${item.losses}敗)</div>
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="background:#ffffff; border:1px solid #d6d1c4; border-radius:10px; padding:14px;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:1px; color:#57534e; margin-bottom:8px;">${label}</div>
+          ${rows}
+        </div>`;
+    }
+
+    // getReportPartsWinRate() の3カテゴリすべてが空ならセクションごと非表示
+    function reportBuildPartsWinRate(data) {
+      const pw = data.partsWinRate;
+      if (!pw || (!pw.blade.length && !pw.ratchet.length && !pw.bit.length)) return '';
+      const cards = [
+        reportBuildPartsWinRateCard('BLADE', pw.blade, 'blade'),
+        reportBuildPartsWinRateCard('RATCHET', pw.ratchet, 'ratchet'),
+        reportBuildPartsWinRateCard('BIT', pw.bit, 'bit')
+      ].join('');
+      const noteHtml = pw.note
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:10px;">${reportEscapeHtml(pw.note)}</div>`
+        : '';
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の勝てたパーツ</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+          ${noteHtml}
+        </div>`;
+    }
+
+    // パーツ名が枠幅を超える場合にフォントを段階的に縮小する（reportFitPartsNames()と同じ方式）
+    function reportFitPartsWinRateNames(data) {
+      const pw = data.partsWinRate || {};
+      ['blade', 'ratchet', 'bit'].forEach(cat => {
+        (pw[cat] || []).forEach((item, idx) => {
+          const el = document.getElementById(`report-partwr-${cat}-${idx}`);
+          if (!el) return;
+          for (const size of [16, 14, 12]) {
+            el.style.fontSize = size + 'px';
+            if (el.scrollWidth <= el.clientWidth) break;
+          }
+        });
+      });
+    }
+
+    // B: 決まり手×パーツの相関。getReportFinishByParts() が0件ならセクションごと非表示
+    function reportBuildFinishByParts(data) {
+      const fp = data.finishByParts || {};
+      const order = ['XF', 'BF', 'OF', 'SF'];
+      const cards = order
+        .filter(code => fp[code])
+        .map(code => {
+          const item = fp[code];
+          const shortLabel = REPORT_FINISH_JA_SHORT[code] || code;
+          return `
+            <div style="background:#ffffff; border:1px solid #d6d1c4; padding:12px 14px;">
+              <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; color:#57534e; margin-bottom:4px;">${reportEscapeHtml(shortLabel)}を呼ぶ</div>
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
+                <span style="font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#14161a; white-space:nowrap; overflow:hidden; flex:1 1 auto; min-width:0;">${reportEscapeHtml(item.part)}</span>
+                <span style="font-family:'Orbitron', sans-serif; font-size:13px; color:#a8321e; flex:none; white-space:nowrap;">${code}率${item.percent}%（平均の${item.ratio.toFixed(1)}倍）</span>
+              </div>
+            </div>`;
+        }).join('');
+      if (!cards) return '';
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">決まり手を呼ぶパーツ</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+        </div>`;
+    }
+
+    // E: 最多ブレードマッチング。getReportBladeMatchups() が空配列ならセクションごと非表示
+    function reportBuildBladeMatchups(data) {
+      const list = data.bladeMatchups;
+      if (!list || !list.length) return '';
+      const rows = list.map((t, idx) => {
+        const aWins = t.winsA > t.winsB;
+        const bWins = t.winsB > t.winsA;
+        const colorA = aWins ? '#a8321e' : '#14161a';
+        const colorB = bWins ? '#a8321e' : '#14161a';
+        const isLast = idx === list.length - 1;
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #d6d1c4;'}">
+            <div style="display:flex; align-items:center; min-width:0; flex:1 1 auto;">
+              <span id="report-matchup-a-${idx}" style="font-family:'Noto Sans JP', sans-serif; font-size:17px; font-weight:700; color:${colorA}; white-space:nowrap;">${reportEscapeHtml(t.bladeA)}</span>
+              <span style="font-family:'Noto Sans JP', sans-serif; font-size:13px; color:#57534e; margin:0 8px; flex:none;">vs</span>
+              <span id="report-matchup-b-${idx}" style="font-family:'Noto Sans JP', sans-serif; font-size:17px; font-weight:700; color:${colorB}; white-space:nowrap;">${reportEscapeHtml(t.bladeB)}</span>
+            </div>
+            <div style="text-align:right; flex:none; margin-left:12px;">
+              <div style="font-family:'Orbitron', sans-serif; font-size:17px; font-weight:700; color:#a8321e;">${t.winsA}-${t.winsB}</div>
+              <div style="font-family:'Noto Sans JP', sans-serif; font-size:12px; color:#57534e;">全${t.total}戦</div>
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="flex:0 0 auto;">
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の名勝負カード</div>
+          <div style="background:#ffffff; border:1px solid #d6d1c4; border-radius:10px; padding:6px 15px;">${rows}</div>
+        </div>`;
+    }
+
+    // ブレード名が枠幅を超える場合にフォントを段階的に縮小する（reportFitPartsNames()と同じ方式）
+    function reportFitBladeMatchupNames(data) {
+      (data.bladeMatchups || []).forEach((t, idx) => {
+        ['a', 'b'].forEach(side => {
+          const el = document.getElementById(`report-matchup-${side}-${idx}`);
+          if (!el) return;
+          for (const size of [17, 15, 13]) {
+            el.style.fontSize = size + 'px';
+            if (el.scrollWidth <= el.clientWidth) break;
+          }
+        });
+      });
     }
 
     // page: 1（右に "1 / 2"）/ 2（右に "2 / 2　@yamizaki"）。ロゴは明るい背景に置けないため外し、テキストのみにする
@@ -5779,6 +6310,7 @@
         reportBuildHeadline(data),
         reportBuildStandings(data),
         reportBuildHighlights(data),
+        reportBuildComeback(data),
         photoHtml,
         spacerHtml,
         reportBuildFooter(1)
@@ -5788,6 +6320,9 @@
         reportBuildMasthead(logo, 2),
         reportBuildNameBand(data, 2),
         reportBuildParts(data),
+        reportBuildPartsWinRate(data),
+        reportBuildFinishByParts(data),
+        reportBuildBladeMatchups(data),
         reportBuildRecords(data),
         reportBuildOnlyOne(data),
         reportBuildAllStandings(data),
@@ -5828,6 +6363,8 @@
       reportFitStandingsNames(data);
       reportFitStandingsRows(data);
       reportFitPartsNames(data);
+      reportFitPartsWinRateNames(data);
+      reportFitBladeMatchupNames(data);
 
       [canvas1, canvas2].forEach((canvas, idx) => {
         const overflow = canvas.scrollHeight - 1350;
@@ -7255,7 +7792,7 @@
     <p id="custom-confirm-msg" class="text-cyber-text font-sf text-sm leading-relaxed whitespace-pre-line"></p>
     <div class="flex gap-3">
       <button id="custom-confirm-cancel" class="flex-1 py-2 bg-transparent border border-gray-500 text-gray-300 font-bold font-sf rounded hover:bg-gray-700 transition">キャンセル</button>
-      <button id="custom-confirm-ok" class="flex-1 py-2 bg-cyber-pink text-white font-bold font-sf rounded hover:brightness-110 transition">OK</button>
+      <button id="custom-confirm-ok" class="flex-1 py-2 bg-cyber-pink text-cyber-on-pink font-bold font-sf rounded hover:brightness-110 transition">OK</button>
     </div>
   </div>
 </div>
