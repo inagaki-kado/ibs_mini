@@ -132,6 +132,83 @@ nav {
 }
 .page-header-title span { color: var(--neon-blue); text-shadow: var(--glow-blue); }
 
+/* ─── S.I.T BattleLeague 告知バナー ─── */
+.sit-banner {
+  grid-column: 1 / -1;
+  position: relative;
+  z-index: 1;
+  display: block;
+  text-decoration: none;
+  background:
+    linear-gradient(90deg, rgba(255,31,61,0.16), rgba(255,31,61,0.02) 70%),
+    rgba(8,13,26,0.6);
+  border-bottom: 1px solid rgba(255,31,61,0.4);
+  overflow: hidden;
+}
+.sit-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, rgba(255,31,61,0.05) 0 2px, transparent 2px 14px);
+  pointer-events: none;
+}
+.sit-banner-inner {
+  position: relative;
+  padding: 1.1rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.sit-banner-tag {
+  display: inline-block;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  color: #fff;
+  background: #ff1f3d;
+  padding: 0.25rem 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.sit-banner-text {
+  display: block;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.88rem, 2.2vw, 1.02rem);
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.sit-banner-text b { color: #ff1f3d; }
+.sit-banner-cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  border: 1px solid #ff1f3d;
+  padding: 0.6rem 1.2rem;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  white-space: nowrap;
+}
+.sit-banner:hover .sit-banner-cta {
+  background: #ff1f3d;
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255,31,61,0.5), 0 0 40px rgba(255,31,61,0.25);
+}
+@media (max-width: 900px) {
+  .sit-banner { grid-column: 1; }
+}
+@media (max-width: 640px) {
+  .sit-banner-inner { padding: 1rem 1.2rem; }
+  .sit-banner-cta { width: 100%; justify-content: center; }
+}
+
 /* ─── LEFT: X TOWER ─── */
 .tower-panel {
   border-right: 1px solid rgba(0,255,136,0.12);
@@ -1425,6 +1502,7 @@ select:focus-visible,
     <li><a href="index.html">HOME</a></li>
     <li><a href="index.html#events">EVENTS</a></li>
     <li><a href="player_stats.html" class="active">BLADERS</a></li>
+    <li><a href="sit_battleleague.html" style="color:#ff1f3d;">S.I.T LEAGUE</a></li>
   </ul>
 </nav>
 
@@ -1434,6 +1512,16 @@ select:focus-visible,
     <div class="page-header-label">// DATABASE //</div>
     <h1 class="page-header-title">BLADER <span>STATS</span></h1>
   </div>
+
+  <a class="sit-banner" href="sit_battleleague.html">
+    <div class="sit-banner-inner">
+      <div>
+        <span class="sit-banner-tag">NEW</span>
+        <span class="sit-banner-text">新宿・板橋・トラボCUP 合同リーグ戦「<b>S.I.T BattleLeague</b>」開幕</span>
+      </div>
+      <span class="sit-banner-cta">詳細を見る ▶</span>
+    </div>
+  </a>
 
   <aside class="tower-panel" id="towerPanel">
     <div style="text-align:center">
