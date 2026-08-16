@@ -1962,7 +1962,7 @@ async function loadInformation() {
     container.innerHTML = items.map(t => `
       <div class="info-item">
         <div class="info-item-dot"></div>
-        <div class="info-item-text">${escapeHtml(t)}</div>
+        <div class="info-item-text">${sanitizeInfoText(t)}</div>
       </div>
     `).join('');
     observeReveal();
@@ -1987,6 +1987,18 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+}
+
+// お知らせ文中の <a href="https://...">…</a> のみ許可してリンク化する（他タグ・属性は無視してエスケープのまま残す）
+function sanitizeInfoText(str) {
+  const escaped = escapeHtml(str);
+  return escaped.replace(
+    /&lt;a\s+href=(?:&quot;|&#39;)(https?:\/\/[^"'&<>]+)(?:&quot;|&#39;)(?:\s+target=(?:&quot;|&#39;)_blank(?:&quot;|&#39;))?(?:\s+rel=(?:&quot;|&#39;)noopener(?:\s+noreferrer)?(?:&quot;|&#39;))?(?:\s+style=(?:&quot;|&#39;)([a-zA-Z0-9:;#(),.\-\s]*)(?:&quot;|&#39;))?\s*&gt;([\s\S]*?)&lt;\/a&gt;/g,
+    (match, href, style, text) => {
+      const styleAttr = style ? ` style="${style}"` : '';
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer"${styleAttr}>${text}</a>`;
+    }
+  );
 }
 
 // 大会名と日付から「イベント名（YY年M月）」候補も含めてベイ使用履歴を検索
