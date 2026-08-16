@@ -16,13 +16,33 @@
 | `P1_B` / `P2_B` | P1/P2 に BURST フィニッシュ（+2点） |
 | `P1_O` / `P2_O` | P1/P2 に OVER フィニッシュ（+2点） |
 | `P1_S` / `P2_S` | P1/P2 に SPIN フィニッシュ（+1点） |
-| `RESET` | スコアリセット |
+| `P1_MINUS` / `P1_PLUS` | P1 のスコアを1点減算/加算（`winScoreLimit` で上限） |
+| `P2_MINUS` / `P2_PLUS` | P2 のスコアを1点減算/加算（`winScoreLimit` で上限） |
+| `SYS_RESET` | スコアリセット（旧互換で小文字 `reset` も同一動作。`tag.html` 等が送信） |
+| `SYS_RELOAD` | score.html を `location.reload()` |
+| `P1_WIN` / `P2_WIN` | P1/P2 の試合勝利を確定 |
+| `SYS_HIDE_WIN` | 勝利表示の非表示 |
+| `SYS_WIN_MODE_2` | 勝利ポイントモードの切替 |
+| `SYS_TOGGLE_WINPOINT` | 勝利ポイント表示のON/OFF切替 |
 | `SYS_PRO` | PRO MODE 切替（UIボタン非表示・配信用クリーンモード） |
 | `SYS_STATS` | 戦績表示切替 |
 | `SYS_CAM` | カメラ180°反転 |
 | `SYS_SWAP` | P1/P2 入替（score.html は内部変数を物理入替。加点コマンドのside反転は不要） |
+| `SYS_HUD` | HUD全体の表示/非表示（`body.hud-hidden`） |
+| `CALL` | 試合コール（3-2-1-GO!-SHOOT!）の開始/キャンセルをトグル |
+| `TIMER` | タイマーの開始/停止トグル |
+| `REPLAY_TOGGLE` | リプレイモードの切替 |
+| `REPLAY_PLAY` | リプレイ再生/一時停止 |
+| `REPLAY_SLOW` | リプレイ再生速度の切替（スロー段階サイクル） |
+| `REPLAY_FRAME_FWD` / `REPLAY_FRAME_REV` | リプレイをコマ送り/コマ戻し |
+| `REPLAY_LOOP` | リプレイのループ再生ON/OFF |
+| `REPLAY_LOOP_LEN` | リプレイのループ長を切替 |
+| `REPLAY_ZOOM` | リプレイのズーム表示切替 |
+| `REPLAY_SEEK_FWD` / `REPLAY_SEEK_REV` | リプレイをシーク送り/シーク戻し |
+| `REPLAY_REV` | リプレイの巻き戻し再生 |
+| `REPLAY_LATEST` | リプレイを最新（バッファ末尾）にシーク |
 
-> ⚠️ **未確定**: 上記は現時点で確認済みの主要コマンド。score.html 実装に新しい `cmd` 値を追加した場合は、このテーブルに追記すること。
+> 確認済み: 上記は `score.html` の `executeCommand()` / `applyGameplayScore()` を Grep して洗い出した全 `cmd` 値。score.html に新しい `cmd` 値を追加した場合は、このテーブルに追記すること。
 
 ---
 
@@ -73,12 +93,14 @@ CX(EX)ライン:  ロックチップ(RC) → メタル(MB) → オーバー(OB) 
 
 ### フィニッシュタイプ・得点
 
-| ボタン | フィニッシュ | 点数 | エフェクトクラス |
-|---|---|---|---|
-| X | XTREME | 3 | `ef-xtreme`（赤・xtreme-in + pulse） |
-| B | BURST | 2 | `ef-burst`（金・burst-in） |
-| O | OVER | 2 | `ef-over`（オレンジ・slide cut-in） |
-| S | SPIN | 1 | `ef-spin`（青・spin-in） |
+| ボタン | フィニッシュ | 点数 | エフェクトクラス | アニメーション |
+|---|---|---|---|---|
+| X | XTREME | 3 | `ef-xtreme` | `xtreme-in` → `xtreme-pulse`（無限ループ） |
+| B | BURST | 2 | `ef-burst` | `burst-in` |
+| O | OVER | 2 | `ef-over` | `over-in` |
+| S | SPIN | 1 | `ef-spin` | `spin-in` |
+
+`ef-xtreme` のみ入場アニメーション（`xtreme-in`）に加えて常時グロー点滅（`xtreme-pulse`）を併用する点が他3種と異なる。4種とも個別 keyframes で共通化しないこと（CLAUDE.md「4. score.html 保護」参照）。
 
 ### 決まり手分布の目安（評価用参考値）
 SF≈57%、OF≈18%、XF≈18%、BF≈7%。分布に偏りがあるため、フラットな閾値ではなく全体平均比（1.3倍等）で評価すること。
@@ -93,6 +115,30 @@ SF≈57%、OF≈18%、XF≈18%、BF≈7%。分布に偏りがあるため、フ�
 
 ### カウントダウン演出
 `3 → 2 → 1 → GO! → SHOOT!` のシーケンスを `call-number-style` / `call-text-go-style` / `call-text-shoot-style` でアニメーション表示
+
+- 数字（3/2/1）: `zoomInBounce`
+- GO!: `slideCutIn`
+- SHOOT!: `explodeShoot`
+
+### システムボタン配置
+
+全ボタン共通クラス `.system-btn` ＋個別クラス。`body.pro-mode` で**全て非表示**（`display: none !important`）になる。
+
+| クラス | cmd/動作 | 配置 | 色 |
+|---|---|---|---|
+| `btn-reset` | `SYS_RESET` | 左上 | 水色（デフォルト） |
+| `btn-reload` | `SYS_RELOAD`（`location.reload()`） | 左上（reset右） | ピンク `#ec4899` |
+| `btn-fps` | `toggleFps()` | 左上 | 緑 `#22c55e` |
+| `btn-cammode` | `toggleCamMode()` | 左上 | オレンジ `#ffaa00` |
+| `btn-bg` | `toggleBackground()` | 左下 | 水色（デフォルト） |
+| `btn-rotate` | `SYS_CAM` | 左下 | 水色 |
+| `btn-pro` | `SYS_PRO` | 左下 | 水色 |
+| `btn-hud` | `SYS_HUD` | 左下 | 緑 |
+| `btn-timer-toggle` | `toggleTimerDuration()` | 右上 | 水色 |
+| `btn-timer` | `TIMER` | 右上 | 水色（デフォルト） |
+| `btn-stats` | `toggleStatsDisplay()` | 右下 | 水色 |
+| `btn-undo` | `undoLastAction()` | 右下（stats と winpoint の間） | 緑 |
+| `btn-winpoint` | `toggleWinPoint()` | 右下 | オレンジ |
 
 ### ベイブレード名表示
 - P1/P2ごとに `beyblade-box-p1` / `beyblade-box-p2` 要素に表示
@@ -138,6 +184,7 @@ SF≈57%、OF≈18%、XF≈18%、BF≈7%。分布に偏りがあるため、フ�
 
 | 優先 | カテゴリ | 条件 |
 |---|---|---|
+| 0 | 因縁の一戦 | 📋名簿の家族関係カード（夫婦・親子・きょうだいのみ。サークル/属性は対象外） |
 | 1 | フルスコア | 得点差1で決着 |
 | 2 | 大逆転 | 2点以上リードされた側が勝利 |
 | 3 | 番狂わせ | 初戦シード差8以上の下位が上位を撃破 |
@@ -148,6 +195,8 @@ SF≈57%、OF≈18%、XF≈18%、BF≈7%。分布に偏りがあるため、フ�
 - `note` は `REPORT_HIGHLIGHT_NOTES` の定型文を使う。
   **試合後コメント（`generateLocalComment()`）を流用しないこと**。
   元コメントは敗者を主語にすることがあり、勝者先頭の表記と矛盾する
+- 「因縁の一戦」のみ `tryAdd()` の第3引数 `noteOverride` で関係性に応じた文を渡す
+  （例: `WB FINAL、親を破る子の下剋上`）。他カテゴリは従来どおり定型文
 
 ### 「本日のオンリーワン」判定
 
@@ -188,3 +237,43 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7
 - iOS Safari は `a.download` が効かないことがあるため、両方の手段を残すこと
 - 写真は選択直後に長辺1200px・JPEG品質0.85へ縮小する（元は4〜8MB）
 - HEIC対策として `Image.onerror` と `FileReader.onerror` の両方を実装済み。20MB超は読み込む前に中断
+
+---
+
+## 5. SHOW_PREVIEW 送信データ仕様
+
+`tournament_de.html` の `sendNextBattle()` → `score.html` の `showNextBattle()`。
+
+| フィールド | 型 | 内容 |
+|---|---|---|
+| `p1` / `p2` | string | 選手名 |
+| `label` | string | `"WINNERS - WB R2"` 形式 |
+| `p1Stats` / `p2Stats` | object | `{ rank, power, rate }`。`rate` は `"60.00%"` 形式の文字列 |
+| `h2hP1Wins` / `h2hP2Wins` | number | 直接対決の勝利数 |
+| `catchphrase` | string | 煽り文（下記）。該当なしは空文字 |
+| `showLogo` / `logoDataUrl` / `logoSrc` / `previewBackground` | — | `getShowPreviewHudFields()` が付与 |
+| `p1members` / `p2members` | array | チーム戦時のメンバー名 |
+
+### キャッチコピー（catchphrase）
+
+**判定は送信側（tournament_de.html）で完結する。score.html は受信して表示するだけ。**
+判定ロジックを score.html に持たせないこと（2ファイル同期の事故を防ぐため）。
+
+| 優先 | 条件 | 例 |
+|---|---|---|
+| 0 | GF / GF RESET **かつ** 関係性あり | 親子で挑むグランドファイナル！ |
+| 1 | 関係性あり（📋名簿 O〜T列） | 血を分けた親子対決！ |
+| 2 | label に `FINAL`/`決勝` → `LOSER`/`敗者` | 栄冠を懸けた決勝戦！ |
+| 3 | H2H（両者1勝以上 → 一方のみ） | 宿命のライバル対決！ |
+| 4 | 戦績（頂上 → ジャイキリ → 伯仲） | 魅せろ、ジャイアントキリング！ |
+| 5 | 上記いずれも該当せず（最終手段） | 予測不能の初顔合わせ！ |
+
+- 各カテゴリは**前半5×後半5＝25通り**を `cpCombine()` でランダム合成。直前と同一なら1回引き直す
+- ランク帯: `cpRankTier()` が `01-39F`/`40-59F`/`60-79F`/`80-89F`/`90-99F`/`XF` の 0〜5 を返す。
+  `"--"` や未登録は `null` → **優先4をスキップして優先5へ**
+- 頂上 = 両者80F以上 or 両者勝率60%以上 / ジャイキリ = 帯2段差以上 or BP差3000以上 / 伯仲 = それ以外
+- **優先5（初顔合わせ）は必ずチェーンの最後に置くこと。** 優先3の中に置くと初対戦カードが
+  すべてそこで確定し、優先4（戦績）に永久に到達しなくなる
+- 表示: `score.html` の `#nb-catchphrase`（`.nb-catchphrase` / 黄 `#facc15` + ネオングロー）。
+  空文字なら `display:none`。旧 `NEXT_BATTLE_CALL` は引数省略で空文字となり非表示
+- 文言は**全角17文字以内**に収める（iPhone横向きで1行 `nowrap` に収まる上限）

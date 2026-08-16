@@ -118,6 +118,7 @@
 |---|---|---|
 | `tournament.html` | メイン大会管理（ブロック戦シングルエリミ・ベイ登録・参加者管理） | 青 `#0ea5e9` |
 | `tournament_de.html` | ダブルエリミネーション大会管理（標準DE・4色抽選・GFリセット） | 青 `#0ea5e9` |
+| `tournament_de_sub.html` | `tournament_de.html` のLBスタッフ管理子機（4桁コード接続） | 青 `#0ea5e9` |
 | `tournament_evo.html` | EVO JAPAN 2026向け拡張版（当日参加抽選タブ付き） | 青 `#0ea5e9` |
 | `tag.html` | タッグリーグ管理（スイス＋決勝T） | ピンク `#ec4899` |
 | `souatari.html` | 総当たりリーグ管理 | 青 `#0ea5e9` |
@@ -130,6 +131,9 @@
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
+| `cx_parts_chart.html` | CXパーツ参照チャート（`souatari.html`/`freebattle.html` からiframe参照。`tournament.html`/`tournament_de.html` からは未参照） | — |
+| `maintitle_white.png` | クラブロゴ（白抜き・945×945、透明余白あり） | — |
+| `maintitle_white_trim.png` | 同ロゴの透明余白除去版（773×481）。**イベントレポート専用**。削除禁止 | — |
 
 ---
 
@@ -158,6 +162,10 @@
 - **PeerJS v1.5.2** (CDN) — `https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js`
 - **Orbitron** (Google Fonts) — 英数字UI用
 - **Noto Sans JP** (Google Fonts) — 日本語UI用
+
+### tournament_de.html 専用
+- **html2canvas 1.4.1** (CDN) — イベントレポートのPNG生成
+  `https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js`
 
 ### score.html 専用
 - **Chakra Petch** (Google Fonts) — スコアボード用
@@ -209,7 +217,7 @@
 |---|---|
 | `REMOTE_CMD` | スコア加算・リセット・カメラ反転等のシステムコマンド |
 | `SET_MATCH` | プレイヤー名・戦績・大会名のセット |
-| `SHOW_PREVIEW` | 次戦予告オーバーレイ表示 |
+| `SHOW_PREVIEW` | 次戦予告オーバーレイ表示（`catchphrase` / `p1Stats.rate` を含む → REFERENCE.md 5章） |
 | `HIDE_PREVIEW` | 次戦予告オーバーレイ非表示 |
 | `NEXT_BATTLE_CALL` | 旧互換（削除禁止） |
 | `SHOW_OVERLAY` | 大会結果等の全画面HTML表示 |
@@ -232,10 +240,51 @@
 - `./font/DSEG7Classic-BoldItalic.ttf` のパスを変更しないこと
 - `body.pro-mode` / `body.green-mode` クラスの挙動を維持すること
 - iPhone 17 Pro Max 横向き最適化を維持すること
+- **フォント4種の用途分離は意図的**。統合・削減しないこと
+  | フォント | 用途 |
+  |---|---|
+  | DSEG7 Classic | スコア数字（7セグ表示） |
+  | Chakra Petch | UIベース・名前入力・大会名入力 |
+  | Orbitron | システムボタン・ランク表記 |
+  | Noto Sans JP | 和文コメント・キャッチフレーズ |
+- **決まり手エフェクトのアニメーション4種は個別に維持**すること
+  （`xtreme-in` + `xtreme-pulse` / `burst-in` / `over-in` / `spin-in`）。
+  共通アニメーションへの統合禁止。会場モニターは遠距離・視界の端から見られるため、
+  決着を0.5秒で伝える大きな動きは**装飾ではなく機能**
+- **カウントダウン演出3種も個別に維持**（`zoomInBounce` / `slideCutIn` / `explodeShoot`）
+- **ランク表示の多層Glow・`gold-pulse` を弱体化しないこと**（REFERENCE.md のランク仕様が正）
+- **システムボタンをドロワー等に収納しないこと**。`body.pro-mode`（`SYS_PRO` でリモート切替可）
+  で全ボタンが消えるため、配信中のクリーン表示は既に解決済み。
+  ドロワー化は本番中のタップ数を増やす改悪になる
+- 例外: **スコア本体のみ「座布団（半透明黒背景）＋ソリッドシャドウ」方式**を採用している。
+  カメラ映像の上で数字を確実に読ませるための措置。ここに Glow を戻さないこと
 
 ### 5. file:// 制限
 - `fetch('parts.csv')` はローカルの `file://` では動作しない
 - 開発時は **Live Server**（VS Code 拡張等）でサーバー経由アクセスすること
+
+### 6. localStorage キーの分離
+
+`tournament_de.html` のイベントレポート機能は、大会本体とは**別のキー**にデータを保存する。
+
+| キー | 内容 |
+|---|---|
+| `tbh_tournament_de` | 大会状態（`saveState()` / `loadState()`） |
+| `tbh_de_report_photo` | 記念撮影写真（dataURL + クロップ情報） |
+| `tbh_de_report_note` | 編集後記のテキスト |
+| `bayPhoto_{encodeURIComponent(参加者名)}` | ベイ確認写真（`tournament.html` / `tournament_de.html`）。**長辺1280px・JPEG品質0.85に圧縮して保存**（`tournament_de.html` のみ。`tournament.html` は非圧縮） |
+| `tbh_score_match_state` | `score.html` の試合進行スナップショット（**保存から3時間で無効**） |
+
+- **写真・編集後記を `tbh_tournament_de` に混ぜてはならない。** 写真は圧縮後でも300KB前後あり、
+  混ぜると localStorage の容量上限に達したとき**大会データごと保存に失敗する**
+- レポート機能の実装時に `saveState()` / `loadState()` を変更しないこと
+- **写真データを PeerJS メッセージや Google Sheets の同期ペイロードに含めないこと**
+- **ベイ確認写真は必ず圧縮してから保存すること。** 無圧縮のiPhone写真は4〜7MBあり、
+  localStorage の上限（約5MB）を1〜2枚で使い切る。上限に達すると `saveState()` が
+  無言で失敗し続け、**大会進行データが保存されなくなる**
+- 写真の保存は必ず try/catch で囲み、QuotaExceededError を握りつぶさないこと
+- 旧仕様キー（`bayPhoto_` + 生の参加者名）が残っている可能性があるため、
+  読み取り・削除では両形式を対象にすること
 
 ---
 
@@ -255,6 +304,42 @@
 
 ---
 
+## score.html 固有仕様
+
+OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリから PeerJS で制御される。
+
+### 状態の復元
+
+- `localStorage` キー: `tbh_score_match_state`（大会アプリのキーとは完全に別系統）
+- 保存内容: スコア・試合数・選手名・勝利ポイントモード・ベイブレード名等
+- `saveMatchState()` が各操作時に保存、`restoreMatchState()` が起動時に復元
+- **保存から3時間（`MATCH_STATE_MAX_AGE_MS`）を超えた場合は復元せず破棄する**
+  → 翌週の大会で OBS を起動したときに前回大会のスコアが表示される事故を防ぐため
+- 復元が実行された場合のみ画面に通知を出す
+
+### UNDO
+
+- `undoStack` にスナップショットを積み、直近 `UNDO_LIMIT`（20件）まで巻き戻せる
+- `pushUndoSnapshot()` で保存、`undoLastAction()` で復元
+- ボタンは画面右下（stats と winpoint の間）に配置
+- `undoStack` は localStorage に保存しない（メモリ内のみ・リロードで消える）
+
+### リプレイ
+
+- `MediaRecorder` の**リングバッファ方式**。`recorderChunks` に蓄積し、
+  `pruneRecorderChunks()` が `REPLAY_BUFFER_MS`（60秒）を超えた古いチャンクを捨てる
+- 旧実装（`stop()` / `start()` を定期的に繰り返す方式）には戻さないこと。
+  iOS Safari の MediaRecorder は `stop()` 完了（`onstop`）後でないと Blob が生成できず、
+  周期的な停止・再開はフレーム落ちと取りこぼしの原因になる
+
+### 表示モード
+
+- `body.pro-mode`: システムボタン全非表示（配信用クリーンモード・`SYS_PRO` でリモート切替）
+- `body.green-mode`: クロマキー背景
+- `body.hud-hidden`: HUD全体を非表示
+
+---
+
 ## tournament.html 固有仕様
 
 - **UIマスター**。他アプリのUI基準となる
@@ -262,7 +347,10 @@
 - **ブロック戦シングルエリミ**: A〜D 各ブロック → 準決勝 → 決勝 + 3位決定戦
 - Bay Checkフォト撮影機能
 - CSV出力 / テキスト出力（ベイ名のみ）
-- `cx_parts_chart.html` をiframeでモーダル表示（`openCxChart()` / `closeCxChart()`）
+- CXパーツ参照モーダル: `#cxChartModal` を**HTML内に直書き**（`openCxChart()` / `closeCxChart()`）
+  - Base64画像25枚（メインブレード12種＋アシストブレード13種・JPEG）・約414KB を同梱。`tournament_de.html` にも同一の実装がある
+  - 別ファイルの `cx_parts_chart.html`（メインブレード13種・アシストブレード13種・カラーバリエーション表示あり・画像80枚）は内容がより新しいが、`tournament.html`/`tournament_de.html` からは参照されていない
+  - 📋 iframe 化してファイルサイズを削減する作業がバックログにある（未着手）
 - カスタムalert/confirm: `showAlert()` / `showConfirm()`（ネイティブダイアログ不使用）
 - リモートコントロールモーダル: score.htmlへの各種コマンド送信パネル
 
@@ -301,12 +389,104 @@
 
 詳細 → [`REFERENCE.md`](REFERENCE.md)
 
+### 名簿の関係性データ（📋 名簿 O〜T列）
+
+`loadRosterRelations()` が Sheets REST API（`SHEET_ID_H2H` / `'📋 名簿'!A3:T`）で取得し
+`_rosterRelMap` にキャッシュ。`getRelation(nameA, nameB)` が関係を1つだけ返す。
+
+| 列 | 項目 | 用途 |
+|---|---|---|
+| O | 親 | 親子判定（カンマ区切り・複数可） |
+| P | 子 | 親子判定（O列と相互参照） |
+| Q | 夫婦 | 夫婦判定 |
+| R | サークル | 同門 / サークル対抗判定 |
+| S | 属性 | 属性一致判定（例: 格ゲーマー） |
+| T | 女性 | フラグ `1`。**「母子」の呼称判定にのみ使用**。女性であること自体は出力しない |
+
+- 判定優先順: 夫婦 > 親子 > きょうだい（親が共通） > 同サークル > 属性一致 > サークル対抗
+- **取得失敗・タイムアウト（5秒）時は `null` を返し、関係性なしで通常動作する**（大会当日に止めない）
+- 反映先: ①試合後コメントの枕詞 `buildRelationPrefix()` ②イベントレポート「因縁の一戦」
+  ③次戦予告キャッチコピー `buildNextBattleCatchphrase()`
+- 名簿の O〜Q列は**双方向に入力する**こと（片方向だと判定が漏れる）
+
 ### 保存・UI
 
 - `localStorage` キー: **`tbh_tournament_de`**（`tournament.html` の `tbh_tournament` と分離）
 - トーナメントタブ: **WINNERS** / **LOSERS** サブタブ + 下部 **GRAND FINAL** エリア
 - 手動入替: **WT R1 のみ**（`winnersBracket[0]`）
 - TVモード: `buildTvTournamentHtml()` は WB/LB 2カラム + FINAL STAGE
+- CXパーツ参照モーダル: `tournament.html` と同一実装（`#cxChartModal` 直書き。詳細は tournament.html 固有仕様参照）
+
+### ベイ確認写真（Bay Check）
+
+- 撮影: `startBayPhotoCapture()` → `bayPhotoInput`（`capture="environment"`）
+- **カメラ起動（`input.click()`）の直前に必ず `saveState()` を呼ぶこと。**
+  iOS Safari はカメラ起動時に裏のページを破棄することがあり、
+  戻ったときにリロードされて未保存の進行が失われる
+- 保存前に `reportResizePhotoFile(file, 1280)` で**長辺1280px・JPEG品質0.85に圧縮**する
+- `setBayPhotoDataUrlByName()` は成否を boolean で返す。false のときはプレビューを更新しない
+- 一括削除: `execClearAllBayPhotos()`（参加者管理タブの「🗑️ 写真一括削除」）
+  - `listBayPhotoKeys()` が `bayPhoto_` プレフィックスのキーのみを列挙する
+  - `getBayPhotoUsage()` の件数・容量をボタンラベルに常時表示
+  - 大会終了後は「📦 写真ZIP でバックアップ → 🗑️ 一括削除」を推奨運用とする
+- ⚠️ `tournament.html` 側の同機能は圧縮・容量管理・一括削除が未実装（非圧縮の生データURLをそのまま保存）。移植時は要注意
+
+### UNDO（ブラケット操作）
+
+- `deUndoStack` にスナップショットを積み、直近 `DE_UNDO_LIMIT`（15件）まで巻き戻せる
+- 対象: `winnersBracket` / `losersBracket` / `grandFinal` / `grandFinalReset` /
+  `lbThirdPlace` / `gfResetRequired` / `playedPairs`（オブジェクト型）
+- `setWinner()` は同じ勝者の再クリックで解除できるトグル式だが、
+  `clearDeDownstream()` が下流ラウンドの結果を消すため、
+  **R1のミスクリックで準決勝以降が全消滅する**。UNDO はこれを救うためのもの
+- `undoDeLastAction()` は `syncToSheets()` を呼ばない（シート側の巻き戻しは対象外）
+- `deUndoStack` は localStorage に保存しない
+
+### イベントレポート機能
+
+大会終了後、その日の戦績・使用パーツ・記念写真をまとめた**新聞スタイルのPNG画像を2枚**生成する。
+
+- 出力: **1200×1350 × 2枚**（`{大会名}_report_{YYYYMMDD}_p1.png` / `_p2.png`）
+- 起動: `resultsModal` 内の「📰 EVENT REPORT」ボタン → `openReportModal()`
+- 紙面要素: `#report-canvas-1` / `#report-canvas-2`（`position:absolute; left:-9999px` でオフスクリーン保持）
+
+**紙面構成**
+
+| 枚目 | セクション |
+|---|---|
+| 1 | マストヘッド（黒帯＋ロゴ）／大会名帯／見出し記事／FINAL STANDINGS（1〜4位＋使用ベイ）／本日の激闘／記念撮影写真 |
+| 2 | マストヘッド（簡略）／大会名帯／本日のパーツ事情＋決まり手バー／本日の記録／本日のオンリーワン／全参加者最終順位／編集後記 |
+
+**主要関数**
+
+| 関数 | 役割 |
+|---|---|
+| `collectReportData()` | 紙面用データの集約 |
+| `getReportHighlights()` | 「本日の激闘」抽出（フルスコア／大逆転／番狂わせ／完封／XF連発） |
+| `getReportRecords()` | 決まり手別の最多記録・完封勝ち・最長試合 |
+| `getReportOnlyOne()` | 最も他人と被らないパーツ構成の選手 |
+| `getReportAllStandings()` | 5位以下の同順位グループ |
+| `fetchNextEvent()` | 次回大会予定の取得（別スプレッドシート） |
+| `buildReportHtml()` | 紙面2枚の生成。戻り値は `[canvas1, canvas2]` |
+| `reportCapturePng(pageNum)` | html2canvas でPNG化 |
+
+**⚠️ 実装上の必須制約**
+
+- **紙面内で使えないCSS**: `box-shadow` / `text-shadow` / `filter` / `backdrop-filter` /
+  グラデーション / CSS変数 / Tailwind クラス。html2canvas が再現できず紙面が崩れる。
+  紙面はインラインstyleで単色のみを使うこと
+- **`await document.fonts.ready` を必ず挟む**。フォント読み込み前に幅を実測すると、
+  フォールバックフォントの幅で判定してしまい「初回だけレイアウトが崩れる」不具合になる
+- **撮影前に `transform` を解除する**。プレビューは `scale()` で縮小表示しているため、
+  解除せずに撮ると縮小されたPNGが出る
+- 各セクションに **`flex:0 0 auto`** を付ける。付けないとコンテンツ超過時にセクションが
+  押し潰され、`scrollHeight` が1350のままになり**超過を検知できない**
+- ロゴは **`maintitle_white_trim.png`** を使う。元の `maintitle_white.png` は945×945で
+  透明余白が大きく、`height` 指定すると実寸が約半分に見える
+- **紙面は新聞配色（明るい背景）だが、アプリ本体のUIはサイバーダークのまま。**
+  紙面の配色をモーダルやボタンに波及させないこと
+- ロゴが白抜きのため、**マストヘッドのみ黒帯（`#14161a`）**にしている。
+  明るい背景の上にロゴを置かないこと
 
 ### 保守方針
 
@@ -345,6 +525,7 @@
 | サービス | 用途 |
 |---|---|
 | **Google Sheets** | player_stats・BP計算・イベント履歴のデータバックエンド（CSV公開URL経由）|
+| **Google Sheets（大会予定）** | イベントレポートの次回大会予告。**`player_stats.html` とは別のスプレッドシート**。CSV公開URL経由・5秒タイムアウト・失敗時はフォールバック |
 | **PeerJS v1.5.2** | アプリ間リアルタイム通信 |
 | **OBS** | 配信。score.htmlをブラウザソースとして使用 |
 | **Tonamel** | 事前参加登録・公開イベントページのみ（API連携なし） |
@@ -409,9 +590,13 @@
 | 機能 | 対象ファイル | ステータス |
 |---|---|---|
 | DE: LB未対戦優先落下順 | `tournament_de.html` | 📋 検討中 |
-| 決まり手トラッキング | `tournament.html`, `player_stats.html`, Google Sheets | 🔍 調査中 |
-| 決まり手統計（フィニッシュタイプ別・ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
+| 決まり手トラッキング | `tournament_de.html` | ✅ 実装済（レポートで決まり手分布・記録を集計） |
+| 決まり手統計（フィニッシュタイプ別） | `tournament_de.html` | ✅ 実装済（イベントレポート内。`player_stats.html` 側は未着手のため別行） |
+| 決まり手統計（ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
 | PeerJS URL parameter自動接続（`score.html?peer=1234`） | `score.html` | ✅ 実装済 |
 | PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中 |
 | BX-09 Battle Pass Bluetooth連携 | — | 🔍 Bluefy経由で調査中 |
 | クラブ間リーグ提案 | `showcase.html` | 📋 企画中 |
+| レポート機能の他アプリ展開（`tournament.html` / `souatari.html`） | 各管理アプリ | 📋 検討中 |
+| CXチャートの Base64 → iframe 分離（約552KB削減） | `tournament.html`, `tournament_de.html` | 📋 検討中 |
+| `cx_parts_chart.html` の内容を正とする統合 | `cx_parts_chart.html` | 📋 検討中 |
