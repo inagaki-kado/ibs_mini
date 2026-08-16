@@ -1650,8 +1650,8 @@
         updateRemoteKimariteUI();
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
-                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
-                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
+                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate, fin: match.p1.finCounts || { XF:0, BF:0, OF:0, SF:0 } },
+                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate, fin: match.p2.finCounts || { XF:0, BF:0, OF:0, SF:0 } }
             });
         } else { showAlert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。"); }
         currentRemoteMode = 'score'; switchRemoteTab('score');
@@ -2563,9 +2563,12 @@
         if(cols[0] && cols[0].trim() !== '') {
           let initialPower = parseInt(cols[3]) || 1500; let initialMatches = parseInt(cols[4]) || 0;
           let initialWins = parseInt(cols[5]) || 0; let initialLoses = parseInt(cols[6]) || 0;
+          let finXF = parseInt(cols[7]) || 0, finBF = parseInt(cols[8]) || 0;
+          let finOF = parseInt(cols[9]) || 0, finSF = parseInt(cols[10]) || 0;
           participants.push({ id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+            finCounts: { XF: finXF, BF: finBF, OF: finOF, SF: finSF },
             beyblades: [], color: null, position: null }); count++;
         }
       });
@@ -2578,6 +2581,7 @@
       participants.push({ id: pidCounter++, name, memo1, rank: '--',
           initialStats: { power: 10000, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          finCounts: { XF: 0, BF: 0, OF: 0, SF: 0 },
           beyblades: [], beyChangeUsed: false, beyChangeHistory: [], color: null, position: null });
       renderParticipants();
       void syncToSheets();
