@@ -1353,6 +1353,48 @@ nav {
 .bm-color-3 { color: #cd7f32; }
 .bm-color-default { color: #0ea5e9; }
 
+/* ─── BLADE META SCORE: 個別対戦データ展開パネル ─── */
+.bd-row-clickable { cursor: pointer; touch-action: manipulation; }
+.bd-panel { padding: 0; }
+.bd-inner {
+  background: #0a0e17;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 14px 14px 4px;
+  margin: 8px 0 12px;
+}
+.bd-wr-card { margin-bottom: 14px; }
+.bd-wr-label { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #94a3b8; }
+.bd-wr-num { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 800; color: #e2e8f0; line-height: 1.1; }
+.bd-wr-sub { font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: #94a3b8; }
+.bd-sec-label { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #94a3b8; margin: 14px 0 8px; }
+.bd-fin-block { margin-bottom: 12px; }
+.bd-fin-label { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
+.bd-bar-track { display: flex; }
+.bd-fin-text { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; margin-top: 5px; }
+.bd-fin-tok { color: currentColor; }
+.bd-fin-sep { color: #475569; margin: 0 6px; }
+.bd-build-row { font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: #e2e8f0; padding: 3px 0; }
+.bd-build-name { font-weight: 700; }
+.bd-build-meta { font-size: 12px; color: #64748b; }
+.bd-vs-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #1f2937;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  color: #e2e8f0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.bd-vs-name { margin-right: 3em; white-space: nowrap; }
+.bd-vs-wr { font-family: 'Orbitron', monospace; font-weight: 700; color: #94a3b8; margin-right: 12px; }
+.bd-vs-rec { font-family: 'Orbitron', monospace; font-size: 12px; color: #64748b; }
+.bd-vs-chev { margin-left: auto; color: #475569; transition: transform .15s; }
+.bd-vs-row.is-open .bd-vs-chev { transform: rotate(180deg); }
+.bd-vs-sub { padding: 10px 0 4px; }
+
 /* ─── FINISH TYPE（選手個別のライバル比較カード内） ─── */
 .pft-panel { margin-top: 1rem; background: #0a0e17; border: 1px solid #1f2937; border-radius: 14px; padding: 18px; }
 .pft-title { font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: .18em; color: #e2e8f0; margin-bottom: 12px; font-size: 13px; }
@@ -2282,8 +2324,8 @@ function calcKimariteStat(playerName, stadiumFilter = null) {
 
   const pct = {}, pctRcv = {};
   Object.keys(counts).forEach(k => {
-    pct[k]    = total    > 0 ? Math.round((counts[k]    / total)    * 100) : 0;
-    pctRcv[k] = totalRcv > 0 ? Math.round((countsRcv[k] / totalRcv) * 100) : 0;
+    pct[k]    = total    > 0 ? Math.round((counts[k]    / total)    * 1000) / 10 : 0;
+    pctRcv[k] = totalRcv > 0 ? Math.round((countsRcv[k] / totalRcv) * 1000) / 10 : 0;
   });
 
   return { total, counts, pct, totalRcv, countsRcv, pctRcv };
@@ -2310,7 +2352,7 @@ function calcGlobalKimariteStat(stadiumFilter) {
   if (total === 0) return null;
   const pct = {};
   Object.keys(counts).forEach(function(k) {
-    pct[k] = Math.round((counts[k] / total) * 100);
+    pct[k] = Math.round((counts[k] / total) * 1000) / 10;
   });
   return { total, counts, pct };
 }
@@ -2346,20 +2388,122 @@ function buildBladeMetaRowsHtml(rows) {
   }, 0);
   const nameCol  = nameLen + 'em';
   // 全行で共通の桁揃えのため、最長ブレード名から名前列の幅を動的算出（唯一の意図的なinline style）
-  const gridCols = '36px ' + nameCol + ' 2.4em 1fr';
+  const gridCols = '36px ' + nameCol + ' 3.4em 1fr';
   return rows.map(function(r) {
     const isTop3   = r.rank <= 3;
     const colorCls = isTop3 ? 'bm-color-' + r.rank : 'bm-color-default';
     const rankDisp = isTop3
       ? '<span class="bm-rank-medal">' + MEDAL[r.rank - 1] + '</span>'
       : '<span class="bm-rank-num">' + r.rank + '</span>';
-    return '<div class="bm-row" style="grid-template-columns:' + gridCols + '">'
+    // 個別対戦データ用のキーは fetchBladeBattleStats() と同じ normalizeBladeKey() を通す
+    const bladeKey = normalizeBladeKey(r.blade).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<div class="bm-row bd-row-clickable" style="grid-template-columns:' + gridCols + '"'
+      + ' onclick="toggleBladeDetail(this, \'' + bladeKey + '\')">'
       + '<div class="bm-rank-cell">' + rankDisp + '</div>'
       + '<div class="bm-name-cell ' + (isTop3 ? 'is-top3 ' + colorCls : '') + '">' + escHtml(r.blade) + '</div>'
-      + '<div class="bm-score-cell ' + colorCls + '">' + r.normScore + '</div>'
+      + '<div class="bm-score-cell ' + colorCls + '">' + r.normScore.toFixed(1) + '</div>'
       + '<div class="bm-bar-track"><div class="bm-bar-fill ' + colorCls + '" style="width:' + r.normScore + '%"></div></div>'
-      + '</div>';
+      + '</div>'
+      + '<div class="bd-panel hidden"></div>';
   }).join('');
+}
+
+// 決まり手の横積みバー＋テキスト（取った／取られた 共用）。
+// 既存の .gfr-bar-track / .gfr-bar-fill と fin-XF 等の色クラスを流用する。
+function bdFinishBlock(label, obj) {
+  const keys = Object.keys(FINISH_TYPE_META);
+  const sum  = keys.reduce(function(s, k) { return s + (obj[k] || 0); }, 0);
+  if (sum === 0) return '';
+  const shown = keys.filter(function(k) { return (obj[k] || 0) > 0; });
+  const seg = shown.map(function(k) {
+    return '<div class="gfr-bar-fill ' + finishTypeClass(k) + '" style="width:' + (obj[k] / sum * 100) + '%"></div>';
+  }).join('');
+  const txt = shown.map(function(k) {
+    return '<span class="bd-fin-tok ' + finishTypeClass(k) + '">' + k + ' ' + obj[k] + '</span>';
+  }).join('<span class="bd-fin-sep">・</span>');
+  return '<div class="bd-fin-block">'
+    + '<div class="bd-fin-label">' + label + '</div>'
+    + '<div class="gfr-bar-track bd-bar-track">' + seg + '</div>'
+    + '<div class="bd-fin-text">' + txt + '</div>'
+    + '</div>';
+}
+
+// 個別対戦データ 1ブレード分のパネルHTMLを生成する。
+function buildBladeDetailHtml(stat) {
+  let html = '<div class="bd-inner">';
+
+  // ① 勝率カード
+  html += '<div class="bd-wr-card">'
+    + '<div class="bd-wr-label">勝率</div>'
+    + '<div class="bd-wr-num">' + (stat.winRate * 100).toFixed(1) + '%</div>'
+    + '<div class="bd-wr-sub">' + stat.total + '戦' + stat.wins + '勝 ／ ' + stat.players.size + '人が使用</div>'
+    + '</div>';
+
+  // ②③ 取った／取られた 決まり手
+  html += bdFinishBlock('取った決まり手', stat.taken);
+  html += bdFinishBlock('取られた決まり手', stat.received);
+
+  // ④ 定番構成（採用人数の多い順・最大3件）
+  const builds = Array.from(stat.builds.entries())
+    .sort(function(a, b) { return b[1].players.size - a[1].players.size; })
+    .slice(0, 3);
+  if (builds.length) {
+    html += '<div class="bd-sec-label">定番構成</div>';
+    html += builds.map(function(entry) {
+      const b   = entry[1];
+      const bwr = b.total > 0 ? (b.wins / b.total * 100).toFixed(1) : '0.0';
+      return '<div class="bd-build-row">'
+        + '<span class="bd-build-name">' + escHtml(entry[0]) + '</span>'
+        + '<span class="bd-build-meta">（' + b.players.size + '人採用 ・ 勝率 ' + bwr + '%）</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ⑤ 対ブレード成績（対戦数の多い順・最大10件・二段目アコーディオン）
+  const vs = Array.from(stat.vs.entries())
+    .sort(function(a, b) { return b[1].total - a[1].total; })
+    .slice(0, 10);
+  if (vs.length) {
+    html += '<div class="bd-sec-label">対ブレード成績</div>';
+    html += vs.map(function(entry) {
+      const v   = entry[1];
+      const vwr = v.total > 0 ? (v.wins / v.total * 100).toFixed(1) : '0.0';
+      const sub = bdFinishBlock('取った決まり手', v.taken) + bdFinishBlock('取られた決まり手', v.received);
+      return '<div class="bd-vs-row" onclick="this.classList.toggle(\'is-open\');this.nextElementSibling.classList.toggle(\'hidden\')">'
+        + '<span class="bd-vs-name">vs ' + escHtml(entry[0]) + '</span>'
+        + '<span class="bd-vs-wr">' + vwr + '%</span>'
+        + '<span class="bd-vs-rec">' + v.total + '戦' + v.wins + '勝</span>'
+        + '<span class="bd-vs-chev">▾</span>'
+        + '</div>'
+        + '<div class="bd-vs-sub hidden">' + (sub || '<div class="stat-empty">決まり手データなし</div>') + '</div>';
+    }).join('');
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// BLADE META の行タップ → 直下の .bd-panel を開閉。初回展開時のみ取得＋生成。
+function toggleBladeDetail(rowEl, bladeKey) {
+  const panel = rowEl.nextElementSibling;
+  if (!panel || !panel.classList.contains('bd-panel')) return;
+  const opening = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if (!opening) return;                       // 閉じるだけ
+  if (panel.dataset.loaded === '1') return;   // 生成済みDOMを再利用
+  panel.innerHTML = '<div class="stat-empty">読み込み中...</div>';
+  fetchBladeBattleStats().then(function(stats) {
+    const stat = stats.get(bladeKey);
+    if (!stat || stat.total === 0) {
+      panel.innerHTML = '<div class="stat-empty">個別対戦データがまだありません</div>';
+      panel.dataset.loaded = '1';
+      return;
+    }
+    panel.innerHTML = buildBladeDetailHtml(stat);
+    panel.dataset.loaded = '1';
+  }).catch(function() {
+    panel.innerHTML = '<div class="stat-empty">個別対戦データがまだありません</div>';
+  });
 }
 
 function switchBladeMetaTab(tab) {
@@ -2721,7 +2865,7 @@ async function fetchBladeMetaScore() {
     return sorted.map(([blade, score], i) => ({
       rank: i + 1,
       blade,
-      normScore: Math.round((score / maxScore) * 100),
+      normScore: Math.round((score / maxScore) * 1000) / 10,
     }));
   }
   bladeMetaCache = {
@@ -2776,7 +2920,7 @@ function renderTopStats(players) {
         return '<div class="gfr-row">'
           + '<div class="gfr-key ' + cls + '">' + k + '</div>'
           + '<div class="gfr-count">' + c + '回</div>'
-          + '<div class="gfr-pct">' + p + '%</div>'
+          + '<div class="gfr-pct">' + p.toFixed(1) + '%</div>'
           + '<div class="gfr-bar-track"><div class="gfr-bar-fill ' + cls + '" style="width:' + Math.max(0, Math.min(p, 100)) + '%"></div></div>'
           + '</div>';
       }).join('');
@@ -3175,7 +3319,7 @@ function renderResults(players) {
             <div class="pft-row ${isReceived ? 'is-received' : ''}">
               <div class="pft-key ${cls}">${k}</div>
               <div class="pft-count">${c}回</div>
-              <div class="pft-pct">${p}%</div>
+              <div class="pft-pct">${p.toFixed(1)}%</div>
               <div class="pft-bar-track">
                 <div class="pft-bar-fill ${cls}" style="width:${Math.max(0, Math.min(p, 100))}%"></div>
               </div>
