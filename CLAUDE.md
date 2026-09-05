@@ -128,6 +128,7 @@
 | `player_stats.html` | ブレーダー統計ポータル（Google Sheets連携） | 緑 `#00ff88` |
 | `lottery.html` | 抽選アプリ | — |
 | `spectator.html` | 観客向け表示 | — |
+| `score_sub.html` | `tournament_de_sub.html` 連携用の軽量スコアHUD（iPhone SE / iOS 15 想定。Tailwind・DSEG7・カメラ機能不使用） | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
@@ -230,6 +231,10 @@
 | `SHOW_SCORE_VIEW` | 次戦予告・休憩・オーバーレイを全て非表示にしてスコア画面へ戻す |
 | `BREAK_START` | 休憩中オーバーレイ表示（`p1`/`p2`/`logoDataUrl`/`previewBackground`/`logoSrc`/`showLogo` を含む） |
 | `BREAK_END` | 休憩中オーバーレイ非表示 |
+| `BREAK_RECAP` | 休憩中の振り返り演出データ送信（`BREAK_START` 直後）。フィールド仕様は REFERENCE.md 6章 |
+| `DE_BEY_SELECT` | サブ機(`tournament_de_sub.html`)→親機。ベイ選択を `match.beyP1`/`beyP2` に保存させる |
+| `DE_PREVIEW_REQUEST` | サブ機→親機。📢タップによる次戦予告リクエスト。フロー詳細は REFERENCE.md 7章 |
+| `DE_PREVIEW_PAYLOAD` | 親機→サブ機。`DE_PREVIEW_REQUEST` への応答。サブ機はこれをそのまま `SHOW_PREVIEW` として自分のscore/score_sub接続へ転送する |
 
 - `SHOW_OVERLAY` を送信した場合、モーダルを閉じる時に必ず `HIDE_OVERLAY` も送信すること
 
@@ -276,6 +281,8 @@
 | `tbh_de_report_note` | 編集後記のテキスト |
 | `bayPhoto_{encodeURIComponent(参加者名)}` | ベイ確認写真（`tournament.html` / `tournament_de.html`）。**長辺1280px・JPEG品質0.85に圧縮して保存**（`tournament_de.html` のみ。`tournament.html` は非圧縮） |
 | `tbh_score_match_state` | `score.html` の試合進行スナップショット（**保存から3時間で無効**） |
+| `tbh_score_sub_state` | `score_sub.html` の試合進行スナップショット（**保存から3時間で無効**。`tbh_score_match_state` とは別系統） |
+| `tbh_de_sub_score_links` | `tournament_de_sub.html` が保持する score.html/score_sub.html 接続コード（`{score, sub}`）。次回起動時に自動再接続 |
 
 - **写真・編集後記を `tbh_tournament_de` に混ぜてはならない。** 写真は圧縮後でも300KB前後あり、
   混ぜると localStorage の容量上限に達したとき**大会データごと保存に失敗する**
@@ -388,6 +395,14 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 - `body.pro-mode`: システムボタン全非表示（配信用クリーンモード・`SYS_PRO` でリモート切替）
 - `body.green-mode`: クロマキー背景
 - `body.hud-hidden`: HUD全体を非表示
+
+### 複数接続
+
+- `peer.on('connection')` は単一接続ではなく `activeConns` 配列で複数のPeerJS接続を同時に保持する（上限4本、5本目で最古を切断）
+- 新しい接続が来ても既存接続は切断しない（親機とサブ機を同時接続するため）
+- 接続ステータス（`#link-dot` の `connected` クラス）は「1本以上openなら点灯」
+- `broadcastToConns(msg)` は将来の全接続一斉送信用ヘルパー（現状未使用）
+- 既存の `data.type` ハンドラ群は無変更
 
 ---
 
@@ -645,7 +660,7 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | 決まり手統計（フィニッシュタイプ別） | `tournament_de.html` | ✅ 実装済（イベントレポート内。`player_stats.html` 側は未着手のため別行） |
 | 決まり手統計（ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
 | PeerJS URL parameter自動接続（`score.html?peer=1234`） | `score.html` | ✅ 実装済 |
-| PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中 |
+| PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中（`tournament_de_sub.html`→score.html/score_sub.htmlの SCORE LINK 接続のみ ✅ 実装済。`tbh_de_sub_score_links` に保存したコードで次回起動時に自動再接続。他アプリ・他接続経路は未着手） |
 | BX-09 Battle Pass Bluetooth連携 | — | 🔍 Bluefy経由で調査中 |
 | クラブ間リーグ提案 | `showcase.html` | 📋 企画中 |
 | レポート機能の他アプリ展開（`tournament.html` / `souatari.html`） | 各管理アプリ | 📋 検討中 |

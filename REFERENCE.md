@@ -263,12 +263,18 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7
 |---|---|---|
 | 0 | GF / GF RESET **かつ** 関係性あり | 親子で挑むグランドファイナル！ |
 | 1 | 関係性あり（📋名簿 O〜T列） | 血を分けた親子対決！ |
-| 2 | label に `FINAL`/`決勝` → `LOSER`/`敗者` | 栄冠を懸けた決勝戦！ |
+| 2 | label に `GRAND FINAL`/`GF RESET`/`WB FINAL`/`LB FINAL`/`3RD PLACE` | 栄冠を懸けた決勝戦！ |
 | 3 | H2H（両者1勝以上 → 一方のみ） | 宿命のライバル対決！ |
 | 4 | 戦績（頂上 → ジャイキリ → 伯仲） | 魅せろ、ジャイアントキリング！ |
 | 5 | 上記いずれも該当せず（最終手段） | 予測不能の初顔合わせ！ |
 
-- 各カテゴリは**前半5×後半5＝25通り**を `cpCombine()` でランダム合成。直前と同一なら1回引き直す
+> ⚠️ **LOSER/敗者専用の汎用分岐（優先2の一部だった）は撤去済み。** LB戦のうち LB FINAL 以外
+> （通常のLBラウンド）は WB と全く同じ優先3(H2H)→優先4(戦績)→優先5(初対戦)のチェーンを通る。
+> 「サバイバル」「敗者復活」「背水」「崖っぷち」「生き残り」等の敗者専用語は、
+> LB FINAL 以外のプールに追加しないこと（敗者戦の煽りが単調化していた原因のため）。
+
+- 各カテゴリは**heads×tailsの組み合わせ**を `cpCombine()` でランダム合成（`cpFromRelation` は各8種以上、他は各12種以上）。
+  直近8件のリングバッファと重複する場合は最大5回まで引き直す（`_catchphraseHistory`）
 - ランク帯: `cpRankTier()` が `01-39F`/`40-59F`/`60-79F`/`80-89F`/`90-99F`/`XF` の 0〜5 を返す。
   `"--"` や未登録は `null` → **優先4をスキップして優先5へ**
 - 頂上 = 両者80F以上 or 両者勝率60%以上 / ジャイキリ = 帯2段差以上 or BP差3000以上 / 伯仲 = それ以外
@@ -276,4 +282,90 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vR9shabC3eGCdRrP2oc-Rd-xrnsMR9n7
   すべてそこで確定し、優先4（戦績）に永久に到達しなくなる
 - 表示: `score.html` の `#nb-catchphrase`（`.nb-catchphrase` / 黄 `#facc15` + ネオングロー）。
   空文字なら `display:none`。旧 `NEXT_BATTLE_CALL` は引数省略で空文字となり非表示
-- 文言は**全角17文字以内**に収める（iPhone横向きで1行 `nowrap` に収まる上限）
+- 文言は**全角17文字以内**に収める（iPhone横向きで1行 `nowrap` に収まる上限）。
+  `[...str].length <= 17` で判定（コードポイント単位。半角英数も1文字としてカウント）
+
+---
+
+## 6. BREAK_RECAP 送信データ仕様
+
+`tournament_de.html` の `sendBreakStart()` / `sendBreakStartWithNext()` から `BREAK_START` の直後に送信。
+`score.html` の `startBreakRecap(items, intervalMs)` が受信し、休憩オーバーレイ内でランダム順に自動切替表示する。
+
+| フィールド | 型 | 内容 |
+|---|---|---|
+| `items` | array | 下記オブジェクトの配列。確定済み試合を新しい順（`updatedAt`降順）に最大50件 |
+| `intervalMs` | number | 切替間隔（ミリ秒）。既定8000 |
+
+`items[]` の各要素:
+
+| フィールド | 型 | 内容 |
+|---|---|---|
+| `label` | string | `"LOSERS - LB R3"` 形式（`buildBreakRecapData()` 内で組み立て） |
+| `p1` / `p2` | string | 選手名 |
+| `score1` / `score2` | number \| null | 生スコア（p1-p2順）。`match.score` が未記録の場合は `null`（受信側は欄ごと非表示にする。"0-0"と誤読させないため） |
+| `winnerIs` | number | `1` または `2` |
+| `kimarite` | string \| null | 各バトルの決まり手を再生順にカンマ連結（例 `'XF,SF,OF,SF'`）。バトル記録が無ければ `null` |
+| `comment` | string \| null | 試合後コメント（`match.comment` をそのまま使用。新規fetchはしない） |
+
+- 休憩中に通信待ちを起こさないよう、Google Sheetsへの新規fetchは行わない
+- 受信側は直近8件の履歴とは別に、**直前に表示した1件と連続しない**シャッフルバッグ方式で表示順を決める（`breakRecapBag`）。全件を一巡するまで再表示しない
+- `BREAK_END` / `SHOW_SCORE_VIEW` / `HIDE_PREVIEW`（防御的）/ 新しい `BREAK_START` の受信で必ず `setInterval`・進行中のフェード`setTimeout`の両方を解放すること（`stopBreakRecap()`）
+
+---
+
+## 7. DE_PREVIEW_REQUEST / DE_PREVIEW_PAYLOAD フロー
+
+`tournament_de_sub.html`（LB SUB子機）のブラケットカードから📢をタップした際の次戦予告フロー。
+**キャッチフレーズ等の判定ロジックは `tournament_de.html`（親機）側で完結させ、子機側に複製しない**
+（SHOW_PREVIEW/catchphraseの原則と同じ。2ファイル同期の事故を防ぐため）。
+
+```
+子機 tournament_de_sub.html          親機 tournament_de.html
+  │  📢タップ                              │
+  │  DE_PREVIEW_REQUEST ──────────────────▶│ handleDePreviewRequest()
+  │  { bracket, roundIdx, matchIdx }       │  ・getDeRoundLabel() で label 生成
+  │                                        │  ・loadH2HHistory() / loadRosterRelations()
+  │                                        │    （キャッシュ済みなら即時。無ければ最大5秒）
+  │                                        │  ・buildNextBattleCatchphrase() で catchphrase 生成
+  │                                        │  ・親機自身の score.html 接続へ SHOW_PREVIEW を送信
+  │  DE_PREVIEW_PAYLOAD ◀──────────────────┤  ・要求元の子機へ payload を返す
+  │  { payload: {...SHOW_PREVIEW中身...} } │
+  │                                        │
+  │  payload をそのまま                    │
+  │  { type:'SHOW_PREVIEW', ...payload }   │
+  │  として自分のscore/score_sub接続へ転送 │
+```
+
+- トグル動作: 同じ試合の📢を再度タップしたら、子機はローカルの `subActiveNextBattleId` で判定し、
+  親機への往復なしで自分のscore/score_sub接続へ直接 `HIDE_PREVIEW` を送る
+- `DE_PREVIEW_REQUEST` は WB/LB/LB3位決定戦/GF/GF RESET のいずれの `bracket` 値でも送信されうる
+  （子機のWINNERSタブはGRAND FINAL/GF RESETカードも表示するため）
+
+---
+
+## 8. score.html 複数接続について
+
+`score.html` は `peer.on('connection')` で複数のPeerJS接続を同時に保持する（`activeConns` 配列、上限4本）。
+新しい接続が来ても既存接続は切断しない。5本目が来たら最も古い接続を閉じる。
+接続ステータス（`#link-dot` の `connected` クラス）は「1本以上openなら点灯」。
+`broadcastToConns(msg)` は将来の全接続一斉送信用ヘルパー（現状未使用）。既存の `data.type` ハンドラは無変更。
+
+---
+
+## 9. LB再計算（recomputeLosersAndFinals）とベイ/決まり手データの保持
+
+`tournament_de.html` の `recomputeLosersAndFinals()` は、WB側の結果変更等でLBの組み合わせが
+変わりうるたびに（実際には `setWinner()` → `updateAdvancementsDE()` 経由でほぼ全ての結果確定時に）
+LB全体を一旦ワイプして再ルーティングする。内部の `restoreLbSaved()` が、再ルーティング後の
+各枠に「wipe前と同じ2選手が入っているか」を `rosterPairKey()`（参加者IDベース、名前やオブジェクト
+参照ではない）で判定し、一致する枠にだけ `kimarite` / `comment` / `p1BeyUsed` / `p2BeyUsed` /
+`beyP1` / `beyP2` / `battles` を復元する。
+
+> ⚠️ **`restoreLbSaved()` の復元判定は `rosterPairKey` の一致のみで行うこと。**
+> `s.winner !== null` を条件に加えると、進行中（`winner` がまだ `null`）の試合が
+> 「保存済みの決着が無い」と誤判定されて else 分岐（クリア側）に落ち、
+> 進行中の `battles` やベイ選択（`p1BeyUsed`/`beyP1`等）が丸ごと消える。
+> サブ機での並行進行（P7）により、決着前のLB試合が存在する状態で
+> 他の試合が確定してこの関数が呼ばれる経路は日常的に起こりうるため、
+> 条件式に `s.winner` を混ぜないこと。

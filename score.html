@@ -451,7 +451,56 @@
           background: rgba(10,14,23,0.55);
           border-radius: 8px;
         }
-        
+        #break-sub.hidden { display: none !important; }
+
+        /* 休憩中の振り返り演出（BREAK_RECAP） */
+        #break-recap {
+          position: relative; z-index: 2;
+          display: flex; flex-direction: column; align-items: center;
+          gap: clamp(2px, 0.6vw, 6px);
+          max-width: min(90vw, 700px);
+          padding: clamp(8px, 1.4vw, 16px) clamp(14px, 2.5vw, 28px);
+          background: rgba(10,14,23,0.55);
+          border-radius: 8px;
+          opacity: 0;
+          transition: opacity 0.4s ease;
+        }
+        #break-recap.visible { opacity: 1; }
+        #break-recap.hidden { display: none !important; }
+        #break-recap-label {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(9px, 1.3vw, 14px);
+          font-weight: 700; color: #ffaa00;
+          letter-spacing: 0.15em; text-transform: uppercase;
+        }
+        #break-recap-match {
+          display: flex; align-items: baseline; gap: clamp(6px, 1.5vw, 16px);
+          font-family: 'Orbitron', sans-serif; font-weight: 900;
+        }
+        .break-recap-name {
+          font-size: clamp(14px, 2.6vw, 30px); color: #e2e8f0;
+          max-width: 32vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .break-recap-name.winner { color: #22c55e; }
+        #break-recap-score {
+          font-size: clamp(18px, 3.2vw, 38px); color: #fff;
+        }
+        #break-recap-score.hidden { display: none !important; }
+        #break-recap-kimarite {
+          font-family: 'Orbitron', sans-serif;
+          font-size: clamp(8px, 1.1vw, 12px); color: #94a3b8;
+          letter-spacing: 0.08em;
+        }
+        #break-recap-kimarite.hidden { display: none !important; }
+        #break-recap-comment {
+          font-family: 'Noto Sans JP', sans-serif;
+          font-size: clamp(11px, 1.6vw, 16px); color: #cbd5e1;
+          text-align: center; line-height: 1.5;
+          display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+          overflow: hidden; max-width: 60vw;
+        }
+        #break-recap-comment.hidden { display: none !important; }
+
         /* 次戦バー（最下段） */
         #break-next-bar {
           position: absolute; bottom: 0; left: 0; right: 0;
@@ -524,6 +573,8 @@
             .nb-member-fit { font-size:14px !important; }
             .nb-stats-line { font-size: clamp(11px, 2.6vw, 18px) !important; }
             .nb-vs { font-size:clamp(26px,5vw,60px) !important; }
+            /* BREAK_RECAP表示中はコメントを2行までに縮める（#break-subの表示切替はJS側、:has()は使わない） */
+            #break-recap-comment { -webkit-line-clamp: 2 !important; }
         }
 
         /* ベイブレード名の個別表示枠（画面最下部、左右端） */
@@ -558,6 +609,18 @@
             border-color: #ec4899;
             box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
         }
+
+        /* 決まり手データ(fin-group)とベイ名表示枠(beyblade-box)の重なり対策。
+           狭幅・低高さ端末ではfin-groupを縮小して縦方向の占有を減らす。 */
+        @media (max-width: 700px), (max-height: 500px) {
+            .player-stats-block { width: clamp(48px, 9vw, 90px); gap: 1px; }
+            .fin-group { gap: 0px; margin-top: 2px; }
+            .fin-item { padding: 0 3px; }
+            .fin-label { font-size: clamp(4px, 0.7vw, 7px); }
+            .fin-val { font-size: clamp(7px, 1.1vw, 10px); }
+        }
+        /* 上記の縮小でも重なる狭幅端末向けフォールバック：ベイ名表示中はfin-groupを排他的に隠す（JSで付与） */
+        .fin-group.fin-hidden-for-bey { display: none !important; }
     </style>
 </head>
 <body>
@@ -582,6 +645,17 @@
         <div id="break-sub">
           大会の進行を一時休止しています<br>
           再開までしばらくお待ちください
+        </div>
+        <!-- 休憩中の振り返り演出（BREAK_RECAP受信で表示） -->
+        <div id="break-recap" class="hidden">
+          <div id="break-recap-label"></div>
+          <div id="break-recap-match">
+            <span id="break-recap-p1" class="break-recap-name"></span>
+            <span id="break-recap-score"></span>
+            <span id="break-recap-p2" class="break-recap-name"></span>
+          </div>
+          <div id="break-recap-kimarite" class="hidden"></div>
+          <div id="break-recap-comment" class="hidden"></div>
         </div>
       </div>
       <!-- 次戦バー（最下段） -->
@@ -1815,8 +1889,21 @@
         const linkCode = (_peerParam && /^\d{4}$/.test(_peerParam)) ? _peerParam : '0511';
         const peerId = 'itabashi-link-' + linkCode;
         let peer = new Peer(peerId);
-        let activeConn = null;
-        
+        // 複数接続許可（親機+サブ機を同時接続するため。P5でactiveConn単数から配列化）
+        let activeConns = [];
+        const MAX_ACTIVE_CONNS = 4;
+
+        function updateLinkStatus() {
+            const dot = document.getElementById('link-dot');
+            if (!dot) return;
+            dot.classList.toggle('connected', activeConns.some(c => c.open));
+        }
+
+        // 将来の拡張用：全接続へブロードキャスト送信するヘルパー（現状は未使用）
+        function broadcastToConns(msg) {
+            activeConns.forEach(c => { if (c.open) c.send(msg); });
+        }
+
         function initPeer() {
             peer.on('open', (id) => {
                 document.getElementById('link-text').innerText = "LINK CODE: " + linkCode;
@@ -1824,10 +1911,14 @@
             });
 
             peer.on('connection', (conn) => {
-                if (activeConn && activeConn.open) { activeConn.close(); }
-                activeConn = conn;
-                document.getElementById('link-dot').classList.add('connected');
-                
+                if (activeConns.length >= MAX_ACTIVE_CONNS) {
+                    const oldest = activeConns.shift();
+                    if (oldest && oldest.open) oldest.close();
+                }
+                activeConns.push(conn);
+                updateLinkStatus();
+                conn.on('open', updateLinkStatus); // conn.openはこの時点ではまだfalseのことがあるため
+
                 conn.on('data', (data) => {
                     if (data.type === 'REMOTE_CMD') {
                         executeCommand(data.cmd);
@@ -1850,12 +1941,14 @@
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
                         hideNextBattle();
+                        stopBreakRecap();
                     }
                     else if (data.type === 'SHOW_SCORE_VIEW') {
                         hideNextBattle();
                         if (isReplayMode) stopReplay();
                         const breakOv = document.getElementById('break-overlay');
                         if (breakOv) breakOv.classList.add('hidden');
+                        stopBreakRecap();
                         const contentOv = document.getElementById('remote-content-overlay');
                         if (contentOv && !contentOv.classList.contains('hidden')) {
                             contentOv.classList.add('hidden');
@@ -1891,6 +1984,9 @@
                     }
                     else if (data.type === 'BREAK_END') {
                         hideBreakOverlay();
+                    }
+                    else if (data.type === 'BREAK_RECAP') {
+                        startBreakRecap(data.items, data.intervalMs);
                     }
                     else if (data.type === 'SET_MATCH') {
                         document.getElementById('name1').value = data.p1;
@@ -1964,10 +2060,14 @@
                 });
                 
                 conn.on('close', () => {
-                    if (activeConn === conn) {
-                        document.getElementById('link-dot').classList.remove('connected');
-                        activeConn = null;
-                    }
+                    activeConns = activeConns.filter(c => c !== conn);
+                    updateLinkStatus();
+                });
+
+                conn.on('error', (err) => {
+                    console.error('PeerJS conn error:', err);
+                    activeConns = activeConns.filter(c => c !== conn);
+                    updateLinkStatus();
                 });
             });
 
@@ -2168,6 +2268,7 @@
             }
 
             overlay.classList.remove('hidden');
+            stopBreakRecap();
         }
 
         function hideBreakOverlay() {
@@ -2177,6 +2278,103 @@
             const logo = document.getElementById('break-bg-logo');
             logo.src = '';
             logo.style.display = 'none';
+            stopBreakRecap();
+        }
+
+        // ==========================================
+        // 休憩中の振り返り演出（BREAK_RECAP）
+        // ==========================================
+        let breakRecapItems = [];
+        let breakRecapBag = [];
+        let breakRecapLastItem = null;
+        let breakRecapTimerId = null;
+        let breakRecapFadeTimeoutId = null;
+
+        function _breakRecapRefillBag() {
+            breakRecapBag = breakRecapItems.map((_, i) => i);
+            for (let i = breakRecapBag.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = breakRecapBag[i]; breakRecapBag[i] = breakRecapBag[j]; breakRecapBag[j] = tmp;
+            }
+        }
+
+        function startBreakRecap(items, intervalMs) {
+            stopBreakRecap();
+            if (!Array.isArray(items) || items.length === 0) return;
+            breakRecapItems = items;
+            _breakRecapRefillBag();
+            // 低い高さ(iPhone横向き等)では#break-subと#break-next-barの間で縦方向に詰まるため、
+            // 振り返り表示中は#break-subを一時的に隠して縦の占有を減らす
+            if (window.matchMedia('(max-height: 500px)').matches) {
+                const sub = document.getElementById('break-sub');
+                if (sub) sub.classList.add('hidden');
+            }
+            showNextBreakRecapItem();
+            breakRecapTimerId = setInterval(showNextBreakRecapItem, intervalMs || 8000);
+        }
+
+        function stopBreakRecap() {
+            if (breakRecapTimerId) { clearInterval(breakRecapTimerId); breakRecapTimerId = null; }
+            if (breakRecapFadeTimeoutId) { clearTimeout(breakRecapFadeTimeoutId); breakRecapFadeTimeoutId = null; }
+            const el = document.getElementById('break-recap');
+            if (el) { el.classList.remove('visible'); el.classList.add('hidden'); }
+            const sub = document.getElementById('break-sub');
+            if (sub) sub.classList.remove('hidden');
+            breakRecapItems = [];
+            breakRecapBag = [];
+            breakRecapLastItem = null;
+        }
+
+        function showNextBreakRecapItem() {
+            if (!breakRecapItems.length) return;
+            let item;
+            if (breakRecapItems.length === 1) {
+                item = breakRecapItems[0];
+            } else {
+                if (breakRecapBag.length === 0) _breakRecapRefillBag();
+                let idx = breakRecapBag.pop();
+                // 直前と同じ試合は連続で出さない
+                if (breakRecapItems[idx] === breakRecapLastItem && breakRecapBag.length > 0) {
+                    const swapIdx = breakRecapBag.pop();
+                    breakRecapBag.push(idx);
+                    idx = swapIdx;
+                }
+                item = breakRecapItems[idx];
+            }
+            breakRecapLastItem = item;
+            renderBreakRecapItem(item);
+        }
+
+        function renderBreakRecapItem(item) {
+            const el = document.getElementById('break-recap');
+            if (!el) return;
+            const apply = () => {
+                document.getElementById('break-recap-label').textContent = item.label || '';
+                const p1El = document.getElementById('break-recap-p1');
+                const p2El = document.getElementById('break-recap-p2');
+                p1El.textContent = (item.winnerIs === 1 ? '▲ ' : '') + (item.p1 || '');
+                p2El.textContent = (item.winnerIs === 2 ? '▲ ' : '') + (item.p2 || '');
+                p1El.classList.toggle('winner', item.winnerIs === 1);
+                p2El.classList.toggle('winner', item.winnerIs === 2);
+                const scoreEl = document.getElementById('break-recap-score');
+                const hasScore = Number.isFinite(item.score1) && Number.isFinite(item.score2);
+                if (hasScore) { scoreEl.textContent = `${item.score1} - ${item.score2}`; scoreEl.classList.remove('hidden'); }
+                else { scoreEl.classList.add('hidden'); }
+                const kimariteEl = document.getElementById('break-recap-kimarite');
+                if (item.kimarite) { kimariteEl.textContent = item.kimarite; kimariteEl.classList.remove('hidden'); }
+                else { kimariteEl.classList.add('hidden'); }
+                const commentEl = document.getElementById('break-recap-comment');
+                if (item.comment) { commentEl.textContent = item.comment; commentEl.classList.remove('hidden'); }
+                else { commentEl.classList.add('hidden'); }
+                el.classList.remove('hidden');
+                requestAnimationFrame(() => el.classList.add('visible'));
+            };
+            if (el.classList.contains('hidden')) {
+                apply();
+            } else {
+                el.classList.remove('visible');
+                breakRecapFadeTimeoutId = setTimeout(() => { breakRecapFadeTimeoutId = null; apply(); }, 400);
+            }
         }
 
         // ==========================================
@@ -2218,7 +2416,7 @@
          */
         function updateBeybladeBar(playerNum, beybladeName) {
             const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
-            
+
             // 個別枠の更新
             if (boxEl) {
                 if (beybladeName) {
@@ -2229,9 +2427,24 @@
                     boxEl.style.display = 'none';
                 }
             }
-            
+            updateFinGroupOverlapState();
+
             console.log(`✅ P${playerNum}のベイ名更新: ${beybladeName}`);
         }
+
+        // 決まり手データ(fin-group)とベイ名表示枠の重なり対策フォールバック。
+        // CSSでの縮小だけでは狭幅端末で重なりが残る場合に、ベイ名表示中のfin-groupを排他的に隠す。
+        // getBoundingClientRect()の常時ポーリングは行わず、ベイ名変更時とresize/orientationchange時のみ判定する。
+        const KIMARITE_BEY_OVERLAP_MAX_WIDTH = 700;
+        function updateFinGroupOverlapState() {
+            const narrow = window.innerWidth <= KIMARITE_BEY_OVERLAP_MAX_WIDTH;
+            const p1Fin = document.getElementById('p1-fin-group');
+            const p2Fin = document.getElementById('p2-fin-group');
+            if (p1Fin) p1Fin.classList.toggle('fin-hidden-for-bey', narrow && !!beybladeP1);
+            if (p2Fin) p2Fin.classList.toggle('fin-hidden-for-bey', narrow && !!beybladeP2);
+        }
+        window.addEventListener('resize', updateFinGroupOverlapState);
+        window.addEventListener('orientationchange', updateFinGroupOverlapState);
 
         /**
          * ベイブレード名をクリア

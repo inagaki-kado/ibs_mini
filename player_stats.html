@@ -1680,6 +1680,14 @@ const RANGE_BEY       = encodeURIComponent('🌀 ベイ集計!A2:F');
 const RANGE_HISTORY  = encodeURIComponent("'⚔️ 対戦入力'!A3:R");
 const RANGE_TOURNEY  = encodeURIComponent("'📅 大会マスター'!A2:H");
 const RANGE_BEY_HIST = encodeURIComponent("'🌀 ベイ使用履歴'!A2:E");
+// 個別対戦シート（バトル単位。1行＝1本）gid=631415019
+// A=記録日時(0), B=大会名(1), C=ラウンド(2), D=試合No(3), E=本目(4)
+// F=P1選手名(5), G=P1タイプ(6), H=P1ロックチップ(7), I=P1ブレード(8),
+// J=P1オーバーブレード(9), K=P1アシストブレード(10), L=P1ラチェット(11), M=P1ビット(12)
+// N=P2選手名(13), O=P2タイプ(14), P=P2ロックチップ(15), Q=P2ブレード(16),
+// R=P2オーバーブレード(17), S=P2アシストブレード(18), T=P2ラチェット(19), U=P2ビット(20)
+// V=取得サイド(21), W=決まり手(22), X=獲得pt(23), Y=P1累計(24), Z=P2累計(25), AA=マッチ勝者(26)
+const RANGE_BATTLES  = encodeURIComponent("'個別対戦'!A2:AA");
 const RANGE_TEAM     = encodeURIComponent("'🤝 チーム戦入力'!A3:P");
 
 // ⚠️ 暫定フォールバック専用（/api/get-stats バックエンド実装後に丸ごと削除すること）
@@ -1713,6 +1721,7 @@ let tournamentStatsByPlayer = null; // { 選手名: { [key]: { matches, wins } }
 let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isWin, kimarite, kimarite_received, scoreOwn, scoreOpp, comment }] }
 let tStadiumMap = null; // { 大会名: 'extreme'|'infinity' } チーム戦スタジアム参照用
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
+let bladeBattleCache = null; // fetchBladeBattleStats() の結果キャッシュ
 let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
 let activeBpCharts = []; // 検索結果カードごとのBP推移Chart.jsインスタンス（再描画前に必ずdestroy()する）
 // ─── TOWER SETUP ──────────────────────────────────────────
@@ -2484,19 +2493,127 @@ function buildBpGraph(playerName, cardEl) {
   });
 }
 
+// ── ブレード名の正規化（CX系「エンペラー」除去・カタカナ揺れ統一）──
+// fetchBladeMetaScore() と fetchBladeBattleStats() で共有するためモジュールスコープに配置。
+function normalizeBladeKey(raw) {
+  if (!raw) return '';
+  let s = raw.trim();
+  s = s.replace(/^エンペラー/, '');
+  s = s.replace(/ウィ/g, 'ウイ').replace(/ヴィ/g, 'ヴイ');
+  return s;
+}
+
+/**
+ * 「個別対戦」シート（1行＝1本のバトル）を集計し、ブレード単位の実戦データを返す。
+ * 取得失敗時は空の Map を返し、例外は投げない（BLADE META 本体を巻き込まない）。
+ * @returns {Promise<Map<string, {
+ *   wins:number, total:number, winRate:number, players:Set<string>,
+ *   taken:{XF:number,BF:number,OF:number,SF:number},
+ *   received:{XF:number,BF:number,OF:number,SF:number},
+ *   builds:Map<string,{players:Set<string>,wins:number,total:number}>,
+ *   vs:Map<string,{wins:number,total:number,taken:object,received:object}>
+ * }>>}
+ */
+async function fetchBladeBattleStats() {
+  if (bladeBattleCache) return bladeBattleCache;
+
+  const FIN_SET = new Set(['XF', 'BF', 'OF', 'SF']);
+  const map = new Map();
+  const blankFin = function() { return { XF: 0, BF: 0, OF: 0, SF: 0 }; };
+
+  function getEntry(key) {
+    let e = map.get(key);
+    if (!e) {
+      e = { wins: 0, total: 0, winRate: 0, players: new Set(),
+            taken: blankFin(), received: blankFin(),
+            builds: new Map(), vs: new Map() };
+      map.set(key, e);
+    }
+    return e;
+  }
+
+  // 構成キーはタイプ別。ロックチップは含めない（CXではチップ違いでブレード行自体が別になる）。
+  function buildKey(type, over, assist, ratchet, bit) {
+    const ty = (type || '').trim().toUpperCase();
+    let parts;
+    if (ty === 'CX(EX)')  parts = [over, assist, ratchet, bit];
+    else if (ty === 'CX') parts = [assist, ratchet, bit];
+    else                  parts = [ratchet, bit];
+    parts = parts.map(function(p) { return (p || '').trim(); });
+    if (parts.some(function(p) { return !p; })) return '';
+    return parts.join(' ／ ');
+  }
+
+  // self / opp は {name,type,over,assist,ratchet,bit,blade} 形式
+  function register(self, opp, selfTook, oppTook, fin) {
+    const key = normalizeBladeKey(self.blade);
+    if (!key) return;
+    const e = getEntry(key);
+    e.total++;
+    if (self.name) e.players.add(self.name);
+    if (selfTook) { e.wins++; e.taken[fin]++; }
+    if (oppTook)  { e.received[fin]++; }
+
+    const bKey = buildKey(self.type, self.over, self.assist, self.ratchet, self.bit);
+    if (bKey) {
+      let b = e.builds.get(bKey);
+      if (!b) { b = { players: new Set(), wins: 0, total: 0 }; e.builds.set(bKey, b); }
+      b.total++;
+      if (self.name) b.players.add(self.name);
+      if (selfTook) b.wins++;
+    }
+
+    const vsKey = normalizeBladeKey(opp.blade);
+    if (vsKey) {
+      let v = e.vs.get(vsKey);
+      if (!v) { v = { wins: 0, total: 0, taken: blankFin(), received: blankFin() }; e.vs.set(vsKey, v); }
+      v.total++;
+      if (selfTook) { v.wins++; v.taken[fin]++; }
+      if (oppTook)  { v.received[fin]++; }
+    }
+  }
+
+  let rows;
+  try {
+    const json = await fetchStatsRange('battles', RANGE_BATTLES).then(function(r) { return r.json(); });
+    rows = json.values || [];
+  } catch (e) {
+    bladeBattleCache = map;
+    return bladeBattleCache;
+  }
+
+  rows.forEach(function(r) {
+    const fin = (r[22] || '').trim().toUpperCase();
+    if (!FIN_SET.has(fin)) return;
+    const side = (r[21] || '').trim().toUpperCase();
+    const p1Took = side === 'P1' || side === '1';
+    const p2Took = side === 'P2' || side === '2';
+    if (!p1Took && !p2Took) return;
+
+    const p1 = { name: (r[5]  || '').trim(), type: (r[6]  || '').trim(),
+                 over: (r[9]  || '').trim(), assist: (r[10] || '').trim(),
+                 ratchet: (r[11] || '').trim(), bit: (r[12] || '').trim(), blade: (r[8]  || '').trim() };
+    const p2 = { name: (r[13] || '').trim(), type: (r[14] || '').trim(),
+                 over: (r[17] || '').trim(), assist: (r[18] || '').trim(),
+                 ratchet: (r[19] || '').trim(), bit: (r[20] || '').trim(), blade: (r[16] || '').trim() };
+
+    register(p1, p2, p1Took, p2Took, fin);
+    register(p2, p1, p2Took, p1Took, fin);
+  });
+
+  map.forEach(function(e) {
+    e.winRate = e.total > 0 ? e.wins / e.total : 0;
+  });
+
+  bladeBattleCache = map;
+  return bladeBattleCache;
+}
+
 async function fetchBladeMetaScore() {
   if (bladeMetaCache) return bladeMetaCache;
 
   const RANK_COEF    = { '優勝': 6, '準優勝': 4, '3位': 2, '4位': 1 };
   const TARGET_TYPES = new Set(['BX', 'UX', 'CX', 'MB']);
-
-  function normalizeBladeKey(raw) {
-    if (!raw) return '';
-    let s = raw.trim();
-    s = s.replace(/^エンペラー/, '');
-    s = s.replace(/ウィ/g, 'ウイ').replace(/ヴィ/g, 'ヴイ');
-    return s;
-  }
 
   // ── parts.csv を動的取得してブレードセットを構築（キャッシュ）──
   if (!validBladesCache) {

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ベイ会 SCORE SUB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #0a0e17; color: #e2e8f0;
+    font-family: 'Noto Sans JP', sans-serif;
+    overflow: hidden;
+    user-select: none; -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  .hidden { display: none !important; }
+
+  /* 接続状態バー（画面上部・小さく） */
+  #link-bar {
+    position: fixed; top: 6px; left: 6px; z-index: 500;
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 3px 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(8px, 1.6vw, 11px);
+    color: #94a3b8;
+  }
+  #link-dot { width: 7px; height: 7px; border-radius: 50%; background: #64748b; flex-shrink: 0; }
+  #link-dot.connected { background: #22c55e; }
+
+  /* メインスコア画面 */
+  #main-view {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: space-evenly;
+  }
+  .player-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; padding: 0 6px; }
+  .p-name {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(13px, 4vw, 30px);
+    color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 92vw;
+    text-shadow: 1px 1px 0 #000;
+  }
+  .p1-col .p-name { text-shadow: 0 0 10px rgba(14,165,233,0.7), 1px 1px 0 #000; }
+  .p2-col .p-name { text-shadow: 0 0 10px rgba(236,72,153,0.7), 1px 1px 0 #000; }
+  .score-num {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: min(42vw, 62vh);
+    line-height: 1; color: #fff; text-shadow: 2px 2px 0 #000;
+  }
+  .bey-name {
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+    font-size: clamp(9px, 2.2vw, 15px);
+    color: #94a3b8; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85vw;
+  }
+  .vs-sep {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
+    font-size: clamp(14px, 3vw, 26px); color: #facc15; flex-shrink: 0; padding: 0 6px;
+  }
+  @media (orientation: portrait) {
+    #main-view { flex-direction: column; }
+    .score-num { font-size: min(58vw, 24vh); }
+    .vs-sep { padding: 2px 0; }
+  }
+
+  /* 勝利表示 */
+  #win-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10,14,23,0.92);
+  }
+  #win-text {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(24px, 9vw, 84px); color: #fff; text-align: center;
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 22px rgba(251,191,36,0.9), 0 0 55px rgba(251,191,36,0.5), 2px 2px 0 #000;
+  }
+
+  /* 試合後コメント（勝利表示中も上に重ねて見せるため単独のfixed要素） */
+  #comment-box {
+    position: fixed; top: 68%; left: 50%; transform: translate(-50%, 0);
+    z-index: 210; max-width: 82vw;
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+    font-size: clamp(11px, 2.4vw, 20px); color: #e2e8f0; text-align: center; line-height: 1.5;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
+    background: rgba(10,14,23,0.55); border-radius: 8px; padding: 6px 14px;
+  }
+
+  /* 次戦予告 */
+  #preview-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: #0a0e17;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(6px, 1.6vw, 16px);
+  }
+  #preview-label {
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(11px, 2vw, 16px); color: #64748b; letter-spacing: 0.2em;
+  }
+  #preview-catchphrase {
+    font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
+    font-size: clamp(14px, 3.4vw, 34px); color: #facc15; text-align: center; max-width: 90vw;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-shadow: 0 0 14px rgba(250,204,21,0.85), 0 2px 4px rgba(0,0,0,0.8);
+  }
+  #preview-vs { display: flex; align-items: center; gap: clamp(10px, 3vw, 30px); }
+  .preview-player-col { display: flex; flex-direction: column; align-items: center; max-width: 38vw; }
+  #preview-p1, #preview-p2 {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(20px, 6vw, 60px); color: #fff; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preview-stats {
+    font-family: 'Orbitron', sans-serif; font-weight: 700;
+    font-size: clamp(9px, 1.8vw, 15px); color: #38bdf8; margin-top: 4px; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preview-vs-mark {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
+    font-size: clamp(16px, 4vw, 40px); color: #facc15;
+  }
+
+  /* 休憩中 */
+  #break-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: #0a0e17;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #break-title {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(28px, 8vw, 80px); color: #fff; letter-spacing: 0.1em;
+    text-shadow: 0 0 20px rgba(251,191,36,0.9), 0 0 55px rgba(251,191,36,0.5), 2px 2px 0 #000;
+  }
+
+  /* CALL演出（READY SET〜SHOOT!!） */
+  #call-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #call-text {
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(30px, 12vw, 130px); color: #facc15; letter-spacing: 0.05em;
+    text-shadow: 0 0 24px rgba(250,204,21,0.9);
+  }
+
+  #btn-reload {
+    position: fixed; right: 8px; bottom: 8px; z-index: 500;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); border: 1px solid #334155; color: #e2e8f0;
+    font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+  }
+</style>
+</head>
+<body>
+
+  <div id="link-bar">
+    <span id="link-dot"></span>
+    <span id="link-text">CONNECTING...</span>
+  </div>
+
+  <div id="main-view">
+    <div class="player-col p1-col">
+      <div class="p-name" id="name1">BLADER 1</div>
+      <div class="score-num" id="score1">0</div>
+      <div class="bey-name" id="bey1"></div>
+    </div>
+    <div class="vs-sep">VS</div>
+    <div class="player-col p2-col">
+      <div class="p-name" id="name2">BLADER 2</div>
+      <div class="score-num" id="score2">0</div>
+      <div class="bey-name" id="bey2"></div>
+    </div>
+  </div>
+
+  <div id="win-overlay" class="hidden">
+    <div id="win-text"></div>
+  </div>
+  <div id="comment-box" class="hidden"></div>
+
+  <div id="preview-overlay" class="hidden">
+    <div id="preview-label"></div>
+    <div id="preview-catchphrase"></div>
+    <div id="preview-vs">
+      <div class="preview-player-col">
+        <div id="preview-p1"></div>
+        <div id="preview-p1-stats" class="preview-stats"></div>
+      </div>
+      <span class="preview-vs-mark">VS</span>
+      <div class="preview-player-col">
+        <div id="preview-p2"></div>
+        <div id="preview-p2-stats" class="preview-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="break-overlay" class="hidden">
+    <div id="break-title">休憩中</div>
+  </div>
+
+  <div id="call-overlay" class="hidden">
+    <div id="call-text"></div>
+  </div>
+
+  <button id="btn-reload" onclick="location.reload()" style="touch-action: manipulation;" title="リロード">⟳</button>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const STATE_KEY = 'tbh_score_sub_state';
+    const STATE_MAX_AGE_MS = 3 * 60 * 60 * 1000; // 3時間で失効（score.htmlと同じ方針）
+    const FIN_PTS = { X: 3, B: 2, O: 2, S: 1 };
+
+    let s1 = 0, s2 = 0;
+    let winScoreLimit = 4;
+    let name1 = 'BLADER 1', name2 = 'BLADER 2';
+    let bey1 = '', bey2 = '';
+    let isCalling = false;
+    let callTimeoutIds = [];
+
+    function $(id) { return document.getElementById(id); }
+
+    function render() {
+      $('name1').textContent = name1;
+      $('name2').textContent = name2;
+      $('score1').textContent = s1;
+      $('score2').textContent = s2;
+      $('bey1').textContent = bey1;
+      $('bey2').textContent = bey2;
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STATE_KEY, JSON.stringify({
+          s1, s2, winScoreLimit, name1, name2, bey1, bey2, ts: Date.now()
+        }));
+      } catch (e) { /* QuotaExceededError等は無視して継続 */ }
+    }
+
+    function restoreState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return;
+        const st = JSON.parse(raw);
+        if (!st || typeof st.ts !== 'number' || (Date.now() - st.ts) > STATE_MAX_AGE_MS) return;
+        s1 = st.s1 || 0; s2 = st.s2 || 0;
+        winScoreLimit = st.winScoreLimit || 4;
+        name1 = st.name1 || name1; name2 = st.name2 || name2;
+        bey1 = st.bey1 || ''; bey2 = st.bey2 || '';
+      } catch (e) { /* 破損データは無視 */ }
+    }
+
+    function addScore(p, pts) {
+      if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit);
+      else s2 = Math.min(s2 + pts, winScoreLimit);
+      render(); saveState();
+    }
+    function plusScore(p) {
+      if (p === 1) s1 = Math.min(s1 + 1, winScoreLimit);
+      else s2 = Math.min(s2 + 1, winScoreLimit);
+      render(); saveState();
+    }
+    function minusScore(p) {
+      if (p === 1) s1 = Math.max(0, s1 - 1);
+      else s2 = Math.max(0, s2 - 1);
+      render(); saveState();
+    }
+    function resetScores() {
+      s1 = 0; s2 = 0;
+      hideWin(); hideComment();
+      render(); saveState();
+    }
+    function swapPlayers() {
+      [name1, name2] = [name2, name1];
+      [s1, s2] = [s2, s1];
+      [bey1, bey2] = [bey2, bey1];
+      render(); saveState();
+    }
+
+    function showWin(p) {
+      const winnerName = (p === 1) ? name1 : name2;
+      $('win-text').textContent = winnerName + ' WIN';
+      $('win-overlay').classList.remove('hidden');
+    }
+    function hideWin() { $('win-overlay').classList.add('hidden'); }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function showComment(text, highlights) {
+      if (!text) return;
+      let html = escapeHtml(text);
+      if (Array.isArray(highlights)) {
+        highlights.forEach((h) => {
+          const name = String(h || '').trim();
+          if (!name) return;
+          const escaped = escapeHtml(name);
+          const reSrc = escaped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const re = new RegExp(reSrc, 'g');
+          html = html.replace(re, '<span style="color:#ffe500;">' + escaped + '</span>');
+        });
+      }
+      $('comment-box').innerHTML = html;
+      $('comment-box').classList.remove('hidden');
+    }
+    function hideComment() {
+      $('comment-box').classList.add('hidden');
+      $('comment-box').innerHTML = '';
+    }
+
+    // score.htmlの次戦予告（Rank/BP/VS勝数）と同じ情報を表示する
+    function formatPreviewStats(stats, myWins) {
+      if (!stats) return '';
+      const power = (stats.power != null) ? Number(stats.power).toLocaleString() : '-';
+      const winText = (myWins != null) ? myWins + 'win' : '-';
+      return 'Rank ' + (stats.rank || '-') + ' / BP ' + power + ' / VS ' + winText;
+    }
+    function showPreview(data) {
+      $('preview-label').textContent = data.label || '';
+      $('preview-catchphrase').textContent = data.catchphrase || '';
+      $('preview-p1').textContent = data.p1 || '';
+      $('preview-p2').textContent = data.p2 || '';
+      $('preview-p1-stats').textContent = formatPreviewStats(data.p1Stats, data.h2hP1Wins);
+      $('preview-p2-stats').textContent = formatPreviewStats(data.p2Stats, data.h2hP2Wins);
+      $('preview-overlay').classList.remove('hidden');
+    }
+    function hidePreview() { $('preview-overlay').classList.add('hidden'); }
+
+    function showBreak() { $('break-overlay').classList.remove('hidden'); }
+    function hideBreak() { $('break-overlay').classList.add('hidden'); }
+
+    function showScoreView() {
+      hidePreview();
+      hideWin();
+      hideComment();
+      hideBreak();
+      cancelCallSequence();
+    }
+
+    function showCallText(text) {
+      $('call-text').textContent = text;
+      $('call-overlay').classList.remove('hidden');
+    }
+    function hideCallOverlay() { $('call-overlay').classList.add('hidden'); }
+    function startCallSequence() {
+      cancelCallSequence();
+      isCalling = true;
+      const seq = [
+        { text: 'READY SET', delay: 1200 },
+        { text: '3', delay: 800 },
+        { text: '2', delay: 800 },
+        { text: '1', delay: 800 },
+        { text: 'GO', delay: 800 },
+        { text: 'SHOOT!!', delay: 800 }
+      ];
+      let t = 0;
+      seq.forEach((step) => {
+        const delay = t;
+        callTimeoutIds.push(setTimeout(() => showCallText(step.text), delay));
+        t += step.delay;
+      });
+      callTimeoutIds.push(setTimeout(() => { isCalling = false; hideCallOverlay(); }, t));
+    }
+    function cancelCallSequence() {
+      callTimeoutIds.forEach((id) => clearTimeout(id));
+      callTimeoutIds = [];
+      isCalling = false;
+      hideCallOverlay();
+    }
+
+    function executeCommand(cmd) {
+      switch (cmd) {
+        case 'P1_X': addScore(1, FIN_PTS.X); break;
+        case 'P1_B': addScore(1, FIN_PTS.B); break;
+        case 'P1_O': addScore(1, FIN_PTS.O); break;
+        case 'P1_S': addScore(1, FIN_PTS.S); break;
+        case 'P2_X': addScore(2, FIN_PTS.X); break;
+        case 'P2_B': addScore(2, FIN_PTS.B); break;
+        case 'P2_O': addScore(2, FIN_PTS.O); break;
+        case 'P2_S': addScore(2, FIN_PTS.S); break;
+        case 'P1_PLUS': plusScore(1); break;
+        case 'P1_MINUS': minusScore(1); break;
+        case 'P2_PLUS': plusScore(2); break;
+        case 'P2_MINUS': minusScore(2); break;
+        case 'P1_WIN': showWin(1); break;
+        case 'P2_WIN': showWin(2); break;
+        case 'SYS_RESET':
+        case 'reset':
+          resetScores(); break;
+        case 'SYS_RELOAD': location.reload(); break;
+        case 'SYS_SWAP': swapPlayers(); break;
+        case 'SYS_HIDE_WIN': hideWin(); break;
+        case 'SYS_WIN_MODE_2':
+          winScoreLimit = 2;
+          s1 = Math.min(s1, winScoreLimit);
+          s2 = Math.min(s2, winScoreLimit);
+          render(); saveState();
+          break;
+        case 'CALL':
+          if (isCalling) cancelCallSequence(); else startCallSequence();
+          break;
+        default:
+          break; // 未対応cmdはエラーを出さず黙って無視
+      }
+    }
+
+    function handleSetMatch(data) {
+      if (typeof data.p1 === 'string') name1 = data.p1;
+      if (typeof data.p2 === 'string') name2 = data.p2;
+      if (data.resetScore !== false) {
+        s1 = 0; s2 = 0;
+        hideWin(); hideComment();
+      }
+      if (data.winMode) {
+        const modeMap = { '1': 1, '2': 2, '2+': 99, '3': 3, '4': 4, '10': 10 };
+        const lim = modeMap[data.winMode];
+        if (lim !== undefined) winScoreLimit = lim;
+      }
+      if (typeof data.p1BeyText === 'string' && data.p1BeyText.trim()) bey1 = data.p1BeyText.trim();
+      if (typeof data.p2BeyText === 'string' && data.p2BeyText.trim()) bey2 = data.p2BeyText.trim();
+      render(); saveState();
+    }
+
+    // SET_BEYBLADEの実配線は { type:'SET_BEYBLADE', data:{ player, beyblade, timestamp } }（tournament_de.html準拠）
+    function handleSetBeyblade(payload) {
+      if (!payload || !payload.player || !payload.beyblade) return;
+      const player = String(payload.player).toUpperCase();
+      if (player === 'P1') bey1 = payload.beyblade;
+      else if (player === 'P2') bey2 = payload.beyblade;
+      else return;
+      render(); saveState();
+    }
+
+    function handleData(data) {
+      if (!data || !data.type) return;
+      if (data.type === 'REMOTE_CMD') executeCommand(data.cmd);
+      else if (data.type === 'SET_MATCH') handleSetMatch(data);
+      else if (data.type === 'SET_BEYBLADE') handleSetBeyblade(data.data);
+      else if (data.type === 'SHOW_PREVIEW') showPreview(data);
+      else if (data.type === 'HIDE_PREVIEW') hidePreview();
+      else if (data.type === 'SHOW_SCORE_VIEW') showScoreView();
+      else if (data.type === 'MATCH_COMMENT') showComment(data.comment, data.highlights);
+      else if (data.type === 'BREAK_START') showBreak();
+      else if (data.type === 'BREAK_END') hideBreak();
+      // BREAK_RECAPおよびその他未対応typeは黙って無視
+    }
+
+    // ==========================================
+    // PeerJS 接続（score.html/P5と同じ複数接続許可パターン）
+    // ==========================================
+    const _params = new URLSearchParams(location.search);
+    const _peerParam = _params.get('peer');
+    const linkCode = (_peerParam && /^\d{4}$/.test(_peerParam)) ? _peerParam : '0822'; // score.htmlの既定コード(0511)とは別値
+    const peerId = 'itabashi-sub-' + linkCode;
+    const peer = new Peer(peerId);
+    let activeConns = [];
+    const MAX_ACTIVE_CONNS = 4;
+
+    function updateLinkStatus() {
+      const dot = $('link-dot');
+      if (!dot) return;
+      dot.classList.toggle('connected', activeConns.some((c) => c.open));
+    }
+
+    peer.on('open', () => {
+      $('link-text').textContent = 'CODE: ' + linkCode;
+    });
+
+    peer.on('connection', (conn) => {
+      if (activeConns.length >= MAX_ACTIVE_CONNS) {
+        const oldest = activeConns.shift();
+        if (oldest && oldest.open) oldest.close();
+      }
+      activeConns.push(conn);
+      updateLinkStatus();
+      conn.on('open', updateLinkStatus); // conn.openはこの時点ではまだfalseのことがあるため
+
+      conn.on('data', handleData);
+      conn.on('close', () => {
+        activeConns = activeConns.filter((c) => c !== conn);
+        updateLinkStatus();
+      });
+      conn.on('error', (err) => {
+        console.error('PeerJS conn error:', err);
+        activeConns = activeConns.filter((c) => c !== conn);
+        updateLinkStatus();
+      });
+    });
+
+    peer.on('disconnected', () => {
+      updateLinkStatus();
+      peer.reconnect();
+    });
+
+    peer.on('error', (err) => {
+      console.error('PeerJS error:', err);
+      $('link-text').textContent = 'ERROR: ' + ((err && (err.type || err.message)) || 'PEER ERR');
+    });
+
+    restoreState();
+    render();
+  })();
+  </script>
+</body>
+</html>

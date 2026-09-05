@@ -35,12 +35,20 @@
 
   <!-- ヘッダー -->
   <header class="bg-cyber-dark border-b border-cyber-table-border px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-10" style="padding-top: max(env(safe-area-inset-top), 0.75rem);">
-    <div class="flex items-center gap-2">
-      <span class="text-cyber-blue font-sf font-bold text-base tracking-widest">LB SUB</span>
-      <span id="tournament-name" class="text-sm text-cyber-text opacity-50 truncate max-w-[130px]"></span>
+    <div class="flex items-center gap-2 min-w-0">
+      <button id="btn-score-settings" onclick="openScoreSettingsModal()" style="touch-action: manipulation; min-width:36px; min-height:36px;"
+        class="text-cyber-text opacity-60 hover:opacity-100 text-lg transition-opacity flex items-center justify-center shrink-0" title="score.html 接続設定">⚙️</button>
+      <span class="text-cyber-blue font-sf font-bold text-base tracking-widest shrink-0">LB SUB</span>
+      <span id="tournament-name" class="text-sm text-cyber-text opacity-50 truncate max-w-[90px]"></span>
     </div>
-    <div class="flex items-center gap-2">
-      <div id="conn-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444] transition-all"></div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <!-- score_sub.html 直接接続（P7-b・ヘッダー常設。⚙経由のscore.htmlとは別） -->
+      <input id="sub-link-code" type="number" min="1000" max="9999" value="0822" inputmode="numeric"
+        class="w-12 text-center text-xs font-sf bg-cyber-bg border border-cyber-table-border rounded px-1 py-1 text-cyber-text focus:outline-none focus:border-cyber-blue transition-colors">
+      <button onclick="connectScoreLink('sub')" style="touch-action: manipulation; min-height:28px;"
+        class="px-2 py-1 bg-cyber-blue text-cyber-bg font-sf font-bold rounded text-[10px] active:scale-95 transition-transform">接続</button>
+      <div id="sub-link-dot" class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+      <div id="conn-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444] transition-all ml-1"></div>
       <span id="conn-label" class="text-sm font-sf text-red-400 transition-colors">OFFLINE</span>
     </div>
   </header>
@@ -119,6 +127,11 @@
             </div>
             <span id="match-p2-name" class="flex-1 text-cyber-pink font-bold font-sf text-base truncate text-left">P2</span>
           </div>
+          <!-- ベイ選択（P7-a） -->
+          <div id="match-bey-select" class="hidden mt-3 pt-3 border-t border-cyber-table-border flex gap-3">
+            <div class="flex-1 flex flex-col gap-1" id="bey-select-left"></div>
+            <div class="flex-1 flex flex-col gap-1" id="bey-select-right"></div>
+          </div>
         </div>
 
         <!-- スコアボタン -->
@@ -150,7 +163,7 @@
         </div>
 
         <!-- リセット -->
-        <button id="score-reset-btn" onclick="resetMatchScore()"
+        <button id="score-reset-btn" onclick="execResetMatchScore()"
           class="hidden py-3 bg-cyber-bg border border-cyber-red/40 text-cyber-red/60 font-sf rounded-lg text-sm hover:border-cyber-red hover:text-cyber-red transition-colors">
           ♻️ MATCH RESET
         </button>
@@ -184,26 +197,21 @@
     </div>
   </div>
 
-  <!-- ===== 勝敗直接入力ミニモーダル ===== -->
-  <div id="quick-modal" class="hidden fixed inset-0 bg-black/85 items-center justify-center z-50 p-6">
+  <!-- ===== score.html 接続設定モーダル（左上⚙経由） ===== -->
+  <div id="score-settings-modal" class="hidden fixed inset-0 bg-black/85 items-center justify-center z-50 p-6">
     <div class="bg-cyber-dark border border-cyber-table-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-      <div class="text-xs font-sf text-cyber-text opacity-40 text-center mb-2 tracking-widest">勝者を選択</div>
-      <div class="font-sf text-cyber-blue font-bold text-center mb-6 text-base leading-snug" id="qm-title">MATCH</div>
-      <div class="flex gap-3 mb-4">
-        <button id="qm-p1-btn" onclick="quickWin(1)"
-          class="flex-1 py-5 bg-cyber-blue text-cyber-bg font-sf font-bold rounded-xl text-base active:scale-95 transition-transform">
-          P1 WIN
-        </button>
-        <button id="qm-p2-btn" onclick="quickWin(2)"
-          class="flex-1 py-5 bg-cyber-pink text-white font-sf font-bold rounded-xl text-base active:scale-95 transition-transform">
-          P2 WIN
-        </button>
+      <div class="text-sm font-sf text-cyber-blue font-bold text-center mb-4 tracking-widest">score.html 接続設定</div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs font-sf text-cyber-text opacity-60">score.html</span>
+        <div id="score-link-dot" class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
       </div>
-      <button onclick="openMatchMode()"
-        class="w-full py-4 bg-cyber-bg border border-cyber-blue text-cyber-blue font-sf font-bold rounded-xl text-base mb-3 hover:bg-cyber-blue/10 active:scale-95 transition-all">
-        スコア・決まり手も入力する →
-      </button>
-      <button onclick="closeQuickModal()" class="w-full py-2 text-sm font-sf text-cyber-text opacity-30 hover:opacity-60 transition-opacity">キャンセル</button>
+      <div class="flex gap-2 mb-5">
+        <input id="score-link-code" type="number" min="1000" max="9999" placeholder="0511" inputmode="numeric"
+          class="flex-1 text-center text-xl font-sf bg-cyber-bg border border-cyber-table-border rounded-lg px-2 py-2 text-cyber-text focus:outline-none focus:border-cyber-blue transition-colors">
+        <button onclick="connectScoreLink('score')" style="touch-action: manipulation;"
+          class="px-4 py-2 bg-cyber-blue text-cyber-bg font-sf font-bold rounded-lg text-sm active:scale-95 transition-transform">接続</button>
+      </div>
+      <button onclick="closeScoreSettingsModal()" class="w-full py-2 text-sm font-sf text-cyber-text opacity-30 hover:opacity-60 transition-opacity">閉じる</button>
     </div>
   </div>
 
@@ -230,18 +238,35 @@
   let kimariteAll = [], kimariteP1 = [], kimariteP2 = [];
   let battleLog = [];
   let currentTab = 'losers';
+  let beyP1 = '', beyP2 = ''; // P7-a: 論理p1/p2に紐付くベイ選択（表示side/SWAPとは独立）
+  let subActiveNextBattleId = null; // P7-c: 📢トグル用。親機のactiveNextBattleIdとは別にローカルで管理
+  const scoreLinkConns = { score: null, sub: null }; // P7-b: score.html / score_sub.html への直接接続
+  const SCORE_LINK_STORAGE_KEY = 'tbh_de_sub_score_links';
 
   // スコアボタン → 決まり手の自動マッピング
   const SCORE_KIMARITE_MAP = { 'X': 'XF', 'B': 'BF', 'O': 'OF', 'S': 'SF' };
 
-  // 画面上の 'left'/'right' → 論理 'p1'/'p2'
+  // 画面上の 'left'/'right' → 論理 'p1'/'p2'（親機への結果送信・beyP1/beyP2の保存に使う）
   function dispToLogical(side) {
     if (!isSwapped) return side === 'left' ? 'p1' : 'p2';
     return side === 'left' ? 'p2' : 'p1';
   }
+  // score.html/score_subは SYS_SWAP で自身のP1/P2表示スロットを物理入替する方式（親機のリモート
+  // モーダルと同じ規約）。そのため score/score_sub 向けの cmd / SET_BEYBLADE の player は
+  // 論理p1/p2ではなく常に表示side基準で送る。dispToLogical（親機向け）と混同しないこと。
+  function dispToScorePlayer(side) {
+    return side === 'left' ? 'P1' : 'P2';
+  }
+  // 論理 'p1'/'p2' → 画面上の 'left'/'right'（dispToLogicalの逆変換）
+  function logicalToDisp(logicalSide) {
+    if (!isSwapped) return logicalSide === 'p1' ? 'left' : 'right';
+    return logicalSide === 'p1' ? 'right' : 'left';
+  }
   function toggleSwap() {
     isSwapped = !isSwapped;
     refreshMatchUI();
+    renderBeySelectUI(); // ベイ選択欄の左右表示もSWAPに追従させる
+    sendToScoreLinks({ type: 'REMOTE_CMD', cmd: 'SYS_SWAP' });
   }
 
   // ================================================
@@ -257,6 +282,7 @@
     if (peer) peer.destroy();
     peer = new Peer();
     peer.on('open', () => {
+      autoReconnectScoreLinks(); // P7-b: score.html/score_sub.htmlへは独立して自動再接続
       conn = peer.connect('de-sub-' + code, { reliable: true });
       conn.on('open', () => {
         btn.textContent = 'CONNECT'; btn.disabled = false;
@@ -314,6 +340,13 @@
         showAckError(reason);
         if (msg.state) applyState(msg.state);
       }
+    } else if (msg.type === 'DE_PREVIEW_PAYLOAD') {
+      // 親機はH2H/名簿取得のため非同期で応答する。その間に別の試合の📢が押されていた場合、
+      // 古い応答で新しい表示を上書きしないよう、今アクティブな試合キーと一致するかを確認する。
+      const key = `${msg.bracket}-${msg.roundIdx}-${msg.matchIdx}`;
+      if (key !== subActiveNextBattleId) return;
+      // 判定ロジック(キャッチフレーズ等)は親機側で完結済み。ここではそのままscore/score_subへ転送するのみ。
+      sendToScoreLinks({ type: 'SHOW_PREVIEW', ...msg.payload });
     }
   }
 
@@ -325,10 +358,15 @@
     if (nameEl) nameEl.textContent = s.tournamentName || '';
     renderLosersBracket();
     renderWinnersBracket();
-    // currentMatch があれば最新状態に更新
+    // currentMatch があれば最新状態に更新（親機側で選択されたベイもここで反映＝双方向共有）
     if (currentMatch) {
       const updated = getMatchFromState(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx);
-      if (updated) currentMatch.match = updated;
+      if (updated) {
+        currentMatch.match = updated;
+        beyP1 = updated.beyP1 || '';
+        beyP2 = updated.beyP2 || '';
+        renderBeySelectUI();
+      }
     }
   }
 
@@ -363,7 +401,7 @@
     if (appState.winnersBracket?.length) {
       appState.winnersBracket.forEach((round, rIdx) => {
         html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">WB ROUND ${rIdx + 1}</div>`;
-        round.forEach((m, mIdx) => { html += renderMatchCard(m, 'wb', rIdx, mIdx, false); });
+        round.forEach((m, mIdx) => { html += renderMatchCard(m, 'wb', rIdx, mIdx, true); });
       });
     }
 
@@ -404,7 +442,7 @@
         : 'border-cyber-table-border';
 
     const onclickAttr = canClick
-      ? `onclick="openQuickModal('${bracket}',${rIdx},${mIdx})"`
+      ? `onclick="selectMatch('${bracket}',${rIdx},${mIdx})"`
       : '';
 
     const centerHtml = m.score
@@ -413,10 +451,16 @@
         ? `<span class="text-xs font-sf text-cyber-blue/40">TAP</span>`
         : `<span class="text-sm font-sf text-cyber-text/20">—</span>`;
 
+    // 📢 次戦予告ボタン（P7-c）: p1/p2が揃っていて未決着の試合のみ。isInput(スコア入力可否)とは無関係。
+    const canPreview = m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && !decided;
+    const previewBtn = canPreview
+      ? `<button onclick="event.stopPropagation(); toggleSubPreview('${bracket}',${rIdx},${mIdx})" style="touch-action: manipulation;" class="text-base leading-none shrink-0 mr-1">📢</button>`
+      : '';
+
     // 左プレイヤー: text-right（VS中央に向かって右寄せ）
     // 右プレイヤー: text-left（VS中央に向かって左寄せ）
     return `<div ${onclickAttr} class="flex items-center px-3 py-3 rounded-xl mb-2 border ${borderCls} bg-[#0d131f] transition-colors">
-      <span class="flex-1 text-base ${p1cls} truncate pr-2 text-right">${p1n}</span>
+      ${previewBtn}<span class="flex-1 text-base ${p1cls} truncate pr-2 text-right">${p1n}</span>
       <div class="flex flex-col items-center mx-3 shrink-0 min-w-[50px]">${centerHtml}</div>
       <span class="flex-1 text-base ${p2cls} truncate pl-2 text-left">${p2n}</span>
     </div>`;
@@ -434,41 +478,53 @@
       document.getElementById('tab-content-' + t).classList.toggle('hidden', t !== tab);
       document.getElementById('tab-' + t).className = t === tab ? activeClass : inactiveClass;
     });
+    // タブ切替のたびに先頭へ戻す。前の試合で下の方（WINボタン等）まで
+    // スクロールした状態のまま次の試合に切り替わると、開いた瞬間に画面下側が
+    // 見えてしまうため（依頼者指摘）。
+    const activeEl = document.getElementById('tab-content-' + tab);
+    if (activeEl) activeEl.scrollTop = 0;
   }
 
-  // ================================================
-  // クイックモーダル
-  // ================================================
-  function openQuickModal(bracket, rIdx, mIdx) {
+  // m.p1/m.p2（DE_STATE_SYNCで受け取るブラケット内選手コピー）が rank/currentStats を
+  // 持たない古いデータ・BYE等でも壊れないようガードする
+  function statsPayloadFor(player) {
+    if (!player) return undefined;
+    const cs = player.currentStats;
+    return { rank: player.rank, power: cs && cs.power, rate: cs && cs.rate };
+  }
+
+  // 試合カードタップ時のエントリーポイント。勝者選択ミニモーダルは廃止し、
+  // スコア・決まり手入力画面（MATCHタブ）へ直接遷移する（依頼者指摘：
+  // ミニモーダルでの勝敗記入はほぼ使われないため）。
+  function selectMatch(bracket, rIdx, mIdx) {
     const m = getMatchFromState(bracket, rIdx, mIdx);
     if (!m || !m.p1 || !m.p2) return;
     currentMatch = { bracket, roundIdx: rIdx, matchIdx: mIdx, match: m };
-    document.getElementById('qm-title').textContent    = `${m.p1.name} vs ${m.p2.name}`;
-    document.getElementById('qm-p1-btn').textContent   = `${m.p1.name} WIN`;
-    document.getElementById('qm-p2-btn').textContent   = `${m.p2.name} WIN`;
-    const modal = document.getElementById('quick-modal');
-    modal.classList.remove('hidden'); modal.classList.add('flex');
-  }
-
-  function closeQuickModal() {
-    const modal = document.getElementById('quick-modal');
-    modal.classList.add('hidden'); modal.classList.remove('flex');
-  }
-
-  function quickWin(winnerVal) {
-    if (!currentMatch) return;
-    closeQuickModal();
-    sendResult(winnerVal, null, null, null, null);
+    // beyP1/beyP2 は新フィールド。旧保存データには無いため || '' でフォールバックする
+    beyP1 = m.beyP1 || '';
+    beyP2 = m.beyP2 || '';
+    openMatchMode();
   }
 
   function openMatchMode() {
     if (!currentMatch) return;
-    closeQuickModal();
     const m = currentMatch.match;
+
+    // 📢で次戦予告を表示したまま試合選択に進んだ場合、score/score_sub側が
+    // 予告画面に留まってしまう（依頼者指摘）。採点開始時は必ずスコア画面へ戻す。
+    sendToScoreLinks({ type: 'SHOW_SCORE_VIEW' });
+    subActiveNextBattleId = null;
+
+    // 試合選択＝採点開始のため、score/score_subのスコアを実際にリセットする
+    sendToScoreLinks({
+      type: 'SET_MATCH', p1: m.p1.name, p2: m.p2.name,
+      p1Stats: statsPayloadFor(m.p1), p2Stats: statsPayloadFor(m.p2),
+      p1BeyText: beyP1, p2BeyText: beyP2
+    });
 
     // MATCHタブ表示切り替え
     document.getElementById('match-no-select').classList.add('hidden');
-    ['match-header','score-buttons','score-reset-btn','winner-section'].forEach(id => {
+    ['match-header','score-buttons','score-reset-btn','winner-section','match-bey-select'].forEach(id => {
       document.getElementById(id).classList.remove('hidden');
     });
 
@@ -477,10 +533,14 @@
 
     const roundLabel = currentMatch.bracket === 'lb3rd' ? '3RD PLACE MATCH'
       : currentMatch.bracket === 'lb' ? `LB ROUND ${currentMatch.roundIdx + 1}`
+      : currentMatch.bracket === 'wb' ? `WB ROUND ${currentMatch.roundIdx + 1}`
+      : currentMatch.bracket === 'gf' ? 'GRAND FINAL'
+      : currentMatch.bracket === 'gf_reset' ? 'GF RESET'
       : currentMatch.bracket.toUpperCase();
     document.getElementById('match-round-label').textContent = roundLabel;
 
     resetMatchScore();
+    renderBeySelectUI();
     switchTab('match');
   }
 
@@ -490,6 +550,9 @@
   function addScore(side, type, pts) {
     if (!currentMatch) return;
     const logical = dispToLogical(side);
+    // type は 'X'|'B'|'O'|'S'|'PLUS'|'MINUS' で REMOTE_CMD の cmd サフィックスと一致する。
+    // score/score_sub側は表示side基準（dispToScorePlayer）で送る。論理p1/p2ではない。
+    sendToScoreLinks({ type: 'REMOTE_CMD', cmd: dispToScorePlayer(side) + '_' + type });
     if (logical === 'p1') {
       scoreP1 = Math.max(0, Math.min(scoreP1 + pts, winScoreLimit));
       if (pts > 0 && SCORE_KIMARITE_MAP[type]) {
@@ -515,6 +578,13 @@
     battleLog = [];
     refreshMatchUI();
     updateKimariteSummary();
+  }
+
+  // ♻️ MATCH RESETボタン専用ラッパー。resetMatchScore()自体はUI遷移の内部処理でも
+  // 呼ばれるため、SYS_RESET送信はボタン操作時のみに限定する。
+  function execResetMatchScore() {
+    resetMatchScore();
+    sendToScoreLinks({ type: 'REMOTE_CMD', cmd: 'SYS_RESET' });
   }
 
   function refreshMatchUI() {
@@ -594,6 +664,8 @@
   function submitWinner(side) {
     if (!currentMatch) { showAckError('試合が選択されていません'); return; }
     const winnerVal = dispToLogical(side) === 'p1' ? 1 : 2;
+    // score/score_sub側は表示side基準で送る（addScoreと同じ理由。論理winnerValとは別軸）
+    sendToScoreLinks({ type: 'REMOTE_CMD', cmd: dispToScorePlayer(side) + '_WIN' });
     sendResult(
       winnerVal,
       `${scoreP1}-${scoreP2}`,
@@ -616,6 +688,8 @@
       kimarite,
       kimarite_p1: kp1,
       kimarite_p2: kp2,
+      beyP1,
+      beyP2,
       battleLog:   battleLog.slice(),
       updatedAt:   Date.now()
     });
@@ -626,10 +700,11 @@
 
   function resetMatchScoreUI() {
     document.getElementById('match-no-select').classList.remove('hidden');
-    ['match-header','score-buttons','score-reset-btn','winner-section'].forEach(id => {
+    ['match-header','score-buttons','score-reset-btn','winner-section','match-bey-select'].forEach(id => {
       document.getElementById(id).classList.add('hidden');
     });
     isSwapped = false;
+    beyP1 = ''; beyP2 = '';
     resetMatchScore();
     switchTab('losers');
   }
@@ -656,6 +731,160 @@
   function closeAckError() {
     const modal = document.getElementById('ack-error-modal');
     modal.classList.add('hidden'); modal.classList.remove('flex');
+  }
+
+  // ================================================
+  // ベイ選択（P7-a）
+  // ================================================
+  // onclick="...('${escAttr(name)}')" のように二重引用符属性内のシングルクォートJS文字列へ
+  // 埋め込むための二重エスケープ（HTML属性値としての安全性 + JS文字列リテラルとしての安全性の両方）
+  function escAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'");
+  }
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderBeySelectUI() {
+    if (!currentMatch) return;
+    const m = currentMatch.match;
+    const leftPlayer   = isSwapped ? m.p2 : m.p1;
+    const rightPlayer  = isSwapped ? m.p1 : m.p2;
+    const leftLogical  = isSwapped ? 'p2' : 'p1';
+    const rightLogical = isSwapped ? 'p1' : 'p2';
+    renderBeyButtonGroup('bey-select-left',  leftPlayer,  leftLogical,  'blue');
+    renderBeyButtonGroup('bey-select-right', rightPlayer, rightLogical, 'pink');
+  }
+
+  function renderBeyButtonGroup(containerId, player, logicalSide, color) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const beys = (player && player.beyblades) || [];
+    const selected = logicalSide === 'p1' ? beyP1 : beyP2;
+    if (!beys.length) {
+      container.innerHTML = '<div class="text-xs font-sf text-gray-500 text-center py-2">ベイ未登録</div>';
+      return;
+    }
+    container.innerHTML = beys.map((b) => {
+      const isSel = b.name === selected;
+      const cls = isSel
+        ? `py-2 px-2 bg-cyber-${color} text-white font-sf text-xs rounded truncate font-bold`
+        : `py-2 px-2 bg-[#0a0e17] border border-cyber-${color} text-cyber-${color} font-sf text-xs rounded truncate hover:bg-cyber-${color} hover:text-white transition-colors`;
+      return `<button onclick="selectSubBeyblade('${logicalSide}', '${escAttr(b.name)}')" style="touch-action: manipulation;" class="${cls}">${escHtml(b.name)}</button>`;
+    }).join('');
+  }
+
+  function selectSubBeyblade(logicalSide, beybladeName) {
+    if (!currentMatch) return;
+    if (logicalSide === 'p1') beyP1 = beybladeName; else beyP2 = beybladeName;
+    renderBeySelectUI();
+    // score/score_subへ即座に反映。player は表示side基準（dispToScorePlayerと同じ規約）で送る。
+    sendToScoreLinks({ type: 'SET_BEYBLADE', data: { player: dispToScorePlayer(logicalToDisp(logicalSide)), beyblade: beybladeName, timestamp: Date.now() } });
+    // 親機へ通知してmatch.beyP1/beyP2として保存させる（双方向共有）
+    if (conn?.open) {
+      conn.send({
+        type: 'DE_BEY_SELECT',
+        bracket: currentMatch.bracket, roundIdx: currentMatch.roundIdx, matchIdx: currentMatch.matchIdx,
+        beyP1, beyP2, updatedAt: Date.now()
+      });
+    }
+  }
+
+  // ================================================
+  // 次戦予告 📢（P7-c）
+  // ================================================
+  function toggleSubPreview(bracket, roundIdx, matchIdx) {
+    const matchKey = `${bracket}-${roundIdx}-${matchIdx}`;
+    if (subActiveNextBattleId === matchKey) {
+      sendToScoreLinks({ type: 'HIDE_PREVIEW' });
+      subActiveNextBattleId = null;
+      return;
+    }
+    if (!conn?.open) { showAckError('親機との接続が切れています'); return; }
+    subActiveNextBattleId = matchKey;
+    conn.send({ type: 'DE_PREVIEW_REQUEST', bracket, roundIdx, matchIdx });
+  }
+
+  // ================================================
+  // SCORE LINK（P7-b）: score.html / score_sub.html への直接接続
+  // ================================================
+  function loadScoreLinkCodes() {
+    try {
+      const raw = localStorage.getItem(SCORE_LINK_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveScoreLinkCodes(codes) {
+    try { localStorage.setItem(SCORE_LINK_STORAGE_KEY, JSON.stringify(codes)); } catch (e) { /* 保存失敗は無視 */ }
+  }
+
+  // score.html接続設定モーダル（左上⚙）。score_sub.htmlはヘッダー常設のため対象外。
+  function openScoreSettingsModal() {
+    updateScoreLinkStatus('score', !!(scoreLinkConns.score && scoreLinkConns.score.open));
+    const modal = document.getElementById('score-settings-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  }
+  function closeScoreSettingsModal() {
+    const modal = document.getElementById('score-settings-modal');
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  }
+
+  function connectScoreLink(kind) {
+    const inputId = kind === 'score' ? 'score-link-code' : 'sub-link-code';
+    const code = String(document.getElementById(inputId).value).trim();
+    if (code.length !== 4 || isNaN(Number(code))) { showAckError('4桁の数字を入力してください'); return; }
+    if (!peer || peer.destroyed) { showAckError('接続の準備ができていません。少し待ってから再度お試しください'); return; }
+    const prefix = kind === 'score' ? 'itabashi-link-' : 'itabashi-sub-';
+    // 接続中（openイベント未着火）の古い接続にも.close()を呼ぶ。open判定は使わない
+    // （openでない＝閉じなくていい、ではなくハンドラの取り違えの元になるため）
+    if (scoreLinkConns[kind]) { try { scoreLinkConns[kind].close(); } catch (e) { /* 無視 */ } }
+    const c = peer.connect(prefix + code, { reliable: true });
+    scoreLinkConns[kind] = c;
+    // 以降のイベントは「自分がまだ現役(scoreLinkConns[kind]と同一)か」を必ず確認する。
+    // 確認しないと、古い接続の遅れて届いたclose/errorが、既に繋ぎ直した新しい接続の
+    // ステータスを誤って「切断」に書き換えてしまう（二重タップ時の典型的なバグ）。
+    c.on('open', () => {
+      if (scoreLinkConns[kind] !== c) return;
+      updateScoreLinkStatus(kind, true);
+      const codes = loadScoreLinkCodes();
+      codes[kind] = code;
+      saveScoreLinkCodes(codes);
+    });
+    c.on('close', () => { if (scoreLinkConns[kind] === c) updateScoreLinkStatus(kind, false); });
+    c.on('error', () => { if (scoreLinkConns[kind] === c) updateScoreLinkStatus(kind, false); });
+  }
+
+  function autoReconnectScoreLinks() {
+    const codes = loadScoreLinkCodes();
+    if (codes.score) {
+      const el = document.getElementById('score-link-code');
+      if (el) el.value = codes.score;
+      connectScoreLink('score');
+    }
+    if (codes.sub) {
+      const el = document.getElementById('sub-link-code');
+      if (el) el.value = codes.sub;
+      connectScoreLink('sub');
+    }
+  }
+
+  function updateScoreLinkStatus(kind, isOpen) {
+    const dotId = kind === 'score' ? 'score-link-dot' : 'sub-link-dot';
+    const dot = document.getElementById(dotId);
+    if (!dot) return;
+    dot.className = isOpen ? 'w-2.5 h-2.5 rounded-full bg-cyber-green' : 'w-2.5 h-2.5 rounded-full bg-red-500';
+  }
+
+  // 送信は必ずconn.openチェック後。未接続なら黙ってスキップし、親機通信は一切阻害しない。
+  function sendToScoreLinks(msg) {
+    Object.keys(scoreLinkConns).forEach((k) => {
+      const c = scoreLinkConns[k];
+      if (c && c.open) { try { c.send(msg); } catch (e) { /* 送信失敗は無視 */ } }
+    });
   }
   </script>
 </body>

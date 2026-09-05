@@ -1433,7 +1433,14 @@
         m.kimarite = msg.kimarite ?? null;
         m.kimarite_p1 = msg.kimarite_p1 ?? null;
         m.kimarite_p2 = msg.kimarite_p2 ?? null;
-        // サブ機から届いた時系列ログを battles へ変換（サブ機はベイ選択非対応のため Bey は空）
+        if (typeof msg.beyP1 === 'string') m.beyP1 = msg.beyP1;
+        if (typeof msg.beyP2 === 'string') m.beyP2 = msg.beyP2;
+        // イベントレポート等は p1BeyUsed/p2BeyUsed（試合全体の使用ベイ）を参照するため、
+        // beyP1/beyP2（P7で追加した共有用フィールド）から同期しておく。
+        // battles[].p1Bey/p2Bey（バトル単位）は空のまま：サブ機は試合単位選択のみでバトル単位のベイ切替は非対応
+        if (typeof msg.beyP1 === 'string' && msg.beyP1) m.p1BeyUsed = msg.beyP1;
+        if (typeof msg.beyP2 === 'string' && msg.beyP2) m.p2BeyUsed = msg.beyP2;
+        // サブ機から届いた時系列ログを battles へ変換（バトル単位のBeyはサブ機非対応のため空のまま）
         if (Array.isArray(msg.battleLog) && msg.battleLog.length > 0) {
           m.battles = msg.battleLog.map((e, i) => ({
             no: i + 1,
@@ -1459,7 +1466,49 @@
           setWinner(msg.bracket, msg.roundIdx, msg.matchIdx, msg.winner);
         }
         sc.send({ type: 'DE_RESULT_ACK', ok: true });
+        return;
       }
+      if (msg.type === 'DE_BEY_SELECT') {
+        const m = (msg.bracket === 'lb3rd') ? lbThirdPlace : getMatchByCoords(msg.bracket, msg.roundIdx, msg.matchIdx);
+        if (!m) return;
+        if (typeof msg.beyP1 === 'string') { m.beyP1 = msg.beyP1; if (msg.beyP1) m.p1BeyUsed = msg.beyP1; }
+        if (typeof msg.beyP2 === 'string') { m.beyP2 = msg.beyP2; if (msg.beyP2) m.p2BeyUsed = msg.beyP2; }
+        m.updatedAt = msg.updatedAt || Date.now();
+        saveState();
+        broadcastSubSync();
+        return;
+      }
+      if (msg.type === 'DE_PREVIEW_REQUEST') {
+        handleDePreviewRequest(sc, msg);
+        return;
+      }
+    }
+
+    // サブ機からの📢リクエスト。判定ロジック(キャッチフレーズ等)はここで完結させ、
+    // サブ機側には複製しない（2ファイル同期の事故を防ぐため）。
+    async function handleDePreviewRequest(sc, msg) {
+      const m = (msg.bracket === 'lb3rd') ? lbThirdPlace : getMatchByCoords(msg.bracket, msg.roundIdx, msg.matchIdx);
+      if (!m || !m.p1 || !m.p2) return;
+      const p1 = m.p1, p2 = m.p2;
+      const stageInfo = (msg.bracket === 'wb') ? 'WINNERS' : (msg.bracket === 'lb') ? 'LOSERS' : 'FINAL STAGE';
+      const roundInfo = getDeRoundLabel(msg.bracket, msg.roundIdx, msg.matchIdx);
+      const label = `${stageInfo} - ${roundInfo}`;
+      const [rows] = await Promise.all([loadH2HHistory(), loadRosterRelations()]);
+      const { p1Wins, p2Wins } = calcH2H(rows, p1.name, p2.name);
+      const catchphrase = buildNextBattleCatchphrase(p1, p2, label, p1Wins, p2Wins);
+      const payload = {
+        p1: p1.name, p2: p2.name, label,
+        p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+        p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate },
+        h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+        catchphrase,
+        ...getShowPreviewHudFields()
+      };
+      if (conn && conn.open) conn.send({ type: 'SHOW_PREVIEW', ...payload });
+      // bracket/roundIdx/matchIdxを付けて返す。await(H2H/名簿取得)の間に子機側で
+      // 別の試合の📢が押されていた場合、子機が「今アクティブな試合と一致するか」を
+      // 判定できるようにするため（古い応答が新しい表示を上書きしてしまう事故を防ぐ）。
+      if (sc && sc.open) sc.send({ type: 'DE_PREVIEW_PAYLOAD', bracket: msg.bracket, roundIdx: msg.roundIdx, matchIdx: msg.matchIdx, payload });
     }
 
     function forceResetLink() { if (conn) { conn.close(); conn = null; } initPeer(); resetLinkUI(); }
@@ -1747,14 +1796,16 @@
         if (!m) return;
         const playerName = (side === 'left') ? 'P1' : 'P2';
         sendBeybladeSelection(playerName, beybladeName);
+        // beyP1/beyP2 は P7 で追加されたサブ機共有用フィールド。p1BeyUsed/p2BeyUsed（既存・レポート等で使用）とは別に併記する。
         if (side === 'left') {
-          if (isRemoteSwapped) m.p2BeyUsed = beybladeName;
-          else m.p1BeyUsed = beybladeName;
+          if (isRemoteSwapped) { m.p2BeyUsed = beybladeName; m.beyP2 = beybladeName; }
+          else { m.p1BeyUsed = beybladeName; m.beyP1 = beybladeName; }
         } else {
-          if (isRemoteSwapped) m.p1BeyUsed = beybladeName;
-          else m.p2BeyUsed = beybladeName;
+          if (isRemoteSwapped) { m.p1BeyUsed = beybladeName; m.beyP1 = beybladeName; }
+          else { m.p2BeyUsed = beybladeName; m.beyP2 = beybladeName; }
         }
         saveState();
+        broadcastSubSync();
     }
 
     function updateRemoteKimariteSummary() {
@@ -3594,6 +3645,8 @@
         comment: m.comment,
         p1BeyUsed: m.p1BeyUsed,
         p2BeyUsed: m.p2BeyUsed,
+        beyP1: m.beyP1,
+        beyP2: m.beyP2,
         battles: m.battles,
         key: rosterPairKey(m.p1, m.p2)
       })));
@@ -3612,7 +3665,7 @@
           const s = lbSaved[ri][mi];
           if (m.winner !== null) return;
           const key = rosterPairKey(m.p1, m.p2);
-          if (s.winner !== null && s.key && key === s.key) {
+          if (key && s.key && key === s.key) {
             m.winner = s.winner;
             m.score = s.score;
             m.kimarite = s.kimarite;
@@ -3621,7 +3674,24 @@
             m.comment = s.comment;
             m.p1BeyUsed = s.p1BeyUsed;
             m.p2BeyUsed = s.p2BeyUsed;
+            m.beyP1 = s.beyP1;
+            m.beyP2 = s.beyP2;
             m.battles = s.battles;
+          } else {
+            // ペアが変わった枠は、直前の占有者の残留データを引き継がせない。p1/p2/winner/scoreは
+            // 既に手前の一括wipeでクリア済みだが、kimarite/comment/ベイ関連はwipe対象外だったため、
+            // ここで明示的に空へ戻す（新しいペアに前の対戦者のベイ名等が残る事故を防ぐ）。
+            // 判定は「決着の有無」ではなく「占有ペアが変わったか」で行う。
+            // 進行中（winner=null）の試合を誤ってクリアしないため、条件に s.winner を含めてはいけない。
+            m.kimarite = null;
+            m.kimarite_p1 = null;
+            m.kimarite_p2 = null;
+            m.comment = '';
+            m.p1BeyUsed = '';
+            m.p2BeyUsed = '';
+            m.beyP1 = '';
+            m.beyP2 = '';
+            m.battles = [];
           }
         }));
       };
@@ -3947,10 +4017,14 @@
       }
     }
 
-    function setWinner(block, roundIdx, matchIdx, winnerVal) {
+    async function setWinner(block, roundIdx, matchIdx, winnerVal) {
       const match = getMatchByCoords(block, roundIdx, matchIdx);
       if (!match || !match.p1 || !match.p2) return;
       if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+      // 既に勝者が決まっている試合への再タップ（取り消し／変更）は下流ラウンドの結果ごと消えるため確認する
+      if (match.winner !== null) {
+        if (!await showConfirm('この試合の結果を取り消します。\n下流ラウンドの結果も連動して消えます。\n実行しますか？')) return;
+      }
       pushDeUndoSnapshot();
       if (match.winner === winnerVal) {
         match.winner = null;
@@ -4051,13 +4125,25 @@
       const v = parseFloat(String(rateStr || '').replace('%', ''));
       return isNaN(v) ? null : v;
     }
-    // 前半×後半を組み合わせる。直前と同一組み合わせなら1回だけ引き直す
-    let _lastCatchphrase = '';
+    // 前半×後半を組み合わせる。直近8件のリングバッファと重複する場合は最大5回まで引き直す
+    const _catchphraseHistory = [];
+    const CATCHPHRASE_HISTORY_LIMIT = 8;
     function cpCombine(heads, tails) {
       let out = pickRandom(heads) + pickRandom(tails);
-      if (out === _lastCatchphrase) out = pickRandom(heads) + pickRandom(tails);
-      _lastCatchphrase = out;
+      let tries = 0;
+      while (_catchphraseHistory.includes(out) && tries < 5) {
+        out = pickRandom(heads) + pickRandom(tails);
+        tries++;
+      }
+      _catchphraseHistory.push(out);
+      if (_catchphraseHistory.length > CATCHPHRASE_HISTORY_LIMIT) _catchphraseHistory.shift();
       return out;
+    }
+    // 属性名(S列)は自由記述でカラム文字数を保証できないため、キャッチフレーズ合成時は5文字に丸める
+    // （17文字制限の逆算：cpGrandFinalWithRelation の head<=3 + tail<=9 に対し w<=5 が必要）
+    function cpTruncateAttr(s) {
+      const arr = [...String(s || '')];
+      return arr.length > 5 ? arr.slice(0, 5).join('') : arr.join('');
     }
     // 関係性 → 合成用の短い呼称
     function cpRelWord(rel) {
@@ -4066,7 +4152,7 @@
       if (rel.kind === 'parent_child') return rel.motherSide ? '母子' : '親子';
       if (rel.kind === 'sibling') return 'きょうだい';
       if (rel.kind === 'same_circle') return '同門';
-      if (rel.kind === 'same_attr') return rel.attr;
+      if (rel.kind === 'same_attr') return cpTruncateAttr(rel.attr);
       if (rel.kind === 'cross_circle') return '他流';
       return '';
     }
@@ -4074,66 +4160,79 @@
     function cpFromRelation(rel) {
       if (!rel) return '';
       if (rel.kind === 'spouse') {
-        return cpCombine(['愛と闘志の', '誓いを交わした', '家庭を懸けた', '最も近い好敵手、', '譲れぬ'],
-                         ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', 'カップルマッチ！']);
+        return cpCombine(
+          ['愛と闘志の', '誓いを交わした', '家庭を懸けた', '最も近い好敵手、', '譲れぬ', '公私を懸けた', '阿吽の呼吸で挑む', '日常を持ち込んだ'],
+          ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', 'カップルマッチ！', '夫婦の意地！', '夫婦ダービー！', '夫婦頂上決戦！']);
       }
       if (rel.kind === 'parent_child') {
         const kin = rel.motherSide ? '母子' : '親子';
-        return cpCombine(['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '譲れぬ想いの'],
-                         [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, 'ファミリーマッチ！']);
+        return cpCombine(
+          ['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '譲れぬ想いの', '親から子へ', '背中を追いかけた', '血筋が交わる'],
+          [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, 'ファミリーマッチ！', `${kin}頂上戦！`, `${kin}の意地！`, `${kin}激突！`]);
       }
       if (rel.kind === 'sibling') {
-        return cpCombine(['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '血で血を洗う'],
-                         ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'ファミリーマッチ！']);
+        return cpCombine(
+          ['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '血で血を洗う', '切磋琢磨してきた', '幼馴染以上の', '同じ血を継ぐ'],
+          ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'ファミリーマッチ！', 'きょうだいの意地！', 'きょうだい頂上戦！', 'きょうだい激突！']);
       }
       if (rel.kind === 'same_circle') {
-        return cpCombine(['意地とプライドの', '同じ看板の', '手の内知り尽くす', '練習の成果、', '気心知れた'],
-                         ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '仲間割れマッチ！']);
+        return cpCombine(
+          ['意地とプライドの', '同じ看板の', '手の内知り尽くす', '練習の成果、', '気心知れた', '稽古仲間の', '同じ道場で鍛えた', '切磋琢磨の末の'],
+          ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '仲間割れマッチ！', '同門の意地！', '道場対抗戦！', 'クラブ内頂上戦！']);
       }
       if (rel.kind === 'same_attr') {
-        const a = rel.attr;
-        return cpCombine(['読み合い上等！', '場数を踏んだ', '勝負勘が光る', '反応速度が武器、', '別ジャンルの猛者'],
-                         [`${a}対決！`, `${a}同士の激突！`, `${a}の意地！`, `${a}マッチ！`, `${a}頂上決戦！`]);
+        const a = cpTruncateAttr(rel.attr);
+        return cpCombine(
+          ['同業対決、', '手練れ同士の', '切れ味対決、', '経験と経験の', '似た者同士の', '玄人対決、', '駆け引き光る', '読み合い上等'],
+          [`${a}対決！`, `${a}マッチ！`, `${a}の意地！`, `${a}激突！`, `${a}バトル！`, `${a}戦！`, `${a}頂上戦！`, `${a}決戦！`]);
       }
       if (rel.kind === 'cross_circle') {
-        return cpCombine(['威信を懸けた', '看板を背負う', '越境してきた', '名誉を懸けた', '二つの会が交わる'],
-                         ['サークル対抗戦！', 'クラブ対抗マッチ！', '越境対決！', '他流試合！', '交流戦の頂点！']);
+        return cpCombine(
+          ['威信を懸けた', '看板を背負う', '越境してきた', '名誉を懸けた', '二つの会が交わる', '会の誇りを懸けた', '遠征してきた', '初参戦の意地'],
+          ['サークル対抗戦！', 'クラブ対抗マッチ！', '越境対決！', '他流試合！', '交流戦の頂点！', 'クラブ代表対決！', '他クラブとの激突！', '対抗戦の華！']);
       }
       return '';
     }
     // 優先0: グランドファイナル×関係性の合成文
+    // ⚠️ w（関係性の呼称）は「きょうだい」等で最大5文字になりうる。head/tailの文字数上限は
+    //    w+head+tailの合計が17文字以内になるよう逆算して設定している（head<=3, tail<=9）。
     function cpGrandFinalWithRelation(rel) {
       const w = cpRelWord(rel);
       if (!w) return '';
-      return cpCombine([`${w}で挑む`, `${w}が辿り着いた`, `${w}で迎える`, `${w}対決の`, `${w}が交わる`],
-                       ['グランドファイナル！', '最終決戦！', '大会最後の一戦！', '栄冠を懸けた頂上戦！', '運命の決勝！']);
+      return cpCombine(
+        [`${w}で挑む`, `${w}が挑む`, `${w}対決の`, `${w}が競う`, `${w}が結ぶ`, `${w}が刻む`, `${w}の意地`, `${w}の証`, `${w}を懸け`, `${w}が輝く`, `${w}の頂点`, `${w}が導く`],
+        ['運命の決勝戦！', '大会最後の一戦！', '栄冠を懸けた戦い！', '最終決戦！', '運命の決勝！', '頂上決戦！', '大一番の舞台！', '全てを懸けた戦い！', '栄光の頂点戦！', '王座を懸けた一戦！', '大会最終決戦！', '運命のファイナル！']);
     }
     // 優先2: ステージ
     // ⚠️ 「決勝戦」「最終決戦」等の“大会の決着”を意味する語は GRAND FINAL / GF RESET 専用。
     //    WB FINAL / LB FINAL はブラケット内の準決勝相当なので、必ず固有名で呼ぶこと。
-    //    判定順を変えないこと（LB FINAL は LOSER の一般判定より先に評価する必要がある）。
+    //    判定順を変えないこと（LB FINAL は GRAND FINAL の後・3RD PLACE の前で評価する必要がある）。
+    // ⚠️ LOSER/敗者専用の分岐は撤去済み（意図的）。LB戦は WB と同じく
+    //    優先3(H2H)→優先4(戦績)→優先5(初対戦)のチェーンへ流す。
+    //    「サバイバル」「敗者復活」「背水」「崖っぷち」「生き残り」等の敗者専用語は
+    //    他のプールにも追加しないこと（敗者戦だけを見下す煽りが単調化する原因だったため）。
     function cpFromStage(label) {
       const s = String(label || '').toUpperCase();
       const raw = String(label || '');
       if (s.includes('GRAND FINAL') || s.includes('GF RESET')) {
-        return cpCombine(['栄冠を懸けた', '頂点を賭けた', '全てを出し切る', '王座を懸けた', '誰もが待った'],
-                         ['グランドファイナル！', 'ファイナルバトル！', '頂上決戦！', '最終決戦！', '大一番！']);
+        return cpCombine(
+          ['栄冠を懸けた', '頂点を賭けた', '全てを出し切る', '王座を懸けた', '誰もが待った', '大会最後の', '双方譲れぬ', '沸騰必至の', '一世一代の', '会場が震える', '全てが決まる', '緊張感高まる'],
+          ['グランドファイナル！', 'ファイナルバトル！', '頂上決戦！', '最終決戦！', '大一番！', '運命の一戦！', '栄光の瞬間！', '大会の頂点！', '王座決定戦！', '決着の時！', '最高の舞台！', '大会最終戦！']);
       }
       if (s.includes('WB FINAL')) {
-        return cpCombine(['無敗対決！', '土をつけるのはどっちだ、', '一つの負けも許されない', 'GF直行を懸けた', '勝てば頂上戦、'],
-                         ['ウィナーズファイナル！', 'ウィナーズ最終決戦！', 'ウィナーズの頂点争い！', 'ウィナーズ側の大一番！', 'ウィナーズ突破戦！']);
+        return cpCombine(
+          ['無敗対決の', '土をつける、', '一敗も許されぬ', 'GF直行を狙う', '勝てば頂上戦、', '無敗を懸けた', '負けが許されぬ', '勝者だけが進む', '両者無敗の', '実力証明の', '負け知らずの', '突き進む両雄の'],
+          ['ウィナーズ決戦！', 'ウィナーズ最終決戦！', 'ウィナーズ頂点争い！', 'ウィナーズの大一番！', 'ウィナーズ突破戦！', 'ウィナーズの意地！', '無敗対決の行方！', 'ウィナーズ王手！', '頂点まであと一勝！', 'GFへの切符争い！', 'ウィナーズ頂上戦！', '無敗継続の一戦！']);
       }
       if (s.includes('LB FINAL')) {
-        return cpCombine(['ここで負けたら終わり、', '這い上がってきた両者の', '最後の椅子を懸けた', 'GFへの最終関門、', '生き残るのは一人、'],
-                         ['ルーザーズファイナル！', 'ルーザーズ最終決戦！', 'ルーザーズの生き残り戦！', 'ルーザーズ側の大一番！', 'ルーザーズ突破戦！']);
+        return cpCombine(
+          ['後がない', '這い上がりし者', '最後の一枠へ', 'GFへの関門', '生き残るは一人', '敗者復活の切符', '崖っぷちの両者', '泥沼を抜けた', 'ラストチャンス', '生存を懸けた', '落ちれば終わり', '執念の生還'],
+          ['ルーザーズ決戦！', 'ルーザーズ最終決戦！', 'ルーザーズ生存戦！', 'ルーザーズの大一番！', 'ルーザーズ突破戦！', 'ルーザーズの意地！', '意地の生還！', 'ルーザーズ王手！', 'GFへの切符争い！', '最終関門突破戦！', 'ルーザーズ頂上戦！', '土俵際の一戦！']);
       }
       if (s.includes('3RD PLACE') || raw.includes('3位')) {
-        return cpCombine(['表彰台を懸けた', '意地と誇りの', '最後の一枠を争う', '譲れない', '締めくくりの'],
-                         ['3位決定戦！', '表彰台争い！', 'ブロンズマッチ！', '最後の一戦！', '意地の一番！']);
-      }
-      if (s.includes('LOSER') || raw.includes('敗者')) {
-        return cpCombine(['負けられない', '崖っぷちの', '後がない', '生存を懸けた', '意地を見せる'],
-                         ['背水の陣！', 'サバイバルマッチ！', '敗者復活の一戦！', '生き残り決戦！', 'リベンジロード！']);
+        return cpCombine(
+          ['表彰台を懸けた', '意地と誇りの', '最後の一枠を争う', '譲れない', '締めくくりの', '三番手を懸けた', '三番手の意地', '涙も笑いも懸けた', '負けられぬ三番手', '最後の表彰台へ', '意地の証明', '締めの一戦、'],
+          ['3位決定戦！', '表彰台争い！', 'ブロンズマッチ！', '最後の一戦！', '意地の一番！', '意地の三位戦！', '涙の表彰台！', '三番手決定戦！', '締めの一番！', '表彰台への切符！', '意地の一戦！', '最後の意地戦！']);
       }
       return '';
     }
@@ -4141,19 +4240,22 @@
     function cpFromH2H(w1, w2) {
       if (w1 == null || w2 == null) return '';
       if (w1 >= 1 && w2 >= 1) {
-        return cpCombine(['宿命の', '何度目かの', '決着つかぬ', '因縁深き', '譲れぬ'],
-                         ['ライバル対決！', '再戦マッチ！', '好敵手対決！', '決着戦！', 'リマッチ！']);
+        return cpCombine(
+          ['宿命の', '何度目かの', '決着つかぬ', '因縁深き', '譲れぬ', '幾度となき', '積年の', '決着を急ぐ', '三度目の', '火花散る', '伝説の再演、', '雌雄を決する'],
+          ['ライバル対決！', '再戦マッチ！', '好敵手対決！', '決着戦！', 'リマッチ！', 'ライバル決戦！', '因縁の一戦！', '決着マッチ！', '宿命の激突！', '再戦の行方！', '因縁再燃！', '決戦の再来！']);
       }
       if (w1 >= 1 || w2 >= 1) {
-        return cpCombine(['執念の', '借りを返す', '雪辱を期す', '過去を塗り替える', '牙を研いだ'],
-                         ['リベンジマッチ！', '仕返しの一戦！', '再戦！', '挑戦状！', '返り討ちなるか！']);
+        return cpCombine(
+          ['執念の', '借りを返す', '雪辱を期す', '過去を塗り替える', '牙を研いだ', '雪辱に燃える', '借りは返す、', '牙を磨いた', '再挑戦の', '捲土重来の', '意地を見せる', '汚名返上の'],
+          ['リベンジマッチ！', '仕返しの一戦！', '再戦！', '挑戦状！', '返り討ちなるか！', 'リベンジ戦！', '雪辱の一戦！', '再戦の行方！', '意地の一戦！', '牙を剥く一戦！', '雪辱の刻！', '再戦成るか！']);
       }
       return '';
     }
     // 優先5: 初顔合わせ（関係性・ステージ・H2H・戦績のいずれでも決まらない場合の最終手段）
     function cpFirstMeeting() {
-      return cpCombine(['予測不能の', '手の内知らぬ', '未知数の', 'データなしの', '互いに初めての'],
-                       ['初顔合わせ！', 'ファーストコンタクト！', '初対決！', 'ぶつかり合い！', '未知の激突！']);
+      return cpCombine(
+        ['予測不能の', '手の内知らぬ', '未知数の', 'データなしの', '互いに初めての', '情報戦の', '初対面同士の', '手探りの', '未体験の', '見えない相性の', 'ぶっつけ本番の', '互いに探り合う'],
+        ['初顔合わせ！', 'ファーストマッチ！', '初対決！', 'ぶつかり合い！', '未知の激突！', '初対面の激突！', '未知との遭遇！', '霧の中の一戦！', 'データなき戦い！', '読み合いの初陣！', '前例なき激突！', '初陣を飾れるか！']);
     }
     // 優先4: 戦績
     function cpFromStats(p1, p2) {
@@ -4165,17 +4267,20 @@
       const bp2 = Number(p2.currentStats && p2.currentStats.power) || 0;
       const bothTop = (t1 >= 3 && t2 >= 3) || (r1 != null && r2 != null && r1 >= 60 && r2 >= 60);
       if (bothTop) {
-        return cpCombine(['トップランカーの', '上位陣が激突する', '実力者同士の', '高ランク同士の', '会を代表する'],
-                         ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！']);
+        return cpCombine(
+          ['トップランカーの', '上位陣が激突する', '実力者同士の', '高ランク同士の', '会を代表する', '選ばれし者達の', '名だたる強者の', '頂点に立つ者の', '王者候補同士の', '格の違いなき', '一流対決、', '折り紙付き同士の'],
+          ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！', '頂上対決！', '王者の風格！', '頂点への布石！', '実力伯仲！', '最強決定戦！', '真の実力対決！', '頂上の激突！']);
       }
       if (Math.abs(t1 - t2) >= 2 || Math.abs(bp1 - bp2) >= 3000) {
-        return cpCombine(['魅せろ、', '金星を狙う', '下剋上を狙う', '格上に挑む', '常識を覆す'],
-                         ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！']);
+        return cpCombine(
+          ['魅せろ、', '金星を狙う', '下剋上を狙う', '格上に挑む', '常識を覆す', '風穴を開ける', '一発逆転狙う', '波乱を呼ぶ', '格差を覆す', '格上食いの', '下剋上なるか', '伏兵の一撃'],
+          ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！', '波乱の幕開け！', '金星ゲット！', '伏兵参上！', '格上撃破！', '大金星なるか！', '常識崩し！', '一矢報いる！']);
       }
-      return cpCombine(['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '譲らぬ両者の'],
-                       ['ガチンコバトル！', '真っ向勝負！', '総力戦！', '一騎打ち！', '大接戦必至！']);
+      return cpCombine(
+        ['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '譲らぬ両者の', '一歩も譲らぬ', '紙一重の', '一歩も引かぬ', '伯仲同士の', '互角すぎる', '決着つかぬ', '実力互角の'],
+        ['ガチンコバトル！', '真っ向勝負！', '総力戦！', '一騎打ち！', '大接戦必至！', '大熱戦必至！', '紙一重の勝負！', '五分の激突！', '一進一退！', '接戦必至！', '手に汗握る一戦！', '死闘必至！']);
     }
-    // 統括：優先0→1→2→3→4の順に評価し、最初に得られた1文を返す
+    // 統括：優先0→1→2→3→4→5の順に評価し、最初に得られた1文を返す
     function buildNextBattleCatchphrase(p1, p2, label, h2hP1Wins, h2hP2Wins) {
       const rel = getRelation(p1.name, p2.name);
       const s = String(label || '').toUpperCase();
@@ -4216,6 +4321,50 @@
       activeNextBattleId = matchKey;
     }
 
+    // 休憩中の振り返り演出（BREAK_RECAP）用データ生成。
+    // 確定済み（winner !== null）の全試合を新しい順（updatedAt降順）に最大50件。
+    // 過去試合分のコメントは match.comment に既に保存されているため、ここでは新規fetchしない
+    // （休憩中に通信待ちを起こさないため。既存の走査ヘルパー _deExportForEachMatch を流用）。
+    function buildBreakRecapData() {
+      const items = [];
+      _deExportForEachMatch((m, block, roundIdx) => {
+        if (!_deExportIsValidMatch(m)) return;
+        const stageLabel = (block === 'wb') ? 'WINNERS' : (block === 'losers') ? 'LOSERS' : 'FINAL STAGE';
+        const roundLabel = _deExportRoundLabel(block, roundIdx);
+        // m.score は setWinner() のみでは設定されず null のままのことがある（スコア未記録の手動確定など）。
+        // その場合は "0-0" と誤読させないよう score1/score2 自体を送らない（受信側で欄ごと非表示にする）。
+        let score1 = null, score2 = null;
+        if (m.score) {
+          const sp = String(m.score).split('-');
+          score1 = parseInt(sp[0], 10);
+          score2 = parseInt(sp[1], 10);
+          if (!Number.isFinite(score1) || !Number.isFinite(score2)) { score1 = null; score2 = null; }
+        }
+        const kimarite = (Array.isArray(m.battles) && m.battles.length)
+          ? m.battles.map(b => b.finish).filter(Boolean).join(',')
+          : '';
+        items.push({
+          label: `${stageLabel} - ${roundLabel}`,
+          p1: m.p1.name,
+          p2: m.p2.name,
+          score1, score2,
+          winnerIs: m.winner,
+          kimarite: kimarite || null,
+          comment: m.comment || null,
+          _updatedAt: m.updatedAt || 0
+        });
+      });
+      items.sort((a, b) => b._updatedAt - a._updatedAt);
+      return items.slice(0, 50).map(({ _updatedAt, ...rest }) => rest);
+    }
+
+    function sendBreakRecap() {
+      if (!conn || !conn.open) return;
+      const items = buildBreakRecapData();
+      if (!items.length) return;
+      conn.send({ type: 'BREAK_RECAP', items, intervalMs: 8000 });
+    }
+
     function sendBreakStart() {
         if (!conn || !conn.open) return;
         // 次戦予告と同じロゴ設定を流用
@@ -4229,6 +4378,7 @@
             p2: '',
             ...hudFields
         });
+        sendBreakRecap();
         isBreakMode = true;
         updateBreakButton();
     }
@@ -4242,6 +4392,7 @@
             p2: p2 || '',
             ...hudFields
         });
+        sendBreakRecap();
         isBreakMode = true;
         updateBreakButton();
     }
@@ -4650,9 +4801,12 @@
         const round = _deExportRoundLabel(block, roundIdx);
         roundMatchCounters[round] = (roundMatchCounters[round] || 0) + 1;
         const matchNo = roundMatchCounters[round];
+        // そのマッチの最終的な勝者（全バトル行に同じ値が入る）
+        const matchWinnerLabel = m.winner === 1 ? 'P1' : (m.winner === 2 ? 'P2' : '');
         m.battles.forEach((b) => {
-          const p1Parts = resolveBeyParts(m.p1, b.p1Bey);
-          const p2Parts = resolveBeyParts(m.p2, b.p2Bey);
+          // サブ機経由の試合は battles[].p1Bey/p2Bey が空のため、試合単位の BeyUsed を代替に使う
+          const p1Parts = resolveBeyParts(m.p1, b.p1Bey || m.p1BeyUsed || '');
+          const p2Parts = resolveBeyParts(m.p2, b.p2Bey || m.p2BeyUsed || '');
           const winnerLabel = b.winner === 'p1' ? 'P1' : (b.winner === 'p2' ? 'P2' : '');
           const row = [
             _deExportTs(b.ts),
@@ -4662,7 +4816,7 @@
             b.no,
             m.p1.name, p1Parts.type, p1Parts.lockChip, p1Parts.blade, p1Parts.overBlade, p1Parts.assistBlade, p1Parts.ratchet, p1Parts.bit,
             m.p2.name, p2Parts.type, p2Parts.lockChip, p2Parts.blade, p2Parts.overBlade, p2Parts.assistBlade, p2Parts.ratchet, p2Parts.bit,
-            winnerLabel, b.finish, b.pts, b.scoreP1, b.scoreP2
+            winnerLabel, b.finish, b.pts, b.scoreP1, b.scoreP2, matchWinnerLabel
           ].map(_deExportClean).join('\t');
           exportText += row + '\n';
         });
@@ -4686,7 +4840,7 @@
       const hint = document.getElementById('exportColumnsHint');
       if (hint) {
         hint.textContent = currentExportMode === 'battle'
-          ? '列: 記録日時/大会名/ラウンド/試合No/本目/P1名〜ビット(7列)/P2名〜ビット(7列)/勝者/決まり手/獲得pt/P1累計/P2累計'
+          ? '列: 記録日時/大会名/ラウンド/試合No/本目/P1名〜ビット(8列)/P2名〜ビット(8列)/取得サイド/決まり手/獲得pt/P1累計/P2累計/マッチ勝者'
           : '列: P1/P2/勝者/ラウンド/P1決まり手/P2決まり手/コメント';
       }
     }
@@ -5825,8 +5979,32 @@
       h => `${h.winner}が意地を見せる　GFリセット制し${h.score}で${h.loser}を下す`
     ];
 
+    // スコアが記録されていない試合（例: 結果を取り消した後に勝者だけ入れ直した場合）向け。
+    // ${h.score} を埋めると「制しでルーくんを下す」のように助詞が壊れるため専用の文型を使う
+    const REPORT_HEADLINE_TITLES_NORMAL_NOSCORE = [
+      h => `${h.winner}、${h.loser}を下し優勝`,
+      h => `${h.winner}が頂点に立つ\u3000${h.loser}を撃破`,
+      h => `激闘を制したのは${h.winner}\u3000${h.loser}を下す`,
+      h => `${h.winner}が栄冠\u3000${h.loser}との激戦を制す`,
+      h => `頂点は${h.winner}の手に\u3000${h.loser}を退ける`
+    ];
+    const REPORT_HEADLINE_TITLES_RESET_NOSCORE = [
+      h => `${h.winner}、敗者復活から頂点へ\u3000GFリセット戦を制して優勝`,
+      h => `${h.winner}が大逆転優勝\u3000GFリセット戦で${h.loser}を破る`,
+      h => `一度は敗れた${h.winner}がリセットで巻き返し優勝\u3000${h.loser}を下す`,
+      h => `${h.winner}、土俵際からの逆襲\u3000GFリセット戦を制して${h.loser}を下す`,
+      h => `敗者復活からの快進撃\u3000${h.winner}がGFリセット戦で${h.loser}を下す`,
+      h => `${h.winner}が意地を見せる\u3000GFリセット戦を制して優勝`
+    ];
+
+    function reportHasScore(h) {
+      return !!(h && h.score && String(h.score).trim());
+    }
+
     function reportBuildHeadlineTitle(h) {
-      const pool = h.isReset ? REPORT_HEADLINE_TITLES_RESET : REPORT_HEADLINE_TITLES_NORMAL;
+      const pool = reportHasScore(h)
+        ? (h.isReset ? REPORT_HEADLINE_TITLES_RESET : REPORT_HEADLINE_TITLES_NORMAL)
+        : (h.isReset ? REPORT_HEADLINE_TITLES_RESET_NOSCORE : REPORT_HEADLINE_TITLES_NORMAL_NOSCORE);
       return pickRandom(pool)(h);
     }
 
@@ -5853,8 +6031,22 @@
       '劇的な幕切れとなった。'
     ];
 
+    const REPORT_FALLBACK_OPENINGS_NORMAL_NOSCORE = [
+      h => `${h.winner}が${h.loser}を下し、頂点に立った。`,
+      h => `激戦を制したのは${h.winner}。${h.loser}を振り切っての優勝となった。`,
+      h => `${h.winner}が終始安定した強さを見せ、${h.loser}を下して優勝を飾った。`
+    ];
+    const REPORT_FALLBACK_OPENINGS_RESET_NOSCORE = [
+      h => `一度はグランドファイナルで敗れた${h.winner}が、リセット戦で${h.loser}を下し逆転優勝を果たした。`,
+      h => `敗者復活からの勝ち上がりを経て、${h.winner}がグランドファイナルリセットを制した。`,
+      h => `土俵際に追い込まれた${h.winner}が、リセット戦で底力を見せ${h.loser}を下した。`
+    ];
+
     function reportBuildFallbackComment(h) {
-      const openings = h.isReset ? REPORT_FALLBACK_OPENINGS_RESET : REPORT_FALLBACK_OPENINGS_NORMAL;
+      const hasScore = reportHasScore(h);
+      const openings = hasScore
+        ? (h.isReset ? REPORT_FALLBACK_OPENINGS_RESET : REPORT_FALLBACK_OPENINGS_NORMAL)
+        : (h.isReset ? REPORT_FALLBACK_OPENINGS_RESET_NOSCORE : REPORT_FALLBACK_OPENINGS_NORMAL_NOSCORE);
       const closings = h.isReset ? REPORT_FALLBACK_CLOSINGS_RESET : REPORT_FALLBACK_CLOSINGS_NORMAL;
       return `${pickRandom(openings)(h)}${pickRandom(closings)}`;
     }
@@ -6199,11 +6391,11 @@
           const item = fp[code];
           const shortLabel = REPORT_FINISH_JA_SHORT[code] || code;
           return `
-            <div style="background:#ffffff; border:1px solid #d6d1c4; padding:12px 14px;">
-              <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; color:#57534e; margin-bottom:4px;">${reportEscapeHtml(shortLabel)}を呼ぶ</div>
-              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
-                <span style="font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#14161a; white-space:nowrap; overflow:hidden; flex:1 1 auto; min-width:0;">${reportEscapeHtml(item.part)}</span>
-                <span style="font-family:'Orbitron', sans-serif; font-size:13px; color:#a8321e; flex:none; white-space:nowrap;">${code}率${item.percent}%（平均の${item.ratio.toFixed(1)}倍）</span>
+            <div style="background:#ffffff; border:1px solid #d6d1c4; padding:12px 14px 14px;">
+              <div style="font-family:'Noto Sans JP', sans-serif; font-size:13px; line-height:1.5; color:#57534e; margin-bottom:4px;">${reportEscapeHtml(shortLabel)}を呼ぶ</div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; line-height:1.5;">
+                <span style="display:block; font-family:'Noto Sans JP', sans-serif; font-size:17px; line-height:1.5; font-weight:700; color:#14161a; white-space:nowrap; flex:0 1 auto; min-width:0;">${reportEscapeHtml(item.part)}</span>
+                <span style="display:block; font-family:'Orbitron', sans-serif; font-size:11px; line-height:1.5; color:#a8321e; flex:none; white-space:nowrap;">${code}率${item.percent}%（平均の${item.ratio.toFixed(1)}倍）</span>
               </div>
             </div>`;
         }).join('');
@@ -6211,7 +6403,7 @@
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">決まり手を呼ぶパーツ</div>
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">${cards}</div>
         </div>`;
     }
 
@@ -6349,11 +6541,15 @@
       const hasNext = !!(nextEventText && nextEventText.trim());
       if (!hasNote && !hasNext) return '';
       // <br>変換ではなくwhite-space:pre-wrapで改行を扱う。html2canvasでの折り返し行ずれを避けるため
+      // 文字数に応じて本文サイズを段階的に落とす（枠は1200x1350固定のため溢れ防止）
+      const noteLen = (hasNote ? noteText.trim().length : 0) + (hasNext ? nextEventText.trim().length : 0);
+      const noteSize = noteLen <= 120 ? 20 : noteLen <= 200 ? 18 : noteLen <= 300 ? 16 : noteLen <= 420 ? 15 : noteLen <= 560 ? 14 : 13;
+      const noteLh = noteSize >= 18 ? 1.9 : noteSize >= 15 ? 1.8 : 1.7;
       const noteHtml = hasNote
-        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.8; color:#3f3f46; white-space:pre-wrap; text-indent:0; margin:0;">${reportEscapeHtml(noteText.trim())}</div>`
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:${noteSize}px; line-height:${noteLh}; color:#3f3f46; white-space:pre-wrap; text-indent:0; margin:0;">${reportEscapeHtml(noteText.trim())}</div>`
         : '';
       const nextHtml = hasNext
-        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#14161a; margin-top:10px; white-space:pre-wrap; text-indent:0;">${reportEscapeHtml(nextEventText.trim())}</div>`
+        ? `<div style="font-family:'Noto Sans JP', sans-serif; font-size:${noteSize}px; font-weight:700; color:#14161a; margin-top:10px; white-space:pre-wrap; text-indent:0;">${reportEscapeHtml(nextEventText.trim())}</div>`
         : '';
       return `
         <div style="flex:1 1 auto; background:#ffffff; border:1px solid #d6d1c4; padding:12px 15px;">
@@ -6401,7 +6597,7 @@
         reportBuildFinishByParts(data),
         reportBuildBladeMatchups(data),
         reportBuildRecords(data),
-        reportBuildOnlyOne(data),
+        // 編集後記のスペース確保のため「本日のオンリーワン」は紙面から除外（関数は残置）
         reportBuildAllStandings(data),
         reportBuildEditorial(noteText, nextEventText),
         reportBuildFooter(2)
