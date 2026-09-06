@@ -1366,10 +1366,21 @@ nav {
 .bd-wr-card { margin-bottom: 14px; }
 .bd-wr-label { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #94a3b8; }
 .bd-wr-num { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 800; color: #e2e8f0; line-height: 1.1; }
-.bd-wr-sub { font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: #94a3b8; }
+.bd-wr-sub { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; line-height: 1.5; color: #94a3b8; }
+.bd-wr-main  { display: flex; gap: 14px; align-items: flex-start; }
+.bd-wr-left  { flex: 0 0 auto; min-width: 110px; }
+.bd-wr-right { flex: 1 1 0; min-width: 0; border-left: 1px solid rgba(255,255,255,0.08); padding-left: 14px; }
+.bd-pt-row   { padding: 3px 0; white-space: nowrap; }
+.bd-pt-row.is-ratio { padding-top: 5px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.08); }
+.bd-pt-label { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; }
+.bd-pt-val   { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: #e2e8f0; margin-left: 3em; }
+.bd-pt-note  { font-family: 'Orbitron', monospace; font-size: 10px; color: #475569; margin-left: 5px; }
+.bd-ratio    { font-size: 18px; }
+.bd-ratio.is-good { color: #00ff88; }
+.bd-ratio.is-bad  { color: #64748b; }
 .bd-sec-label { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #94a3b8; margin: 14px 0 8px; }
 .bd-fin-block { margin-bottom: 12px; }
-.bd-fin-label { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
+.bd-fin-label { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #94a3b8; margin-bottom: 5px; white-space: nowrap; }
 .bd-bar-track { display: flex; }
 .bd-fin-text { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; margin-top: 5px; }
 .bd-fin-tok { color: currentColor; }
@@ -1391,6 +1402,14 @@ nav {
 .bd-vs-name { margin-right: 3em; white-space: nowrap; }
 .bd-vs-wr { font-family: 'Orbitron', monospace; font-weight: 700; color: #94a3b8; margin-right: 12px; }
 .bd-vs-rec { font-family: 'Orbitron', monospace; font-size: 12px; color: #64748b; }
+.bd-vs-rec { display: none; }
+.bd-vs-ratio-label { font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: #94a3b8; margin-left: 12px; }
+.bd-vs-ratio       { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #94a3b8; margin-left: 5px; }
+.bd-vs-ratio.is-good { color: #00ff88; }
+.bd-vs-ratio.is-bad  { color: #64748b; }
+.bd-fin-avg-label  { font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: #94a3b8; margin-left: 3em; }
+.bd-fin-avg-val    { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #e2e8f0; margin-left: 6px; }
+.bd-fin-block.is-received .bd-fin-avg-label { margin-left: 2em; }
 .bd-vs-chev { margin-left: auto; color: #475569; transition: transform .15s; }
 .bd-vs-row.is-open .bd-vs-chev { transform: rotate(180deg); }
 .bd-vs-sub { padding: 10px 0 4px; }
@@ -2410,7 +2429,7 @@ function buildBladeMetaRowsHtml(rows) {
 
 // 決まり手の横積みバー＋テキスト（取った／取られた 共用）。
 // 既存の .gfr-bar-track / .gfr-bar-fill と fin-XF 等の色クラスを流用する。
-function bdFinishBlock(label, obj) {
+function bdFinishBlock(label, obj, avgLabel, avgVal) {
   const keys = Object.keys(FINISH_TYPE_META);
   const sum  = keys.reduce(function(s, k) { return s + (obj[k] || 0); }, 0);
   if (sum === 0) return '';
@@ -2421,8 +2440,13 @@ function bdFinishBlock(label, obj) {
   const txt = shown.map(function(k) {
     return '<span class="bd-fin-tok ' + finishTypeClass(k) + '">' + k + ' ' + obj[k] + '</span>';
   }).join('<span class="bd-fin-sep">・</span>');
-  return '<div class="bd-fin-block">'
-    + '<div class="bd-fin-label">' + label + '</div>'
+  return '<div class="bd-fin-block' + (avgLabel === '平均失点' ? ' is-received' : '') + '">'
+    + '<div class="bd-fin-label">' + label
+    +   (avgLabel
+          ? '<span class="bd-fin-avg-label">' + avgLabel + '</span>'
+            + '<span class="bd-fin-avg-val">' + avgVal + '</span>'
+          : '')
+    + '</div>'
     + '<div class="gfr-bar-track bd-bar-track">' + seg + '</div>'
     + '<div class="bd-fin-text">' + txt + '</div>'
     + '</div>';
@@ -2433,10 +2457,38 @@ function buildBladeDetailHtml(stat) {
   let html = '<div class="bd-inner">';
 
   // ① 勝率カード
+  const losses  = stat.total - stat.wins;
+  const avgFor  = stat.wins   > 0 ? stat.ptsFor     / stat.wins   : null;
+  const avgAgst = losses      > 0 ? stat.ptsAgainst / losses      : null;
+  const ratio   = (avgFor !== null && avgAgst !== null && avgAgst > 0) ? avgFor / avgAgst : null;
+  const fmt2    = function(v) { return v === null ? '—' : v.toFixed(2); };
+  const ratioCls = ratio === null ? '' : (ratio >= 1 ? ' is-good' : ' is-bad');
+
   html += '<div class="bd-wr-card">'
-    + '<div class="bd-wr-label">勝率</div>'
-    + '<div class="bd-wr-num">' + (stat.winRate * 100).toFixed(1) + '%</div>'
-    + '<div class="bd-wr-sub">' + stat.total + '戦' + stat.wins + '勝 ／ ' + stat.players.size + '人が使用</div>'
+    + '<div class="bd-wr-main">'
+    +   '<div class="bd-wr-left">'
+    +     '<div class="bd-wr-label">勝率</div>'
+    +     '<div class="bd-wr-num">' + (stat.winRate * 100).toFixed(1) + '%</div>'
+    +     '<div class="bd-wr-sub">' + stat.total + '戦' + stat.wins + '勝</div>'
+    +     '<div class="bd-wr-sub">' + stat.players.size + '人が使用</div>'
+    +   '</div>'
+    +   '<div class="bd-wr-right">'
+    +     '<div class="bd-pt-row">'
+    +       '<span class="bd-pt-label">平均得点</span>'
+    +       '<span class="bd-pt-val">' + fmt2(avgFor) + '</span>'
+    +       '<span class="bd-pt-note">' + stat.ptsFor + '/' + stat.wins + '</span>'
+    +     '</div>'
+    +     '<div class="bd-pt-row">'
+    +       '<span class="bd-pt-label">平均失点</span>'
+    +       '<span class="bd-pt-val">' + fmt2(avgAgst) + '</span>'
+    +       '<span class="bd-pt-note">' + stat.ptsAgainst + '/' + losses + '</span>'
+    +     '</div>'
+    +     '<div class="bd-pt-row is-ratio">'
+    +       '<span class="bd-pt-label">RATIO</span>'
+    +       '<span class="bd-pt-val bd-ratio' + ratioCls + '">' + fmt2(ratio) + '</span>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
     + '</div>';
 
   // ②③ 取った／取られた 決まり手
@@ -2468,11 +2520,20 @@ function buildBladeDetailHtml(stat) {
     html += vs.map(function(entry) {
       const v   = entry[1];
       const vwr = v.total > 0 ? (v.wins / v.total * 100).toFixed(1) : '0.0';
-      const sub = bdFinishBlock('取った決まり手', v.taken) + bdFinishBlock('取られた決まり手', v.received);
+      const vLoss  = v.total - v.wins;
+      const vFor   = v.wins > 0 ? v.ptsFor     / v.wins  : null;
+      const vAgst  = vLoss  > 0 ? v.ptsAgainst / vLoss   : null;
+      const vRatio = (vFor !== null && vAgst !== null && vAgst > 0) ? vFor / vAgst : null;
+      const vf2    = function(x) { return x === null ? '—' : x.toFixed(2); };
+      const vRatioCls = vRatio === null ? '' : (vRatio >= 1 ? ' is-good' : ' is-bad');
+      const sub = bdFinishBlock('取った決まり手',   v.taken,    '平均得点', vf2(vFor))
+                + bdFinishBlock('取られた決まり手', v.received, '平均失点', vf2(vAgst));
       return '<div class="bd-vs-row" onclick="this.classList.toggle(\'is-open\');this.nextElementSibling.classList.toggle(\'hidden\')">'
         + '<span class="bd-vs-name">vs ' + escHtml(entry[0]) + '</span>'
         + '<span class="bd-vs-wr">' + vwr + '%</span>'
         + '<span class="bd-vs-rec">' + v.total + '戦' + v.wins + '勝</span>'
+        + '<span class="bd-vs-ratio-label">RATIO</span>'
+        + '<span class="bd-vs-ratio' + vRatioCls + '">' + vf2(vRatio) + '</span>'
         + '<span class="bd-vs-chev">▾</span>'
         + '</div>'
         + '<div class="bd-vs-sub hidden">' + (sub || '<div class="stat-empty">決まり手データなし</div>') + '</div>';
@@ -2668,7 +2729,7 @@ async function fetchBladeBattleStats() {
   function getEntry(key) {
     let e = map.get(key);
     if (!e) {
-      e = { wins: 0, total: 0, winRate: 0, players: new Set(),
+      e = { wins: 0, total: 0, winRate: 0, ptsFor: 0, ptsAgainst: 0, players: new Set(),
             taken: blankFin(), received: blankFin(),
             builds: new Map(), vs: new Map() };
       map.set(key, e);
@@ -2689,14 +2750,14 @@ async function fetchBladeBattleStats() {
   }
 
   // self / opp は {name,type,over,assist,ratchet,bit,blade} 形式
-  function register(self, opp, selfTook, oppTook, fin) {
+  function register(self, opp, selfTook, oppTook, fin, pts) {
     const key = normalizeBladeKey(self.blade);
     if (!key) return;
     const e = getEntry(key);
     e.total++;
     if (self.name) e.players.add(self.name);
-    if (selfTook) { e.wins++; e.taken[fin]++; }
-    if (oppTook)  { e.received[fin]++; }
+    if (selfTook) { e.wins++; e.taken[fin]++; e.ptsFor     += pts; }
+    if (oppTook)  {                          e.ptsAgainst += pts; }
 
     const bKey = buildKey(self.type, self.over, self.assist, self.ratchet, self.bit);
     if (bKey) {
@@ -2710,10 +2771,10 @@ async function fetchBladeBattleStats() {
     const vsKey = normalizeBladeKey(opp.blade);
     if (vsKey) {
       let v = e.vs.get(vsKey);
-      if (!v) { v = { wins: 0, total: 0, taken: blankFin(), received: blankFin() }; e.vs.set(vsKey, v); }
+      if (!v) { v = { wins: 0, total: 0, ptsFor: 0, ptsAgainst: 0, taken: blankFin(), received: blankFin() }; e.vs.set(vsKey, v); }
       v.total++;
-      if (selfTook) { v.wins++; v.taken[fin]++; }
-      if (oppTook)  { v.received[fin]++; }
+      if (selfTook) { v.wins++; v.taken[fin]++; v.ptsFor += pts; }
+      if (oppTook)  { v.received[fin]++; v.ptsAgainst += pts; }
     }
   }
 
@@ -2741,8 +2802,10 @@ async function fetchBladeBattleStats() {
                  over: (r[17] || '').trim(), assist: (r[18] || '').trim(),
                  ratchet: (r[19] || '').trim(), bit: (r[20] || '').trim(), blade: (r[16] || '').trim() };
 
-    register(p1, p2, p1Took, p2Took, fin);
-    register(p2, p1, p2Took, p1Took, fin);
+    const ptsRaw = Number(r[23]);
+    const pts    = Number.isFinite(ptsRaw) && ptsRaw > 0 ? ptsRaw : 0;
+    register(p1, p2, p1Took, p2Took, fin, pts);
+    register(p2, p1, p2Took, p1Took, fin, pts);
   });
 
   map.forEach(function(e) {
