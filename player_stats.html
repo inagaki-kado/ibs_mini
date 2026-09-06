@@ -2757,7 +2757,7 @@ async function fetchBladeBattleStats() {
     e.total++;
     if (self.name) e.players.add(self.name);
     if (selfTook) { e.wins++; e.taken[fin]++; e.ptsFor     += pts; }
-    if (oppTook)  {                          e.ptsAgainst += pts; }
+    if (oppTook)  { e.received[fin]++;        e.ptsAgainst += pts; }
 
     const bKey = buildKey(self.type, self.over, self.assist, self.ratchet, self.bit);
     if (bKey) {
