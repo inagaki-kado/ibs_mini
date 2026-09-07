@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>デッキ登録 - 板橋ベイブレード会</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          'sans': ['Noto Sans JP', 'sans-serif'],
+          'orbitron': ['Orbitron', 'sans-serif'],
+        },
+        colors: {
+          'cyber-bg': '#0a0e17',
+          'cyber-dark': '#111827',
+          'cyber-blue': '#0ea5e9',
+          'cyber-green': '#22c55e',
+          'cyber-pink': '#ec4899',
+          'cyber-red': '#ff0055',
+          'cyber-orange': '#ffaa00',
+          'cyber-text': '#e2e8f0',
+          'cyber-table-border': '#1f2937',
+          'cyber-on-blue': '#04263a'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color: #0a0e17; color: #e2e8f0; -webkit-text-size-adjust: 100%; }
+  .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+  button { touch-action: manipulation; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+  .row { border-bottom: 1px solid #1f2937; }
+  input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+</style>
+</head>
+<body class="font-sans">
+
+<div class="max-w-md mx-auto min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="px-4 py-3 border-b border-cyber-table-border flex items-center justify-between sticky top-0 bg-cyber-bg z-10">
+    <span class="font-sf text-cyber-blue text-sm">DECK ENTRY</span>
+    <span id="hdr-event" class="text-xs text-gray-500"></span>
+  </header>
+
+  <main class="flex-1 px-4 py-4">
+
+    <!-- 読み込み中 -->
+    <section id="screen-loading">
+      <p class="text-sm text-gray-400 py-10 text-center">読み込んでいます…</p>
+    </section>
+
+    <!-- エラー -->
+    <section id="screen-error" class="hidden">
+      <div class="bg-cyber-dark border border-cyber-red rounded-lg p-4">
+        <p class="text-cyber-red font-bold text-sm mb-2">接続できません</p>
+        <p id="error-msg" class="text-sm text-gray-300 leading-relaxed"></p>
+      </div>
+      <button onclick="location.reload()" class="w-full mt-4 py-3 bg-cyber-dark border border-cyber-table-border rounded-lg text-cyber-blue font-bold">もう一度読み込む</button>
+    </section>
+
+    <!-- 名前選択 -->
+    <section id="screen-name" class="hidden">
+      <p class="text-xs text-gray-400 mb-2">自分の名前を選んでください</p>
+      <input id="name-search" type="search" inputmode="search" placeholder="名前で絞り込む"
+             class="w-full bg-cyber-dark border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600 mb-2">
+      <p id="name-count" class="text-xs text-gray-500 mb-2"></p>
+      <div id="name-list"></div>
+    </section>
+
+    <!-- デッキ一覧 -->
+    <section id="screen-deck" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-xs text-gray-500">ブレーダー</p>
+          <p id="deck-name" class="text-lg font-bold text-cyber-text"></p>
+        </div>
+        <button onclick="backToNames()" class="text-xs text-gray-500 underline">名前を変える</button>
+      </div>
+      <p id="deck-progress" class="text-xs text-cyber-blue mb-2"></p>
+      <div id="deck-list" class="mb-3"></div>
+      <div id="deck-warn" class="hidden bg-cyber-dark border-l-4 border-cyber-orange p-3 mb-3">
+        <p class="text-xs text-cyber-orange font-bold mb-1">パーツの重複があります</p>
+        <p id="deck-warn-body" class="text-xs text-gray-300 leading-relaxed"></p>
+      </div>
+      <button id="btn-add" onclick="startAdd()"
+              class="w-full py-3 border border-dashed border-cyber-table-border rounded-lg text-cyber-blue text-sm mb-3">＋ ベイを追加する</button>
+      <button id="btn-submit" onclick="submitDeck()"
+              class="w-full py-4 rounded-lg font-bold text-base">受付に送信する</button>
+      <p class="text-xs text-gray-600 mt-3 leading-relaxed">送信後の変更は運営のみが行えます。内容をよく確認してから送信してください。</p>
+    </section>
+
+    <!-- タイプ選択 -->
+    <section id="screen-type" class="hidden">
+      <button onclick="showDeck()" class="text-xs text-gray-500 mb-3">‹ 戻る</button>
+      <p class="text-xs text-gray-400 mb-3">ベイのタイプを選んでください</p>
+      <div id="type-list" class="grid grid-cols-2 gap-2"></div>
+    </section>
+
+    <!-- パーツ選択 -->
+    <section id="screen-part" class="hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <button onclick="partBack()" class="text-xs text-gray-500">‹ 戻る</button>
+        <span id="part-title" class="text-sm text-cyber-blue font-bold"></span>
+      </div>
+      <div id="part-note" class="hidden bg-cyber-dark border-l-4 border-cyber-orange p-2 mb-3">
+        <p id="part-note-body" class="text-xs text-cyber-orange"></p>
+      </div>
+      <div id="part-chosen" class="text-xs text-gray-500 mb-2 leading-relaxed"></div>
+      <input id="part-search" type="search" inputmode="search" placeholder="絞り込む"
+             class="w-full bg-cyber-dark border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600 mb-2">
+      <p id="part-count" class="text-xs text-gray-500 mb-2"></p>
+      <div id="part-list"></div>
+    </section>
+
+    <!-- 完了 -->
+    <section id="screen-done" class="hidden">
+      <div class="text-center py-10">
+        <p class="font-sf text-cyber-green text-2xl mb-3">SENT</p>
+        <p class="text-sm text-gray-300 mb-1">受付に送信しました</p>
+        <p id="done-name" class="text-lg font-bold text-cyber-text mb-6"></p>
+        <div id="done-list" class="text-left mb-6"></div>
+        <p class="text-xs text-gray-500 leading-relaxed">運営が内容を確認して登録します。<br>間違いに気づいたら運営に直接お知らせください。</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ==========================================
+// 設定
+// ==========================================
+
+/**
+ * GASウェブアプリのURL。デプロイ後にここへ貼り付ける。
+ * 末尾は必ず /exec。/dev では動かない。
+ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+
+/**
+ * 特定パーツを選ぶと以降の工程を飛ばす規則。
+ * parts.csv の1列目（パーツID）で判定する。
+ *   UXE : UXエクスパンド。ラチェットを装備できない
+ *   RAE : Tr / Op。ビットを装備できない特殊ラチェット
+ * 今後増えたら parts.csv にプリフィックスを足してここに1行加えるだけでよい。
+ */
+const PART_SKIP_RULES = { 'UXE': 'RC2', 'RAE': 'BT' };
+
+/** 工程の表示名 */
+const PART_LABELS = {
+  BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+  MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+  RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+};
+
+/** ロックチップの重複を警告する対象（tournament_de.html と同じ規則） */
+const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+
+const MAX_BEYS = 3;
+
+// ==========================================
+// 状態
+// ==========================================
+
+let sessionCode = '';
+let partsData = [];
+let roster = [];
+let me = null;              // { id, name }
+let myBeys = [];            // [{ type, name, parts }]
+let sel = {};               // 選択中のパーツ（hudName）
+let selIds = {};            // 選択中のパーツID（スキップ判定用）
+let path = [];              // 現在の工程配列
+let step = 0;
+let sending = false;
+
+// ==========================================
+// 起動
+// ==========================================
+
+window.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  sessionCode = (params.get('s') || '').trim();
+
+  if (!/^[0-9]{4}$/.test(sessionCode)) {
+    return fail('受付コードが読み取れませんでした。会場に表示されているQRコードをもう一度読み込んでください。');
+  }
+  if (GAS_URL.indexOf('http') !== 0) {
+    return fail('このページの設定が終わっていません。運営にお知らせください。');
+  }
+
+  try {
+    partsData = await loadParts();
+  } catch (err) {
+    return fail('パーツ情報を読み込めませんでした。通信状況を確認して、もう一度読み込んでください。');
+  }
+
+  try {
+    const res = await apiGet({ a: 'roster', s: sessionCode });
+    if (!res.ok) {
+      if (res.reason === 'no_session') return fail('受付がまだ始まっていません。運営にお知らせください。');
+      return fail('受付情報を取得できませんでした。もう一度読み込んでください。');
+    }
+    if (!res.open) return fail('受付は終了しています。運営に直接お申し出ください。');
+
+    roster = res.roster || [];
+    document.getElementById('hdr-event').textContent = res.eventName || '';
+    showNames();
+  } catch (err) {
+    return fail('通信できませんでした。電波の良い場所でもう一度読み込んでください。');
+  }
+}
+
+function fail(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  show('error');
+}
+
+// ==========================================
+// 通信
+// ==========================================
+
+async function apiGet(params) {
+  const q = new URLSearchParams(params).toString();
+  const res = await fetch(GAS_URL + '?' + q, { method: 'GET' });
+  return await res.json();
+}
+
+/**
+ * Content-Type は text/plain にする。
+ * application/json にするとブラウザが preflight(OPTIONS) を投げ、
+ * GAS が応答できないため通信が失敗する。
+ */
+async function apiPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  return await res.json();
+}
+
+// ==========================================
+// parts.csv
+// ==========================================
+
+async function loadParts() {
+  const res = await fetch('parts.csv?v=' + Date.now());
+  if (!res.ok) throw new Error('parts.csv');
+  return parsePartsCSV(await res.text());
+}
+
+/** tournament_de.html と同じ並び順（頻出を先頭、以降50音順） */
+function parsePartsCSV(csvText) {
+  const lines = csvText.split('\n');
+  const parts = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const v = line.replace(/\r/g, '').split(',');
+    const part = {
+      id: (v[0] || '').trim(),
+      selectionName: (v[1] || '').trim(),
+      hudName: (v[2] || '').trim(),
+      isFrequent: parseFloat(v[3]) === 1
+    };
+    if (part.id && part.selectionName) parts.push(part);
+  }
+  parts.sort((a, b) => {
+    if (a.isFrequent !== b.isFrequent) return a.isFrequent ? -1 : 1;
+    return a.selectionName.localeCompare(b.selectionName, 'ja');
+  });
+  return parts;
+}
+
+/** tournament_de.html と同じ絞り込み規則。UXE は UX に、RAE は RA に前方一致で含まれる */
+function getPartsByCategory(categoryId) {
+  if (categoryId === 'RC2') return partsData.filter(p => p.id.indexOf('RA') === 0);
+  if (categoryId === 'BT')  return partsData.filter(p => p.id.indexOf('BT') === 0);
+  return partsData.filter(p => p.id.indexOf(categoryId) === 0);
+}
+
+// ==========================================
+// 画面切り替え
+// ==========================================
+
+function show(name) {
+  ['loading', 'error', 'name', 'deck', 'type', 'part', 'done'].forEach(k => {
+    document.getElementById('screen-' + k).classList.toggle('hidden', k !== name);
+  });
+  window.scrollTo(0, 0);
+}
+
+// ==========================================
+// 名前選択
+// ==========================================
+
+function showNames() {
+  show('name');
+  const box = document.getElementById('name-search');
+  box.value = '';
+  box.oninput = renderNames;
+  renderNames();
+}
+
+function backToNames() {
+  me = null;
+  myBeys = [];
+  showNames();
+}
+
+/** 先頭文字から50音の行を求める。英数字は末尾にまとめる */
+function kanaRow(name) {
+  const c = (name || '').charAt(0);
+  if (!c) return 'その他';
+  const code = c.charCodeAt(0);
+  if (code < 0x3040) return 'A - Z';
+  // カタカナをひらがなに寄せる
+  let h = c;
+  if (code >= 0x30A1 && code <= 0x30F6) h = String.fromCharCode(code - 0x60);
+  const rows = [
+    ['あ行', 'あぁいぃうぅえぇおぉ'], ['か行', 'かがきぎくぐけげこご'],
+    ['さ行', 'さざしじすずせぜそぞ'], ['た行', 'ただちぢっつづてでとど'],
+    ['な行', 'なにぬねの'],           ['は行', 'はばぱひびぴふぶぷへべぺほぼぽ'],
+    ['ま行', 'まみむめも'],           ['や行', 'やゃゆゅよょ'],
+    ['ら行', 'らりるれろ'],           ['わ行', 'わをん']
+  ];
+  for (const [label, chars] of rows) if (chars.indexOf(h) >= 0) return label;
+  return 'その他';
+}
+
+function renderNames() {
+  const q = document.getElementById('name-search').value.trim().toLowerCase();
+  const list = roster.filter(r => !q || (r.name || '').toLowerCase().indexOf(q) >= 0);
+
+  document.getElementById('name-count').textContent =
+    roster.length + '人中 ' + list.length + '人を表示';
+
+  const wrap = document.getElementById('name-list');
+  wrap.innerHTML = '';
+
+  if (!list.length) {
+    wrap.innerHTML = '<p class="text-sm text-gray-500 py-6 text-center">該当する名前がありません</p>';
+    return;
+  }
+
+  let lastRow = '';
+  list.forEach(r => {
+    const row = kanaRow(r.name);
+    if (row !== lastRow) {
+      lastRow = row;
+      const h = document.createElement('p');
+      h.className = 'text-xs text-cyber-blue pt-3 pb-1';
+      h.textContent = row;
+      wrap.appendChild(h);
+    }
+    const btn = document.createElement('button');
+    btn.className = 'row w-full text-left py-3 px-1 flex items-center justify-between';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'text-base ' + (r.done ? 'text-gray-600' : 'text-cyber-text');
+    nameSpan.textContent = r.name;
+    btn.appendChild(nameSpan);
+    if (r.done) {
+      const tag = document.createElement('span');
+      tag.className = 'text-xs text-gray-600';
+      tag.textContent = '登録済み';
+      btn.appendChild(tag);
+      btn.disabled = true;
+    } else {
+      btn.onclick = () => pickMe(r);
+    }
+    wrap.appendChild(btn);
+  });
+}
+
+function pickMe(r) {
+  me = { id: r.id, name: r.name };
+  myBeys = [];
+  showDeck();
+}
+
+// ==========================================
+// デッキ一覧
+// ==========================================
+
+function showDeck() {
+  show('deck');
+  document.getElementById('deck-name').textContent = me.name;
+  document.getElementById('deck-progress').textContent = 'デッキ ' + myBeys.length + ' / ' + MAX_BEYS;
+
+  const wrap = document.getElementById('deck-list');
+  wrap.innerHTML = '';
+  myBeys.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'bg-cyber-dark border-l-4 border-cyber-green px-3 py-2 mb-2 flex items-start justify-between gap-2';
+    const left = document.createElement('div');
+    left.className = 'min-w-0';
+    const n = document.createElement('p');
+    n.className = 'text-sm text-cyber-text break-all';
+    n.textContent = b.name;
+    const t = document.createElement('p');
+    t.className = 'text-xs text-gray-500 mt-1';
+    t.textContent = b.type;
+    left.appendChild(n); left.appendChild(t);
+    const del = document.createElement('button');
+    del.className = 'text-xs text-cyber-red shrink-0 px-2 py-1';
+    del.textContent = '削除';
+    del.onclick = () => { myBeys.splice(i, 1); showDeck(); };
+    div.appendChild(left); div.appendChild(del);
+    wrap.appendChild(div);
+  });
+
+  const warns = deckWarnings();
+  document.getElementById('deck-warn').classList.toggle('hidden', warns.length === 0);
+  document.getElementById('deck-warn-body').textContent = warns.join(' / ');
+
+  document.getElementById('btn-add').classList.toggle('hidden', myBeys.length >= MAX_BEYS);
+
+  const submit = document.getElementById('btn-submit');
+  const ready = myBeys.length === MAX_BEYS && !sending;
+  submit.disabled = !ready;
+  submit.className = 'w-full py-4 rounded-lg font-bold text-base ' +
+    (ready ? 'bg-cyber-green text-cyber-bg' : 'bg-cyber-dark text-gray-600 border border-cyber-table-border');
+  submit.textContent = sending ? '送信中…' : (myBeys.length < MAX_BEYS ? MAX_BEYS + '体そろうと送信できます' : '受付に送信する');
+}
+
+/** デッキ内のパーツ重複を洗い出す（送信は止めない。注意喚起のみ） */
+function deckWarnings() {
+  const out = [];
+  for (let i = 0; i < myBeys.length; i++) {
+    for (let j = i + 1; j < myBeys.length; j++) {
+      const a = myBeys[i].parts, b = myBeys[j].parts;
+      Object.keys(a).forEach(k => {
+        if (k === 'type') return;
+        const v = a[k];
+        if (!v || v === 'なし') return;
+        if (k === 'RC' && RC_NO_DUP.indexOf(v) < 0) return;
+        if (b[k] === v) out.push((PART_LABELS[k] || k) + '「' + v + '」');
+      });
+    }
+  }
+  return Array.from(new Set(out));
+}
+
+// ==========================================
+// タイプ選択
+// ==========================================
+
+const TYPES = [
+  { id: 'BX',   label: 'BX ライン' },
+  { id: 'UX',   label: 'UX ライン' },
+  { id: 'CX',   label: 'CX ライン' },
+  { id: 'CXEX', label: 'CX (EX) ライン' }
+];
+
+function startAdd() {
+  show('type');
+  const wrap = document.getElementById('type-list');
+  wrap.innerHTML = '';
+  TYPES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'py-5 bg-cyber-dark border border-cyber-table-border rounded-lg text-cyber-text font-bold text-sm';
+    btn.textContent = t.label;
+    btn.onclick = () => pickType(t.id);
+    wrap.appendChild(btn);
+  });
+}
+
+function baseSelectionPath(typeId) {
+  const paths = {
+    'BX':   ['BX'],
+    'UX':   ['UX'],
+    'CX':   ['RC', 'CX', 'AB'],
+    'CXEX': ['RC', 'MB', 'OB', 'AB']
+  };
+  return (paths[typeId] || []).concat(['RC2', 'BT']);
+}
+
+/**
+ * 選択済みのパーツIDからスキップ規則を再適用して工程を作り直す。
+ * 破壊的に削らず毎回作り直すので、「戻る」を何度押しても壊れない。
+ */
+function rebuildPath() {
+  let p = baseSelectionPath(sel.type);
+  Object.keys(selIds).forEach(cat => {
+    const skip = PART_SKIP_RULES[selIds[cat]];
+    if (skip) p = p.filter(c => c !== skip);
+  });
+  return p;
+}
+
+function pickType(typeId) {
+  sel = { type: typeId };
+  selIds = {};
+  path = baseSelectionPath(typeId);
+  step = 0;
+  renderPart();
+}
+
+// ==========================================
+// パーツ選択
+// ==========================================
+
+function renderPart() {
+  if (step >= path.length) return finishBey();
+
+  show('part');
+  const cat = path[step];
+
+  document.getElementById('part-title').textContent =
+    (PART_LABELS[cat] || cat) + '（' + (step + 1) + '/' + path.length + '）';
+
+  // 直前にスキップが起きたら理由を出す。黙って工程が飛ぶと操作ミスに見えるため
+  const note = document.getElementById('part-note');
+  const skipped = baseSelectionPath(sel.type).filter(c => path.indexOf(c) < 0);
+  if (skipped.length) {
+    note.classList.remove('hidden');
+    document.getElementById('part-note-body').textContent =
+      skipped.map(c => PART_LABELS[c] || c).join('・') + ' は装備できないパーツを選んでいるため飛ばしています';
+  } else {
+    note.classList.add('hidden');
+  }
+
+  const chosen = path.slice(0, step).map(c => (PART_LABELS[c] || c) + ' ' + sel[c]);
+  document.getElementById('part-chosen').textContent = chosen.join(' / ');
+
+  const box = document.getElementById('part-search');
+  box.value = '';
+  box.oninput = () => renderPartList(cat);
+  renderPartList(cat);
+}
+
+function renderPartList(cat) {
+  const q = document.getElementById('part-search').value.trim().toLowerCase();
+  const all = getPartsByCategory(cat);
+  const list = all.filter(p => !q || p.selectionName.toLowerCase().indexOf(q) >= 0);
+
+  document.getElementById('part-count').textContent = list.length + '件';
+
+  const wrap = document.getElementById('part-list');
+  wrap.innerHTML = '';
+
+  if (!list.length) {
+    wrap.innerHTML = '<p class="text-sm text-gray-500 py-6 text-center">該当するパーツがありません</p>';
+    return;
+  }
+
+  list.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'row w-full text-left py-3 px-1 flex items-center justify-between gap-2';
+    const n = document.createElement('span');
+    n.className = 'text-base break-all ' + (p.isFrequent ? 'text-cyber-red' : 'text-cyber-text');
+    n.textContent = p.selectionName;
+    btn.appendChild(n);
+    if (PART_SKIP_RULES[p.id]) {
+      const tag = document.createElement('span');
+      tag.className = 'text-[10px] bg-cyber-orange text-cyber-bg rounded-full px-2 py-0.5 shrink-0 font-bold';
+      tag.textContent = 'EX';
+      btn.appendChild(tag);
+    }
+    btn.onclick = () => pickPart(cat, p);
+    wrap.appendChild(btn);
+  });
+}
+
+function pickPart(cat, part) {
+  sel[cat] = part.hudName;
+  selIds[cat] = part.id;
+  path = rebuildPath();
+  step++;
+  renderPart();
+}
+
+function partBack() {
+  if (step === 0) return startAdd();
+  step--;
+  const cat = path[step];
+  delete sel[cat];
+  delete selIds[cat];
+  path = rebuildPath();
+  renderPart();
+}
+
+/** 工程をすべて終えた。ベイ名を組み立ててデッキに加える */
+function finishBey() {
+  const full = baseSelectionPath(sel.type);
+
+  // 飛ばした工程は「なし」で埋める。未定義のまま持ち回すと親機側で undefined になるため
+  full.forEach(c => { if (!(c in sel)) sel[c] = 'なし'; });
+
+  const name = full
+    .map(c => sel[c])
+    .filter(v => v && v !== 'なし')
+    .join('');
+
+  myBeys.push({
+    type: sel.type === 'CXEX' ? 'CX(EX)' : sel.type,
+    name: name,
+    parts: Object.assign({}, sel)
+  });
+
+  sel = {}; selIds = {}; path = []; step = 0;
+  showDeck();
+}
+
+// ==========================================
+// 送信
+// ==========================================
+
+async function submitDeck() {
+  if (sending || myBeys.length !== MAX_BEYS) return;
+  sending = true;
+  showDeck();
+
+  try {
+    const res = await apiPost({
+      a: 'submit',
+      s: sessionCode,
+      participantId: me.id,
+      name: me.name,
+      beyblades: myBeys
+    });
+
+    if (res.ok) return showDone();
+
+    if (res.reason === 'locked') {
+      return fail('この名前はすでに登録が完了しています。変更したい場合は運営に直接お申し出ください。');
+    }
+    if (res.reason === 'closed') {
+      return fail('受付は終了しました。運営に直接お申し出ください。');
+    }
+    sending = false;
+    showDeck();
+    alert('送信できませんでした。もう一度お試しください。');
+  } catch (err) {
+    sending = false;
+    showDeck();
+    alert('通信できませんでした。電波の良い場所でもう一度お試しください。');
+  }
+}
+
+function showDone() {
+  show('done');
+  document.getElementById('done-name').textContent = me.name;
+  const wrap = document.getElementById('done-list');
+  wrap.innerHTML = '';
+  myBeys.forEach(b => {
+    const p = document.createElement('p');
+    p.className = 'text-sm text-cyber-text bg-cyber-dark border-l-4 border-cyber-green px-3 py-2 mb-2 break-all';
+    p.textContent = b.name;
+    wrap.appendChild(p);
+  });
+}
+</script>
+</body>
+</html>
