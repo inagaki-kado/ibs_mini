@@ -98,7 +98,7 @@
               class="w-full py-3 border border-dashed border-cyber-table-border rounded-lg text-cyber-blue text-sm mb-3">＋ ベイを追加する</button>
       <button id="btn-submit" onclick="submitDeck()"
               class="w-full py-4 rounded-lg font-bold text-base">受付に送信する</button>
-      <p class="text-xs text-gray-600 mt-3 leading-relaxed">送信後の変更は運営のみが行えます。内容をよく確認してから送信してください。</p>
+      <p class="text-sm text-gray-400 mt-3 leading-relaxed">送信後は変更できません。内容をよく確認してから送信してください。</p>
     </section>
 
     <!-- タイプ選択 -->
@@ -131,7 +131,7 @@
         <p class="text-sm text-gray-300 mb-1">受付に送信しました</p>
         <p id="done-name" class="text-lg font-bold text-cyber-text mb-6"></p>
         <div id="done-list" class="text-left mb-6"></div>
-        <p class="text-xs text-gray-500 leading-relaxed">運営が内容を確認して登録します。<br>間違いに気づいたら運営に直接お知らせください。</p>
+        <p class="text-sm text-gray-400 leading-relaxed text-left">修正などは運営に直接お伝えください（このアプリから変更はできません）</p>
       </div>
     </section>
 
@@ -193,12 +193,12 @@ let sortMode = 'id';         // 'id' = 登録番号順 / 'name' = 名前順
 window.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+  // ?s= があればそのコードを使う（テスト用）。なければGASに
+  // 「いま受付中の大会」を聞く。これで印刷したQRを使い回せる。
   const params = new URLSearchParams(location.search);
   sessionCode = (params.get('s') || '').trim();
+  if (!/^[0-9]{4}$/.test(sessionCode)) sessionCode = '';
 
-  if (!/^[0-9]{4}$/.test(sessionCode)) {
-    return fail('受付コードが読み取れませんでした。会場に表示されているQRコードをもう一度読み込んでください。');
-  }
   if (GAS_URL.indexOf('http') !== 0) {
     return fail('このページの設定が終わっていません。運営にお知らせください。');
   }
@@ -210,12 +210,20 @@ async function init() {
   }
 
   try {
-    const res = await apiGet({ a: 'roster', s: sessionCode });
+    // s が空なら GAS 側が受付中の大会を選んで返す
+    const q = sessionCode ? { a: 'roster', s: sessionCode } : { a: 'roster' };
+    const res = await apiGet(q);
+
     if (!res.ok) {
-      if (res.reason === 'no_session') return fail('受付がまだ始まっていません。運営にお知らせください。');
+      if (res.reason === 'no_active' || res.reason === 'no_session') {
+        return fail('いま受付は開いていません。運営にお知らせください。');
+      }
       return fail('受付情報を取得できませんでした。もう一度読み込んでください。');
     }
     if (!res.open) return fail('受付は終了しています。運営に直接お申し出ください。');
+
+    // 送信時に使うコードはGASの応答から受け取る
+    sessionCode = res.code || sessionCode;
 
     roster = res.roster || [];
     document.getElementById('hdr-event').textContent = res.eventName || '';

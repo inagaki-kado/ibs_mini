@@ -989,7 +989,8 @@
     // ---- デッキセルフ登録 ----
     let deckEntryCode = '';        // 4桁の受付コード
     let deckEntryOpen = false;     // 受付中かどうか
-    let deckEntryQueue = [];       // 承認待ちの申請 [{participantId, name, beyblades, submittedAt}]
+    let deckEntryLog = [];         // 取り込み結果のログ [{name, count, at, ok, reason}]
+    let deckEntryPending = 0;      // 名簿に一致せず未反映のまま残っている件数
     let deckEntryTimer = null;     // ポーリング用タイマー
     let deckEntryBusy = false;     // 通信中の二重実行防止
     let currentEditingBeybladeIndex = -1;
@@ -8017,6 +8018,20 @@
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
       await loadPartsCSV();
+
+      // 親機が閉じていた間にたまった申請を取り込む。
+      // 受付中でなければ何もしない。
+      try {
+        loadDeckEntryState();
+        if (deckEntryOpen && isSetupDone) {
+          await pushDeckEntryRoster();
+          await refreshDeckEntry();
+          startDeckEntryPolling();
+        }
+      } catch (e) {
+        console.warn('deck entry resume error:', e);
+      }
+
       console.log('📋 パーツデータ一覧（最初の10件）:');
       console.table(partsData.slice(0, 10));
 
@@ -8075,7 +8090,7 @@
 
       if (!/^[0-9]{4}$/.test(deckEntryCode)) {
         deckEntryCode = String(Math.floor(1000 + Math.random() * 9000));
-        deckEntryOpen = false;
+        deckEntryOpen = true;
         saveDeckEntryState();
       }
     }
@@ -8088,13 +8103,28 @@
       } catch (e) { console.warn('saveDeckEntryState error:', e); }
     }
 
+    /** デッキ受付の通信タイムアウト（ミリ秒）。ポーリング間隔15秒より必ず短くすること */
+    const DECK_ENTRY_TIMEOUT_MS = 12000;
+
     /**
      * GASへのGET。
+     * 会場回線が固まったときに永久待機しないよう、一定時間で打ち切る。
+     * 打ち切らないと deckEntryBusy が解放されず、ポーリングと受付トグルが
+     * まとめて停止する。
      */
     async function deckEntryGet(params) {
       const q = new URLSearchParams(params).toString();
-      const res = await fetch(DECK_ENTRY_GAS_URL + '?' + q, { method: 'GET' });
-      return await res.json();
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL + '?' + q, {
+          method: 'GET',
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     /**
@@ -8103,12 +8133,19 @@
      * ブラウザが preflight(OPTIONS) を投げ、GASが応答できず通信が失敗する。
      */
     async function deckEntryPost(body) {
-      const res = await fetch(DECK_ENTRY_GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(body)
-      });
-      return await res.json();
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body),
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     /** 参加者名簿と受付状態をGASへ送る。送るのは id と name だけ */
@@ -8135,6 +8172,9 @@
       renderDeckEntryToggle();
       renderDeckEntryList();
 
+      // 参加者の増減・改名を反映するため、開くたびに名簿を送り直す
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
+
       refreshDeckEntry();
       startDeckEntryPolling();
     }
@@ -8143,14 +8183,17 @@
       const modal = document.getElementById('deckEntryModal');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
-      stopDeckEntryPolling();
+      // 受付中なら取り込みは続ける。閉じている間に届いた申請を取りこぼさないため
+      if (!deckEntryOpen) stopDeckEntryPolling();
     }
 
     function renderDeckEntryQR() {
       const box = document.getElementById('deck-entry-qr');
       box.innerHTML = '';
       new QRCode(box, {
-        text: DECK_ENTRY_PAGE_URL + '?s=' + deckEntryCode,
+        // 受付コードは埋め込まない。参加者側がGASに「いま受付中の大会」を聞くので、
+        // このQRは印刷して会場に貼ったまま何度でも使い回せる。
+        text: DECK_ENTRY_PAGE_URL,
         width: 180,
         height: 180,
         correctLevel: QRCode.CorrectLevel.M
@@ -8176,6 +8219,7 @@
         deckEntryOpen = !deckEntryOpen;
         saveDeckEntryState();
         renderDeckEntryToggle();
+        if (deckEntryOpen) startDeckEntryPolling(); else stopDeckEntryPolling();
         const res = await pushDeckEntryRoster();
         if (!res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
       } catch (e) {
@@ -8185,17 +8229,53 @@
       }
     }
 
-    /** 申請を取りに行く */
+    /**
+     * 申請を取りに行き、名簿と照合できたものをその場で participants に反映する。
+     *
+     * 名簿に一致しない申請はGAS側に pending のまま残す。あとで運営がその名前を
+     * 登録すれば、次の取り込みで自動的に反映される。
+     */
     async function refreshDeckEntry() {
       if (deckEntryBusy) return;
       deckEntryBusy = true;
       try {
         const res = await deckEntryGet({ a: 'pending', s: deckEntryCode });
-        if (res.ok) {
-          deckEntryQueue = res.entries || [];
-          renderDeckEntryList();
-          updateDeckEntryBadge();
+        if (!res.ok) return;
+
+        const entries = res.entries || [];
+        const applied = [];
+        let unmatched = 0;
+
+        entries.forEach(entry => {
+          const p = participants.find(x => String(x.id) === String(entry.participantId));
+          if (!p) { unmatched++; return; }
+          p.beyblades = JSON.parse(JSON.stringify(entry.beyblades || []));
+          applied.push(entry.participantId);
+          deckEntryLog.unshift({
+            name: entry.name,
+            count: (entry.beyblades || []).length,
+            at: entry.submittedAt || Date.now(),
+            ok: true
+          });
+        });
+
+        // 未反映の申請は毎回ログに積むと重複するので、件数だけ保持する
+        deckEntryPending = unmatched;
+
+        if (applied.length) {
+          renderParticipants();
+          saveState();
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
+          } catch (e) {
+            console.warn('mark error:', e);
+          }
         }
+
+        if (deckEntryLog.length > 50) deckEntryLog.length = 50;
+
+        renderDeckEntryList();
+        updateDeckEntryBadge();
       } catch (e) {
         console.warn('refreshDeckEntry error:', e);
       } finally {
@@ -8212,132 +8292,57 @@
       if (deckEntryTimer) { clearInterval(deckEntryTimer); deckEntryTimer = null; }
     }
 
+    /** バッジには「名簿に一致せず未反映のまま残っている件数」を出す */
     function updateDeckEntryBadge() {
       const badge = document.getElementById('deck-entry-badge');
       if (!badge) return;
-      const n = deckEntryQueue.length;
-      badge.textContent = n;
-      badge.classList.toggle('hidden', n === 0);
+      badge.textContent = deckEntryPending;
+      badge.classList.toggle('hidden', deckEntryPending === 0);
     }
 
     function renderDeckEntryList() {
       const wrap = document.getElementById('deck-entry-list');
       const countEl = document.getElementById('deck-entry-count');
-      const allBtn = document.getElementById('btn-deck-entry-approve-all');
       if (!wrap) return;
 
-      countEl.textContent = '承認待ち ' + deckEntryQueue.length + '件';
-      allBtn.disabled = deckEntryQueue.length === 0;
-      allBtn.style.opacity = deckEntryQueue.length === 0 ? '0.4' : '1';
+      const unregistered = participants.filter(p => (p.beyblades || []).length === 0).length;
+      countEl.textContent = '取り込み済み ' + deckEntryLog.length + '件 / 未登録 ' + unregistered + '人';
 
       wrap.innerHTML = '';
-      if (!deckEntryQueue.length) {
-        wrap.innerHTML = '<p class="text-sm text-cyber-text opacity-40 py-8 text-center">申請はまだありません</p>';
+
+      if (deckEntryPending > 0) {
+        const warn = document.createElement('div');
+        warn.className = 'bg-cyber-bg border-l-4 border-cyber-red p-3 mb-2';
+        warn.innerHTML = '<p class="text-xs text-cyber-red font-bold">名簿にない申請が ' + deckEntryPending +
+          '件あります</p><p class="text-[11px] text-cyber-text opacity-70 mt-1 leading-relaxed">' +
+          'その参加者を名簿に追加すると、次の取り込みで自動的に反映されます。</p>';
+        wrap.appendChild(warn);
+      }
+
+      if (!deckEntryLog.length) {
+        const p = document.createElement('p');
+        p.className = 'text-sm text-cyber-text opacity-40 py-8 text-center';
+        p.textContent = 'まだ取り込みはありません';
+        wrap.appendChild(p);
         return;
       }
 
-      deckEntryQueue.forEach(entry => {
-        const p = participants.find(x => String(x.id) === String(entry.participantId));
+      deckEntryLog.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-cyber-bg border border-cyber-table-border rounded p-3 mb-2';
-
-        const head = document.createElement('div');
-        head.className = 'flex items-center justify-between mb-2';
+        div.className = 'border-b border-cyber-table-border py-2 px-1 flex items-center justify-between gap-2';
         const nm = document.createElement('span');
-        nm.className = 'font-bold text-cyber-text';
-        nm.textContent = entry.name;
-        const st = document.createElement('span');
-        if (!p) {
-          st.className = 'text-xs text-cyber-red';
-          st.textContent = '名簿に該当なし';
-        } else if ((p.beyblades || []).length > 0) {
-          st.className = 'text-xs text-cyber-orange';
-          st.textContent = '登録済みを上書き';
-        } else {
-          st.className = 'text-xs text-cyber-green';
-          st.textContent = '名簿と一致';
-        }
-        head.appendChild(nm); head.appendChild(st);
-        div.appendChild(head);
-
-        (entry.beyblades || []).forEach(b => {
-          const line = document.createElement('p');
-          line.className = 'text-xs text-cyber-text opacity-80 leading-relaxed break-all';
-          line.textContent = b.name;
-          div.appendChild(line);
-        });
-
-        const btns = document.createElement('div');
-        btns.className = 'flex gap-2 mt-3';
-        const ok = document.createElement('button');
-        ok.className = 'flex-1 bg-cyber-green text-cyber-bg py-2 rounded font-bold text-xs';
-        ok.textContent = '承認';
-        ok.onclick = () => approveDeckEntries([entry.participantId]);
-        const ng = document.createElement('button');
-        ng.className = 'flex-1 bg-cyber-dark border border-cyber-red text-cyber-red py-2 rounded font-bold text-xs';
-        ng.textContent = '却下';
-        ng.onclick = () => rejectDeckEntries([entry.participantId]);
-        btns.appendChild(ok); btns.appendChild(ng);
-
-        if (!p) { ok.disabled = true; ok.style.opacity = '0.4'; }
-        div.appendChild(btns);
-
+        nm.className = 'text-sm text-cyber-text';
+        nm.textContent = item.name;
+        const meta = document.createElement('span');
+        meta.className = 'text-[11px] text-cyber-text opacity-50 shrink-0';
+        const d = new Date(item.at);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        meta.textContent = item.count + '体 / ' + hh + ':' + mm;
+        div.appendChild(nm);
+        div.appendChild(meta);
         wrap.appendChild(div);
       });
-    }
-
-    /**
-     * 承認して participants に反映する。
-     * 反映できたものだけGASに approved を書き戻す。
-     */
-    async function approveDeckEntries(ids) {
-      const targets = deckEntryQueue.filter(e => ids.indexOf(e.participantId) >= 0);
-      const applied = [];
-
-      targets.forEach(entry => {
-        const p = participants.find(x => String(x.id) === String(entry.participantId));
-        if (!p) return;
-        p.beyblades = JSON.parse(JSON.stringify(entry.beyblades || []));
-        applied.push(entry.participantId);
-      });
-
-      if (!applied.length) { showAlert('反映できる申請がありませんでした'); return; }
-
-      renderParticipants();
-      saveState();
-
-      try {
-        await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
-      } catch (e) {
-        showAlert('承認は反映しましたが、参加者側への通知に失敗しました。「今すぐ確認」を押してください。');
-      }
-
-      deckEntryQueue = deckEntryQueue.filter(e => applied.indexOf(e.participantId) < 0);
-      renderDeckEntryList();
-      updateDeckEntryBadge();
-      showAlert('✅ ' + applied.length + '件を承認しました');
-    }
-
-    async function approveAllDeckEntries() {
-      if (!deckEntryQueue.length) return;
-      const ok = await showConfirm(deckEntryQueue.length + '件をまとめて承認します。よろしいですか？');
-      if (!ok) return;
-      await approveDeckEntries(deckEntryQueue.map(e => e.participantId));
-    }
-
-    /** 却下。participants には触らず、GASの状態だけ rejected にする */
-    async function rejectDeckEntries(ids) {
-      const ok = await showConfirm('この申請を却下します。よろしいですか？');
-      if (!ok) return;
-      try {
-        await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: ids, state: 'rejected' });
-      } catch (e) {
-        showAlert('通信できませんでした。もう一度お試しください。');
-        return;
-      }
-      deckEntryQueue = deckEntryQueue.filter(e => ids.indexOf(e.participantId) < 0);
-      renderDeckEntryList();
-      updateDeckEntryBadge();
     }
 
     // ===== カスタム alert / confirm =====
@@ -8407,8 +8412,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-sf text-cyber-orange" id="deck-entry-count">承認待ち 0件</span>
-              <button onclick="approveAllDeckEntries()" id="btn-deck-entry-approve-all"
-                      class="bg-cyber-green text-cyber-bg px-3 py-2 rounded font-bold text-xs transition-colors">全件まとめて承認</button>
+              <span class="text-[11px] text-cyber-text opacity-50">自動で反映されます</span>
             </div>
             <div id="deck-entry-list"></div>
           </div>
