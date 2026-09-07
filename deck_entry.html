@@ -71,6 +71,10 @@
       <p class="text-xs text-gray-400 mb-2">自分の名前を選んでください</p>
       <input id="name-search" type="search" inputmode="search" placeholder="名前で絞り込む"
              class="w-full bg-cyber-dark border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600 mb-2">
+      <div class="flex gap-2 mb-2">
+        <button id="sort-id" onclick="setSort('id')" class="flex-1 py-2 rounded-lg text-xs font-bold"></button>
+        <button id="sort-name" onclick="setSort('name')" class="flex-1 py-2 rounded-lg text-xs font-bold"></button>
+      </div>
       <p id="name-count" class="text-xs text-gray-500 mb-2"></p>
       <div id="name-list"></div>
     </section>
@@ -82,7 +86,7 @@
           <p class="text-xs text-gray-500">ブレーダー</p>
           <p id="deck-name" class="text-lg font-bold text-cyber-text"></p>
         </div>
-        <button onclick="backToNames()" class="text-xs text-gray-500 underline">名前を変える</button>
+        <button onclick="backToNames()" class="text-sm text-cyber-red">‹ 名前を変える</button>
       </div>
       <p id="deck-progress" class="text-xs text-cyber-blue mb-2"></p>
       <div id="deck-list" class="mb-3"></div>
@@ -99,7 +103,7 @@
 
     <!-- タイプ選択 -->
     <section id="screen-type" class="hidden">
-      <button onclick="showDeck()" class="text-xs text-gray-500 mb-3">‹ 戻る</button>
+      <button onclick="showDeck()" class="text-sm text-cyber-red mb-3">‹ 戻る</button>
       <p class="text-xs text-gray-400 mb-3">ベイのタイプを選んでください</p>
       <div id="type-list" class="grid grid-cols-2 gap-2"></div>
     </section>
@@ -107,7 +111,7 @@
     <!-- パーツ選択 -->
     <section id="screen-part" class="hidden">
       <div class="flex items-center gap-3 mb-3">
-        <button onclick="partBack()" class="text-xs text-gray-500">‹ 戻る</button>
+        <button onclick="partBack()" class="text-sm text-cyber-red">‹ 戻る</button>
         <span id="part-title" class="text-sm text-cyber-blue font-bold"></span>
       </div>
       <div id="part-note" class="hidden bg-cyber-dark border-l-4 border-cyber-orange p-2 mb-3">
@@ -180,6 +184,7 @@ let selIds = {};            // 選択中のパーツID（スキップ判定用�
 let path = [];              // 現在の工程配列
 let step = 0;
 let sending = false;
+let sortMode = 'id';         // 'id' = 登録番号順 / 'name' = 名前順
 
 // ==========================================
 // 起動
@@ -318,29 +323,41 @@ function backToNames() {
   showNames();
 }
 
-/** 先頭文字から50音の行を求める。英数字は末尾にまとめる */
-function kanaRow(name) {
-  const c = (name || '').charAt(0);
-  if (!c) return 'その他';
-  const code = c.charCodeAt(0);
-  if (code < 0x3040) return 'A - Z';
-  // カタカナをひらがなに寄せる
-  let h = c;
-  if (code >= 0x30A1 && code <= 0x30F6) h = String.fromCharCode(code - 0x60);
-  const rows = [
-    ['あ行', 'あぁいぃうぅえぇおぉ'], ['か行', 'かがきぎくぐけげこご'],
-    ['さ行', 'さざしじすずせぜそぞ'], ['た行', 'ただちぢっつづてでとど'],
-    ['な行', 'なにぬねの'],           ['は行', 'はばぱひびぴふぶぷへべぺほぼぽ'],
-    ['ま行', 'まみむめも'],           ['や行', 'やゃゆゅよょ'],
-    ['ら行', 'らりるれろ'],           ['わ行', 'わをん']
-  ];
-  for (const [label, chars] of rows) if (chars.indexOf(h) >= 0) return label;
-  return 'その他';
+function setSort(mode) {
+  sortMode = mode;
+  renderNames();
+}
+
+/** 並び替えボタンの見た目を現在の状態に合わせる */
+function renderSortButtons() {
+  const on  = 'flex-1 py-2 rounded-lg text-xs font-bold bg-cyber-blue text-cyber-on-blue';
+  const off = 'flex-1 py-2 rounded-lg text-xs font-bold border border-cyber-table-border text-gray-500';
+  const byId = sortMode === 'id';
+  const a = document.getElementById('sort-id');
+  const b = document.getElementById('sort-name');
+  a.className = byId ? on : off;
+  b.className = byId ? off : on;
+  a.textContent = byId ? '登録番号 ↑' : '登録番号';
+  b.textContent = byId ? '名前' : '名前 ↑';
 }
 
 function renderNames() {
+  renderSortButtons();
+
   const q = document.getElementById('name-search').value.trim().toLowerCase();
   const list = roster.filter(r => !q || (r.name || '').toLowerCase().indexOf(q) >= 0);
+
+  if (sortMode === 'name') {
+    // 英数字で始まる名前は末尾にまとめる。localeCompare は既定で先頭に置いてしまうため
+    const isAscii = n => (n || '').charCodeAt(0) < 0x3040;
+    list.sort((a, b) => {
+      const x = isAscii(a.name), y = isAscii(b.name);
+      if (x !== y) return x ? 1 : -1;
+      return (a.name || '').localeCompare(b.name || '', 'ja');
+    });
+  } else {
+    list.sort((a, b) => Number(a.id) - Number(b.id));
+  }
 
   document.getElementById('name-count').textContent =
     roster.length + '人中 ' + list.length + '人を表示';
@@ -353,25 +370,23 @@ function renderNames() {
     return;
   }
 
-  let lastRow = '';
   list.forEach(r => {
-    const row = kanaRow(r.name);
-    if (row !== lastRow) {
-      lastRow = row;
-      const h = document.createElement('p');
-      h.className = 'text-xs text-cyber-blue pt-3 pb-1';
-      h.textContent = row;
-      wrap.appendChild(h);
-    }
     const btn = document.createElement('button');
-    btn.className = 'row w-full text-left py-3 px-1 flex items-center justify-between';
+    btn.className = 'row w-full text-left py-3 px-1 flex items-center gap-3';
+
+    const noSpan = document.createElement('span');
+    noSpan.className = 'text-xs shrink-0 text-right w-6 ' + (r.done ? 'text-gray-600' : 'text-cyber-blue');
+    noSpan.textContent = r.id;
+    btn.appendChild(noSpan);
+
     const nameSpan = document.createElement('span');
-    nameSpan.className = 'text-base ' + (r.done ? 'text-gray-600' : 'text-cyber-text');
+    nameSpan.className = 'text-base flex-1 break-all ' + (r.done ? 'text-gray-600' : 'text-cyber-text');
     nameSpan.textContent = r.name;
     btn.appendChild(nameSpan);
+
     if (r.done) {
       const tag = document.createElement('span');
-      tag.className = 'text-xs text-gray-600';
+      tag.className = 'text-xs text-gray-600 shrink-0';
       tag.textContent = '登録済み';
       btn.appendChild(tag);
       btn.disabled = true;
