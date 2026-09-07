@@ -11,6 +11,7 @@
   
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     tailwind.config = {
@@ -159,6 +160,7 @@
             <button onclick="execClearAllBayPhotos()" id="btn-clear-bay-photos" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors opacity-40" disabled>🗑️ 写真一括削除 <span class="font-sf opacity-70">(0件)</span></button>
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
+            <button onclick="openDeckEntryModal()" id="btn-deck-entry" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors relative">📱 デッキ受付<span id="deck-entry-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-cyber-orange text-cyber-bg px-1.5 py-0.5 rounded-full font-bold">0</span></button>
             
             <div class="flex-grow"></div>
             
@@ -981,8 +983,15 @@
     let beyChangeModeActive = false;
     let beyChangeTargetIndex = -1;
     let currentBeybladeSelection = {};
+    let currentBeybladeSelectionIds = {};  // 選択中パーツのID。スキップ判定に使う
     let beybladeSelectionStep = 0;
     let beybladeSelectionPath = [];
+    // ---- デッキセルフ登録 ----
+    let deckEntryCode = '';        // 4桁の受付コード
+    let deckEntryOpen = false;     // 受付中かどうか
+    let deckEntryQueue = [];       // 承認待ちの申請 [{participantId, name, beyblades, submittedAt}]
+    let deckEntryTimer = null;     // ポーリング用タイマー
+    let deckEntryBusy = false;     // 通信中の二重実行防止
     let currentEditingBeybladeIndex = -1;
     let currentLotteryId = null;
 
@@ -2802,12 +2811,14 @@
         const isPhotoProcessing = bayPhotoProcessingId === p.id;
         const photoBtnColor = isPhotoProcessing ? 'bg-transparent text-yellow-400 border border-yellow-400 opacity-70' : (hasPhoto ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]' : 'bg-transparent text-cyber-blue border border-cyber-blue hover:bg-cyber-blue/20');
         const photoLabel = isPhotoProcessing ? '⏳' : (hasPhoto ? '📷✅' : '📷');
+        // デッキ未登録の参加者は名前を赤字にして、受付での取りこぼしを防ぐ
+        const nameColorClass = beyCount === 0 ? 'text-cyber-red' : 'text-cyber-text';
         const beyChangeBtnHTML = isTournamentStarted
           ? (p.beyChangeUsed
             ? '<button type="button" disabled class="bg-cyber-dark border border-gray-600 text-gray-500 px-2 py-1 rounded font-bold text-xs cursor-not-allowed opacity-50">✅ 変更済</button>'
             : `<button type="button" onclick="openBeyChangeModal(${p.id})" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-2 py-1 rounded font-bold text-xs transition-colors">🔄 ベイ変更</button>`)
           : '';
-        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold text-cyber-text leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" style="touch-action: manipulation; ${(isSetupSwapMode || isPhotoProcessing) ? 'opacity:0.5;' : ''}" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${(isSetupSwapMode || isPhotoProcessing) ? 'disabled' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
+        tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-blue text-sm">${originalNo}</td><td class="p-3 font-bold ${nameColorClass} leading-tight">${p.name} ${memoBadge}${statsDisplay}</td><td class="p-3 text-center whitespace-nowrap">${lotteryHTML}</td><td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>🗳️${beyBadge}</button>${beyChangeBtnHTML}<button onclick="startBayPhotoCapture(${p.id})" style="touch-action: manipulation; ${(isSetupSwapMode || isPhotoProcessing) ? 'opacity:0.5;' : ''}" class="${photoBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all" title="ベイ確認写真を撮影/選択" ${(isSetupSwapMode || isPhotoProcessing) ? 'disabled' : ''}>${photoLabel}</button></div></td><td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-blue text-xs border border-cyber-blue hover:bg-cyber-blue hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''} title="名前を変更">✏️</button></td><td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.3"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
       });
       const siId = document.getElementById('sort-icon-id-t'); if(siId) siId.innerText = participantSortMode==='id'?'🔽':'';
@@ -7122,6 +7133,15 @@
     // ==========================================
     const SAVE_KEY = 'tbh_tournament_de';
 
+    /** デッキセルフ登録の中継先。GASのウェブアプリURL（末尾は /exec） */
+    const DECK_ENTRY_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+
+    /** 参加者が開くページ */
+    const DECK_ENTRY_PAGE_URL = 'https://itabashibayblade.pages.dev/deck_entry.html';
+
+    /** 受付コードの保存先。SAVE_KEY とは別キー。絶対に混在させない */
+    const DECK_ENTRY_KEY = 'tbh_de_deck_entry';
+
     function saveState() {
       try {
         const state = {
@@ -7625,6 +7645,7 @@
      */
     function startBeybladeRegistration() {
       currentBeybladeSelection = {};
+      currentBeybladeSelectionIds = {};
       beybladeSelectionStep = 0;
       beybladeSelectionPath = [];
       
@@ -7669,10 +7690,33 @@
      */
     function selectBeybladeType(typeId) {
       currentBeybladeSelection.type = typeId;
+      currentBeybladeSelectionIds = {};
       beybladeSelectionPath = getSelectionPath(typeId);
       beybladeSelectionStep = 0;
       
       showNextPartSelection();
+    }
+
+    /**
+     * 特定パーツを選ぶと以降の工程を飛ばす規則。parts.csv の1列目（パーツID）で判定する。
+     *   UXE : UXエクスパンド。ラチェットを装備できない
+     *   RAE : Tr / Op。ビットを装備できない特殊ラチェット
+     * 今後増えたら parts.csv にプリフィックスを足してここに1行加えるだけでよい。
+     * deck_entry.html にも同じ定数がある。片方だけ直さないこと。
+     */
+    const PART_SKIP_RULES = { 'UXE': 'RC2', 'RAE': 'BT' };
+
+    /**
+     * 選択済みパーツIDからスキップ規則を再適用して工程を作り直す。
+     * 破壊的に削らず毎回作り直すので、「戻る」を何度押しても工程が壊れない。
+     */
+    function rebuildSelectionPath() {
+      let p = getSelectionPath(currentBeybladeSelection.type);
+      Object.keys(currentBeybladeSelectionIds).forEach(cat => {
+        const skip = PART_SKIP_RULES[currentBeybladeSelectionIds[cat]];
+        if (skip) p = p.filter(c => c !== skip);
+      });
+      return p;
     }
 
     /**
@@ -7781,6 +7825,8 @@
      */
     function selectPart(categoryId, part) {
       currentBeybladeSelection[categoryId] = part.hudName;
+      currentBeybladeSelectionIds[categoryId] = part.id;
+      beybladeSelectionPath = rebuildSelectionPath();
       beybladeSelectionStep++;
       showNextPartSelection();
     }
@@ -7793,6 +7839,8 @@
         beybladeSelectionStep--;
         const categoryId = beybladeSelectionPath[beybladeSelectionStep];
         delete currentBeybladeSelection[categoryId];
+        delete currentBeybladeSelectionIds[categoryId];
+        beybladeSelectionPath = rebuildSelectionPath();
         showNextPartSelection();
       }
     }
@@ -7838,23 +7886,19 @@
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       
       // ベイブレード名を自動生成（記号なし、間を詰める）
-      let name = '';
       const type = currentBeybladeSelection.type;
-      
-      if (type === 'BX') {
-        name = currentBeybladeSelection.BX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
-      } else if (type === 'UX') {
-        name = currentBeybladeSelection.UX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
-      } else if (type === 'CX') {
-        // CX: ロックチップ + メインブレード(CX) + アシストブレード + ラチェット + ビット
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.CX + 
-               currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
-      } else if (type === 'CXEX') {
-        // CXEX: ロックチップ + メタルブレード(MB) + オーバーブレード + アシストブレード + ラチェット + ビット
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + 
-               currentBeybladeSelection.OB + currentBeybladeSelection.AB + 
-               currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
-      }
+
+      // 基準となる全工程。スキップで飛ばした工程は「なし」で埋める。
+      // 未定義のまま持ち回すと、parts.RC2 等を参照する既存コードに undefined が流れるため。
+      const fullPath = getSelectionPath(type);
+      fullPath.forEach(c => {
+        if (!(c in currentBeybladeSelection)) currentBeybladeSelection[c] = 'なし';
+      });
+
+      const name = fullPath
+        .map(c => currentBeybladeSelection[c])
+        .filter(v => v && v !== 'なし')
+        .join('');
       
       const beyblade = {
         type: type === 'CXEX' ? 'CX(EX)' : type,
@@ -8011,6 +8055,291 @@
       document.getElementById('cxChartModal').classList.remove('open');
     }
 
+    // ==========================================
+    // デッキセルフ登録 受付機能
+    //
+    // 参加者スマホ（deck_entry.html）とはGASを経由してやり取りする。
+    // PeerJSは使わない。会場WiFiのクライアントアイソレーション対策のため。
+    // ==========================================
+
+    /** 受付コードを読み込む。なければ4桁を新規発行する */
+    function loadDeckEntryState() {
+      try {
+        const raw = localStorage.getItem(DECK_ENTRY_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          deckEntryCode = s.code || '';
+          deckEntryOpen = s.open === true;
+        }
+      } catch (e) { console.warn('loadDeckEntryState error:', e); }
+
+      if (!/^[0-9]{4}$/.test(deckEntryCode)) {
+        deckEntryCode = String(Math.floor(1000 + Math.random() * 9000));
+        deckEntryOpen = false;
+        saveDeckEntryState();
+      }
+    }
+
+    function saveDeckEntryState() {
+      try {
+        localStorage.setItem(DECK_ENTRY_KEY, JSON.stringify({
+          code: deckEntryCode, open: deckEntryOpen
+        }));
+      } catch (e) { console.warn('saveDeckEntryState error:', e); }
+    }
+
+    /**
+     * GASへのGET。
+     */
+    async function deckEntryGet(params) {
+      const q = new URLSearchParams(params).toString();
+      const res = await fetch(DECK_ENTRY_GAS_URL + '?' + q, { method: 'GET' });
+      return await res.json();
+    }
+
+    /**
+     * GASへのPOST。
+     * Content-Type は必ず text/plain にすること。application/json にすると
+     * ブラウザが preflight(OPTIONS) を投げ、GASが応答できず通信が失敗する。
+     */
+    async function deckEntryPost(body) {
+      const res = await fetch(DECK_ENTRY_GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(body)
+      });
+      return await res.json();
+    }
+
+    /** 参加者名簿と受付状態をGASへ送る。送るのは id と name だけ */
+    async function pushDeckEntryRoster() {
+      return await deckEntryPost({
+        a: 'session',
+        s: deckEntryCode,
+        eventName: tournamentName || '',
+        open: deckEntryOpen,
+        roster: participants.map(p => ({ id: p.id, name: p.name }))
+      });
+    }
+
+    function openDeckEntryModal() {
+      if (!isSetupDone) { showAlert('先に参加者を登録してください'); return; }
+      loadDeckEntryState();
+
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      document.getElementById('deck-entry-code').textContent = deckEntryCode;
+      renderDeckEntryQR();
+      renderDeckEntryToggle();
+      renderDeckEntryList();
+
+      refreshDeckEntry();
+      startDeckEntryPolling();
+    }
+
+    function closeDeckEntryModal() {
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      stopDeckEntryPolling();
+    }
+
+    function renderDeckEntryQR() {
+      const box = document.getElementById('deck-entry-qr');
+      box.innerHTML = '';
+      new QRCode(box, {
+        text: DECK_ENTRY_PAGE_URL + '?s=' + deckEntryCode,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function renderDeckEntryToggle() {
+      const btn = document.getElementById('btn-deck-entry-toggle');
+      if (deckEntryOpen) {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-green text-cyber-bg';
+        btn.textContent = '受付中（押すと締める）';
+      } else {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-dark border border-cyber-red text-cyber-red';
+        btn.textContent = '受付停止中（押すと開ける）';
+      }
+    }
+
+    /** 受付の開閉。開けるたびに最新の名簿を送り直す */
+    async function toggleDeckEntryOpen() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        deckEntryOpen = !deckEntryOpen;
+        saveDeckEntryState();
+        renderDeckEntryToggle();
+        const res = await pushDeckEntryRoster();
+        if (!res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
+      } catch (e) {
+        showAlert('通信できませんでした。ネットワークを確認してください。');
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    /** 申請を取りに行く */
+    async function refreshDeckEntry() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        const res = await deckEntryGet({ a: 'pending', s: deckEntryCode });
+        if (res.ok) {
+          deckEntryQueue = res.entries || [];
+          renderDeckEntryList();
+          updateDeckEntryBadge();
+        }
+      } catch (e) {
+        console.warn('refreshDeckEntry error:', e);
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    function startDeckEntryPolling() {
+      stopDeckEntryPolling();
+      deckEntryTimer = setInterval(refreshDeckEntry, 15000);
+    }
+
+    function stopDeckEntryPolling() {
+      if (deckEntryTimer) { clearInterval(deckEntryTimer); deckEntryTimer = null; }
+    }
+
+    function updateDeckEntryBadge() {
+      const badge = document.getElementById('deck-entry-badge');
+      if (!badge) return;
+      const n = deckEntryQueue.length;
+      badge.textContent = n;
+      badge.classList.toggle('hidden', n === 0);
+    }
+
+    function renderDeckEntryList() {
+      const wrap = document.getElementById('deck-entry-list');
+      const countEl = document.getElementById('deck-entry-count');
+      const allBtn = document.getElementById('btn-deck-entry-approve-all');
+      if (!wrap) return;
+
+      countEl.textContent = '承認待ち ' + deckEntryQueue.length + '件';
+      allBtn.disabled = deckEntryQueue.length === 0;
+      allBtn.style.opacity = deckEntryQueue.length === 0 ? '0.4' : '1';
+
+      wrap.innerHTML = '';
+      if (!deckEntryQueue.length) {
+        wrap.innerHTML = '<p class="text-sm text-cyber-text opacity-40 py-8 text-center">申請はまだありません</p>';
+        return;
+      }
+
+      deckEntryQueue.forEach(entry => {
+        const p = participants.find(x => String(x.id) === String(entry.participantId));
+        const div = document.createElement('div');
+        div.className = 'bg-cyber-bg border border-cyber-table-border rounded p-3 mb-2';
+
+        const head = document.createElement('div');
+        head.className = 'flex items-center justify-between mb-2';
+        const nm = document.createElement('span');
+        nm.className = 'font-bold text-cyber-text';
+        nm.textContent = entry.name;
+        const st = document.createElement('span');
+        if (!p) {
+          st.className = 'text-xs text-cyber-red';
+          st.textContent = '名簿に該当なし';
+        } else if ((p.beyblades || []).length > 0) {
+          st.className = 'text-xs text-cyber-orange';
+          st.textContent = '登録済みを上書き';
+        } else {
+          st.className = 'text-xs text-cyber-green';
+          st.textContent = '名簿と一致';
+        }
+        head.appendChild(nm); head.appendChild(st);
+        div.appendChild(head);
+
+        (entry.beyblades || []).forEach(b => {
+          const line = document.createElement('p');
+          line.className = 'text-xs text-cyber-text opacity-80 leading-relaxed break-all';
+          line.textContent = b.name;
+          div.appendChild(line);
+        });
+
+        const btns = document.createElement('div');
+        btns.className = 'flex gap-2 mt-3';
+        const ok = document.createElement('button');
+        ok.className = 'flex-1 bg-cyber-green text-cyber-bg py-2 rounded font-bold text-xs';
+        ok.textContent = '承認';
+        ok.onclick = () => approveDeckEntries([entry.participantId]);
+        const ng = document.createElement('button');
+        ng.className = 'flex-1 bg-cyber-dark border border-cyber-red text-cyber-red py-2 rounded font-bold text-xs';
+        ng.textContent = '却下';
+        ng.onclick = () => rejectDeckEntries([entry.participantId]);
+        btns.appendChild(ok); btns.appendChild(ng);
+
+        if (!p) { ok.disabled = true; ok.style.opacity = '0.4'; }
+        div.appendChild(btns);
+
+        wrap.appendChild(div);
+      });
+    }
+
+    /**
+     * 承認して participants に反映する。
+     * 反映できたものだけGASに approved を書き戻す。
+     */
+    async function approveDeckEntries(ids) {
+      const targets = deckEntryQueue.filter(e => ids.indexOf(e.participantId) >= 0);
+      const applied = [];
+
+      targets.forEach(entry => {
+        const p = participants.find(x => String(x.id) === String(entry.participantId));
+        if (!p) return;
+        p.beyblades = JSON.parse(JSON.stringify(entry.beyblades || []));
+        applied.push(entry.participantId);
+      });
+
+      if (!applied.length) { showAlert('反映できる申請がありませんでした'); return; }
+
+      renderParticipants();
+      saveState();
+
+      try {
+        await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
+      } catch (e) {
+        showAlert('承認は反映しましたが、参加者側への通知に失敗しました。「今すぐ確認」を押してください。');
+      }
+
+      deckEntryQueue = deckEntryQueue.filter(e => applied.indexOf(e.participantId) < 0);
+      renderDeckEntryList();
+      updateDeckEntryBadge();
+      showAlert('✅ ' + applied.length + '件を承認しました');
+    }
+
+    async function approveAllDeckEntries() {
+      if (!deckEntryQueue.length) return;
+      const ok = await showConfirm(deckEntryQueue.length + '件をまとめて承認します。よろしいですか？');
+      if (!ok) return;
+      await approveDeckEntries(deckEntryQueue.map(e => e.participantId));
+    }
+
+    /** 却下。participants には触らず、GASの状態だけ rejected にする */
+    async function rejectDeckEntries(ids) {
+      const ok = await showConfirm('この申請を却下します。よろしいですか？');
+      if (!ok) return;
+      try {
+        await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: ids, state: 'rejected' });
+      } catch (e) {
+        showAlert('通信できませんでした。もう一度お試しください。');
+        return;
+      }
+      deckEntryQueue = deckEntryQueue.filter(e => ids.indexOf(e.participantId) < 0);
+      renderDeckEntryList();
+      updateDeckEntryBadge();
+    }
+
     // ===== カスタム alert / confirm =====
     function showAlert(msg) {
       return new Promise((resolve) => {
@@ -8052,6 +8381,49 @@
     // ===== ここまで =====
     initApp();
   </script>
+
+  <!-- デッキセルフ登録 受付モーダル -->
+  <div id="deckEntryModal" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4">
+    <div class="bg-cyber-dark border border-cyber-orange rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+
+      <div class="flex items-center justify-between p-4 border-b border-cyber-table-border shrink-0">
+        <h2 class="text-xl font-sf text-cyber-orange">📱 DECK ENTRY</h2>
+        <button onclick="closeDeckEntryModal()" class="text-cyber-text text-2xl px-3 leading-none">×</button>
+      </div>
+
+      <div class="overflow-y-auto p-4 flex-1">
+        <div class="flex flex-col md:flex-row gap-4">
+
+          <div class="shrink-0 text-center">
+            <div id="deck-entry-qr" class="bg-white p-3 rounded inline-block"></div>
+            <p class="font-sf text-3xl text-cyber-orange mt-2" id="deck-entry-code">----</p>
+            <p class="text-xs text-cyber-text opacity-60 mt-1">参加者にこのQRを読んでもらう</p>
+            <button onclick="toggleDeckEntryOpen()" id="btn-deck-entry-toggle"
+                    class="mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors"></button>
+            <button onclick="refreshDeckEntry()" id="btn-deck-entry-refresh"
+                    class="mt-2 w-full bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-bold text-xs transition-colors">🔄 今すぐ確認</button>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-sf text-cyber-orange" id="deck-entry-count">承認待ち 0件</span>
+              <button onclick="approveAllDeckEntries()" id="btn-deck-entry-approve-all"
+                      class="bg-cyber-green text-cyber-bg px-3 py-2 rounded font-bold text-xs transition-colors">全件まとめて承認</button>
+            </div>
+            <div id="deck-entry-list"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-cyber-table-border shrink-0">
+        <p class="text-[11px] text-cyber-text opacity-50 leading-relaxed">
+          承認するまで参加者データには反映されません。承認後の変更は運営のみが行えます。
+        </p>
+      </div>
+
+    </div>
+  </div>
 
 <!-- ===== カスタム alert / confirm モーダル ===== -->
 <div id="custom-alert-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
