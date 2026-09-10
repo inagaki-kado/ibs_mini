@@ -8037,6 +8037,30 @@
       closeBeybladeSelectModal();
     }
 
+    /**
+     * 名称は違うが、ルール上は同一ブレードとして扱う組。同じデッキに入れられない。
+     * parts に入る HUD表示用名称で持つ。選択画面用名称が入った古いデータにも
+     * 当たるよう、表記が違うものは両方並べる。
+     * deck_entry.html にも同じ表がある。片方だけ直さないこと。
+     */
+    const SAME_BLADE_GROUPS = [
+      ['ドランソード', 'ドランソードv2'],
+      ['ティラノビート', 'T-レックス'],
+      ['プテラスイング', 'ケツァルコアトルス'],
+      ['ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（ｱｯﾊﾟｰ型）', 'ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（連打型）',
+       'ライトニングエルドラゴ（アッパー型）', 'ライトニングエルドラゴ（連打型）']
+    ];
+    const SAME_BLADE_KEYS = ['BX', 'UX', 'CX'];
+
+    /** 重複判定用に値をそろえる。同一ブレードの組は同じ値になる */
+    function deckDupKey(key, val) {
+      if (SAME_BLADE_KEYS.includes(key)) {
+        const g = SAME_BLADE_GROUPS.findIndex(group => group.includes(val));
+        if (g >= 0) return '同一ブレード#' + g;
+      }
+      return val;
+    }
+
     function checkDeckDuplication(participant, newParts, skipIndex = -1) {
       const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
       const PART_LABELS = {
@@ -8051,9 +8075,12 @@
           const val = newParts[key];
           if (!val || val === 'なし') return;
           if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
-          if (bey.parts[key] === val) {
-            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${bey.name} と重複`);
-          }
+          const other = bey.parts[key];
+          if (!other || deckDupKey(key, other) !== deckDupKey(key, val)) return;
+          const label = PART_LABELS[key] || key;
+          warnings.push(other === val
+            ? `${label}「${val}」が ${bey.name} と重複`
+            : `${label}「${val}」は ${bey.name} の「${other}」と同一ブレード扱いで重複`);
         });
       });
       return warnings;

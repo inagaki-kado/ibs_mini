@@ -581,6 +581,31 @@ function showDeck() {
   submit.textContent = sending ? '送信中…' : (myBeys.length < MAX_BEYS ? MAX_BEYS + '体そろうと送信できます' : '受付に送信する');
 }
 
+/**
+ * 名称は違うが、ルール上は同一ブレードとして扱う組。同じデッキに入れられない。
+ * parts に入る HUD表示用名称で持つ。選択画面用名称が入った古いデータにも
+ * 当たるよう、表記が違うものは両方並べる。
+ * tournament_de.html にも同じ表がある。片方だけ直さないこと。
+ */
+const SAME_BLADE_GROUPS = [
+  ['ドランソード', 'ドランソードv2'],
+  ['ティラノビート', 'T-レックス'],
+  ['プテラスイング', 'ケツァルコアトルス'],
+  ['ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（ｱｯﾊﾟｰ型）', 'ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（連打型）',
+   'ライトニングエルドラゴ（アッパー型）', 'ライトニングエルドラゴ（連打型）']
+];
+const BLADE_KEYS = ['BX', 'UX', 'CX'];
+
+/** 重複判定用に値をそろえる。同一ブレードの組は同じ値になる */
+function dupKey(k, v) {
+  if (BLADE_KEYS.indexOf(k) >= 0) {
+    for (let g = 0; g < SAME_BLADE_GROUPS.length; g++) {
+      if (SAME_BLADE_GROUPS[g].indexOf(v) >= 0) return '同一ブレード#' + g;
+    }
+  }
+  return v;
+}
+
 /** デッキ内のパーツ重複を洗い出す（送信は止めない。注意喚起のみ） */
 function deckWarnings() {
   const out = [];
@@ -592,7 +617,12 @@ function deckWarnings() {
         const v = a[k];
         if (!v || v === 'なし') return;
         if (k === 'RC' && RC_NO_DUP.indexOf(v) < 0) return;
-        if (b[k] === v) out.push((PART_LABELS[k] || k) + '「' + v + '」');
+        const w = b[k];
+        if (!w || dupKey(k, w) !== dupKey(k, v)) return;
+        const label = PART_LABELS[k] || k;
+        out.push(w === v
+          ? label + '「' + v + '」'
+          : label + '「' + v + '」と「' + w + '」（同一ブレード扱い）');
       });
     }
   }
