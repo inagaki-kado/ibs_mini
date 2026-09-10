@@ -239,6 +239,37 @@ function fail(msg) {
   show('error');
 }
 
+/**
+ * 名簿を取り直す。
+ *
+ * 起動時に取った名簿を持ち続けると、運営がベイを削除して枠を空けても
+ * 画面は「登録済み」のまま変わらない。参加者に毎回リロードさせるのは
+ * 現実的でないので、名前一覧に戻ったときと画面を再表示したときに取り直す。
+ *
+ * 失敗しても false を返すだけにする。いま表示している一覧はそのまま
+ * 使えるので、通信が一瞬切れただけで受付を止めない。
+ */
+async function reloadRoster() {
+  try {
+    const q = sessionCode ? { a: 'roster', s: sessionCode } : { a: 'roster' };
+    const res = await apiGet(q);
+    if (!res.ok || !res.open) return false;
+    sessionCode = res.code || sessionCode;
+    roster = res.roster || [];
+    document.getElementById('hdr-event').textContent = res.eventName || '';
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+/** 名前一覧を表示中なら、最新の登録状況に更新する */
+function refreshNamesIfVisible() {
+  const el = document.getElementById('screen-name');
+  if (!el || el.classList.contains('hidden')) return;
+  reloadRoster().then(ok => { if (ok) renderNames(); });
+}
+
 // ==========================================
 // 通信
 // ==========================================
@@ -331,7 +362,14 @@ function backToNames() {
   myBeys = [];
   lockedCount = 0;
   showNames();
+  refreshNamesIfVisible();
 }
+
+// スマホを置いている間に運営が枠を空けることがある。
+// 画面に戻ってきたタイミングで名簿を取り直す
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshNamesIfVisible();
+});
 
 function setSort(mode) {
   sortMode = mode;
