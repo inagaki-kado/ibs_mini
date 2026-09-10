@@ -121,7 +121,7 @@
         <p id="part-note-body" class="text-xs text-cyber-orange"></p>
       </div>
       <div id="part-chosen" class="text-xs text-gray-500 mb-2 leading-relaxed"></div>
-      <input id="part-search" type="search" inputmode="search" placeholder="絞り込む"
+      <input id="part-search" type="search" inputmode="search" placeholder="検索"
              class="w-full bg-cyber-dark border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600 mb-2">
       <p id="part-count" class="text-xs text-gray-500 mb-2"></p>
       <div id="part-list"></div>
@@ -731,10 +731,10 @@ function renderPartList(cat) {
   };
 
   if (frequent.length) {
-    addHeading('■ 頻出パーツ');
+    addHeading('■ ピックアップパーツ（50音順）');
     frequent.forEach(addRow);
   }
-  addHeading('■ パーツ一覧');
+  addHeading('■ 全パーツ（50音順）');
   list.forEach(addRow);
 }
 
@@ -829,6 +829,15 @@ async function submitDeck() {
     }
     if (res.reason === 'closed') {
       return fail('受付は終了しました。運営に直接お申し出ください。');
+    }
+    if (res.reason === 'changed') {
+      // デッキを組んでいる間に運営がベイを削除・変更した。登録済み分を取り直す
+      sending = false;
+      alert('運営側で登録内容が変わりました。お手数ですが、もう一度名前を選び直してください。');
+      return backToNames();
+    }
+    if (res.reason === 'unknown_participant') {
+      return fail('名簿にこの名前が見つかりません。運営に直接お申し出ください。');
     }
     sending = false;
     showDeck();

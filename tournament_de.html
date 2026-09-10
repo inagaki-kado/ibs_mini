@@ -7791,6 +7791,8 @@
         renderBeybladeList();
         renderParticipants();
         saveState();
+        // 参加者側に見える「登録済み」の名前も合わせる
+        syncDeckEntryRosterQuiet();
       }
     }
 
@@ -7807,13 +7809,15 @@
      */
     async function deleteBeyblade(index) {
       if (!await showConfirm('このベイブレードを削除しますか?')) return;
-      
+
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       participant.beyblades.splice(index, 1);
-      
+
       renderBeybladeList();
       renderParticipants();
       saveState();
+      // 削除した分だけ参加者側(deck_entry.html)の再登録枠を開ける
+      syncDeckEntryRosterQuiet();
     }
 
     /**
@@ -8111,11 +8115,13 @@
       }
 
       participant.beyblades.push(beyblade);
-      
+
       closeBeybladeSelectModal();
       renderBeybladeList();
       renderParticipants();
       saveState();
+      // 運営が代理登録した分、参加者側の残り枠を減らす（4体目の登録を防ぐ）
+      syncDeckEntryRosterQuiet();
     }
 
     /**
@@ -8323,15 +8329,36 @@
       }
     }
 
-    /** 参加者名簿と受付状態をGASへ送る。送るのは id と name だけ */
+    /**
+     * 参加者名簿と受付状態をGASへ送る。
+     *
+     * beys には「現在このアプリが持っているデッキ内容」をそのまま載せる。
+     * 参加者側(deck_entry.html)はこれを登録済みとして読み込み、
+     * MAX_BEYS に足りない分だけを追加登録する。
+     * つまり運営がベイを削除するとここが減り、その分だけ再登録枠が開く。
+     * この配列が唯一の正であり、GAS側にロック状態を持たせない。
+     */
     async function pushDeckEntryRoster() {
       return await deckEntryPost({
         a: 'session',
         s: deckEntryCode,
         eventName: tournamentName || '',
         open: deckEntryOpen,
-        roster: participants.map(p => ({ id: p.id, name: p.name }))
+        roster: participants.map(p => ({
+          id: p.id,
+          name: p.name,
+          beys: p.beyblades || []
+        }))
       });
+    }
+
+    /**
+     * 名簿をGASへ送り直す。結果は待たず、失敗しても運営の操作は止めない。
+     * ベイを削除したときに呼び、参加者側の再登録枠を開ける。
+     */
+    function syncDeckEntryRosterQuiet() {
+      if (!deckEntryOpen || !isSetupDone) return;
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
     }
 
     function openDeckEntryModal() {
@@ -8410,6 +8437,43 @@
      * 名簿に一致しない申請はGAS側に pending のまま残す。あとで運営がその名前を
      * 登録すれば、次の取り込みで自動的に反映される。
      */
+    /** 参加者スマホから届くベイの type として認める値 */
+    const DECK_ENTRY_TYPES = ['BX', 'UX', 'CX', 'CX(EX)'];
+    /** parts に入ってよいキー（deck_entry.html の工程ID＋type） */
+    const DECK_ENTRY_PART_KEYS = ['type', 'BX', 'UX', 'CX', 'MB', 'OB', 'AB', 'RC', 'RC2', 'BT'];
+
+    /** 参加者から来た文字列を、画面に埋め込んでも安全な形にする */
+    function cleanDeckEntryText(v, max) {
+      if (typeof v !== 'string') return '';
+      return v.replace(/[<>"'&`\u0000-\u001f]/g, '').trim().slice(0, max);
+    }
+
+    /**
+     * 参加者スマホから届いたベイ配列を無害化する。
+     *
+     * 申請は GAS を経由して誰でも直接送れるので、中身を信用しない。
+     * ベイ名は親機の各所で innerHTML に埋め込まれるため、ここでタグになる文字を
+     * 除いておかないと、運営の端末でスクリプトを実行されてしまう。
+     * 形が崩れているベイは結果から落とす（呼び出し側で件数を比べて判定する）。
+     */
+    function sanitizeDeckEntryBeys(list) {
+      const out = [];
+      list.slice(0, 3).forEach(b => {
+        if (!b || typeof b !== 'object') return;
+        if (DECK_ENTRY_TYPES.indexOf(b.type) < 0) return;
+        const name = cleanDeckEntryText(b.name, 200);
+        if (!name) return;
+        const parts = {};
+        if (b.parts && typeof b.parts === 'object') {
+          DECK_ENTRY_PART_KEYS.forEach(k => {
+            if (b.parts[k] != null) parts[k] = cleanDeckEntryText(String(b.parts[k]), 80);
+          });
+        }
+        out.push({ type: b.type, name: name, parts: parts });
+      });
+      return out;
+    }
+
     async function refreshDeckEntry() {
       if (deckEntryBusy) return;
       deckEntryBusy = true;
@@ -8419,16 +8483,27 @@
 
         const entries = res.entries || [];
         const applied = [];
+        const rejected = [];
         let unmatched = 0;
 
         entries.forEach(entry => {
           const p = participants.find(x => String(x.id) === String(entry.participantId));
           if (!p) { unmatched++; return; }
-          p.beyblades = JSON.parse(JSON.stringify(entry.beyblades || []));
+          const raw = Array.isArray(entry.beyblades) ? entry.beyblades : [];
+          const beys = sanitizeDeckEntryBeys(raw);
+          // 1体でも不正なら丸ごと取り込まない。一部だけ入れると体数がずれ、
+          // 参加者側の「あと〇体」も狂うため。運営が手で登録し直す
+          if (!beys.length || beys.length !== raw.length) {
+            rejected.push(entry.participantId);
+            deckEntryLog.unshift({ name: p.name, count: raw.length, at: Date.now(), ok: false, reason: '不正なデータのため取り込みませんでした' });
+            return;
+          }
+          p.beyblades = beys;
           applied.push(entry.participantId);
           deckEntryLog.unshift({
-            name: entry.name,
-            count: (entry.beyblades || []).length,
+            // 申請に書かれた名前ではなく名簿の名前を使う（申請側は自由に書き換えられる）
+            name: p.name,
+            count: beys.length,
             at: entry.submittedAt || Date.now(),
             ok: true
           });
@@ -8444,6 +8519,14 @@
             await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
           } catch (e) {
             console.warn('mark error:', e);
+          }
+        }
+        if (rejected.length) {
+          // rejected にしないと毎回のポーリングで同じ申請を拾い続ける
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: rejected, state: 'rejected' });
+          } catch (e) {
+            console.warn('mark(rejected) error:', e);
           }
         }
 
@@ -8516,6 +8599,11 @@
         meta.textContent = item.count + '体 / ' + hh + ':' + mm;
         div.appendChild(nm);
         div.appendChild(meta);
+        if (item.ok === false) {
+          // 取り込まなかった申請は色だけでなく文言でも分かるようにする
+          nm.className = 'text-sm text-cyber-red';
+          nm.textContent = '⚠ ' + item.name + '（' + (item.reason || '取り込み失敗') + '）';
+        }
         wrap.appendChild(div);
       });
     }
