@@ -86,7 +86,10 @@
           <p class="text-xs text-gray-500">ブレーダー</p>
           <p id="deck-name" class="text-lg font-bold text-cyber-text"></p>
         </div>
-        <button onclick="backToNames()" class="text-sm text-cyber-red">‹ 参加者リストに戻る<br>※ベイの登録データは消えます</button>
+        <button onclick="backToNames()" class="text-right leading-snug">
+          <span class="block text-sm text-cyber-red">‹ 参加者リストに戻る</span>
+          <span class="block text-xs text-cyber-orange">※ベイの登録データは消えます</span>
+        </button>
       </div>
       <p id="deck-progress" class="text-xs text-cyber-blue mb-2"></p>
       <div id="deck-list" class="mb-3"></div>
@@ -131,11 +134,29 @@
         <p class="text-sm text-gray-300 mb-1">受付に送信しました</p>
         <p id="done-name" class="text-lg font-bold text-cyber-text mb-6"></p>
         <div id="done-list" class="text-left mb-6"></div>
-        <p class="text-sm text-gray-400 leading-relaxed text-left">修正などは運営に直接お伝えください（このアプリから変更はできません）</p>
+        <div class="text-left">
+          <p class="text-sm text-cyber-orange font-bold mb-2">【注意事項】</p>
+          <ul class="text-sm text-gray-300 leading-relaxed space-y-2">
+            <li>・このアプリから再度デッキの確認や修正を行うことはできません。記録を取りたい方は、スクリーンショットでこの画面を撮影してください。</li>
+            <li>・デッキの確認や修正が必要な方は、受付スタッフまでお気軽にお申し付けください。</li>
+            <li>・これでデッキ登録は完了です。この画面は閉じていただいて問題ありません。</li>
+          </ul>
+        </div>
       </div>
     </section>
 
   </main>
+</div>
+
+<!-- はい／いいえ 確認ダイアログ（askConfirm で使う） -->
+<div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+  <div class="bg-cyber-dark border border-cyber-orange rounded-lg p-5 w-full max-w-sm">
+    <p id="confirm-msg" class="text-sm text-cyber-text leading-relaxed mb-5 whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="confirm-no" class="flex-1 py-3 rounded-lg border border-cyber-table-border text-gray-300 font-bold">いいえ</button>
+      <button id="confirm-yes" class="flex-1 py-3 rounded-lg bg-cyber-orange text-cyber-bg font-bold">はい</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -669,7 +690,12 @@ function renderPart() {
 function renderPartList(cat) {
   const q = document.getElementById('part-search').value.trim().toLowerCase();
   const all = getPartsByCategory(cat);
-  const list = all.filter(p => !q || p.selectionName.toLowerCase().indexOf(q) >= 0);
+  // 頻出も含めて純粋に50音順（parsePartsCSV は頻出先頭で並べているため並べ直す）
+  const list = all
+    .filter(p => !q || p.selectionName.toLowerCase().indexOf(q) >= 0)
+    .slice()
+    .sort((a, b) => a.selectionName.localeCompare(b.selectionName, 'ja'));
+  const frequent = list.filter(p => p.isFrequent);
 
   document.getElementById('part-count').textContent = list.length + '件';
 
@@ -681,11 +707,17 @@ function renderPartList(cat) {
     return;
   }
 
-  list.forEach(p => {
+  const addHeading = text => {
+    const h = document.createElement('p');
+    h.className = 'text-xs text-cyber-blue font-bold mt-4 mb-1';
+    h.textContent = text;
+    wrap.appendChild(h);
+  };
+  const addRow = p => {
     const btn = document.createElement('button');
     btn.className = 'row w-full text-left py-3 px-1 flex items-center justify-between gap-2';
     const n = document.createElement('span');
-    n.className = 'text-base break-all ' + (p.isFrequent ? 'text-cyber-red' : 'text-cyber-text');
+    n.className = 'text-base break-all text-cyber-text';
     n.textContent = p.selectionName;
     btn.appendChild(n);
     if (PART_SKIP_RULES[p.id]) {
@@ -696,7 +728,14 @@ function renderPartList(cat) {
     }
     btn.onclick = () => pickPart(cat, p);
     wrap.appendChild(btn);
-  });
+  };
+
+  if (frequent.length) {
+    addHeading('■ 頻出パーツ');
+    frequent.forEach(addRow);
+  }
+  addHeading('■ パーツ一覧');
+  list.forEach(addRow);
 }
 
 function pickPart(cat, part) {
@@ -743,8 +782,31 @@ function finishBey() {
 // 送信
 // ==========================================
 
+/** はい／いいえ の確認。はい で true を返す */
+function askConfirm(msg) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirm-modal');
+    const yes = document.getElementById('confirm-yes');
+    const no = document.getElementById('confirm-no');
+    document.getElementById('confirm-msg').textContent = msg;
+    modal.classList.remove('hidden');
+    const done = v => {
+      modal.classList.add('hidden');
+      yes.onclick = null; no.onclick = null;
+      resolve(v);
+    };
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+  });
+}
+
 async function submitDeck() {
   if (sending || myBeys.length !== MAX_BEYS) return;
+  // 重複は送信を止めない方針のまま、最後に一度だけ本人に確認する
+  if (deckWarnings().length > 0) {
+    if (!await askConfirm('重複しているパーツがあります。\nそれでも送信しますか？')) return;
+    if (sending) return;
+  }
   sending = true;
   showDeck();
 
