@@ -86,7 +86,7 @@
           <p class="text-xs text-gray-500">ブレーダー</p>
           <p id="deck-name" class="text-lg font-bold text-cyber-text"></p>
         </div>
-        <button onclick="backToNames()" class="text-sm text-cyber-red">‹ 参加者リストに戻る（ベイの登録データは消えます）</button>
+        <button onclick="backToNames()" class="text-sm text-cyber-red">‹ 参加者リストに戻る<br>※ベイの登録データは消えます</button>
       </div>
       <p id="deck-progress" class="text-xs text-cyber-blue mb-2"></p>
       <div id="deck-list" class="mb-3"></div>
@@ -98,7 +98,7 @@
               class="w-full py-3 border border-dashed border-cyber-table-border rounded-lg text-cyber-blue text-sm mb-3">＋ ベイを追加する</button>
       <button id="btn-submit" onclick="submitDeck()"
               class="w-full py-4 rounded-lg font-bold text-base">受付に送信する</button>
-      <p class="text-sm text-gray-400 mt-3 leading-relaxed">送信後は変更できません。内容をよく確認してから送信してください。</p>
+      <p class="text-sm text-gray-400 mt-3 leading-relaxed">送信後はこの画面からは変更できません。内容をよく確認してから送信してください。間違えた場合は運営にお申し出ください。</p>
     </section>
 
     <!-- タイプ選択 -->
@@ -178,7 +178,8 @@ let sessionCode = '';
 let partsData = [];
 let roster = [];
 let me = null;              // { id, name }
-let myBeys = [];            // [{ type, name, parts }]
+let myBeys = [];            // [{ type, name, parts, locked }] locked=運営側に登録済みで削除不可
+let lockedCount = 0;        // myBeys の先頭何件が登録済み分か
 let sel = {};               // 選択中のパーツ（hudName）
 let selIds = {};            // 選択中のパーツID（スキップ判定用）
 let path = [];              // 現在の工程配列
@@ -328,6 +329,7 @@ function showNames() {
 function backToNames() {
   me = null;
   myBeys = [];
+  lockedCount = 0;
   showNames();
 }
 
@@ -379,35 +381,80 @@ function renderNames() {
   }
 
   list.forEach(r => {
+    const slot = rosterSlots(r);
+    const locked = slot.remain <= 0;
+
     const btn = document.createElement('button');
     btn.className = 'row w-full text-left py-3 px-1 flex items-center gap-3';
 
     const noSpan = document.createElement('span');
-    noSpan.className = 'text-xs shrink-0 text-right w-6 ' + (r.done ? 'text-gray-600' : 'text-cyber-blue');
+    noSpan.className = 'text-xs shrink-0 text-right w-6 ' + (locked ? 'text-gray-600' : 'text-cyber-blue');
     noSpan.textContent = r.id;
     btn.appendChild(noSpan);
 
     const nameSpan = document.createElement('span');
-    nameSpan.className = 'text-base flex-1 break-all ' + (r.done ? 'text-gray-600' : 'text-cyber-text');
+    nameSpan.className = 'text-base flex-1 break-all ' + (locked ? 'text-gray-600' : 'text-cyber-text');
     nameSpan.textContent = r.name;
     btn.appendChild(nameSpan);
 
-    if (r.done) {
+    if (locked) {
       const tag = document.createElement('span');
       tag.className = 'text-xs text-gray-600 shrink-0';
       tag.textContent = '登録済み';
       btn.appendChild(tag);
       btn.disabled = true;
     } else {
+      // 一度登録したあと運営がベイを削除した人。空いた枠の数を出す
+      if (slot.registered > 0) {
+        const tag = document.createElement('span');
+        tag.className = 'text-xs text-cyber-orange shrink-0';
+        tag.textContent = 'あと' + slot.remain + '体';
+        btn.appendChild(tag);
+      }
       btn.onclick = () => pickMe(r);
     }
     wrap.appendChild(btn);
   });
 }
 
+/**
+ * 名簿1行から登録状況を求める。
+ *
+ * 役割分担:
+ *   done … 登録できるかどうかの最終判断。GAS の判定を無条件で優先する。
+ *           GAS は「3体そろっている」だけでなく、送信済みで親機が未取り込み
+ *           (pending) や却下(rejected) のときも true にしてくる。
+ *           beys の数から自前で計算し直してはいけない。取り込み待ちの間は
+ *           名簿がまだ空なので、計算し直すと二重送信・なりすまし上書きに穴が開く。
+ *   beys … 登録済みとして画面に積む中身。管理アプリ(tournament_de.html)が
+ *           同期してきた現在のデッキ内容で、運営がベイを削除するとこれが減る。
+ *
+ * beys を返さない旧GASでは空配列になり、done だけで判定される
+ * （＝一度登録したら再登録不可）。GAS未対応でも動作が壊れないようにするため。
+ */
+function rosterSlots(r) {
+  const beys = Array.isArray(r.beys) ? r.beys.slice(0, MAX_BEYS) : [];
+  const registered = Math.min(beys.length, MAX_BEYS);
+  const locked = (r.done === true);
+  return {
+    beys: beys,
+    registered: registered,
+    remain: locked ? 0 : MAX_BEYS - registered
+  };
+}
+
 function pickMe(r) {
+  const slot = rosterSlots(r);
   me = { id: r.id, name: r.name };
-  myBeys = [];
+  // 運営が既に持っている分は locked として先頭に積む。
+  // ここを参加者が消せると「削除した分だけ」の意味が壊れるので削除不可にする。
+  myBeys = slot.beys.map(b => ({
+    type: b.type || '',
+    name: b.name || '',
+    parts: b.parts || {},
+    locked: true
+  }));
+  lockedCount = myBeys.length;
   showDeck();
 }
 
@@ -418,27 +465,46 @@ function pickMe(r) {
 function showDeck() {
   show('deck');
   document.getElementById('deck-name').textContent = me.name;
-  document.getElementById('deck-progress').textContent = 'デッキ ' + myBeys.length + ' / ' + MAX_BEYS;
+
+  const progress = document.getElementById('deck-progress');
+  if (lockedCount > 0) {
+    // 運営がベイを削除して枠が開いた人。何体足せばいいのかを最初に出す
+    progress.textContent = 'デッキ ' + myBeys.length + ' / ' + MAX_BEYS +
+      '（登録済み ' + lockedCount + '体・あと ' + (MAX_BEYS - myBeys.length) + '体）';
+  } else {
+    progress.textContent = 'デッキ ' + myBeys.length + ' / ' + MAX_BEYS;
+  }
 
   const wrap = document.getElementById('deck-list');
   wrap.innerHTML = '';
   myBeys.forEach((b, i) => {
     const div = document.createElement('div');
-    div.className = 'bg-cyber-dark border-l-4 border-cyber-green px-3 py-2 mb-2 flex items-start justify-between gap-2';
+    div.className = 'bg-cyber-dark border-l-4 px-3 py-2 mb-2 flex items-start justify-between gap-2 ' +
+      (b.locked ? 'border-gray-600' : 'border-cyber-green');
     const left = document.createElement('div');
     left.className = 'min-w-0';
     const n = document.createElement('p');
-    n.className = 'text-sm text-cyber-text break-all';
+    n.className = 'text-sm break-all ' + (b.locked ? 'text-gray-400' : 'text-cyber-text');
     n.textContent = b.name;
     const t = document.createElement('p');
     t.className = 'text-xs text-gray-500 mt-1';
     t.textContent = b.type;
     left.appendChild(n); left.appendChild(t);
-    const del = document.createElement('button');
-    del.className = 'text-xs text-cyber-red shrink-0 px-2 py-1';
-    del.textContent = '削除';
-    del.onclick = () => { myBeys.splice(i, 1); showDeck(); };
-    div.appendChild(left); div.appendChild(del);
+    div.appendChild(left);
+
+    if (b.locked) {
+      // 登録済み分は参加者側からは消せない。消すのは運営の操作
+      const tag = document.createElement('span');
+      tag.className = 'text-xs text-gray-500 shrink-0 px-2 py-1';
+      tag.textContent = '登録済み';
+      div.appendChild(tag);
+    } else {
+      const del = document.createElement('button');
+      del.className = 'text-xs text-cyber-red shrink-0 px-2 py-1';
+      del.textContent = '削除';
+      del.onclick = () => { myBeys.splice(i, 1); showDeck(); };
+      div.appendChild(del);
+    }
     wrap.appendChild(div);
   });
 
@@ -650,13 +716,16 @@ async function submitDeck() {
       s: sessionCode,
       participantId: me.id,
       name: me.name,
-      beyblades: myBeys
+      // 登録済み分＋今回の追加分をあわせた「最終的なデッキ全体」を送る。
+      // 管理アプリ側は従来どおり丸ごと上書きすればよく、取り込みが冪等になる。
+      // locked は画面表示用の内部フラグなので送らない
+      beyblades: myBeys.map(b => ({ type: b.type, name: b.name, parts: b.parts }))
     });
 
     if (res.ok) return showDone();
 
     if (res.reason === 'locked') {
-      return fail('この名前はすでに登録が完了しています。変更したい場合は運営に直接お申し出ください。');
+      return fail('この名前はすでに' + MAX_BEYS + '体そろっています。変更したい場合は運営に直接お申し出ください。');
     }
     if (res.reason === 'closed') {
       return fail('受付は終了しました。運営に直接お申し出ください。');
