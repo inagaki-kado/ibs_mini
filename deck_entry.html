@@ -348,11 +348,24 @@ function parsePartsCSV(csvText) {
   return parts;
 }
 
+/**
+ * parts.csv の「（なし）」行。ラチェット／ビットを持たないベイの逃げ道として、
+ * 自動スキップ(PART_SKIP_RULES)の無い他アプリのために残してある。
+ * このアプリは UXE・RAE で工程を自動で飛ばすので一覧には出さない
+ * （出すと、対象外のベイでも選べてしまい、ベイ名からパーツが抜ける）。
+ * tournament_de.html も同じ扱い。
+ */
+function isNonePart(p) {
+  return p.selectionName === '（なし）';
+}
+
 /** tournament_de.html と同じ絞り込み規則。UXE は UX に、RAE は RA に前方一致で含まれる */
 function getPartsByCategory(categoryId) {
-  if (categoryId === 'RC2') return partsData.filter(p => p.id.indexOf('RA') === 0);
-  if (categoryId === 'BT')  return partsData.filter(p => p.id.indexOf('BT') === 0);
-  return partsData.filter(p => p.id.indexOf(categoryId) === 0);
+  let list;
+  if (categoryId === 'RC2') list = partsData.filter(p => p.id.indexOf('RA') === 0);
+  else if (categoryId === 'BT') list = partsData.filter(p => p.id.indexOf('BT') === 0);
+  else list = partsData.filter(p => p.id.indexOf(categoryId) === 0);
+  return list.filter(p => !isNonePart(p));
 }
 
 // ==========================================

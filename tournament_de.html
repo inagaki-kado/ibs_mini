@@ -7494,18 +7494,31 @@
     }
 
     /**
+     * parts.csv の「（なし）」行。ラチェット／ビットを持たないベイの逃げ道として、
+     * 自動スキップ(PART_SKIP_RULES)の無い他アプリのために残してある。
+     * このアプリは UXE・RAE で工程を自動で飛ばすので一覧には出さない
+     * （出すと、対象外のベイでも選べてしまい、ベイ名からパーツが抜ける）。
+     * deck_entry.html も同じ扱い。
+     */
+    function isNonePart(p) {
+      return p.selectionName === '（なし）';
+    }
+
+    /**
      * 特定のパーツIDでフィルタリング
      */
     function getPartsByCategory(categoryId) {
+      let list;
       // RC2はRAで始まるパーツ（ラチェット）、BTはBTで始まるパーツ（ビット）
       if (categoryId === 'RC2') {
-        return partsData.filter(p => p.id.startsWith('RA'));
+        list = partsData.filter(p => p.id.startsWith('RA'));
       } else if (categoryId === 'BT') {
-        return partsData.filter(p => p.id.startsWith('BT'));
+        list = partsData.filter(p => p.id.startsWith('BT'));
       } else {
         // それ以外はパーツIDと一致するもの
-        return partsData.filter(p => p.id.startsWith(categoryId));
+        list = partsData.filter(p => p.id.startsWith(categoryId));
       }
+      return list.filter(p => !isNonePart(p));
     }
 
     // ==========================================
@@ -8285,28 +8298,45 @@
     // PeerJSは使わない。会場WiFiのクライアントアイソレーション対策のため。
     // ==========================================
 
-    /** 受付コードを読み込む。なければ4桁を新規発行する */
+    /** 起動時に「受付中」を引き継ぐ期限。これより古い受付状態では自動で再開しない */
+    const DECK_ENTRY_RESUME_MS = 12 * 60 * 60 * 1000;
+
+    /**
+     * 受付コードを読み込む。なければ4桁を新規発行する。
+     *
+     * 新規発行したときと、保存から DECK_ENTRY_RESUME_MS を過ぎていたときは「受付停止」で始める。
+     * GAS は受付中の大会を同時に1つしか持たず、名簿を送った大会がほかの受付を締める。
+     * アプリを開いただけで受付中にすると、別のアプリで進行中の大会の受付を奪ってしまう。
+     * 受付を開くきっかけは、運営が 📱 デッキ受付 を開いたとき（openDeckEntryModal）だけにする。
+     *
+     * 戻り値: 新規発行または期限切れで受付停止にしたとき true
+     */
     function loadDeckEntryState() {
+      let reset = false;
       try {
         const raw = localStorage.getItem(DECK_ENTRY_KEY);
         if (raw) {
           const s = JSON.parse(raw);
           deckEntryCode = s.code || '';
-          deckEntryOpen = s.open === true;
+          const fresh = typeof s.at === 'number' && (Date.now() - s.at) < DECK_ENTRY_RESUME_MS;
+          deckEntryOpen = s.open === true && fresh;
+          if (s.open === true && !fresh) reset = true;
         }
       } catch (e) { console.warn('loadDeckEntryState error:', e); }
 
       if (!/^[0-9]{4}$/.test(deckEntryCode)) {
         deckEntryCode = String(Math.floor(1000 + Math.random() * 9000));
-        deckEntryOpen = true;
+        deckEntryOpen = false;
+        reset = true;
         saveDeckEntryState();
       }
+      return reset;
     }
 
     function saveDeckEntryState() {
       try {
         localStorage.setItem(DECK_ENTRY_KEY, JSON.stringify({
-          code: deckEntryCode, open: deckEntryOpen
+          code: deckEntryCode, open: deckEntryOpen, at: Date.now()
         }));
       } catch (e) { console.warn('saveDeckEntryState error:', e); }
     }
@@ -8390,7 +8420,12 @@
 
     function openDeckEntryModal() {
       if (!isSetupDone) { showAlert('先に参加者を登録してください'); return; }
-      loadDeckEntryState();
+      // 運営が自分でこの画面を開いたときだけ受付を開く（初回・期限切れのとき）。
+      // 一度「受付停止」にしたものは、開き直しても勝手に再開しない
+      if (loadDeckEntryState()) {
+        deckEntryOpen = true;
+        saveDeckEntryState();
+      }
 
       const modal = document.getElementById('deckEntryModal');
       modal.classList.remove('hidden');

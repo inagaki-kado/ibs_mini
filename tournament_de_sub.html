@@ -246,6 +246,40 @@
   // スコアボタン → 決まり手の自動マッピング
   const SCORE_KIMARITE_MAP = { 'X': 'XF', 'B': 'BF', 'O': 'OF', 'S': 'SF' };
 
+  // ================================================
+  // トナメル24（24名4ブロック・P=32）表示合わせ
+  //   親機 tournament_de.html と同じ丸数字テーブル／ラウンド名を使う。
+  //   進行ロジックは親機が確定済みで、ここは受信した appState を描画するだけ。
+  // ================================================
+  const SUB_WB_PLAY_NUMBER_24 = {
+    '0-1':1,  '0-2':2,  '0-5':3,  '0-6':4,
+    '0-9':5,  '0-10':6, '0-13':7, '0-14':8,
+    '1-0':16, '1-1':15, '1-2':14, '1-3':13,
+    '1-4':12, '1-5':11, '1-6':10, '1-7':9,
+    '2-0':18, '2-1':17, '2-2':20, '2-3':19,
+    '3-0':21, '3-1':22,
+    '4-0':23,
+  };
+  // WB R0 のシード形が「トナメル24」（BYE=index 0,3,4,7,8,11,12,15 / 実戦=1,2,5,6,9,10,13,14）か
+  function subIsTonamel24() {
+    const r0 = appState?.winnersBracket?.[0];
+    if (!appState || appState.participants?.length !== 24 || !r0 || r0.length !== 16) return false;
+    const hasBye = m => !!m && (m.p1?.id === 'BYE' || m.p2?.id === 'BYE');
+    return [0, 3, 4, 7, 8, 11, 12, 15].every(i => hasBye(r0[i]))
+        && [1, 2, 5, 6, 9, 10, 13, 14].every(i => !hasBye(r0[i]));
+  }
+  function subWbPlayNumber(rIdx, mIdx) {
+    if (!subIsTonamel24()) return null;
+    return SUB_WB_PLAY_NUMBER_24[`${rIdx}-${mIdx}`] ?? null;
+  }
+  // 親機の LB 列見出しと同じ表記（LB R0 は「①〜⑧敗者 vs BYE」の合流前ラウンド）
+  function subLbRoundLabel(rIdx, total) {
+    if (!subIsTonamel24()) return `LB ROUND ${rIdx + 1}`;
+    if (rIdx === 0) return '合流前';
+    if (rIdx === total - 1) return 'L7（LB決勝）';
+    return 'L' + rIdx;
+  }
+
   // 画面上の 'left'/'right' → 論理 'p1'/'p2'（親機への結果送信・beyP1/beyP2の保存に使う）
   function dispToLogical(side) {
     if (!isSwapped) return side === 'left' ? 'p1' : 'p2';
@@ -379,8 +413,9 @@
     let html = '';
 
     if (appState.losersBracket?.length) {
+      const lbTotal = appState.losersBracket.length;
       appState.losersBracket.forEach((round, rIdx) => {
-        html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">LB ROUND ${rIdx + 1}</div>`;
+        html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">${subLbRoundLabel(rIdx, lbTotal)}</div>`;
         round.forEach((m, mIdx) => { html += renderMatchCard(m, 'lb', rIdx, mIdx, true); });
       });
     }
@@ -457,10 +492,16 @@
       ? `<button onclick="event.stopPropagation(); toggleSubPreview('${bracket}',${rIdx},${mIdx})" style="touch-action: manipulation;" class="text-base leading-none shrink-0 mr-1">📢</button>`
       : '';
 
+    // トナメル24: WB 試合の丸数字（①〜㉓）。親機の紙ブラケットと突き合わせる用。
+    const wbNum = bracket === 'wb' ? subWbPlayNumber(rIdx, mIdx) : null;
+    const numBadge = wbNum
+      ? `<span class="shrink-0 mr-1 text-[11px] font-sf font-bold text-cyber-blue/80 border border-cyber-blue/30 rounded px-1.5 py-0.5 leading-none">${wbNum}</span>`
+      : '';
+
     // 左プレイヤー: text-right（VS中央に向かって右寄せ）
     // 右プレイヤー: text-left（VS中央に向かって左寄せ）
     return `<div ${onclickAttr} class="flex items-center px-3 py-3 rounded-xl mb-2 border ${borderCls} bg-[#0d131f] transition-colors">
-      ${previewBtn}<span class="flex-1 text-base ${p1cls} truncate pr-2 text-right">${p1n}</span>
+      ${numBadge}${previewBtn}<span class="flex-1 text-base ${p1cls} truncate pr-2 text-right">${p1n}</span>
       <div class="flex flex-col items-center mx-3 shrink-0 min-w-[50px]">${centerHtml}</div>
       <span class="flex-1 text-base ${p2cls} truncate pl-2 text-left">${p2n}</span>
     </div>`;
@@ -531,9 +572,11 @@
     // ラベルセット
     isSwapped = false;
 
+    const lbTotal = appState?.losersBracket?.length || 0;
+    const wbNo = currentMatch.bracket === 'wb' ? subWbPlayNumber(currentMatch.roundIdx, currentMatch.matchIdx) : null;
     const roundLabel = currentMatch.bracket === 'lb3rd' ? '3RD PLACE MATCH'
-      : currentMatch.bracket === 'lb' ? `LB ROUND ${currentMatch.roundIdx + 1}`
-      : currentMatch.bracket === 'wb' ? `WB ROUND ${currentMatch.roundIdx + 1}`
+      : currentMatch.bracket === 'lb' ? subLbRoundLabel(currentMatch.roundIdx, lbTotal)
+      : currentMatch.bracket === 'wb' ? (wbNo ? `${wbNo} ・ WB ROUND ${currentMatch.roundIdx + 1}` : `WB ROUND ${currentMatch.roundIdx + 1}`)
       : currentMatch.bracket === 'gf' ? 'GRAND FINAL'
       : currentMatch.bracket === 'gf_reset' ? 'GF RESET'
       : currentMatch.bracket.toUpperCase();

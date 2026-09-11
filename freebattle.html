@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -98,6 +99,7 @@
         <button onclick="openPasteModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold shadow text-xs transition-colors">📋 テキスト貼付</button>
         <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
         <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
+        <button onclick="openDeckEntryModal()" id="btn-deck-entry" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors relative">📱 デッキ受付<span id="deck-entry-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-cyber-orange text-cyber-bg px-1.5 py-0.5 rounded-full font-bold">0</span></button>
         <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
         <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
         <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
@@ -256,6 +258,10 @@
         <div id="beybladeList" class="space-y-3"></div>
         <div class="flex items-center gap-2">
           <button id="addBeybladeBtn" onclick="startBeybladeRegistration()" class="flex-1 bg-cyber-orange hover:bg-[#ea580c] text-cyber-bg px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors">＋ ベイブレードを追加</button>
+        </div>
+        <!-- 主催者の目視確認（押すと参加者一覧に戻る） -->
+        <div class="mt-3">
+          <button id="modalStaffCheckBtn" onclick="execStaffCheckFromModal()" class="w-full bg-cyber-bg border-2 border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-6 py-3 rounded-full font-bold font-sf shadow-lg transition-colors" style="touch-action: manipulation;">▢ スタッフ確認</button>
         </div>
       </div>
     </div>
@@ -1468,7 +1474,7 @@
         const nameCellClick = isSetupSwapMode ? `onclick="handleSetupSwapRow(${p.id})" class="p-3 font-bold text-cyber-text leading-tight cursor-pointer"` : `class="p-3 font-bold text-cyber-text leading-tight"`;
         tr.innerHTML = `<td class="p-3 text-center font-sf text-cyber-orange text-sm">${originalNo}</td>
         <td ${nameCellClick}>${p.name} ${memoBadge}${statsDisplay}</td>
-        <td class="p-3 text-center"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 mx-auto flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''}>🗳️${beyBadge}</button></td>
+        <td class="p-3 text-center"><div class="flex items-center justify-center gap-2"><button onclick="openBeybladeManager(${p.id})" class="${checkBtnColor} w-10 h-8 flex items-center justify-center rounded text-lg transition-all relative" title="ベイブレード登録" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''}>🗳️${beyBadge}</button>${bayCheckBtnHtml(p)}</div></td>
         <td class="p-3 text-center"><button onclick="renameParticipant(${p.id})" class="text-cyber-orange text-xs border border-cyber-orange hover:bg-cyber-orange hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''} title="名前を変更">✏️</button></td>
         <td class="p-3 text-center"><button onclick="execRemoveParticipant(${p.id})" class="text-cyber-pink text-xs border border-cyber-pink hover:bg-cyber-pink hover:text-white px-2 py-1 rounded font-sf transition-colors" ${isSetupSwapMode ? 'disabled style="opacity:0.35"' : ''}>DEL</button></td>`;
         tbody.appendChild(tr);
@@ -1583,6 +1589,7 @@
       const participant = participants.find(p => p.id === participantId);
       if (!participant.beyblades) participant.beyblades = [];
       renderBeybladeList();
+      updateModalStaffCheckBtn();
       document.getElementById('beybladeModal').classList.remove('hidden');
       document.getElementById('beybladeModal').classList.add('flex');
     }
@@ -1622,6 +1629,7 @@
         participant.beyblades[index].name = input.value.trim();
         currentEditingBeybladeIndex = -1;
         renderBeybladeList(); renderParticipants(); saveState();
+        syncDeckEntryRosterQuiet();
       }
     }
     function cancelBeybladeEdit() { currentEditingBeybladeIndex = -1; renderBeybladeList(); }
@@ -1630,6 +1638,7 @@
       const participant = participants.find(p => p.id === currentBeybladeParticipantId);
       participant.beyblades.splice(index, 1);
       renderBeybladeList(); renderParticipants(); saveState();
+      syncDeckEntryRosterQuiet();
     }
     function startBeybladeRegistration() {
       currentBeybladeSelection = {}; beybladeSelectionStep = 0; beybladeSelectionPath = []; showBeybladeTypeSelection();
@@ -1705,6 +1714,30 @@
       }
     }
     function cancelBeybladeSelect() { closeBeybladeSelectModal(); }
+    /**
+     * 名称は違うが、ルール上は同一ブレードとして扱う組。同じデッキに入れられない。
+     * parts に入る HUD表示用名称で持つ。選択画面用名称が入った古いデータにも
+     * 当たるよう、表記が違うものは両方並べる。
+     * deck_entry.html にも同じ表がある。片方だけ直さないこと。
+     */
+    const SAME_BLADE_GROUPS = [
+      ['ドランソード', 'ドランソードv2'],
+      ['ティラノビート', 'T-レックス'],
+      ['プテラスイング', 'ケツァルコアトルス'],
+      ['ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（ｱｯﾊﾟｰ型）', 'ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（連打型）',
+       'ライトニングエルドラゴ（アッパー型）', 'ライトニングエルドラゴ（連打型）']
+    ];
+    const SAME_BLADE_KEYS = ['BX', 'UX', 'CX'];
+
+    /** 重複判定用に値をそろえる。同一ブレードの組は同じ値になる */
+    function deckDupKey(key, val) {
+      if (SAME_BLADE_KEYS.includes(key)) {
+        const g = SAME_BLADE_GROUPS.findIndex(group => group.includes(val));
+        if (g >= 0) return '同一ブレード#' + g;
+      }
+      return val;
+    }
+
     function checkDeckDuplication(participant, newParts, skipIndex = -1) {
       const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
       const PART_LABELS = {
@@ -1719,9 +1752,12 @@
           const val = newParts[key];
           if (!val || val === 'なし') return;
           if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
-          if (bey.parts[key] === val) {
-            warnings.push(`${PART_LABELS[key] || key}「${val}」が ${bey.name} と重複`);
-          }
+          const other = bey.parts[key];
+          if (!other || deckDupKey(key, other) !== deckDupKey(key, val)) return;
+          const label = PART_LABELS[key] || key;
+          warnings.push(other === val
+            ? `${label}「${val}」が ${bey.name} と重複`
+            : `${label}「${val}」は ${bey.name} の「${other}」と同一ブレード扱いで重複`);
         });
       });
       return warnings;
@@ -1743,6 +1779,7 @@
       participant.beyblades.push(beyblade);
       closeBeybladeSelectModal();
       renderBeybladeList(); renderParticipants(); saveState();
+      syncDeckEntryRosterQuiet();
     }
     function closeBeybladeModal() {
       document.getElementById('beybladeModal').classList.add('hidden');
@@ -1789,6 +1826,8 @@
     }
     async function execClearSave() { await clearSave(); }
     async function execRemoveParticipant(id) { await removeParticipant(id); }
+    async function execToggleBayCheck(id) { await toggleBayCheck(id); }
+    async function execStaffCheckFromModal() { await staffCheckFromModal(); }
 
     function renameParticipant(id) {
       const p = participants.find(x => x.id === id);
@@ -2084,7 +2123,7 @@
         participants.forEach(p => {
           if (!p.beyblades) p.beyblades = [];
           delete p.bayImage;
-          delete p.bayChecked;
+          if (p.bayChecked === undefined) p.bayChecked = false;
         });
         matches = s.matches || [];
         participantSortMode = s.participantSortMode || 'id';
@@ -2124,12 +2163,529 @@
       if (loadState()) { showResumeBanner(); }
     })();
 
+    // ---- デッキセルフ登録 ----
+    let deckEntryCode = '';        // 4桁の受付コード
+    let deckEntryOpen = false;     // 受付中かどうか
+    let deckEntryLog = [];         // 取り込み結果のログ [{name, count, at, ok, reason}]
+    let deckEntryPending = 0;      // 名簿に一致せず未反映のまま残っている件数
+    let deckEntryTimer = null;     // ポーリング用タイマー
+    let deckEntryBusy = false;     // 通信中の二重実行防止
+
+    /** デッキセルフ登録の中継先。GASのウェブアプリURL（末尾は /exec） */
+    const DECK_ENTRY_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+
+    /** 参加者が開くページ */
+    const DECK_ENTRY_PAGE_URL = 'https://itabashibayblade.pages.dev/deck_entry.html';
+
+    /** 受付コードの保存先。SAVE_KEY とは別キー。絶対に混在させない */
+    const DECK_ENTRY_KEY = 'tbh_free_deck_entry';
+
+    // ==========================================
+    // デッキセルフ登録 受付機能
+    //
+    // 参加者スマホ（deck_entry.html）とはGASを経由してやり取りする。
+    // PeerJSは使わない。会場WiFiのクライアントアイソレーション対策のため。
+    // ==========================================
+
+    /** 起動時に「受付中」を引き継ぐ期限。これより古い受付状態では自動で再開しない */
+    const DECK_ENTRY_RESUME_MS = 12 * 60 * 60 * 1000;
+
+    /**
+     * 受付コードを読み込む。なければ4桁を新規発行する。
+     *
+     * 新規発行したときと、保存から DECK_ENTRY_RESUME_MS を過ぎていたときは「受付停止」で始める。
+     * GAS は受付中の大会を同時に1つしか持たず、名簿を送った大会がほかの受付を締める。
+     * アプリを開いただけで受付中にすると、別のアプリで進行中の大会の受付を奪ってしまう。
+     * 受付を開くきっかけは、運営が 📱 デッキ受付 を開いたとき（openDeckEntryModal）だけにする。
+     *
+     * 戻り値: 新規発行または期限切れで受付停止にしたとき true
+     */
+    function loadDeckEntryState() {
+      let reset = false;
+      try {
+        const raw = localStorage.getItem(DECK_ENTRY_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          deckEntryCode = s.code || '';
+          const fresh = typeof s.at === 'number' && (Date.now() - s.at) < DECK_ENTRY_RESUME_MS;
+          deckEntryOpen = s.open === true && fresh;
+          if (s.open === true && !fresh) reset = true;
+        }
+      } catch (e) { console.warn('loadDeckEntryState error:', e); }
+
+      if (!/^[0-9]{4}$/.test(deckEntryCode)) {
+        deckEntryCode = String(Math.floor(1000 + Math.random() * 9000));
+        deckEntryOpen = false;
+        reset = true;
+        saveDeckEntryState();
+      }
+      return reset;
+    }
+
+    function saveDeckEntryState() {
+      try {
+        localStorage.setItem(DECK_ENTRY_KEY, JSON.stringify({
+          code: deckEntryCode, open: deckEntryOpen, at: Date.now()
+        }));
+      } catch (e) { console.warn('saveDeckEntryState error:', e); }
+    }
+
+    /** デッキ受付の通信タイムアウト（ミリ秒）。ポーリング間隔15秒より必ず短くすること */
+    const DECK_ENTRY_TIMEOUT_MS = 12000;
+
+    /**
+     * GASへのGET。
+     * 会場回線が固まったときに永久待機しないよう、一定時間で打ち切る。
+     * 打ち切らないと deckEntryBusy が解放されず、ポーリングと受付トグルが
+     * まとめて停止する。
+     */
+    async function deckEntryGet(params) {
+      const q = new URLSearchParams(params).toString();
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL + '?' + q, {
+          method: 'GET',
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /**
+     * GASへのPOST。
+     * Content-Type は必ず text/plain にすること。application/json にすると
+     * ブラウザが preflight(OPTIONS) を投げ、GASが応答できず通信が失敗する。
+     */
+    async function deckEntryPost(body) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body),
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /**
+     * 参加者名簿と受付状態をGASへ送る。
+     *
+     * beys には「現在このアプリが持っているデッキ内容」をそのまま載せる。
+     * 参加者側(deck_entry.html)はこれを登録済みとして読み込み、
+     * MAX_BEYS に足りない分だけを追加登録する。
+     * つまり運営がベイを削除するとここが減り、その分だけ再登録枠が開く。
+     * この配列が唯一の正であり、GAS側にロック状態を持たせない。
+     */
+    async function pushDeckEntryRoster() {
+      return await deckEntryPost({
+        a: 'session',
+        s: deckEntryCode,
+        eventName: (typeof tournamentName !== 'undefined' && tournamentName) || '',
+        open: deckEntryOpen,
+        roster: participants.map(p => ({
+          id: p.id,
+          name: p.name,
+          beys: p.beyblades || []
+        }))
+      });
+    }
+
+    /**
+     * 名簿をGASへ送り直す。結果は待たず、失敗しても運営の操作は止めない。
+     * ベイを削除したときに呼び、参加者側の再登録枠を開ける。
+     */
+    function syncDeckEntryRosterQuiet() {
+      if (!deckEntryOpen || !(participants.length > 0)) return;
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
+    }
+
+    function openDeckEntryModal() {
+      if (!(participants.length > 0)) { showAlert('先に参加者を登録してください'); return; }
+      // 運営が自分でこの画面を開いたときだけ受付を開く（初回・期限切れのとき）。
+      // 一度「受付停止」にしたものは、開き直しても勝手に再開しない
+      if (loadDeckEntryState()) {
+        deckEntryOpen = true;
+        saveDeckEntryState();
+      }
+
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      document.getElementById('deck-entry-code').textContent = deckEntryCode;
+      renderDeckEntryQR();
+      renderDeckEntryToggle();
+      renderDeckEntryList();
+
+      // 参加者の増減・改名を反映するため、開くたびに名簿を送り直す
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
+
+      refreshDeckEntry();
+      startDeckEntryPolling();
+    }
+
+    function closeDeckEntryModal() {
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      // 受付中なら取り込みは続ける。閉じている間に届いた申請を取りこぼさないため
+      if (!deckEntryOpen) stopDeckEntryPolling();
+    }
+
+    function renderDeckEntryQR() {
+      const box = document.getElementById('deck-entry-qr');
+      box.innerHTML = '';
+      new QRCode(box, {
+        // 受付コードは埋め込まない。参加者側がGASに「いま受付中の大会」を聞くので、
+        // このQRは印刷して会場に貼ったまま何度でも使い回せる。
+        text: DECK_ENTRY_PAGE_URL,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function renderDeckEntryToggle() {
+      const btn = document.getElementById('btn-deck-entry-toggle');
+      if (deckEntryOpen) {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-green text-cyber-bg';
+        btn.textContent = '受付中（押すと締める）';
+      } else {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-dark border border-cyber-red text-cyber-red';
+        btn.textContent = '受付停止中（押すと開ける）';
+      }
+    }
+
+    /** 受付の開閉。開けるたびに最新の名簿を送り直す */
+    async function toggleDeckEntryOpen() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        deckEntryOpen = !deckEntryOpen;
+        saveDeckEntryState();
+        renderDeckEntryToggle();
+        if (deckEntryOpen) startDeckEntryPolling(); else stopDeckEntryPolling();
+        const res = await pushDeckEntryRoster();
+        if (!res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
+      } catch (e) {
+        showAlert('通信できませんでした。ネットワークを確認してください。');
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    /**
+     * 申請を取りに行き、名簿と照合できたものをその場で participants に反映する。
+     *
+     * 名簿に一致しない申請はGAS側に pending のまま残す。あとで運営がその名前を
+     * 登録すれば、次の取り込みで自動的に反映される。
+     */
+    /** 参加者スマホから届くベイの type として認める値 */
+    const DECK_ENTRY_TYPES = ['BX', 'UX', 'CX', 'CX(EX)'];
+    /** parts に入ってよいキー（deck_entry.html の工程ID＋type） */
+    const DECK_ENTRY_PART_KEYS = ['type', 'BX', 'UX', 'CX', 'MB', 'OB', 'AB', 'RC', 'RC2', 'BT'];
+
+    /** 参加者から来た文字列を、画面に埋め込んでも安全な形にする */
+    function cleanDeckEntryText(v, max) {
+      if (typeof v !== 'string') return '';
+      return v.replace(/[<>"'&`\u0000-\u001f]/g, '').trim().slice(0, max);
+    }
+
+    /**
+     * 参加者スマホから届いたベイ配列を無害化する。
+     *
+     * 申請は GAS を経由して誰でも直接送れるので、中身を信用しない。
+     * ベイ名は親機の各所で innerHTML に埋め込まれるため、ここでタグになる文字を
+     * 除いておかないと、運営の端末でスクリプトを実行されてしまう。
+     * 形が崩れているベイは結果から落とす（呼び出し側で件数を比べて判定する）。
+     */
+    function sanitizeDeckEntryBeys(list) {
+      const out = [];
+      list.slice(0, 3).forEach(b => {
+        if (!b || typeof b !== 'object') return;
+        if (DECK_ENTRY_TYPES.indexOf(b.type) < 0) return;
+        const name = cleanDeckEntryText(b.name, 200);
+        if (!name) return;
+        const parts = {};
+        if (b.parts && typeof b.parts === 'object') {
+          DECK_ENTRY_PART_KEYS.forEach(k => {
+            if (b.parts[k] != null) parts[k] = cleanDeckEntryText(String(b.parts[k]), 80);
+          });
+        }
+        out.push({ type: b.type, name: name, parts: parts });
+      });
+      return out;
+    }
+
+    async function refreshDeckEntry() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        const res = await deckEntryGet({ a: 'pending', s: deckEntryCode });
+        if (!res.ok) return;
+
+        const entries = res.entries || [];
+        const applied = [];
+        const rejected = [];
+        let unmatched = 0;
+
+        entries.forEach(entry => {
+          const p = participants.find(x => String(x.id) === String(entry.participantId));
+          if (!p) { unmatched++; return; }
+          const raw = Array.isArray(entry.beyblades) ? entry.beyblades : [];
+          const beys = sanitizeDeckEntryBeys(raw);
+          // 1体でも不正なら丸ごと取り込まない。一部だけ入れると体数がずれ、
+          // 参加者側の「あと〇体」も狂うため。運営が手で登録し直す
+          if (!beys.length || beys.length !== raw.length) {
+            rejected.push(entry.participantId);
+            deckEntryLog.unshift({ name: p.name, count: raw.length, at: Date.now(), ok: false, reason: '不正なデータのため取り込みませんでした' });
+            return;
+          }
+          p.beyblades = beys;
+          applied.push(entry.participantId);
+          deckEntryLog.unshift({
+            // 申請に書かれた名前ではなく名簿の名前を使う（申請側は自由に書き換えられる）
+            name: p.name,
+            count: beys.length,
+            at: entry.submittedAt || Date.now(),
+            ok: true
+          });
+        });
+
+        // 未反映の申請は毎回ログに積むと重複するので、件数だけ保持する
+        deckEntryPending = unmatched;
+
+        if (applied.length) {
+          renderParticipants();
+          saveState();
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
+          } catch (e) {
+            console.warn('mark error:', e);
+          }
+        }
+        if (rejected.length) {
+          // rejected にしないと毎回のポーリングで同じ申請を拾い続ける
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: rejected, state: 'rejected' });
+          } catch (e) {
+            console.warn('mark(rejected) error:', e);
+          }
+        }
+
+        if (deckEntryLog.length > 50) deckEntryLog.length = 50;
+
+        renderDeckEntryList();
+        updateDeckEntryBadge();
+      } catch (e) {
+        console.warn('refreshDeckEntry error:', e);
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    function startDeckEntryPolling() {
+      stopDeckEntryPolling();
+      deckEntryTimer = setInterval(refreshDeckEntry, 15000);
+    }
+
+    function stopDeckEntryPolling() {
+      if (deckEntryTimer) { clearInterval(deckEntryTimer); deckEntryTimer = null; }
+    }
+
+    /** バッジには「名簿に一致せず未反映のまま残っている件数」を出す */
+    function updateDeckEntryBadge() {
+      const badge = document.getElementById('deck-entry-badge');
+      if (!badge) return;
+      badge.textContent = deckEntryPending;
+      badge.classList.toggle('hidden', deckEntryPending === 0);
+    }
+
+    function renderDeckEntryList() {
+      const wrap = document.getElementById('deck-entry-list');
+      const countEl = document.getElementById('deck-entry-count');
+      if (!wrap) return;
+
+      const unregistered = participants.filter(p => (p.beyblades || []).length === 0).length;
+      countEl.textContent = '取り込み済み ' + deckEntryLog.length + '件 / 未登録 ' + unregistered + '人';
+
+      wrap.innerHTML = '';
+
+      if (deckEntryPending > 0) {
+        const warn = document.createElement('div');
+        warn.className = 'bg-cyber-bg border-l-4 border-cyber-red p-3 mb-2';
+        warn.innerHTML = '<p class="text-xs text-cyber-red font-bold">名簿にない申請が ' + deckEntryPending +
+          '件あります</p><p class="text-[11px] text-cyber-text opacity-70 mt-1 leading-relaxed">' +
+          'その参加者を名簿に追加すると、次の取り込みで自動的に反映されます。</p>';
+        wrap.appendChild(warn);
+      }
+
+      if (!deckEntryLog.length) {
+        const p = document.createElement('p');
+        p.className = 'text-sm text-cyber-text opacity-40 py-8 text-center';
+        p.textContent = 'まだ取り込みはありません';
+        wrap.appendChild(p);
+        return;
+      }
+
+      deckEntryLog.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'border-b border-cyber-table-border py-2 px-1 flex items-center justify-between gap-2';
+        const nm = document.createElement('span');
+        nm.className = 'text-sm text-cyber-text';
+        nm.textContent = item.name;
+        const meta = document.createElement('span');
+        meta.className = 'text-[11px] text-cyber-text opacity-50 shrink-0';
+        const d = new Date(item.at);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        meta.textContent = item.count + '体 / ' + hh + ':' + mm;
+        div.appendChild(nm);
+        div.appendChild(meta);
+        if (item.ok === false) {
+          // 取り込まなかった申請は色だけでなく文言でも分かるようにする
+          nm.className = 'text-sm text-cyber-red';
+          nm.textContent = '⚠ ' + item.name + '（' + (item.reason || '取り込み失敗') + '）';
+        }
+        wrap.appendChild(div);
+      });
+    }
+
+
+
+    // ==========================================
+    // 主催者の目視ベイチェック（tournament_de.html から移植）
+    // 登録内容の一致・パーツ摩耗を運営が確認した印。p.bayChecked に保存する。
+    // ▢ → タップで即 ✅。✅ → 確認ダイアログで「はい」を選ぶと ▢ に戻す。
+    // ==========================================
+
+    /** 参加者一覧の ▢/✅ ボタン */
+    function bayCheckBtnHtml(p) {
+      const swap = (typeof isSetupSwapMode !== 'undefined') && isSetupSwapMode;
+      const checked = !!p.bayChecked;
+      const color = checked
+        ? 'bg-cyber-green text-cyber-bg shadow-[0_0_8px_#22c55e]'
+        : 'bg-transparent text-cyber-orange border border-cyber-orange hover:bg-cyber-orange/20';
+      const title = checked ? 'ベイチェック済（タップで取り消し）' : 'ベイチェック（主催者の目視確認OK）';
+      return `<button onclick="execToggleBayCheck(${p.id})" style="touch-action: manipulation; ${swap ? 'opacity:0.5;' : ''}" class="${color} w-10 h-8 flex items-center justify-center rounded text-lg transition-all shrink-0" title="${title}" ${swap ? 'disabled' : ''}>${checked ? '✅' : '▢'}</button>`;
+    }
+
+    async function toggleBayCheck(id) {
+      if ((typeof isSetupSwapMode !== 'undefined') && isSetupSwapMode) return;
+      const p = participants.find(x => x.id === id);
+      if (!p) return;
+      if (p.bayChecked) {
+        const ok = await showConfirm(`${p.name} のベイチェックを取り消しますか？`);
+        if (!ok) return;
+        p.bayChecked = false;
+      } else {
+        p.bayChecked = true;
+      }
+      renderParticipants();
+      saveState();
+    }
+
+    /** ベイ登録モーダル内「スタッフ確認」ボタンの表示を現在の bayChecked に同期 */
+    function updateModalStaffCheckBtn() {
+      const btn = document.getElementById('modalStaffCheckBtn');
+      if (!btn) return;
+      const p = participants.find(x => x.id === currentBeybladeParticipantId);
+      const checked = !!(p && p.bayChecked);
+      btn.textContent = checked ? '✅ スタッフ確認済（タップで取り消し）' : '▢ スタッフ確認';
+      btn.classList.toggle('bg-cyber-green', checked);
+      btn.classList.toggle('text-cyber-bg', checked);
+      btn.classList.toggle('bg-cyber-bg', !checked);
+      btn.classList.toggle('text-cyber-green', !checked);
+    }
+
+    // モーダルから目視チェックを ON/OFF（参加者行の ▢/✅ と同じ bayChecked を操作）。
+    // 状態を変えたらモーダルを閉じてメイン画面（参加者一覧）へ戻す。
+    async function staffCheckFromModal() {
+      const p = participants.find(x => x.id === currentBeybladeParticipantId);
+      if (!p) return;
+      if (p.bayChecked) {
+        const ok = await showConfirm(`${p.name} のベイチェックを取り消しますか？`);
+        if (!ok) return;
+        p.bayChecked = false;
+      } else {
+        p.bayChecked = true;
+      }
+      renderParticipants();
+      saveState();
+      closeBeybladeModal();
+    }
+
+
     window.addEventListener('DOMContentLoaded', async function() {
       await loadPartsCSV();
+
+      // 親機が閉じていた間にたまった申請を取り込む。
+      // 受付中でなければ何もしない。
+      try {
+        loadDeckEntryState();
+        if (deckEntryOpen && (participants.length > 0)) {
+          await pushDeckEntryRoster();
+          await refreshDeckEntry();
+          startDeckEntryPolling();
+        }
+      } catch (e) {
+        console.warn('deck entry resume error:', e);
+      }
+
       syncHudPreviewBgSelect();
       syncHudPreviewLogoUI();
     });
   </script>
+
+  <!-- デッキセルフ登録 受付モーダル -->
+  <div id="deckEntryModal" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4">
+    <div class="bg-cyber-dark border border-cyber-orange rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+
+      <div class="flex items-center justify-between p-4 border-b border-cyber-table-border shrink-0">
+        <h2 class="text-xl font-sf text-cyber-orange">📱 DECK ENTRY</h2>
+        <button onclick="closeDeckEntryModal()" class="text-cyber-text text-2xl px-3 leading-none">×</button>
+      </div>
+
+      <div class="overflow-y-auto p-4 flex-1">
+        <div class="flex flex-col md:flex-row gap-4">
+
+          <div class="shrink-0 text-center">
+            <div id="deck-entry-qr" class="bg-white p-3 rounded inline-block"></div>
+            <p class="font-sf text-3xl text-cyber-orange mt-2" id="deck-entry-code">----</p>
+            <p class="text-xs text-cyber-text opacity-60 mt-1">参加者にこのQRを読んでもらう</p>
+            <button onclick="toggleDeckEntryOpen()" id="btn-deck-entry-toggle"
+                    class="mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors"></button>
+            <button onclick="refreshDeckEntry()" id="btn-deck-entry-refresh"
+                    class="mt-2 w-full bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-bold text-xs transition-colors">🔄 今すぐ確認</button>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-sf text-cyber-orange" id="deck-entry-count">承認待ち 0件</span>
+              <span class="text-[11px] text-cyber-text opacity-50">自動で反映されます</span>
+            </div>
+            <div id="deck-entry-list"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-cyber-table-border shrink-0">
+        <p class="text-[11px] text-cyber-text opacity-50 leading-relaxed">
+          承認するまで参加者データには反映されません。承認後の変更は運営のみが行えます。
+        </p>
+      </div>
+
+    </div>
+  </div>
 
 <div id="custom-alert-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
   <div class="bg-[#0d131f] border border-cyber-orange rounded-xl shadow-[0_0_30px_rgba(255,170,0,0.3)] p-6 max-w-sm w-[90%] flex flex-col gap-4">
