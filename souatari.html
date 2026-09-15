@@ -12,6 +12,7 @@
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -79,12 +80,20 @@
     <h1 class="text-2xl font-sf text-cyber-green ml-24 md:ml-0">ITABASHI BEY-LEAGUE</h1>
     <p class="text-xs text-cyber-text opacity-70 font-sf tracking-widest ml-24 md:ml-0">ROUND-ROBIN SYSTEM <span class="text-cyber-pink opacity-90">v1.1</span></p>
     
-    <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex items-center gap-2 z-50 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
-      <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
-      <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
-      <button onclick="connectLink()" id="btn-connect" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
-      <button onclick="forceResetLink()" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
-      <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+    <div class="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 flex flex-col items-end gap-1 z-50">
+      <div class="flex items-center gap-2 bg-[#0a0e17] p-2 rounded-lg border border-cyber-table-border shadow-lg">
+        <span class="text-[10px] text-cyber-blue font-sf font-bold hidden md:inline">HUD LINK</span>
+        <input type="text" id="linkCodeInput" placeholder="0511" value="0511" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-blue text-cyber-text text-sm text-center outline-none font-sf focus:border-cyber-green transition-colors" maxlength="4">
+        <button onclick="connectLink()" id="btn-connect" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[10px] md:text-xs font-sf font-bold transition-colors rounded">CONN</button>
+        <button onclick="forceResetLink()" style="touch-action: manipulation;" class="text-cyber-pink hover:text-white font-bold text-sm px-1 transition-colors" title="通信を強制リセット">✖</button>
+        <div id="link-status-dot" class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+      </div>
+      <div class="flex items-center gap-1 bg-[#0a0e17] px-2 py-1.5 rounded-lg border border-cyber-table-border shadow-lg">
+        <span class="text-[9px] text-cyber-blue font-sf font-bold hidden md:inline">LB SUB</span>
+        <input id="sub-code-input" type="number" min="1000" max="9999" placeholder="CODE" value="1784" style="touch-action: manipulation;" class="w-12 md:w-16 p-1 bg-cyber-bg border border-cyber-table-border text-cyber-text text-xs text-center outline-none font-sf" maxlength="4">
+        <button onclick="initHostPeer(document.getElementById('sub-code-input').value)" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-table-border text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-2 py-1 text-[9px] md:text-[10px] font-sf font-bold transition-colors rounded">HOST</button>
+        <span id="sub-conn-count" class="text-[9px] font-sf text-cyber-green/60 whitespace-nowrap">-</span>
+      </div>
     </div>
   </header>
 
@@ -110,6 +119,8 @@
           <button onclick="execAddParticipant()" ontouchend="handleTouch(event,execAddParticipant)" class="bg-cyber-dark border border-cyber-blue hover:bg-cyber-blue/20 text-cyber-blue px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
           
           <button onclick="downloadAllImagesZip()" ontouchend="handleTouch(event,downloadAllImagesZip)" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">📦 画像DL(ZIP)</button>
+          <button onclick="openDeckEntryModal()" id="btn-deck-entry" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors relative">📱 デッキ受付<span id="deck-entry-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-cyber-orange text-cyber-bg px-1.5 py-0.5 rounded-full font-bold">0</span></button>
+          <button onclick="toggleQrAnnounce()" id="btn-qr-announce" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">📢QR告知</button>
 
           <div class="flex-grow"></div>
           
@@ -277,10 +288,56 @@
         下のテキストを全選択してコピーし、スプレッドシートの<span class="text-cyber-blue font-bold">「対戦表」タブのA列</span>に貼り付けてください。<br>
         （A列:P1、C列:P2、E列:勝者 に自動で振り分けられます）
       </p>
+      <div class="flex gap-2 mb-2">
+        <button id="exportModeMatchBtn" onclick="switchExportMode('match')" style="touch-action: manipulation;" class="flex-1 px-3 py-2 rounded border font-sf text-sm font-bold transition-colors">試合単位</button>
+        <button id="exportModeBattleBtn" onclick="switchExportMode('battle')" style="touch-action: manipulation;" class="flex-1 px-3 py-2 rounded border font-sf text-sm font-bold transition-colors">バトル単位</button>
+      </div>
+      <p id="exportColumnsHint" class="mb-3 text-cyber-text text-xs opacity-60"></p>
       <textarea id="exportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-sm mb-6" readonly></textarea>
       <div class="flex gap-4">
         <button onclick="copyExportData()" class="flex-[2] bg-cyber-green text-cyber-bg px-4 py-4 rounded-full font-bold font-sf shadow-[0_0_10px_#22c55e] text-lg active:scale-95 transition-transform">📋 COPY DATA</button>
         <button onclick="closeExportModal()" class="flex-1 bg-cyber-bg text-cyber-text px-4 py-4 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- デッキセルフ登録 受付モーダル -->
+  <div id="deckEntryModal" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4">
+    <div class="bg-cyber-dark border border-cyber-orange rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+
+      <div class="flex items-center justify-between p-4 border-b border-cyber-table-border shrink-0">
+        <h2 class="text-xl font-sf text-cyber-orange">📱 DECK ENTRY</h2>
+        <button onclick="closeDeckEntryModal()" style="touch-action: manipulation;" class="text-cyber-text text-2xl px-3 leading-none">×</button>
+      </div>
+
+      <div class="overflow-y-auto p-4 flex-1">
+        <div class="flex flex-col md:flex-row gap-4">
+
+          <div class="shrink-0 text-center">
+            <div id="deck-entry-qr" class="bg-white p-3 rounded inline-block"></div>
+            <p class="font-sf text-3xl text-cyber-orange mt-2" id="deck-entry-code">----</p>
+            <p class="text-xs text-cyber-text opacity-60 mt-1">参加者にこのQRを読んでもらう</p>
+            <button onclick="toggleDeckEntryOpen()" id="btn-deck-entry-toggle" style="touch-action: manipulation;"
+                    class="mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors"></button>
+            <button onclick="refreshDeckEntry()" id="btn-deck-entry-refresh" style="touch-action: manipulation;"
+                    class="mt-2 w-full bg-cyber-dark border border-cyber-blue text-cyber-blue px-3 py-2 rounded font-bold text-xs transition-colors">🔄 今すぐ確認</button>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-sf text-cyber-orange" id="deck-entry-count">承認待ち 0件</span>
+              <span class="text-[11px] text-cyber-text opacity-50">自動で反映されます</span>
+            </div>
+            <div id="deck-entry-list"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-cyber-table-border shrink-0">
+        <p class="text-[11px] text-cyber-text opacity-50 leading-relaxed">
+          承認するまで参加者データには反映されません。承認後の変更は運営のみが行えます。
+        </p>
       </div>
     </div>
   </div>
@@ -698,6 +755,541 @@
     }
 
     // ==========================================
+    // サブ機ホスト機能（LB SUB）
+    // tournament_de.html の同名機能を移植。PeerJS type は既存のDE用型（DE_*）を
+    // 一切使わず、GEN_* 型のみを新規使用する（souatari/tournament.html等で共用する新規名前空間）。
+    // ==========================================
+    let hostPeer = null;
+    let subConns = [];
+
+    function initHostPeer(code) {
+      const c = String(code).trim();
+      if (c.length !== 4 || isNaN(Number(c))) { showAlert('4桁の数字コードを入力してください'); return; }
+      if (hostPeer) hostPeer.destroy();
+      // tournament_de_sub.html は「トーナメント・リーグ」形式選択時、共通の
+      // 'gensub-' プレフィックスで接続してくる（tournamentTypeで種別を区別するため）。
+      hostPeer = new Peer('gensub-' + c);
+      hostPeer.on('open', () => updateSubConnUI());
+      hostPeer.on('connection', (sc) => {
+        subConns = subConns.filter(x => x.open);
+        subConns.push(sc);
+        sc.on('open', () => { updateSubConnUI(); sendGenSync(sc); });
+        sc.on('data', (msg) => handleGenSubMessage(sc, msg));
+        sc.on('close', () => { subConns = subConns.filter(x => x !== sc); updateSubConnUI(); });
+      });
+      hostPeer.on('error', (err) => console.warn('hostPeer error:', err));
+    }
+
+    function updateSubConnUI() {
+      const el = document.getElementById('sub-conn-count');
+      if (el) el.textContent = subConns.filter(c => c.open).length + '台接続中';
+    }
+
+    /**
+     * サブ機へ渡す状態のスナップショット。
+     * leagueMatches は { id, p1, p2, s1, s2, winner, kimarite, kimarite_p1, kimarite_p2 } の
+     * フラット配列（p1/p2BeyUsed は選択済みの試合のみ持つ）。id で一意に特定できる。
+     * qrAnnounce はフェーズB（QR告知機能）用のプレースホルダー。現状は常時非アクティブ。
+     */
+    function buildGenSyncState() {
+      return {
+        tournamentType: 'round-robin',
+        tournamentName: leagueName,
+        leagueMatches,
+        participants,
+        remoteWinScoreLimit: 4,
+        qrAnnounce: { active: isQrAnnounceActive, url: isQrAnnounceActive ? DECK_ENTRY_PAGE_URL : '' }
+      };
+    }
+
+    function sendGenSync(sc) {
+      try { sc.send({ type: 'GEN_STATE_SYNC', state: buildGenSyncState(), ts: Date.now() }); } catch (e) {}
+    }
+
+    function broadcastGenSync() {
+      subConns.filter(c => c.open).forEach(sc => sendGenSync(sc));
+    }
+
+    function handleGenSubMessage(sc, msg) {
+      if (!msg || !msg.type) return;
+      if (msg.type === 'GEN_REQUEST_STATE') { sendGenSync(sc); return; }
+      if (msg.type === 'GEN_RESULT') { handleGenResult(sc, msg); return; }
+      if (msg.type === 'GEN_BEY_SELECT') { handleGenBeySelect(sc, msg); return; }
+      if (msg.type === 'GEN_PREVIEW_REQUEST') { handleGenPreviewRequest(sc, msg); return; }
+      if (msg.type === 'QR_ANNOUNCE_TOGGLE') { toggleQrAnnounce(); return; }
+    }
+
+    /**
+     * QR告知トグル（フェーズB）。score.html にデッキ受付QRを全画面表示するかどうかを切り替える。
+     * DECK_ENTRY_PAGE_URL は必ず存在する前提だが、念のため未確定コードでの誤表示を防ぐため
+     * ON にする条件は課さない（デッキ受付が未オープンでも、単なるQR告知として使える）。
+     */
+    function toggleQrAnnounce() {
+      isQrAnnounceActive = !isQrAnnounceActive;
+      updateQrAnnounceButton();
+      if (isQrAnnounceActive) {
+        if (conn && conn.open) conn.send({ type: 'SHOW_QR_ANNOUNCE', url: DECK_ENTRY_PAGE_URL });
+        subConns.filter(c => c.open).forEach(sc => { try { sc.send({ type: 'SHOW_QR_ANNOUNCE', url: DECK_ENTRY_PAGE_URL }); } catch (e) {} });
+      } else {
+        if (conn && conn.open) conn.send({ type: 'HIDE_QR_ANNOUNCE' });
+        subConns.filter(c => c.open).forEach(sc => { try { sc.send({ type: 'HIDE_QR_ANNOUNCE' }); } catch (e) {} });
+      }
+      broadcastGenSync();
+      saveState();
+    }
+
+    /** QR告知の見た目をボタンに反映する（📱デッキ受付トグルと同じ配色規則: ON=塗り青／OFF=アウトライン青） */
+    function updateQrAnnounceButton() {
+      const btn = document.getElementById('btn-qr-announce');
+      if (!btn) return;
+      if (isQrAnnounceActive) {
+        btn.className = 'bg-cyber-blue text-cyber-bg hover:bg-cyber-blue/80 px-3 py-2 rounded font-bold shadow text-xs transition-colors';
+      } else {
+        btn.className = 'bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors';
+      }
+      btn.textContent = isQrAnnounceActive ? '📢QR告知中' : '📢QR告知';
+    }
+
+    /** QR告知を強制OFFにする（デッキ受付を閉じた／リーグ開始した等の自動トリガー用）。ONでなければ何もしない */
+    function forceQrAnnounceOff() {
+      if (!isQrAnnounceActive) return;
+      isQrAnnounceActive = false;
+      updateQrAnnounceButton();
+      if (conn && conn.open) conn.send({ type: 'HIDE_QR_ANNOUNCE' });
+      subConns.filter(c => c.open).forEach(sc => { try { sc.send({ type: 'HIDE_QR_ANNOUNCE' }); } catch (e) {} });
+      broadcastGenSync();
+      saveState();
+    }
+
+    /** サブ機からの試合結果反映。ローカルの handleRemoteWinner() と同じ結果になるよう揃える */
+    function handleGenResult(sc, msg) {
+      const matchId = msg.matchRef && msg.matchRef.matchId;
+      const m = leagueMatches.find(x => x.id === matchId);
+      if (!m) { sc.send({ type: 'GEN_RESULT_ACK', ok: false, reason: 'invalid' }); return; }
+      if (m.winner !== null) { sc.send({ type: 'GEN_RESULT_ACK', ok: false, reason: 'already_set' }); return; }
+
+      let s1 = null, s2 = null;
+      if (typeof msg.score === 'string' && msg.score.indexOf('-') >= 0) {
+        const parts = msg.score.split('-');
+        const n1 = parseInt(parts[0], 10);
+        const n2 = parseInt(parts[1], 10);
+        if (!isNaN(n1)) s1 = n1;
+        if (!isNaN(n2)) s2 = n2;
+      }
+      m.s1 = s1;
+      m.s2 = s2;
+      m.winner = (msg.winner === 1 || msg.winner === 2) ? msg.winner : null;
+      m.kimarite = msg.kimarite || '';
+      m.kimarite_p1 = msg.kimarite_p1 || '';
+      m.kimarite_p2 = msg.kimarite_p2 || '';
+      if (typeof msg.beyP1 === 'string' && msg.beyP1) m.p1BeyUsed = msg.beyP1;
+      if (typeof msg.beyP2 === 'string' && msg.beyP2) m.p2BeyUsed = msg.beyP2;
+      m.battles = Array.isArray(msg.battleLog) ? msg.battleLog.slice() : [];
+
+      recalculateAllStats();
+      updateLeagueDisplay();
+      saveState();
+      broadcastGenSync();
+      sc.send({ type: 'GEN_RESULT_ACK', ok: true });
+    }
+
+    function handleGenBeySelect(sc, msg) {
+      const matchId = msg.matchRef && msg.matchRef.matchId;
+      const m = leagueMatches.find(x => x.id === matchId);
+      if (!m) return;
+      if (msg.side === 'P1' && typeof msg.beyblade === 'string') m.p1BeyUsed = msg.beyblade;
+      else if (msg.side === 'P2' && typeof msg.beyblade === 'string') m.p2BeyUsed = msg.beyblade;
+      saveState();
+      broadcastGenSync();
+    }
+
+    /** サブ機の📢リクエスト。souatari本体の sendNextBattle() と同じ簡易パターン（キャッチフレーズ生成基盤は未実装のため含めない） */
+    async function handleGenPreviewRequest(sc, msg) {
+      const matchId = msg.matchRef && msg.matchRef.matchId;
+      const m = leagueMatches.find(x => x.id === matchId);
+      if (!m || !m.p1 || !m.p2) return;
+      const label = 'LEAGUE MATCH';
+      const hud = getShowPreviewHudFields();
+      const rows = await loadH2HHistory();
+      const { p1Wins, p2Wins } = calcH2H(rows, m.p1.name, m.p2.name);
+      const payload = {
+        p1: m.p1.name, p2: m.p2.name, label,
+        h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+        ...hud, showLogo: logoDisplayEnabled && hud.showLogo
+      };
+      if (conn && conn.open) conn.send({ type: 'SHOW_PREVIEW', ...payload });
+      if (sc && sc.open) sc.send({ type: 'GEN_PREVIEW_PAYLOAD', payload, matchRef: msg.matchRef });
+    }
+
+    // ==========================================
+    // デッキセルフ登録 受付機能（tournament.html から移植）
+    //
+    // 参加者スマホ（deck_entry.html）とはGASを経由してやり取りする。
+    // PeerJSは使わない。会場WiFiのクライアントアイソレーション対策のため。
+    // ==========================================
+    let deckEntryCode = '';        // 4桁の受付コード
+    let deckEntryOpen = false;     // 受付中かどうか
+    let deckEntryLog = [];         // 取り込み結果のログ [{name, count, at, ok, reason}]
+    let deckEntryPending = 0;      // 名簿に一致せず未反映のまま残っている件数
+    let deckEntryTimer = null;     // ポーリング用タイマー
+    let deckEntryBusy = false;     // 通信中の二重実行防止
+
+    /** QR告知（score.html にデッキ受付QRを全画面表示する機能）のON/OFF状態 */
+    let isQrAnnounceActive = false;
+
+    /** デッキセルフ登録の中継先。GASのウェブアプリURL（末尾は /exec）。tournament.html と同一値を共用 */
+    const DECK_ENTRY_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+
+    /** 参加者が開くページ。tournament.html と同一値を共用 */
+    const DECK_ENTRY_PAGE_URL = 'https://itabashibayblade.pages.dev/deck_entry.html';
+
+    /** 受付コードの保存先。SAVE_KEY(tbh_league) とは別キー。絶対に混在させない。tournament.html とも別キー */
+    const DECK_ENTRY_KEY = 'tbh_souatari_deck_entry';
+
+    /** 起動時に「受付中」を引き継ぐ期限。これより古い受付状態では自動で再開しない */
+    const DECK_ENTRY_RESUME_MS = 12 * 60 * 60 * 1000;
+
+    /**
+     * 受付コードを読み込む。なければ4桁を新規発行する。
+     * 新規発行したときと、保存から DECK_ENTRY_RESUME_MS を過ぎていたときは「受付停止」で始める。
+     * 受付を開くきっかけは、運営が 📱 デッキ受付 を開いたとき（openDeckEntryModal）だけにする。
+     * 戻り値: 新規発行または期限切れで受付停止にしたとき true
+     */
+    function loadDeckEntryState() {
+      let reset = false;
+      try {
+        const raw = localStorage.getItem(DECK_ENTRY_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          deckEntryCode = s.code || '';
+          const fresh = typeof s.at === 'number' && (Date.now() - s.at) < DECK_ENTRY_RESUME_MS;
+          deckEntryOpen = s.open === true && fresh;
+          if (s.open === true && !fresh) reset = true;
+        }
+      } catch (e) { console.warn('loadDeckEntryState error:', e); }
+
+      if (!/^[0-9]{4}$/.test(deckEntryCode)) {
+        deckEntryCode = String(Math.floor(1000 + Math.random() * 9000));
+        deckEntryOpen = false;
+        reset = true;
+        saveDeckEntryState();
+      }
+      return reset;
+    }
+
+    function saveDeckEntryState() {
+      try {
+        localStorage.setItem(DECK_ENTRY_KEY, JSON.stringify({
+          code: deckEntryCode, open: deckEntryOpen, at: Date.now()
+        }));
+      } catch (e) { console.warn('saveDeckEntryState error:', e); }
+    }
+
+    /** デッキ受付の通信タイムアウト（ミリ秒）。ポーリング間隔15秒より必ず短くすること */
+    const DECK_ENTRY_TIMEOUT_MS = 12000;
+
+    async function deckEntryGet(params) {
+      const q = new URLSearchParams(params).toString();
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL + '?' + q, {
+          method: 'GET',
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function deckEntryPost(body) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), DECK_ENTRY_TIMEOUT_MS);
+      try {
+        const res = await fetch(DECK_ENTRY_GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body),
+          signal: ctrl.signal
+        });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /** 参加者名簿と受付状態をGASへ送る。beys には現在このアプリが持っているデッキ内容をそのまま載せる */
+    async function pushDeckEntryRoster() {
+      return await deckEntryPost({
+        a: 'session',
+        s: deckEntryCode,
+        eventName: leagueName || '',
+        open: deckEntryOpen,
+        roster: participants.map(p => ({
+          id: p.id,
+          name: p.name,
+          beys: p.beyblades || []
+        }))
+      });
+    }
+
+    /** 名簿をGASへ送り直す。結果は待たず、失敗しても運営の操作は止めない */
+    function syncDeckEntryRosterQuiet() {
+      if (!deckEntryOpen || participants.length === 0) return;
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
+    }
+
+    function openDeckEntryModal() {
+      if (participants.length === 0) { showAlert('先に参加者を登録してください'); return; }
+      // 運営が自分でこの画面を開いたときだけ受付を開く（初回・期限切れのとき）。
+      // 一度「受付停止」にしたものは、開き直しても勝手に再開しない
+      if (loadDeckEntryState()) {
+        deckEntryOpen = true;
+        saveDeckEntryState();
+      }
+
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      document.getElementById('deck-entry-code').textContent = deckEntryCode;
+      renderDeckEntryQR();
+      renderDeckEntryToggle();
+      renderDeckEntryList();
+
+      // 参加者の増減・改名を反映するため、開くたびに名簿を送り直す
+      pushDeckEntryRoster().catch(e => console.warn('pushDeckEntryRoster error:', e));
+
+      refreshDeckEntry();
+      startDeckEntryPolling();
+    }
+
+    function closeDeckEntryModal() {
+      const modal = document.getElementById('deckEntryModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      // 受付中なら取り込みは続ける。閉じている間に届いた申請を取りこぼさないため
+      if (!deckEntryOpen) stopDeckEntryPolling();
+    }
+
+    function renderDeckEntryQR() {
+      const box = document.getElementById('deck-entry-qr');
+      box.innerHTML = '';
+      new QRCode(box, {
+        // 受付コードは埋め込まない。参加者側がGASに「いま受付中の大会」を聞くので、
+        // このQRは印刷して会場に貼ったまま何度でも使い回せる。
+        text: DECK_ENTRY_PAGE_URL,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function renderDeckEntryToggle() {
+      const btn = document.getElementById('btn-deck-entry-toggle');
+      if (deckEntryOpen) {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-green text-cyber-bg';
+        btn.textContent = '受付中（押すと締める）';
+      } else {
+        btn.className = 'mt-3 w-full px-3 py-2 rounded font-bold text-xs transition-colors bg-cyber-dark border border-cyber-red text-cyber-red';
+        btn.textContent = '受付停止中（押すと開ける）';
+      }
+    }
+
+    /** 受付の開閉。開けるたびに最新の名簿を送り直す */
+    async function toggleDeckEntryOpen() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        deckEntryOpen = !deckEntryOpen;
+        saveDeckEntryState();
+        renderDeckEntryToggle();
+        if (deckEntryOpen) {
+          startDeckEntryPolling();
+        } else {
+          stopDeckEntryPolling();
+          if (isQrAnnounceActive) forceQrAnnounceOff();
+        }
+        const res = await pushDeckEntryRoster();
+        if (!res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
+      } catch (e) {
+        showAlert('通信できませんでした。ネットワークを確認してください。');
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    /** 参加者スマホから届くベイの type として認める値 */
+    const DECK_ENTRY_TYPES = ['BX', 'UX', 'CX', 'CX(EX)'];
+    /** parts に入ってよいキー（deck_entry.html の工程ID＋type） */
+    const DECK_ENTRY_PART_KEYS = ['type', 'BX', 'UX', 'CX', 'MB', 'OB', 'AB', 'RC', 'RC2', 'BT'];
+
+    /** 参加者から来た文字列を、画面に埋め込んでも安全な形にする */
+    function cleanDeckEntryText(v, max) {
+      if (typeof v !== 'string') return '';
+      return v.replace(/[<>"'&`\u0000-\u001f]/g, '').trim().slice(0, max);
+    }
+
+    /**
+     * 参加者スマホから届いたベイ配列を無害化する。
+     * 申請は GAS を経由して誰でも直接送れるので、中身を信用しない。
+     * 形が崩れているベイは結果から落とす（呼び出し側で件数を比べて判定する）。
+     */
+    function sanitizeDeckEntryBeys(list) {
+      const out = [];
+      list.slice(0, 3).forEach(b => {
+        if (!b || typeof b !== 'object') return;
+        if (DECK_ENTRY_TYPES.indexOf(b.type) < 0) return;
+        const name = cleanDeckEntryText(b.name, 200);
+        if (!name) return;
+        const parts = {};
+        if (b.parts && typeof b.parts === 'object') {
+          DECK_ENTRY_PART_KEYS.forEach(k => {
+            if (b.parts[k] != null) parts[k] = cleanDeckEntryText(String(b.parts[k]), 80);
+          });
+        }
+        out.push({ type: b.type, name: name, parts: parts });
+      });
+      return out;
+    }
+
+    /**
+     * 申請を取りに行き、名簿と照合できたものをその場で participants に反映する。
+     * 名簿に一致しない申請はGAS側に pending のまま残す。
+     */
+    async function refreshDeckEntry() {
+      if (deckEntryBusy) return;
+      deckEntryBusy = true;
+      try {
+        const res = await deckEntryGet({ a: 'pending', s: deckEntryCode });
+        if (!res.ok) return;
+
+        const entries = res.entries || [];
+        const applied = [];
+        const rejected = [];
+        let unmatched = 0;
+
+        entries.forEach(entry => {
+          const p = participants.find(x => String(x.id) === String(entry.participantId));
+          if (!p) { unmatched++; return; }
+          const raw = Array.isArray(entry.beyblades) ? entry.beyblades : [];
+          const beys = sanitizeDeckEntryBeys(raw);
+          // 1体でも不正なら丸ごと取り込まない。一部だけ入れると体数がずれるため
+          if (!beys.length || beys.length !== raw.length) {
+            rejected.push(entry.participantId);
+            deckEntryLog.unshift({ name: p.name, count: raw.length, at: Date.now(), ok: false, reason: '不正なデータのため取り込みませんでした' });
+            return;
+          }
+          p.beyblades = beys;
+          applied.push(entry.participantId);
+          deckEntryLog.unshift({
+            // 申請に書かれた名前ではなく名簿の名前を使う（申請側は自由に書き換えられる）
+            name: p.name,
+            count: beys.length,
+            at: entry.submittedAt || Date.now(),
+            ok: true
+          });
+        });
+
+        // 未反映の申請は毎回ログに積むと重複するので、件数だけ保持する
+        deckEntryPending = unmatched;
+
+        if (applied.length) {
+          renderParticipants();
+          saveState();
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: applied, state: 'approved' });
+          } catch (e) {
+            console.warn('mark error:', e);
+          }
+        }
+        if (rejected.length) {
+          try {
+            await deckEntryPost({ a: 'mark', s: deckEntryCode, ids: rejected, state: 'rejected' });
+          } catch (e) {
+            console.warn('mark(rejected) error:', e);
+          }
+        }
+
+        if (deckEntryLog.length > 50) deckEntryLog.length = 50;
+
+        renderDeckEntryList();
+        updateDeckEntryBadge();
+      } catch (e) {
+        console.warn('refreshDeckEntry error:', e);
+      } finally {
+        deckEntryBusy = false;
+      }
+    }
+
+    function startDeckEntryPolling() {
+      stopDeckEntryPolling();
+      deckEntryTimer = setInterval(refreshDeckEntry, 15000);
+    }
+
+    function stopDeckEntryPolling() {
+      if (deckEntryTimer) { clearInterval(deckEntryTimer); deckEntryTimer = null; }
+    }
+
+    /** バッジには「名簿に一致せず未反映のまま残っている件数」を出す */
+    function updateDeckEntryBadge() {
+      const badge = document.getElementById('deck-entry-badge');
+      if (!badge) return;
+      badge.textContent = deckEntryPending;
+      badge.classList.toggle('hidden', deckEntryPending === 0);
+    }
+
+    function renderDeckEntryList() {
+      const wrap = document.getElementById('deck-entry-list');
+      const countEl = document.getElementById('deck-entry-count');
+      if (!wrap) return;
+
+      const unregistered = participants.filter(p => (p.beyblades || []).length === 0).length;
+      countEl.textContent = '取り込み済み ' + deckEntryLog.length + '件 / 未登録 ' + unregistered + '人';
+
+      wrap.innerHTML = '';
+
+      if (deckEntryPending > 0) {
+        const warn = document.createElement('div');
+        warn.className = 'bg-cyber-bg border-l-4 border-cyber-red p-3 mb-2';
+        warn.innerHTML = '<p class="text-xs text-cyber-red font-bold">名簿にない申請が ' + deckEntryPending +
+          '件あります</p><p class="text-[11px] text-cyber-text opacity-70 mt-1 leading-relaxed">' +
+          'その参加者を名簿に追加すると、次の取り込みで自動的に反映されます。</p>';
+        wrap.appendChild(warn);
+      }
+
+      if (!deckEntryLog.length) {
+        const p = document.createElement('p');
+        p.className = 'text-sm text-cyber-text opacity-40 py-8 text-center';
+        p.textContent = 'まだ取り込みはありません';
+        wrap.appendChild(p);
+        return;
+      }
+
+      deckEntryLog.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'border-b border-cyber-table-border py-2 px-1 flex items-center justify-between gap-2';
+        const nm = document.createElement('span');
+        nm.className = 'text-sm text-cyber-text';
+        nm.textContent = item.name;
+        const meta = document.createElement('span');
+        meta.className = 'text-[11px] text-cyber-text opacity-50 shrink-0';
+        const d = new Date(item.at);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        meta.textContent = item.count + '体 / ' + hh + ':' + mm;
+        div.appendChild(nm);
+        div.appendChild(meta);
+        if (item.ok === false) {
+          nm.className = 'text-sm text-cyber-red';
+          nm.textContent = '⚠ ' + item.name + '（' + (item.reason || '取り込み失敗') + '）';
+        }
+        wrap.appendChild(div);
+      });
+    }
+
+    // ==========================================
     // HUDリモートコントロールモーダル
     // ==========================================
     let currentRemoteMatch = null;
@@ -869,7 +1461,8 @@
                 scoreP2: isRemoteSwapped ? remoteScoreLeft : remoteScoreRight,
                 bey: currentRemoteMatch
                   ? (actualWho === 'p1' ? (currentRemoteMatch.p1BeyUsed || '') : (currentRemoteMatch.p2BeyUsed || ''))
-                  : ''
+                  : '',
+                ts: Date.now()
               });
               // 表示用の全体リストにも追加
               remoteKimariteList.push(autoKEntry.k);
@@ -1514,6 +2107,8 @@
         currentRemoteMatch.kimarite = serializeKimariteList(remoteKimariteList);
         currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
         currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
+        // バトル単位CSV用に1本ごとの時系列イベントをそのまま保存する（加算のみ・破壊的変更なし）
+        currentRemoteMatch.battles = remoteMatchEvents.slice();
 
         // ▼ 試合コメント生成・送信
         const isP1Winner = (finalWinnerVal === 1);
@@ -1646,6 +2241,19 @@
             btnStart.addEventListener('click', (e) => { e.preventDefault(); handleStartLeague(); });
             btnStart.addEventListener('touchend', (e) => { e.preventDefault(); handleStartLeague(); }, { passive: false });
         }
+
+        // アプリが閉じていた間にたまった申請を取り込む。受付中でなければ何もしない。
+        try {
+            loadDeckEntryState();
+            if (deckEntryOpen && participants.length > 0) {
+                pushDeckEntryRoster()
+                    .then(() => refreshDeckEntry())
+                    .then(() => startDeckEntryPolling())
+                    .catch(e => console.warn('deck entry resume error:', e));
+            }
+        } catch (e) {
+            console.warn('deck entry resume error:', e);
+        }
     });
 
     let startDebounce = false;
@@ -1696,25 +2304,28 @@
         }
       });
       renderParticipants(); closePasteModal(); if(count > 0) showAlert(`${count} 名追加しました！（最大12名）`);
+      if (count > 0) syncDeckEntryRosterQuiet();
     }
 
     async function addParticipant() {
       if(isLeagueStarted) { await showAlert("開始後は追加できません"); return; }
       if(participants.length >= 12) { await showAlert("総当たり戦は最大12名までです。"); return; }
       let name = prompt("参加者名を入力"); if(!name) return;
-      participants.push({ 
-          id: pidCounter++, name, memo1: '', rank: '--', 
+      participants.push({
+          id: pidCounter++, name, memo1: '', rank: '--',
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
-          bayChecked: false, bayImage: null, tieBreaker: 0 
-      }); 
+          bayChecked: false, bayImage: null, tieBreaker: 0
+      });
       renderParticipants();
+      syncDeckEntryRosterQuiet();
     }
-    
+
     async function removeParticipant(id) {
       if(isLeagueStarted) { await showAlert("開始後は削除できません"); return; }
       if(!await showConfirm("削除しますか？")) return;
       participants = participants.filter(x => x.id !== id); renderParticipants();
+      syncDeckEntryRosterQuiet();
     }
 
     function renameParticipant(id) {
@@ -1724,6 +2335,7 @@
       if (!newName || newName.trim() === '' || newName.trim() === p.name) return;
       p.name = newName.trim();
       renderParticipants();
+      syncDeckEntryRosterQuiet();
     }
 
     function getSortedParticipants() {
@@ -1871,6 +2483,8 @@
     async function startLeague() {
       if (participants.length < 3) { await showAlert("総当たり戦は最低3名の参加者が必要です！"); return; }
       if (!await showConfirm("リーグ戦を開始しますか？（以降、参加者の追加・削除はできません）")) return;
+
+      if (isQrAnnounceActive) forceQrAnnounceOff();
 
       const nameInput = document.getElementById('leagueNameInput').value;
       leagueName = nameInput.trim() !== '' ? nameInput.trim() : 'CYBER BEY-LEAGUE';
@@ -2330,9 +2944,20 @@
     // ==========================================
     // CSVエクスポート機能
     // ==========================================
-    function openExportModal() {
+    const _srExportClean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
+
+    /** タイムスタンプを 'YYYY-MM-DD HH:MM:SS' に整形。ts がなければ空文字。 */
+    function _srExportTs(ts) {
+      if (typeof ts !== 'number' || !isFinite(ts)) return '';
+      const d = new Date(ts);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} `
+           + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+
+    function buildMatchExportText() {
       let exportText = "";
-      const clean = (s) => String(s || '').replace(/[\t\r\n]/g, ' ');
+      const clean = _srExportClean;
       leagueMatches.forEach(m => {
         if (m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && m.winner !== null) {
           const p1Name = m.p1.name;
@@ -2344,7 +2969,77 @@
           exportText += `${clean(p1Name)}\t${clean(p2Name)}\t${clean(winnerName)}\t総当たり\t${clean(kp1)}\t${clean(kp2)}\t${clean(comment)}\n`;
         }
       });
-      document.getElementById('exportArea').value = exportText;
+      return exportText;
+    }
+
+    /**
+     * バトル（1本）単位のエクスポート。m.battles（試合終了時に remoteMatchEvents を
+     * そのまま保存したもの）が無い試合（過去データ・サブ機経由でbattleLogが空だった試合）はスキップする。
+     * パーツ分解は行わず、ベイ名をそのまま1カラムに出力する簡略版（souatariにはパーツ分解基盤が無いため）。
+     */
+    function buildBattleExportText() {
+      let exportText = "";
+      const clean = _srExportClean;
+      leagueMatches.forEach(m => {
+        if (m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner === null) return;
+        if (!Array.isArray(m.battles) || m.battles.length === 0) return;
+        const matchWinnerLabel = m.winner === 1 ? 'P1' : (m.winner === 2 ? 'P2' : '');
+        m.battles.forEach((b, idx) => {
+          // 得点した側の bey は events[].bey にそのまま入っている。相手側はその時点の
+          // 試合全体の使用ベイ（p1BeyUsed/p2BeyUsed）を代替値として使う
+          const p1Bey = b.who === 'p1' ? (b.bey || '') : (m.p1BeyUsed || '');
+          const p2Bey = b.who === 'p2' ? (b.bey || '') : (m.p2BeyUsed || '');
+          const row = [
+            _srExportTs(b.ts),
+            leagueName,
+            '総当たり',
+            m.id,
+            idx + 1,
+            m.p1.name, p1Bey,
+            m.p2.name, p2Bey,
+            b.k || '',
+            (typeof b.pts === 'number') ? b.pts : '',
+            (typeof b.scoreP1 === 'number') ? b.scoreP1 : '',
+            (typeof b.scoreP2 === 'number') ? b.scoreP2 : '',
+            matchWinnerLabel
+          ].map(clean).join('\t');
+          exportText += row + '\n';
+        });
+      });
+      return exportText;
+    }
+
+    let currentExportMode = 'match';
+
+    function renderExportData() {
+      const text = currentExportMode === 'battle' ? buildBattleExportText() : buildMatchExportText();
+      document.getElementById('exportArea').value = text;
+      const matchBtn = document.getElementById('exportModeMatchBtn');
+      const battleBtn = document.getElementById('exportModeBattleBtn');
+      if (matchBtn && battleBtn) {
+        const activeCls = ['bg-cyber-green', 'text-cyber-bg', 'border-cyber-green'];
+        const inactiveCls = ['border-gray-600', 'text-cyber-text'];
+        matchBtn.classList.remove(...activeCls, ...inactiveCls);
+        battleBtn.classList.remove(...activeCls, ...inactiveCls);
+        matchBtn.classList.add(...(currentExportMode === 'match' ? activeCls : inactiveCls));
+        battleBtn.classList.add(...(currentExportMode === 'battle' ? activeCls : inactiveCls));
+      }
+      const hint = document.getElementById('exportColumnsHint');
+      if (hint) {
+        hint.textContent = currentExportMode === 'battle'
+          ? '列: 記録日時/大会名/ラウンド/試合No/本目/P1名/P1使用ベイ/P2名/P2使用ベイ/決まり手/獲得pt/P1累計/P2累計/マッチ勝者'
+          : '列: P1/P2/勝者/ラウンド/P1決まり手/P2決まり手/コメント';
+      }
+    }
+
+    function switchExportMode(mode) {
+      currentExportMode = (mode === 'battle') ? 'battle' : 'match';
+      renderExportData();
+    }
+
+    function openExportModal() {
+      currentExportMode = 'match';
+      renderExportData();
       document.getElementById('exportModal').classList.remove('hidden');
       document.getElementById('exportModal').classList.add('flex');
     }

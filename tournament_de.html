@@ -161,7 +161,8 @@
             <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
             <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
             <button onclick="openDeckEntryModal()" id="btn-deck-entry" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors relative">📱 デッキ受付<span id="deck-entry-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-cyber-orange text-cyber-bg px-1.5 py-0.5 rounded-full font-bold">0</span></button>
-            
+            <button onclick="toggleQrAnnounce()" id="btn-qr-announce" style="touch-action: manipulation;" class="bg-cyber-dark border border-cyber-blue text-cyber-blue hover:bg-cyber-blue/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">📢QR告知: OFF</button>
+
             <div class="flex-grow"></div>
             
             <label class="flex items-center gap-2 bg-cyber-dark border border-cyber-table-border text-cyber-text px-3 py-2 rounded text-xs font-bold cursor-pointer hover:bg-gray-800 transition-colors" title="score.html 次戦予告（📢）の背景画像">
@@ -1011,6 +1012,7 @@
 
     let isEffectOn = true;
     let isCommentOn = true;
+    let isQrAnnounceActive = false;
     let isProgressGuideOn = true;
     let suggestedWbMatchKey = null;
     let suggestedWbMatchLabel = '';
@@ -1148,6 +1150,45 @@
     function toggleCommentMode() {
         isCommentOn = !isCommentOn;
         updateCommentButton();
+        saveState();
+    }
+
+    function updateQrAnnounceButton() {
+        const btn = document.getElementById('btn-qr-announce');
+        if (!btn) return;
+        if (isQrAnnounceActive) {
+            btn.classList.remove('bg-cyber-dark', 'text-cyber-blue');
+            btn.classList.add('bg-cyber-blue', 'text-cyber-on-blue', 'shadow-[0_0_8px_#0ea5e9]');
+            btn.innerText = "📢QR告知: ON";
+        } else {
+            btn.classList.remove('bg-cyber-blue', 'text-cyber-on-blue', 'shadow-[0_0_8px_#0ea5e9]');
+            btn.classList.add('bg-cyber-dark', 'text-cyber-blue');
+            btn.innerText = "📢QR告知: OFF";
+        }
+    }
+
+    /** SHOW_QR_ANNOUNCE / HIDE_QR_ANNOUNCE を score.html（conn）とサブ機全台（subConns）へ送る */
+    function sendQrAnnounceMsg(active) {
+        const msg = active ? { type: 'SHOW_QR_ANNOUNCE', url: DECK_ENTRY_PAGE_URL } : { type: 'HIDE_QR_ANNOUNCE' };
+        if (conn && conn.open) conn.send(msg);
+        subConns.filter(c => c.open).forEach(sc => { try { sc.send(msg); } catch(e) {} });
+    }
+
+    /** QR告知のOFF専用パス。再押下以外の自動OFFトリガー（受付終了・大会開始）から共通で呼ぶ */
+    function forceQrAnnounceOff() {
+        if (!isQrAnnounceActive) return;
+        isQrAnnounceActive = false;
+        updateQrAnnounceButton();
+        sendQrAnnounceMsg(false);
+        broadcastSubSync();
+        saveState();
+    }
+
+    function toggleQrAnnounce() {
+        isQrAnnounceActive = !isQrAnnounceActive;
+        updateQrAnnounceButton();
+        sendQrAnnounceMsg(isQrAnnounceActive);
+        broadcastSubSync();
         saveState();
     }
 
@@ -1404,6 +1445,8 @@
         btn.innerText = 'DISCONN'; btn.classList.replace('text-cyber-blue', 'text-cyber-green'); btn.classList.replace('border-cyber-blue', 'border-cyber-green');
         const dot = document.getElementById('link-status-dot');
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
+        // score.html の途中接続・再接続時にQR告知状態を復元させる
+        sendQrAnnounceMsg(isQrAnnounceActive);
       });
       c.on('close', () => resetLinkUI());
     }
@@ -1436,7 +1479,8 @@
       return {
         tournamentName, losersBracket, winnersBracket,
         grandFinal, grandFinalReset, lbThirdPlace,
-        participants, remoteWinScoreLimit: 4
+        participants, remoteWinScoreLimit: 4,
+        qrAnnounce: { active: isQrAnnounceActive, url: isQrAnnounceActive ? DECK_ENTRY_PAGE_URL : '' }
       };
     }
 
@@ -1515,6 +1559,10 @@
       }
       if (msg.type === 'DE_PREVIEW_REQUEST') {
         handleDePreviewRequest(sc, msg);
+        return;
+      }
+      if (msg.type === 'QR_ANNOUNCE_TOGGLE') {
+        toggleQrAnnounce();
         return;
       }
     }
@@ -2473,6 +2521,7 @@
     }
     async function handleStartTournament(e) {
       if (e) e.preventDefault();
+      if (isQrAnnounceActive) forceQrAnnounceOff();
       if (startDebounce) return; startDebounce = true; setTimeout(() => { startDebounce = false; }, 500);
       if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
       if (isDebugMode) await startDebugTournament();
@@ -4170,10 +4219,14 @@
       }
     }
 
-    async function setWinner(block, roundIdx, matchIdx, winnerVal) {
+    async function setWinner(block, roundIdx, matchIdx, winnerVal, isUiClick = false) {
       const match = getMatchByCoords(block, roundIdx, matchIdx);
       if (!match || !match.p1 || !match.p2) return;
       if (match.p1.id === 'BYE' || match.p2.id === 'BYE') return;
+      // UIからの直接クリックかつ、スコア（個別ゲーム）が未入力の場合の警告
+      if (isUiClick && match.winner === null && (!Array.isArray(match.battles) || match.battles.length === 0)) {
+        if (!await showConfirm('個別ゲームの結果（スコア）が入力されていません。\nこのまま勝敗を決定しますか？\n※リモコン(🛜)から入力することをお勧めします。')) return;
+      }
       // 既に勝者が決まっている試合への再タップ（取り消し／変更）は下流ラウンドの結果ごと消えるため確認する
       if (match.winner !== null) {
         if (!await showConfirm('この試合の結果を取り消します。\n下流ラウンドの結果も連動して消えます。\n実行しますか？')) return;
@@ -4221,8 +4274,8 @@
           return `<div class="flex items-center justify-between p-1 rounded mb-2 bg-[#0d131f] border border-cyber-table-border shadow-sm">${btnHtml1}<span class="text-cyber-text text-[10px] mx-2 font-sf opacity-50">VS</span>${btnHtml2}</div>`;
       }
 
-      const onclick1 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 1)"` : '';
-      const onclick2 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 2)"` : '';
+      const onclick1 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 1, true)"` : '';
+      const onclick2 = canSelect ? `onclick="setWinner('${block}', '${roundIdx}', ${matchIdx}, 2, true)"` : '';
       const canSendToScore = canSelect && match.winner === null;
       
       // ▼ スコア表示機能
@@ -8483,7 +8536,12 @@
         deckEntryOpen = !deckEntryOpen;
         saveDeckEntryState();
         renderDeckEntryToggle();
-        if (deckEntryOpen) startDeckEntryPolling(); else stopDeckEntryPolling();
+        if (deckEntryOpen) {
+          startDeckEntryPolling();
+        } else {
+          stopDeckEntryPolling();
+          if (isQrAnnounceActive) forceQrAnnounceOff();
+        }
         const res = await pushDeckEntryRoster();
         if (!res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
       } catch (e) {

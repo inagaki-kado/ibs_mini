@@ -9,6 +9,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,700&family=Noto+Sans+JP:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         @font-face { font-family: 'DSEG7 Classic'; src: url('./font/DSEG7Classic-BoldItalic.ttf') format('truetype'); font-weight: bold; font-style: italic; }
@@ -36,6 +37,7 @@
         body.hud-hidden #replay-status,
         body.hud-hidden #next-battle-overlay,
         body.hud-hidden #break-overlay,
+        body.hud-hidden #qr-announce-overlay,
         body.hud-hidden #remote-content-overlay {
             display: none !important;
         }
@@ -391,7 +393,48 @@
           overflow: hidden;
         }
         #break-overlay.hidden { display: none !important; }
-        
+
+        /* QR ANNOUNCE overlay（デッキ登録QR掲示） */
+        #qr-announce-overlay {
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          z-index: 9999;
+          background: #0a0e17;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          gap: clamp(16px, 3vw, 32px);
+          padding: clamp(16px, 4vw, 40px);
+          box-sizing: border-box;
+          text-align: center;
+        }
+        #qr-announce-overlay.hidden { display: none !important; }
+        #qr-announce-title {
+          font-family: 'Noto Sans JP', sans-serif;
+          font-weight: 700;
+          font-size: clamp(16px, 2.6vw, 28px);
+          color: #fff;
+          line-height: 1.7;
+          letter-spacing: 0.05em;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
+        }
+        #qr-announce-box {
+          background: #FFFFFF;
+          max-width: 80vmin; max-height: 80vmin;
+          aspect-ratio: 1 / 1;
+          width: min(80vmin, 400px);
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 12px;
+          padding: clamp(10px, 2vw, 20px);
+          box-sizing: border-box;
+        }
+        #qr-announce-caption {
+          font-family: 'Noto Sans JP', sans-serif;
+          font-weight: 500;
+          font-size: clamp(12px, 1.8vw, 18px);
+          color: #ffaa00;
+          line-height: 1.6;
+          letter-spacing: 0.03em;
+        }
+
         /* 背景ロゴ：#next-battle-logo と同一スタイルを流用 */
         #break-bg-logo {
           display: none;
@@ -665,6 +708,13 @@
         <div id="break-nb-vs">VS</div>
         <div id="break-nb-p2"></div>
       </div>
+    </div>
+
+    <!-- QR ANNOUNCE overlay（デッキ登録QR掲示） -->
+    <div id="qr-announce-overlay" class="hidden">
+      <div id="qr-announce-title">本日の大会で使用するデッキは<br>下記のＱＲコードで登録できます</div>
+      <div id="qr-announce-box"></div>
+      <div id="qr-announce-caption">※一度登録したデッキの変更は運営スタッフまでお願いします</div>
     </div>
 
     <!-- NEXT BATTLE announcement overlay -->
@@ -2057,6 +2107,12 @@
                         }
                         saveMatchState();
                     }
+                    else if (data.type === 'SHOW_QR_ANNOUNCE') {
+                        showQrAnnounce(data.url);
+                    }
+                    else if (data.type === 'HIDE_QR_ANNOUNCE') {
+                        hideQrAnnounce();
+                    }
                 });
                 
                 conn.on('close', () => {
@@ -2279,6 +2335,21 @@
             logo.src = '';
             logo.style.display = 'none';
             stopBreakRecap();
+        }
+
+        // QR ANNOUNCE（デッキ登録QR掲示。SHOW_QR_ANNOUNCE / HIDE_QR_ANNOUNCE で制御）
+        function showQrAnnounce(url) {
+            const box = document.getElementById('qr-announce-box');
+            if (box) {
+                box.innerHTML = '';
+                new QRCode(box, { text: url, width: 400, height: 400, colorDark: '#000000', colorLight: '#ffffff' });
+            }
+            const overlay = document.getElementById('qr-announce-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+        function hideQrAnnounce() {
+            const overlay = document.getElementById('qr-announce-overlay');
+            if (overlay) overlay.classList.add('hidden');
         }
 
         // ==========================================

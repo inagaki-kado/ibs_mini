@@ -17,7 +17,8 @@
         'cyber-red':         '#ff0055',
         'cyber-red-orange':  '#ff4500',
         'cyber-text':        '#e2e8f0',
-        'cyber-table-border':'#1f2937'
+        'cyber-table-border':'#1f2937',
+        'cyber-on-orange':   '#1a1200'
       }}}
     }
   </script>
@@ -38,6 +39,8 @@
     <div class="flex items-center gap-2 min-w-0">
       <button id="btn-score-settings" onclick="openScoreSettingsModal()" style="touch-action: manipulation; min-width:36px; min-height:36px;"
         class="text-cyber-text opacity-60 hover:opacity-100 text-lg transition-opacity flex items-center justify-center shrink-0" title="score.html 接続設定">⚙️</button>
+      <button id="btn-qr-announce" onclick="onQrAnnounceButtonClick()" style="touch-action: manipulation; min-width:44px; min-height:36px;"
+        class="px-2 rounded font-sf font-bold text-xs border-2 border-cyber-table-border text-cyber-text opacity-50 transition-colors flex items-center justify-center shrink-0 gap-1" title="QR告知トグル（親機側で状態確定）">📢QR</button>
       <span class="text-cyber-blue font-sf font-bold text-base tracking-widest shrink-0">LB SUB</span>
       <span id="tournament-name" class="text-sm text-cyber-text opacity-50 truncate max-w-[90px]"></span>
     </div>
@@ -59,6 +62,13 @@
     <p class="text-base text-cyber-text opacity-60 text-center leading-relaxed">
       親機（tournament_de.html）の<br>LB SUB欄に表示される<br>4桁コードを入力してください
     </p>
+    <!-- 接続先形式トグル（DE / トーナメント・リーグ、デフォルトDE） -->
+    <div class="flex gap-2" role="group" aria-label="接続先の形式">
+      <button id="fmt-de" type="button" onclick="setConnectFormat('de')" style="touch-action: manipulation; min-height:44px;"
+        class="px-5 py-2 rounded-lg font-sf font-bold text-sm border-2 border-cyber-blue bg-cyber-blue text-cyber-bg transition-colors">DE</button>
+      <button id="fmt-general" type="button" onclick="setConnectFormat('general')" style="touch-action: manipulation; min-height:44px;"
+        class="px-5 py-2 rounded-lg font-sf font-bold text-sm border-2 border-cyber-table-border text-cyber-text opacity-60 transition-colors">トーナメント・リーグ</button>
+    </div>
     <input id="peer-code-input" type="number" min="1000" max="9999" placeholder="0000" value="1784"
       class="w-44 text-center text-4xl font-sf bg-cyber-dark border-2 border-cyber-blue rounded-xl px-4 py-4 text-cyber-text focus:outline-none focus:border-cyber-green transition-colors"
       inputmode="numeric">
@@ -230,7 +240,7 @@
   // 状態変数
   // ================================================
   let peer = null, conn = null;
-  let appState    = null;   // DE_STATE_SYNC で受け取った最新状態
+  let appState    = null;   // DE_STATE_SYNC / GEN_STATE_SYNC で受け取った最新状態
   let currentMatch = null;  // { bracket, roundIdx, matchIdx, match }
   let scoreP1 = 0, scoreP2 = 0;
   let isSwapped = false;
@@ -238,8 +248,12 @@
   let kimariteAll = [], kimariteP1 = [], kimariteP2 = [];
   let battleLog = [];
   let currentTab = 'losers';
+  let connectFormat  = 'de';  // 接続画面のトグル: 'de' | 'general'（tournament.html/souatari.html系）
+  let currentHostMode = 'de'; // 'de' | 'single' | 'round-robin'。GEN_STATE_SYNC受信時にtournamentTypeから設定
   let beyP1 = '', beyP2 = ''; // P7-a: 論理p1/p2に紐付くベイ選択（表示side/SWAPとは独立）
   let subActiveNextBattleId = null; // P7-c: 📢トグル用。親機のactiveNextBattleIdとは別にローカルで管理
+  let isQrAnnounceActiveLocal = false; // QR告知ボタンの見た目のみを駆動するローカル状態。正は常に親機側
+  let qrAnnounceUrlLocal = '';         // SCORE LINK側へ中継する際に使う直近のURL
   const scoreLinkConns = { score: null, sub: null }; // P7-b: score.html / score_sub.html への直接接続
   const SCORE_LINK_STORAGE_KEY = 'tbh_de_sub_score_links';
 
@@ -304,6 +318,37 @@
   }
 
   // ================================================
+  // QR告知トグル（親機が単一の正。ここでは見た目のみローカル管理）
+  // ================================================
+  function updateQrAnnounceButtonUI() {
+    const btn = document.getElementById('btn-qr-announce');
+    if (!btn) return;
+    if (isQrAnnounceActiveLocal) {
+      btn.className = 'px-2 rounded font-sf font-bold text-xs border-2 border-cyber-orange bg-cyber-orange text-cyber-on-orange transition-colors flex items-center justify-center shrink-0 gap-1';
+    } else {
+      btn.className = 'px-2 rounded font-sf font-bold text-xs border-2 border-cyber-table-border text-cyber-text opacity-50 transition-colors flex items-center justify-center shrink-0 gap-1';
+    }
+  }
+  // ボタン押下時は状態を決めない。親機へトグル要求を送るだけで、実際の状態は
+  // 親機からのSHOW_QR_ANNOUNCE/HIDE_QR_ANNOUNCEが返ってきてから反映する。
+  function onQrAnnounceButtonClick() {
+    if (conn && conn.open) conn.send({ type: 'QR_ANNOUNCE_TOGGLE' });
+  }
+
+  // ================================================
+  // 接続先形式トグル（DE / トーナメント・リーグ）
+  // ================================================
+  function setConnectFormat(fmt) {
+    connectFormat = fmt;
+    const activeCls   = 'px-5 py-2 rounded-lg font-sf font-bold text-sm border-2 border-cyber-blue bg-cyber-blue text-cyber-bg transition-colors';
+    const inactiveCls = 'px-5 py-2 rounded-lg font-sf font-bold text-sm border-2 border-cyber-table-border text-cyber-text opacity-60 transition-colors';
+    const de = document.getElementById('fmt-de');
+    const general = document.getElementById('fmt-general');
+    if (de) de.className = fmt === 'de' ? activeCls : inactiveCls;
+    if (general) general.className = fmt === 'general' ? activeCls : inactiveCls;
+  }
+
+  // ================================================
   // PeerJS 接続
   // ================================================
   function connectToHost() {
@@ -317,12 +362,23 @@
     peer = new Peer();
     peer.on('open', () => {
       autoReconnectScoreLinks(); // P7-b: score.html/score_sub.htmlへは独立して自動再接続
-      conn = peer.connect('de-sub-' + code, { reliable: true });
-      conn.on('open', () => {
-        btn.textContent = 'CONNECT'; btn.disabled = false;
-        onConnected();
-        conn.send({ type: 'DE_REQUEST_STATE' });
-      });
+      if (connectFormat === 'de') {
+        // ===== 既存DEフロー（無変更） =====
+        conn = peer.connect('de-sub-' + code, { reliable: true });
+        conn.on('open', () => {
+          btn.textContent = 'CONNECT'; btn.disabled = false;
+          onConnected();
+          conn.send({ type: 'DE_REQUEST_STATE' });
+        });
+      } else {
+        // ===== 新規: 汎用親機（tournament.html/souatari.html）フロー =====
+        conn = peer.connect('gensub-' + code, { reliable: true });
+        conn.on('open', () => {
+          btn.textContent = 'CONNECT'; btn.disabled = false;
+          onConnected();
+          conn.send({ type: 'GEN_REQUEST_STATE' });
+        });
+      }
       conn.on('data',  (msg) => handleMessage(msg));
       conn.on('close', () => onDisconnected());
       conn.on('error', () => onDisconnected());
@@ -381,11 +437,60 @@
       if (key !== subActiveNextBattleId) return;
       // 判定ロジック(キャッチフレーズ等)は親機側で完結済み。ここではそのままscore/score_subへ転送するのみ。
       sendToScoreLinks({ type: 'SHOW_PREVIEW', ...msg.payload });
+    } else if (msg.type === 'GEN_STATE_SYNC') {
+      applyGenState(msg.state);
+    } else if (msg.type === 'GEN_RESULT_ACK') {
+      if (!msg.ok) {
+        const reason = msg.reason === 'already_set'
+          ? 'この試合は親機側で既に確定済みです。\nサブ機からの上書きはできません。'
+          : '送信エラーが発生しました。再度お試しください。';
+        showAckError(reason);
+        if (msg.state) applyGenState(msg.state);
+      }
+    } else if (msg.type === 'GEN_PREVIEW_PAYLOAD') {
+      // DE_PREVIEW_PAYLOADと同じ陳腐化チェック。ただしGEN側はホストのmatchRef形式が
+      // 3形式（single: block/roundIdx/matchIdx、round-robin: matchId）で揺れるため、
+      // bracket/roundIdx/matchIdxから直接キーを組み立てず、GEN_PREVIEW_REQUEST送信時に
+      // こちらが払い出したmatchKeyをホストにそのまま返してもらう方式にしている
+      // （ホスト実装との突合はこの関数のドキュメントコメントを参照）。
+      if (msg.matchKey !== subActiveNextBattleId) return;
+      sendToScoreLinks({ type: 'SHOW_PREVIEW', ...msg.payload });
+    } else if (msg.type === 'SHOW_QR_ANNOUNCE') {
+      // 親機からのライブ通知（真の状態源）。見た目を合わせてから、自分のSCORE LINK先にも中継する。
+      isQrAnnounceActiveLocal = true;
+      qrAnnounceUrlLocal = msg.url || '';
+      updateQrAnnounceButtonUI();
+      sendToScoreLinks({ type: 'SHOW_QR_ANNOUNCE', url: msg.url });
+    } else if (msg.type === 'HIDE_QR_ANNOUNCE') {
+      isQrAnnounceActiveLocal = false;
+      updateQrAnnounceButtonUI();
+      sendToScoreLinks({ type: 'HIDE_QR_ANNOUNCE' });
+    }
+  }
+
+  // 直前の接続（別フォーマット・別大会）由来の選択中試合/タブが新しい状態に
+  // 対して無効なままだと、存在しないブラケット種別を参照し続けて描画が壊れる。
+  // ただしDEの既存動作（同期のたびに試合選択を維持したまま最新データへ更新する）
+  // を壊さないよう、currentMatch.bracket が呼び出し元モードで有効な種別のときは
+  // 何もしない（＝DE内では常に無害・冪等）。
+  function resetSubUiState(mode) {
+    const validBrackets = mode === 'de' ? ['lb', 'lb3rd', 'wb', 'gf', 'gf_reset']
+      : mode === 'round-robin' ? ['league']
+      : ['single'];
+    if (currentMatch && !validBrackets.includes(currentMatch.bracket)) {
+      currentMatch = null;
+      resetMatchScoreUI();
+    }
+    if (mode !== 'de' && currentTab === 'winners') {
+      currentTab = 'losers';
     }
   }
 
   function applyState(s) {
     if (!s) return;
+    currentHostMode = 'de';
+    resetSubUiState('de');
+    refreshTabBarVisibility();
     appState      = s;
     winScoreLimit = s.remoteWinScoreLimit || 4;
     const nameEl  = document.getElementById('tournament-name');
@@ -402,6 +507,69 @@
         renderBeySelectUI();
       }
     }
+    // 追記: QR告知の初期状態反映（後から接続したサブ機が現在の状態を取得するケース）
+    if (s.qrAnnounce) {
+      isQrAnnounceActiveLocal = !!s.qrAnnounce.active;
+      updateQrAnnounceButtonUI();
+      if (s.qrAnnounce.active) {
+        qrAnnounceUrlLocal = s.qrAnnounce.url || '';
+        sendToScoreLinks({ type: 'SHOW_QR_ANNOUNCE', url: s.qrAnnounce.url });
+      }
+    }
+  }
+
+  // GEN_STATE_SYNC（tournament.html/souatari.html等の汎用親機）用。DE用のapplyState()とは
+  // 完全に別関数。tournamentTypeでシングル/総当たりのどちらかを判定する。
+  function applyGenState(s) {
+    if (!s) return;
+    currentHostMode = s.tournamentType === 'round-robin' ? 'round-robin' : 'single';
+    resetSubUiState(currentHostMode);
+    appState = s;
+    winScoreLimit = s.remoteWinScoreLimit || 4;
+    // leagueMatchesのp1/p2は文字列名で来る可能性があるため、renderMatchCard/
+    // getMatchFromStateの両方が同じ形（{name,id,...}オブジェクト）を前提にできるよう、
+    // 受信直後に一度だけ正規化しておく（実際のホスト側の形は統合レビューで確認）
+    if (currentHostMode === 'round-robin' && Array.isArray(appState.leagueMatches)) {
+      appState.leagueMatches = appState.leagueMatches.map(m => ({
+        ...m,
+        p1: normalizeLeaguePlayer(m.p1),
+        p2: normalizeLeaguePlayer(m.p2),
+        winner: (m.winner === undefined) ? null : m.winner
+      }));
+    }
+    const nameEl = document.getElementById('tournament-name');
+    if (nameEl) nameEl.textContent = s.tournamentName || '';
+    refreshTabBarVisibility();
+    if (currentHostMode === 'round-robin') {
+      renderLeagueList();
+    } else {
+      renderSingleBracket();
+    }
+    // currentMatch があれば最新状態に更新（DEのapplyState()と同じパターン）
+    if (currentMatch) {
+      const updated = getMatchFromState(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx);
+      if (updated) {
+        currentMatch.match = updated;
+        beyP1 = updated.beyP1 || '';
+        beyP2 = updated.beyP2 || '';
+        renderBeySelectUI();
+      }
+    }
+    // 追記: QR告知の初期状態反映（後から接続したサブ機が現在の状態を取得するケース）
+    if (s.qrAnnounce) {
+      isQrAnnounceActiveLocal = !!s.qrAnnounce.active;
+      updateQrAnnounceButtonUI();
+      if (s.qrAnnounce.active) {
+        qrAnnounceUrlLocal = s.qrAnnounce.url || '';
+        sendToScoreLinks({ type: 'SHOW_QR_ANNOUNCE', url: s.qrAnnounce.url });
+      }
+    }
+  }
+
+  function normalizeLeaguePlayer(p) {
+    if (p == null) return null;
+    if (typeof p === 'string') return { name: p, id: p };
+    return p;
   }
 
   // ================================================
@@ -453,6 +621,77 @@
     root.innerHTML = html || '<p class="text-center text-cyber-text opacity-20 text-base mt-10 font-sf">トーナメント開始待ち</p>';
   }
 
+  // ================================================
+  // シングルエリミ描画（GEN: tournament.html系ホスト用）
+  // LOSERSタブのDOM（losers-bracket-root）を「TOURNAMENT」タブとして再利用する。
+  // roundIdxのエンコード規約: ブロック各ラウンドは 'A:0'（ブロック名:ラウンド添字）、
+  // 決勝ステージは 'finals:sf' / 'finals:f' / 'finals:third'。matchIdxはその配列内の添字
+  // （finals.f / finals.third は単一試合のため常に0。tournament.html側のフィールド名が
+  // finals.third であるため、ここも third で統一する — third-place match）。この規約は getMatchFromState() /
+  // buildMatchRef() / buildSingleRoundLabel() でも共通して使う。
+  // ================================================
+  function renderSingleBracket() {
+    const root = document.getElementById('losers-bracket-root');
+    if (!root || !appState) return;
+    let html = '';
+
+    const blockMatches = appState.blockMatches || {};
+    Object.keys(blockMatches).sort().forEach(block => {
+      const rounds = blockMatches[block] || [];
+      rounds.forEach((round, rIdx) => {
+        html += `<div class="text-xs font-sf text-cyber-blue/50 tracking-widest mt-4 mb-2 first:mt-0">BLOCK ${block} ROUND ${rIdx + 1}</div>`;
+        (round || []).forEach((m, mIdx) => { html += renderMatchCard(m, 'single', `${block}:${rIdx}`, mIdx, true); });
+      });
+    });
+
+    const finals = appState.finals || {};
+    if (finals.sf && finals.sf.length) {
+      html += `<div class="text-xs font-sf text-cyber-orange/70 tracking-widest mt-5 mb-2">SEMI FINAL</div>`;
+      finals.sf.forEach((m, mIdx) => { html += renderMatchCard(m, 'single', 'finals:sf', mIdx, true); });
+    }
+    if (finals.f) {
+      html += `<div class="text-xs font-sf text-cyber-blue/70 tracking-widest mt-4 mb-2">FINAL</div>`;
+      html += renderMatchCard(finals.f, 'single', 'finals:f', 0, true);
+    }
+    if (finals.third) {
+      html += `<div class="text-xs font-sf text-cyber-red/70 tracking-widest mt-4 mb-2">3RD PLACE</div>`;
+      html += renderMatchCard(finals.third, 'single', 'finals:third', 0, true);
+    }
+
+    root.innerHTML = html || '<p class="text-center text-cyber-text opacity-20 text-base mt-10 font-sf">トーナメント開始待ち</p>';
+  }
+
+  // ================================================
+  // 総当たりリーグ描画（GEN: souatari.html系ホスト用）
+  // モバイル向けに表形式ではなく縦積みカードリストで表示（依頼者指摘）。
+  // 未消化（winner未確定）の試合を先頭に並べ、スタッフが次に採点すべき試合を
+  // 見つけやすくする。matchIdx引数は配列添字ではなく leagueMatches の id を渡す
+  // （getMatchFromState()のleagueケースを参照）。
+  // ================================================
+  function renderLeagueList() {
+    const root = document.getElementById('losers-bracket-root');
+    if (!root || !appState) return;
+    const matches = (appState.leagueMatches || []).map(m => ({
+      ...m,
+      score: (m.winner !== null && (m.s1 !== undefined || m.s2 !== undefined)) ? `${m.s1}-${m.s2}` : m.score
+    }));
+    matches.sort((a, b) => (a.winner === null ? 0 : 1) - (b.winner === null ? 0 : 1));
+    let html = '';
+    matches.forEach((m) => { html += renderMatchCard(m, 'league', null, m.id, true); });
+    root.innerHTML = html || '<p class="text-center text-cyber-text opacity-20 text-base mt-10 font-sf">試合データなし</p>';
+  }
+
+  // onclick="...(...)" 属性内にrIdx/mIdxをJS式として埋め込むための変換。
+  // 数値はそのまま数値リテラル、null/undefinedは 'null'、文字列は escAttr() で
+  // 二重引用符HTML属性内の単一引用符JS文字列として安全にエスケープする。
+  // escAttr() はこのファイル下部で定義されているが、function宣言はホイスティング
+  // されるため実行時（クリック時）には既に利用可能。
+  function jsLit(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'number') return String(v);
+    return `'${escAttr(v)}'`;
+  }
+
   function renderMatchCard(m, bracket, rIdx, mIdx, isInput) {
     const p1n    = m.p1?.name || 'TBD';
     const p2n    = m.p2?.name || 'TBD';
@@ -476,8 +715,13 @@
         ? 'border-cyber-table-border opacity-75'
         : 'border-cyber-table-border';
 
+    // rIdx/mIdxはDEでは常に数値だが、single('A:0'等)やleague(id)では文字列/nullの
+    // 場合があるため、jsLit()でJS式として安全な形に変換してから埋め込む。
+    // DE呼び出し（数値のみ）ではjsLit()は従来通りベタの数値文字列を返すため無変更。
+    const rIdxLit = jsLit(rIdx);
+    const mIdxLit = jsLit(mIdx);
     const onclickAttr = canClick
-      ? `onclick="selectMatch('${bracket}',${rIdx},${mIdx})"`
+      ? `onclick="selectMatch('${bracket}',${rIdxLit},${mIdxLit})"`
       : '';
 
     const centerHtml = m.score
@@ -489,7 +733,7 @@
     // 📢 次戦予告ボタン（P7-c）: p1/p2が揃っていて未決着の試合のみ。isInput(スコア入力可否)とは無関係。
     const canPreview = m.p1 && m.p2 && m.p1.id !== 'BYE' && m.p2.id !== 'BYE' && !decided;
     const previewBtn = canPreview
-      ? `<button onclick="event.stopPropagation(); toggleSubPreview('${bracket}',${rIdx},${mIdx})" style="touch-action: manipulation;" class="text-base leading-none shrink-0 mr-1">📢</button>`
+      ? `<button onclick="event.stopPropagation(); toggleSubPreview('${bracket}',${rIdxLit},${mIdxLit})" style="touch-action: manipulation;" class="text-base leading-none shrink-0 mr-1">📢</button>`
       : '';
 
     // トナメル24: WB 試合の丸数字（①〜㉓）。親機の紙ブラケットと突き合わせる用。
@@ -510,20 +754,47 @@
   // ================================================
   // タブ切り替え
   // ================================================
-  function switchTab(tab) {
-    currentTab = tab;
+  // タブボタン/コンテンツのクラス名だけを再計算する（スクロール位置には触れない）。
+  // switchTab()から呼ばれるほか、GEN/DEの状態同期時にモード切替後のタブ表示を
+  // スクロールをリセットせずに追従させるため refreshTabBarVisibility() からも呼ぶ。
+  function applyTabBarClasses() {
     const tabs = ['losers', 'winners', 'match'];
     const activeClass   = 'flex-1 py-3 font-sf font-bold text-sm border-b-2 border-cyber-blue text-cyber-blue transition-colors';
     const inactiveClass = 'flex-1 py-3 font-sf font-bold text-sm border-b-2 border-transparent text-cyber-text opacity-40 transition-colors';
     tabs.forEach(t => {
-      document.getElementById('tab-content-' + t).classList.toggle('hidden', t !== tab);
-      document.getElementById('tab-' + t).className = t === tab ? activeClass : inactiveClass;
+      document.getElementById('tab-content-' + t).classList.toggle('hidden', t !== currentTab);
+      const btn = document.getElementById('tab-' + t);
+      // WINNERSタブはDEモード専用。GEN(single/round-robin)ではLOSERSタブ枠を
+      // TOURNAMENT/LEAGUEとして再利用し、WINNERSタブ自体は非表示にする。
+      if (t === 'winners' && currentHostMode !== 'de') {
+        btn.className = 'hidden';
+        return;
+      }
+      btn.className = t === currentTab ? activeClass : inactiveClass;
     });
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    applyTabBarClasses();
     // タブ切替のたびに先頭へ戻す。前の試合で下の方（WINボタン等）まで
     // スクロールした状態のまま次の試合に切り替わると、開いた瞬間に画面下側が
     // 見えてしまうため（依頼者指摘）。
     const activeEl = document.getElementById('tab-content-' + tab);
     if (activeEl) activeEl.scrollTop = 0;
+  }
+
+  // モード（DE/single/round-robin）に応じてLOSERSタブのラベルを付け替え、
+  // タブボタンの表示/非表示をクラス名だけ再計算する（scrollTopは変更しない）。
+  // applyState()/applyGenState() から呼ぶ想定。
+  function refreshTabBarVisibility() {
+    const btnLosers = document.getElementById('tab-losers');
+    if (btnLosers) {
+      btnLosers.textContent = currentHostMode === 'single' ? 'TOURNAMENT'
+        : currentHostMode === 'round-robin' ? 'LEAGUE'
+        : 'LOSERS';
+    }
+    applyTabBarClasses();
   }
 
   // m.p1/m.p2（DE_STATE_SYNCで受け取るブラケット内選手コピー）が rank/currentStats を
@@ -579,8 +850,14 @@
       : currentMatch.bracket === 'wb' ? (wbNo ? `${wbNo} ・ WB ROUND ${currentMatch.roundIdx + 1}` : `WB ROUND ${currentMatch.roundIdx + 1}`)
       : currentMatch.bracket === 'gf' ? 'GRAND FINAL'
       : currentMatch.bracket === 'gf_reset' ? 'GF RESET'
+      : currentMatch.bracket === 'single' ? buildSingleRoundLabel(currentMatch.roundIdx)
+      : currentMatch.bracket === 'league' ? 'LEAGUE MATCH'
       : currentMatch.bracket.toUpperCase();
     document.getElementById('match-round-label').textContent = roundLabel;
+    // 備考: 現状 SET_MATCH ペイロード（上のsendToScoreLinks呼び出し）には元々
+    // ラウンド名のフィールドが無く、match-round-labelはサブ機ローカル表示専用。
+    // SET_MATCHの形を変えると保護対象typeの改変になるため、ここでは新設した
+    // ラベルもローカル表示にのみ反映する（DEの既存挙動と同じ扱い）。
 
     resetMatchScore();
     renderBeySelectUI();
@@ -721,21 +998,39 @@
   function sendResult(winnerVal, score, kimarite, kp1, kp2) {
     if (!conn?.open) { showAckError('親機との接続が切れています'); return; }
     if (!currentMatch) return;
-    conn.send({
-      type:        'DE_RESULT',
-      bracket:     currentMatch.bracket,
-      roundIdx:    currentMatch.roundIdx,
-      matchIdx:    currentMatch.matchIdx,
-      winner:      winnerVal,
-      score,
-      kimarite,
-      kimarite_p1: kp1,
-      kimarite_p2: kp2,
-      beyP1,
-      beyP2,
-      battleLog:   battleLog.slice(),
-      updatedAt:   Date.now()
-    });
+    if (currentHostMode === 'de') {
+      // ===== 既存DEフロー（送信ペイロード完全無変更） =====
+      conn.send({
+        type:        'DE_RESULT',
+        bracket:     currentMatch.bracket,
+        roundIdx:    currentMatch.roundIdx,
+        matchIdx:    currentMatch.matchIdx,
+        winner:      winnerVal,
+        score,
+        kimarite,
+        kimarite_p1: kp1,
+        kimarite_p2: kp2,
+        beyP1,
+        beyP2,
+        battleLog:   battleLog.slice(),
+        updatedAt:   Date.now()
+      });
+    } else {
+      // ===== 新規: GEN_RESULT（single / round-robin） =====
+      conn.send({
+        type:        'GEN_RESULT',
+        matchRef:    buildMatchRef(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx),
+        winner:      winnerVal,
+        score,
+        kimarite,
+        kimarite_p1: kp1,
+        kimarite_p2: kp2,
+        beyP1,
+        beyP2,
+        battleLog:   battleLog.slice(),
+        updatedAt:   Date.now()
+      });
+    }
     // 送信後即座にUIリセット（ACK受信前でも次の試合へ）
     currentMatch = null;
     resetMatchScoreUI();
@@ -755,6 +1050,37 @@
   // ================================================
   // ユーティリティ
   // ================================================
+  // 'single'ブラケットのroundIdxエンコードから画面表示用のラウンド名を作る。
+  // トーン(英語+日本語混在)は既存DEラベル(GRAND FINAL / GF RESET等)に合わせた。
+  function buildSingleRoundLabel(roundIdx) {
+    if (typeof roundIdx === 'string' && roundIdx.indexOf('finals:') === 0) {
+      const key = roundIdx.split(':')[1];
+      if (key === 'sf') return 'SEMI FINAL';
+      if (key === 'f')  return 'FINAL';
+      if (key === 'third') return '3RD PLACE';
+      return 'FINALS';
+    }
+    const parts = String(roundIdx).split(':');
+    const block = parts[0], rNum = parseInt(parts[1], 10);
+    return `BLOCK ${block} ROUND ${rNum + 1}`;
+  }
+
+  // GEN_RESULT / GEN_BEY_SELECT / GEN_PREVIEW_REQUEST で親機へ送るmatchRefを
+  // currentHostModeに応じて組み立てる。round-robinはmatchIdのみ、singleは
+  // block/roundIdx/matchIdx（roundIdxはブロックのラウンド番号、finalsは
+  // 'sf'|'f'|'third'をroundIdxとして渡す）。
+  function buildMatchRef(bracket, roundIdx, matchIdx) {
+    if (currentHostMode === 'round-robin') return { matchId: matchIdx };
+    if (currentHostMode === 'single') {
+      if (typeof roundIdx === 'string' && roundIdx.indexOf('finals:') === 0) {
+        return { block: 'finals', roundIdx: roundIdx.split(':')[1], matchIdx };
+      }
+      const parts = String(roundIdx).split(':');
+      return { block: parts[0], roundIdx: parseInt(parts[1], 10), matchIdx };
+    }
+    return null;
+  }
+
   function getMatchFromState(bracket, rIdx, mIdx) {
     if (!appState) return null;
     if (bracket === 'lb')       return appState.losersBracket?.[rIdx]?.[mIdx] || null;
@@ -762,6 +1088,26 @@
     if (bracket === 'wb')       return appState.winnersBracket?.[rIdx]?.[mIdx] || null;
     if (bracket === 'gf')       return appState.grandFinal || null;
     if (bracket === 'gf_reset') return appState.grandFinalReset || null;
+    // ↓ GEN(tournament.html/souatari.html系ホスト)用に追加。DEケースは上のまま無変更。
+    if (bracket === 'single') {
+      // roundIdxのエンコード規約はrenderSingleBracket()のコメントを参照。
+      // 'finals:sf'|'finals:f'|'finals:third' か 'ブロック名:ラウンド番号'（例 'A:0'）。
+      if (typeof rIdx === 'string' && rIdx.indexOf('finals:') === 0) {
+        const key = rIdx.split(':')[1];
+        if (key === 'sf') return appState.finals?.sf?.[mIdx] || null;
+        if (key === 'f')  return appState.finals?.f || null;
+        if (key === 'third') return appState.finals?.third || null;
+        return null;
+      }
+      const parts = String(rIdx).split(':');
+      const block = parts[0], rNum = parseInt(parts[1], 10);
+      return appState.blockMatches?.[block]?.[rNum]?.[mIdx] || null;
+    }
+    if (bracket === 'league') {
+      // 注意: このbracket種別のみ、mIdx引数は配列添字ではなく leagueMatches の
+      // id を渡すシグネチャ流用になっている（roundIdxは常にnull）。
+      return (appState.leagueMatches || []).find(m => m.id === mIdx) || null;
+    }
     return null;
   }
 
@@ -829,11 +1175,23 @@
     sendToScoreLinks({ type: 'SET_BEYBLADE', data: { player: dispToScorePlayer(logicalToDisp(logicalSide)), beyblade: beybladeName, timestamp: Date.now() } });
     // 親機へ通知してmatch.beyP1/beyP2として保存させる（双方向共有）
     if (conn?.open) {
-      conn.send({
-        type: 'DE_BEY_SELECT',
-        bracket: currentMatch.bracket, roundIdx: currentMatch.roundIdx, matchIdx: currentMatch.matchIdx,
-        beyP1, beyP2, updatedAt: Date.now()
-      });
+      if (currentHostMode === 'de') {
+        // ===== 既存DEフロー（送信ペイロード完全無変更） =====
+        conn.send({
+          type: 'DE_BEY_SELECT',
+          bracket: currentMatch.bracket, roundIdx: currentMatch.roundIdx, matchIdx: currentMatch.matchIdx,
+          beyP1, beyP2, updatedAt: Date.now()
+        });
+      } else {
+        // ===== 新規: GEN_BEY_SELECT（single / round-robin） =====
+        conn.send({
+          type: 'GEN_BEY_SELECT',
+          matchRef: buildMatchRef(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx),
+          side: logicalSide === 'p1' ? 'P1' : 'P2',
+          beyblade: beybladeName,
+          updatedAt: Date.now()
+        });
+      }
     }
   }
 
@@ -849,7 +1207,16 @@
     }
     if (!conn?.open) { showAckError('親機との接続が切れています'); return; }
     subActiveNextBattleId = matchKey;
-    conn.send({ type: 'DE_PREVIEW_REQUEST', bracket, roundIdx, matchIdx });
+    if (currentHostMode === 'de') {
+      // ===== 既存DEフロー（送信ペイロード完全無変更） =====
+      conn.send({ type: 'DE_PREVIEW_REQUEST', bracket, roundIdx, matchIdx });
+    } else {
+      // ===== 新規: GEN_PREVIEW_REQUEST（single / round-robin） =====
+      // matchKeyを同梱し、GEN_PREVIEW_PAYLOADの応答にそのまま付け返してもらうことで
+      // handleMessage()側のstalenessチェック（subActiveNextBattleIdとの突合）を
+      // matchRefの形式（block/roundIdx/matchIdx or matchId）に依存せず行えるようにする。
+      conn.send({ type: 'GEN_PREVIEW_REQUEST', matchRef: buildMatchRef(bracket, roundIdx, matchIdx), matchKey });
+    }
   }
 
   // ================================================

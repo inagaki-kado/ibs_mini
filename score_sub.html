@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -151,6 +152,36 @@
     text-shadow: 0 0 24px rgba(250,204,21,0.9);
   }
 
+  /* QR ANNOUNCE（デッキ登録QR掲示。他の全オーバーレイより上に出す） */
+  #qr-announce-overlay {
+    position: fixed; inset: 0; z-index: 600;
+    background: #0a0e17;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(10px, 3vw, 24px);
+    padding: clamp(12px, 4vw, 32px);
+    box-sizing: border-box;
+    text-align: center;
+  }
+  #qr-announce-title {
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
+    font-size: clamp(13px, 3.2vw, 22px); color: #fff; line-height: 1.6; letter-spacing: 0.04em;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
+  }
+  #qr-announce-box {
+    background: #FFFFFF;
+    max-width: 80vmin; max-height: 80vmin;
+    aspect-ratio: 1 / 1;
+    width: min(80vmin, 320px);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    padding: clamp(8px, 2vw, 16px);
+    box-sizing: border-box;
+  }
+  #qr-announce-caption {
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+    font-size: clamp(10px, 2.2vw, 15px); color: #ffaa00; line-height: 1.5; letter-spacing: 0.02em;
+  }
+
   #btn-reload {
     position: fixed; right: 8px; bottom: 8px; z-index: 500;
     width: 38px; height: 38px; border-radius: 50%;
@@ -208,6 +239,12 @@
 
   <div id="call-overlay" class="hidden">
     <div id="call-text"></div>
+  </div>
+
+  <div id="qr-announce-overlay" class="hidden">
+    <div id="qr-announce-title">本日の大会で使用するデッキは<br>下記のＱＲコードで登録できます</div>
+    <div id="qr-announce-box"></div>
+    <div id="qr-announce-caption">※一度登録したデッキの変更は運営スタッフまでお願いします</div>
   </div>
 
   <button id="btn-reload" onclick="location.reload()" style="touch-action: manipulation;" title="リロード">⟳</button>
@@ -340,6 +377,20 @@
     function showBreak() { $('break-overlay').classList.remove('hidden'); }
     function hideBreak() { $('break-overlay').classList.add('hidden'); }
 
+    function showQrAnnounce(url) {
+      const box = $('qr-announce-box');
+      if (box) {
+        box.innerHTML = '';
+        new QRCode(box, { text: url, width: 400, height: 400, colorDark: '#000000', colorLight: '#ffffff' });
+      }
+      const overlay = $('qr-announce-overlay');
+      if (overlay) overlay.classList.remove('hidden');
+    }
+    function hideQrAnnounce() {
+      const overlay = $('qr-announce-overlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
     function showScoreView() {
       hidePreview();
       hideWin();
@@ -453,6 +504,8 @@
       else if (data.type === 'MATCH_COMMENT') showComment(data.comment, data.highlights);
       else if (data.type === 'BREAK_START') showBreak();
       else if (data.type === 'BREAK_END') hideBreak();
+      else if (data.type === 'SHOW_QR_ANNOUNCE') showQrAnnounce(data.url);
+      else if (data.type === 'HIDE_QR_ANNOUNCE') hideQrAnnounce();
       // BREAK_RECAPおよびその他未対応typeは黙って無視
     }
 
