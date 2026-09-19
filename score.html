@@ -64,6 +64,19 @@
         .btn-timer { top: 20px; right: max(20px, calc(var(--safe-right) + 20px)); }
         .btn-timer-toggle { top: 20px; right: max(80px, calc(var(--safe-right) + 75px)); color: #0ea5e9; border-color: #0ea5e9; box-shadow: 0 0 10px rgba(14,165,233,0.3); }
         .btn-winpoint { bottom: 20px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
+        /* P2側のWIN POINT。対称（＝P1と同じ）のときは控えめに、非対称のときだけ強調する */
+        .btn-winpoint2 { bottom: 76px; right: max(20px, calc(var(--safe-right) + 20px)); color: #ffaa00; border-color: #ffaa00; font-size: 18px; box-shadow: 0 0 10px rgba(255,170,0,0.3); opacity: 0.5; }
+        .btn-winpoint2.asym { opacity: 1; background: rgba(255,170,0,0.2); box-shadow: 0 0 15px rgba(255,170,0,0.5); }
+        /* 非対称時はどちらの選手の上限かを色以外でも判別できるようにする */
+        body.winlimit-asym .btn-winpoint::after,
+        body.winlimit-asym .btn-winpoint2::after {
+            position: absolute; top: -7px; left: -7px;
+            font-family: 'Orbitron', sans-serif; font-size: 9px; line-height: 1; font-weight: 700;
+            padding: 2px 3px; border-radius: 4px;
+            background: #0a0e17; border: 1px solid #ffaa00; color: #ffaa00;
+        }
+        body.winlimit-asym .btn-winpoint::after { content: 'P1'; }
+        body.winlimit-asym .btn-winpoint2::after { content: 'P2'; }
         .btn-fps { top: 20px; left: max(130px, calc(var(--safe-left) + 130px)); color: #22c55e; border-color: #22c55e; font-size: 11px; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .btn-fps.active { background: rgba(34,197,94,0.2); box-shadow: 0 0 15px rgba(34,197,94,0.5); }
         .btn-cammode { top: 20px; left: max(185px, calc(var(--safe-left) + 185px)); color: #ffaa00; border-color: #ffaa00; font-size: 11px; box-shadow: 0 0 10px rgba(255,170,0,0.3); }
@@ -425,6 +438,11 @@
           border-radius: 12px;
           padding: clamp(10px, 2vw, 20px);
           box-sizing: border-box;
+        }
+        #qr-announce-box canvas, #qr-announce-box img {
+            max-width: 100% !important;
+            height: auto !important;
+            display: block;
         }
         #qr-announce-caption {
           font-family: 'Noto Sans JP', sans-serif;
@@ -828,7 +846,8 @@
     <div class="system-btn btn-rotate" onclick="executeCommand('SYS_CAM')">180</div>
     <div class="system-btn btn-pro" onclick="executeCommand('SYS_PRO')" id="btn-pro" title="PRO MODE (UI表示切替)">👁</div>
     <div class="system-btn btn-hud active" onclick="executeCommand('SYS_HUD')" id="btn-hud" title="HUD (非表示/表示)">📹</div>
-<div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint">4</div>
+<div class="system-btn btn-winpoint" onclick="toggleWinPoint()" id="btn-winpoint" title="WIN POINT (P1)">4</div>
+<div class="system-btn btn-winpoint2" onclick="toggleWinPoint2()" id="btn-winpoint2" title="WIN POINT (P2)。= はP1と同じ">=</div>
 <div class="system-btn btn-fps" onclick="toggleFps()" id="btn-fps">FPS</div>
 <div class="system-btn btn-cammode" onclick="toggleCamMode()" id="btn-cammode">60</div>
 <div class="system-btn btn-stats active" onclick="toggleStatsDisplay()" id="btn-stats">📊</div>
@@ -837,6 +856,59 @@
 
     <script>
         let s1 = 0, s2 = 0, winScoreLimit = 4, winPointMode = '4', battleCount = 1, timerDuration = 10;
+        // P2側の勝利ポイントを別に持てるようにする（S.I.T BATTLE LEAGUE の大将戦ハンデ用）。
+        // null は「P1と同じ」を意味し、従来どおりの対称運用になる。winScoreLimit の意味は変えない。
+        let winScoreLimit2 = null, winPointMode2 = '=';
+        const WIN_LIMIT_MODES = { '1':1, '2':2, '2+':99, '3':3, '4':4, '5':5, '10':10 };
+        /**
+         * 勝利判定に使う上限。
+         * '2+' は「2点で勝ち・加算は上限なし」という特殊モードなので、
+         * 非対称指定より優先して従来どおり両者2点で判定する。
+         */
+        function limitFor(p) {
+            if (winPointMode === '2+') return 2;
+            if (p === 2 && winScoreLimit2 != null) return winScoreLimit2;
+            return winScoreLimit;
+        }
+        /** スコア加算時のクランプ上限。'2+' は加算を止めない */
+        function clampLimitFor(p) {
+            if (winPointMode === '2+') return Infinity;
+            return limitFor(p);
+        }
+        function isWinLimitAsym() {
+            return winPointMode !== '2+' && winScoreLimit2 != null && winScoreLimit2 !== winScoreLimit;
+        }
+        function updateWinPointButtons() {
+            document.getElementById('btn-winpoint').innerText = winPointMode;
+            const b2 = document.getElementById('btn-winpoint2');
+            if (b2) {
+                b2.innerText = winPointMode2;
+                b2.classList.toggle('asym', isWinLimitAsym());
+            }
+            document.body.classList.toggle('winlimit-asym', isWinLimitAsym());
+        }
+        /** 外部（sit_battle.html 等）から両者の上限をまとめて設定する */
+        function applyWinLimits(l1, l2) {
+            const n1 = Number(l1);
+            if (Number.isFinite(n1) && n1 > 0) {
+                winScoreLimit = n1;
+                const m1 = Object.keys(WIN_LIMIT_MODES).find(k => WIN_LIMIT_MODES[k] === n1 && k !== '2+');
+                winPointMode = m1 || String(n1);
+            }
+            if (l2 == null || l2 === '' || l2 === '=') {
+                winScoreLimit2 = null;
+                winPointMode2 = '=';
+            } else {
+                const n2 = Number(l2);
+                if (Number.isFinite(n2) && n2 > 0) {
+                    winScoreLimit2 = n2;
+                    const m2 = Object.keys(WIN_LIMIT_MODES).find(k => WIN_LIMIT_MODES[k] === n2 && k !== '2+');
+                    winPointMode2 = m2 || String(n2);
+                }
+            }
+            updateWinPointButtons();
+            updateBattleCounterDisplay();
+        }
         let isFinished = false, isCountingDown = false, timerInterval = null;
         // 大会中に決まったフィニッシュを試合中も反映するため、
         // 送信側からの通算値(base)と、この試合でこの画面が数えた分(live)を合算して表示する。
@@ -894,7 +966,7 @@
         // ===== 大会進行データの永続化（誤リロード対策）＋ UNDO =====
         function getMatchStateSnapshot() {
             return {
-                s1, s2, battleCount, winPointMode, winScoreLimit, isFinished,
+                s1, s2, battleCount, winPointMode, winScoreLimit, winPointMode2, winScoreLimit2, isFinished,
                 name1: document.getElementById('name1').value,
                 name2: document.getElementById('name2').value,
                 tournamentName: tName1.value,
@@ -925,6 +997,8 @@
             battleCount = Number(st.battleCount) || 1;
             winPointMode = st.winPointMode || '4';
             winScoreLimit = Number(st.winScoreLimit) || 4;
+            winScoreLimit2 = (st.winScoreLimit2 == null) ? null : (Number(st.winScoreLimit2) || null);
+            winPointMode2 = st.winPointMode2 || (winScoreLimit2 == null ? '=' : String(winScoreLimit2));
             isFinished = !!st.isFinished;
             if (st.finLive) { finLive = JSON.parse(JSON.stringify(st.finLive)); }
             if (typeof st.name1 === 'string' && st.name1) document.getElementById('name1').value = st.name1;
@@ -932,7 +1006,7 @@
             if (typeof st.tournamentName === 'string' && st.tournamentName) tName1.value = st.tournamentName;
             document.getElementById('score1').innerText = s1;
             document.getElementById('score2').innerText = s2;
-            document.getElementById('btn-winpoint').innerText = winPointMode;
+            updateWinPointButtons();
             updateBattleCounterDisplay();
             adjustNameFontSize('name1');
             adjustNameFontSize('name2');
@@ -966,6 +1040,8 @@
             battleCount = Number(prev.battleCount) || 1;
             winPointMode = prev.winPointMode || '4';
             winScoreLimit = Number(prev.winScoreLimit) || 4;
+            winScoreLimit2 = (prev.winScoreLimit2 == null) ? null : (Number(prev.winScoreLimit2) || null);
+            winPointMode2 = prev.winPointMode2 || (winScoreLimit2 == null ? '=' : String(winScoreLimit2));
             isFinished = !!prev.isFinished;
             if (prev.finLive) {
                 finLive = JSON.parse(JSON.stringify(prev.finLive));
@@ -973,7 +1049,7 @@
             }
             document.getElementById('score1').innerText = s1;
             document.getElementById('score2').innerText = s2;
-            document.getElementById('btn-winpoint').innerText = winPointMode;
+            updateWinPointButtons();
             updateBattleCounterDisplay();
             document.querySelectorAll('.active-history').forEach(b => b.classList.remove('active-history'));
             if (Array.isArray(prev.activeHistory)) {
@@ -1124,13 +1200,13 @@
             else if (cmd === 'P1_O') addScore(1, 2, 'OVER');
             else if (cmd === 'P1_S') addScore(1, 1, 'SPIN');
             else if (cmd === 'P1_MINUS') { s1 = Math.max(0, s1 - 1); document.getElementById('score1').innerText = s1; }
-            else if (cmd === 'P1_PLUS') { s1 = Math.min(winScoreLimit, s1 + 1); document.getElementById('score1').innerText = s1; }
+            else if (cmd === 'P1_PLUS') { s1 = Math.min(clampLimitFor(1), s1 + 1); document.getElementById('score1').innerText = s1; }
             else if (cmd === 'P2_X') addScore(2, 3, 'XTREME');
             else if (cmd === 'P2_B') addScore(2, 2, 'BURST');
             else if (cmd === 'P2_O') addScore(2, 2, 'OVER');
             else if (cmd === 'P2_S') addScore(2, 1, 'SPIN');
             else if (cmd === 'P2_MINUS') { s2 = Math.max(0, s2 - 1); document.getElementById('score2').innerText = s2; }
-            else if (cmd === 'P2_PLUS') { s2 = Math.min(winScoreLimit, s2 + 1); document.getElementById('score2').innerText = s2; }
+            else if (cmd === 'P2_PLUS') { s2 = Math.min(clampLimitFor(2), s2 + 1); document.getElementById('score2').innerText = s2; }
         }
 
         function isGameplayScoreCmd(cmd) {
@@ -1556,21 +1632,16 @@
             addLiveFinish(p, { XTREME:'XF', BURST:'BF', OVER:'OF', SPIN:'SF' }[t]);
 
             // スコア加算（2+モード時は上限なし）
-            if (winPointMode === '2+') {
-                if (p === 1) s1 += pts; 
-                else s2 += pts;
-            } else {
-                if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit); 
-                else s2 = Math.min(s2 + pts, winScoreLimit);
-            }
+            if (p === 1) s1 = Math.min(s1 + pts, clampLimitFor(1));
+            else s2 = Math.min(s2 + pts, clampLimitFor(2));
             
             document.getElementById('score1').innerText = s1; 
             document.getElementById('score2').innerText = s2;
             
             // 勝利判定（2+モード時は2点に達したら勝利だがカウントは継続表示）
-            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
+            // 上限はP1／P2で別々に持てる（大将戦のハンデ）
             cancelPendingAdvance();
-            if (s1 >= actualWinLimit || s2 >= actualWinLimit) {
+            if (s1 >= limitFor(1) || s2 >= limitFor(2)) {
                 isFinished = true;
                 pendingAdvanceTimeout = setTimeout(() => { pendingAdvanceTimeout = null; finishGame(p); }, 2500);
             }
@@ -1580,7 +1651,7 @@
                     battleCount++;
                     updateBattleCounterDisplay();
                     let suffix = ["st","nd","rd"][battleCount-1] || "th";
-                    let nextText = (s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) ? "FINAL" : `${battleCount}${suffix}`;
+                    let nextText = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}${suffix}`;
                     showOverlayText(`NEXT to<br><span class="next-ordinal">${nextText}</span>BATTLE`, 'interstitial-style', 2500);
                 }, 2500);
             }
@@ -1611,8 +1682,7 @@
 
         function updateBattleCounterDisplay() {
             let suffix = ["st","nd","rd"][battleCount-1] || "th";
-            const actualWinLimit = (winPointMode === '2+') ? 2 : winScoreLimit;
-            let text = (s1 === actualWinLimit - 1 && s2 === actualWinLimit - 1) ? "FINAL" : `${battleCount}${suffix}`;
+            let text = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}${suffix}`;
             document.getElementById('battle-ordinal').innerText = text;
         }
         function escapeHtmlForComment(str) {
@@ -1680,7 +1750,21 @@
                 winPointMode = '4';
                 winScoreLimit = 4;
             }
-            document.getElementById('btn-winpoint').innerText = winPointMode;
+            updateWinPointButtons();
+            updateBattleCounterDisplay();
+            saveMatchState();
+        }
+        /**
+         * P2側の勝利ポイントだけを切り替える。
+         * '=' は「P1と同じ」。大将戦のハンデ（P1=4 / P2=5）はここで 5 を選ぶ。
+         */
+        function toggleWinPoint2() {
+            blurFocus();
+            const cycle = ['=', '1', '2', '3', '4', '5', '10'];
+            const i = cycle.indexOf(winPointMode2);
+            winPointMode2 = cycle[(i + 1) % cycle.length];
+            winScoreLimit2 = (winPointMode2 === '=') ? null : WIN_LIMIT_MODES[winPointMode2];
+            updateWinPointButtons();
             updateBattleCounterDisplay();
             saveMatchState();
         }
@@ -1805,7 +1889,9 @@
             if (cmd === 'SYS_WIN_MODE_2') {
               winPointMode = '2';
               winScoreLimit = 2;
-              document.getElementById('btn-winpoint').innerText = winPointMode;
+              winScoreLimit2 = null;
+              winPointMode2 = '=';
+              updateWinPointButtons();
               return;
             }
             if (cmd === 'SYS_TOGGLE_WINPOINT') {
@@ -1987,6 +2073,7 @@
                     else if (data.type === 'SHOW_PREVIEW') {
                         // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
                         showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || [], data.p1Stats, data.p2Stats, data.h2hP1Wins, data.h2hP2Wins, data.catchphrase || '');
+                        applyPreviewBgStyle(data.previewBgMode, data.previewBgOpacity);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -1999,6 +2086,7 @@
                         const breakOv = document.getElementById('break-overlay');
                         if (breakOv) breakOv.classList.add('hidden');
                         stopBreakRecap();
+                        hideQrAnnounce();
                         const contentOv = document.getElementById('remote-content-overlay');
                         if (contentOv && !contentOv.classList.contains('hidden')) {
                             contentOv.classList.add('hidden');
@@ -2089,13 +2177,23 @@
                             resetGame();
                         }
                         if (data.winMode) {
-                            const modeMap = { '1':1, '2':2, '2+':99, '3':3, '4':4, '10':10 };
+                            const modeMap = { '1':1, '2':2, '2+':99, '3':3, '4':4, '5':5, '10':10 };
                             const lim = modeMap[data.winMode];
                             if (lim !== undefined) {
                                 winPointMode = data.winMode;
                                 winScoreLimit = lim;
-                                document.getElementById('btn-winpoint').innerText = winPointMode;
+                                // winMode 指定は対称運用。非対称は winLimitP1/P2 で明示する
+                                winScoreLimit2 = null;
+                                winPointMode2 = '=';
+                                updateWinPointButtons();
                             }
+                        }
+                        // 非対称の勝利ポイント（大将戦のハンデ）。winMode より後に評価する
+                        if (data.winLimitP1 != null || data.winLimitP2 != null) {
+                            applyWinLimits(
+                                data.winLimitP1 != null ? data.winLimitP1 : winScoreLimit,
+                                data.winLimitP2
+                            );
                         }
                         if (typeof data.p1BeyText === 'string' && data.p1BeyText.trim()) {
                             beybladeP1 = data.p1BeyText.trim();
@@ -2105,6 +2203,11 @@
                             beybladeP2 = data.p2BeyText.trim();
                             updateBeybladeBar(2, beybladeP2);
                         }
+                        saveMatchState();
+                    }
+                    else if (data.type === 'SET_WIN_LIMITS') {
+                        // 試合をリセットせずに勝利ポイントだけ差し替える
+                        applyWinLimits(data.p1, data.p2);
                         saveMatchState();
                     }
                     else if (data.type === 'SHOW_QR_ANNOUNCE') {
@@ -2225,6 +2328,30 @@
                     el.style.fontSize = size + 'px';
                 }
             }
+        }
+
+        /**
+         * 次戦予告の背景画像の見せ方を切り替える。
+         *
+         * 既定は #next-battle-logo のCSSどおり「ロゴ用」（contain・opacity 0.35）。
+         * stibattle.jpg のような写真素材を敷くときは送信側から previewBgMode:'cover' を
+         * 指定する。指定が無ければインラインstyleを消して既定に戻すので、
+         * 次に普通のロゴを出したときに cover が残らない。
+         */
+        function applyPreviewBgStyle(mode, opacity) {
+            const logo = document.getElementById('next-battle-logo');
+            if (!logo) return;
+            if (mode === 'cover') {
+                logo.style.objectFit = 'cover';
+                logo.style.width = '100vw';
+                logo.style.height = '100vh';
+            } else {
+                logo.style.objectFit = '';
+                logo.style.width = '';
+                logo.style.height = '';
+            }
+            const op = Number(opacity);
+            logo.style.opacity = (Number.isFinite(op) && op >= 0 && op <= 1) ? String(op) : '';
         }
 
         function showNextBattle(p1, p2, stageOrLabel, round, showLogo = false, logoDataUrl = null, logoSrc = null, previewBackground = null, p1members = [], p2members = [], p1Stats = null, p2Stats = null, h2hP1Wins = null, h2hP2Wins = null, catchphrase = '') {

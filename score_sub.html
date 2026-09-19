@@ -46,9 +46,13 @@
   .p-name {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
     font-size: clamp(13px, 4vw, 30px);
-    color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 92vw;
+    color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
     text-shadow: 1px 1px 0 #000;
   }
+  /* 文字数別の縮小段階（score.htmlのname-len-m/l/xlと同じ閾値: 9-12 / 13-16 / 17以上） */
+  .p-name.name-len-m { font-size: clamp(10px, 3vw, 22px); }
+  .p-name.name-len-l { font-size: clamp(9px, 2.3vw, 17px); }
+  .p-name.name-len-xl { font-size: clamp(8px, 1.9vw, 14px); }
   .p1-col .p-name { text-shadow: 0 0 10px rgba(14,165,233,0.7), 1px 1px 0 #000; }
   .p2-col .p-name { text-shadow: 0 0 10px rgba(236,72,153,0.7), 1px 1px 0 #000; }
   .score-num {
@@ -60,8 +64,18 @@
     font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
     font-size: clamp(11px, 1.8vw, 18px);
     color: #fff; margin-top: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85vw;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
+  /* 上中央のバトル数（score.htmlの#battle-counter-areaと同じ表示） */
+  #battle-counter-area {
+    position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 90;
+    text-align: center; white-space: nowrap; pointer-events: none;
+    font-family: 'Orbitron', sans-serif; font-weight: 900;
+    background: rgba(0,0,0,0.55); border-radius: 8px; padding: 2px 12px;
+    box-shadow: 0 0 0 1px rgba(255,170,0,0.25) inset;
+  }
+  #battle-ordinal { font-size: clamp(16px, 3vw, 32px); color: #facc15; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-right: 5px; }
+  .battle-label { font-size: clamp(11px, 1.9vw, 20px); color: #fff; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); }
   .vs-sep {
     font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
     font-size: clamp(14px, 3vw, 26px); color: #facc15; flex-shrink: 0; padding: 0 6px;
@@ -177,6 +191,11 @@
     padding: clamp(8px, 2vw, 16px);
     box-sizing: border-box;
   }
+  #qr-announce-box canvas, #qr-announce-box img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
   #qr-announce-caption {
     font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
     font-size: clamp(10px, 2.2vw, 15px); color: #ffaa00; line-height: 1.5; letter-spacing: 0.02em;
@@ -197,6 +216,8 @@
     <span id="link-dot"></span>
     <span id="link-text">CONNECTING...</span>
   </div>
+
+  <div id="battle-counter-area"><span id="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
 
   <div id="main-view">
     <div class="player-col p1-col">
@@ -258,6 +279,7 @@
     const FIN_PTS = { X: 3, B: 2, O: 2, S: 1 };
 
     let s1 = 0, s2 = 0;
+    let battleCount = 1;
     let winScoreLimit = 4;
     let name1 = 'BLADER 1', name2 = 'BLADER 2';
     let bey1 = '', bey2 = '';
@@ -266,19 +288,42 @@
 
     function $(id) { return document.getElementById(id); }
 
+    // score.htmlのadjustNameFontSizeと同じ閾値で文字数別の縮小クラスを付ける
+    function adjustNameFontSize(el, text) {
+      const len = (text || '').length;
+      el.classList.remove('name-len-m', 'name-len-l', 'name-len-xl');
+      if (len <= 12) {
+        if (len > 8) el.classList.add('name-len-m');
+      } else if (len <= 16) {
+        el.classList.add('name-len-l');
+      } else {
+        el.classList.add('name-len-xl');
+      }
+    }
+
+    // score.htmlのupdateBattleCounterDisplayと同じ判定（両者が上限-1でFINAL）
+    function updateBattleCounter() {
+      const suffix = ['st', 'nd', 'rd'][battleCount - 1] || 'th';
+      const isFinal = (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1);
+      $('battle-ordinal').textContent = isFinal ? 'FINAL' : battleCount + suffix;
+    }
+
     function render() {
       $('name1').textContent = name1;
       $('name2').textContent = name2;
+      adjustNameFontSize($('name1'), name1);
+      adjustNameFontSize($('name2'), name2);
       $('score1').textContent = s1;
       $('score2').textContent = s2;
       $('bey1').textContent = bey1;
       $('bey2').textContent = bey2;
+      updateBattleCounter();
     }
 
     function saveState() {
       try {
         localStorage.setItem(STATE_KEY, JSON.stringify({
-          s1, s2, winScoreLimit, name1, name2, bey1, bey2, ts: Date.now()
+          s1, s2, battleCount, winScoreLimit, name1, name2, bey1, bey2, ts: Date.now()
         }));
       } catch (e) { /* QuotaExceededError等は無視して継続 */ }
     }
@@ -290,15 +335,18 @@
         const st = JSON.parse(raw);
         if (!st || typeof st.ts !== 'number' || (Date.now() - st.ts) > STATE_MAX_AGE_MS) return;
         s1 = st.s1 || 0; s2 = st.s2 || 0;
+        battleCount = Number(st.battleCount) || 1;
         winScoreLimit = st.winScoreLimit || 4;
         name1 = st.name1 || name1; name2 = st.name2 || name2;
         bey1 = st.bey1 || ''; bey2 = st.bey2 || '';
       } catch (e) { /* 破損データは無視 */ }
     }
 
+    // 決まり手による加算のみバトル数を進める（score.htmlと同じ。＋/−ボタンでは進めない）
     function addScore(p, pts) {
       if (p === 1) s1 = Math.min(s1 + pts, winScoreLimit);
       else s2 = Math.min(s2 + pts, winScoreLimit);
+      if (s1 < winScoreLimit && s2 < winScoreLimit) battleCount++;
       render(); saveState();
     }
     function plusScore(p) {
@@ -312,7 +360,7 @@
       render(); saveState();
     }
     function resetScores() {
-      s1 = 0; s2 = 0;
+      s1 = 0; s2 = 0; battleCount = 1;
       hideWin(); hideComment();
       render(); saveState();
     }
@@ -396,6 +444,7 @@
       hideWin();
       hideComment();
       hideBreak();
+      hideQrAnnounce();
       cancelCallSequence();
     }
 
@@ -470,7 +519,7 @@
       if (typeof data.p1 === 'string') name1 = data.p1;
       if (typeof data.p2 === 'string') name2 = data.p2;
       if (data.resetScore !== false) {
-        s1 = 0; s2 = 0;
+        s1 = 0; s2 = 0; battleCount = 1;
         hideWin(); hideComment();
       }
       if (data.winMode) {

@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>オーダー＆デッキ登録 - S.I.T BATTLE LEAGUE</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          'sans': ['Noto Sans JP', 'sans-serif'],
+          'orbitron': ['Orbitron', 'sans-serif'],
+        },
+        colors: {
+          'cyber-bg': '#0a0e17',
+          'cyber-dark': '#111827',
+          'cyber-blue': '#0ea5e9',
+          'cyber-green': '#22c55e',
+          'cyber-pink': '#ec4899',
+          'cyber-red': '#ff0055',
+          'cyber-orange': '#ffaa00',
+          'cyber-text': '#e2e8f0',
+          'cyber-table-border': '#1f2937',
+          'cyber-on-blue': '#04263a',
+          'cyber-on-green': '#04220f',
+          'cyber-on-orange': '#1a1200'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color: #0a0e17; color: #e2e8f0; -webkit-text-size-adjust: 100%; }
+  .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+  button, select, input { touch-action: manipulation; }
+  button, select { cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+  .row { border-bottom: 1px solid #1f2937; }
+  /* 操作系のタップ対象は最小44px（UI原則1） */
+  .tap { min-height: 44px; }
+  input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+  select {
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230ea5e9' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  }
+</style>
+</head>
+<body class="font-sans">
+
+<div class="max-w-md mx-auto min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="px-4 py-3 border-b border-cyber-table-border flex items-center justify-between sticky top-0 bg-cyber-bg z-10">
+    <span class="font-sf text-cyber-blue text-sm">TEAM ENTRY</span>
+    <span id="hdr-team" class="text-xs text-gray-500"></span>
+  </header>
+
+  <main class="flex-1 px-4 py-4">
+
+    <!-- 読み込み中 -->
+    <section id="screen-loading">
+      <p class="text-sm text-gray-400 py-10 text-center">読み込んでいます…</p>
+    </section>
+
+    <!-- エラー -->
+    <section id="screen-error" class="hidden">
+      <div class="bg-cyber-dark border border-cyber-red rounded-lg p-4">
+        <p class="text-cyber-red font-bold text-sm mb-2">接続できません</p>
+        <p id="error-msg" class="text-sm text-gray-300 leading-relaxed"></p>
+      </div>
+      <button onclick="location.reload()" class="tap w-full mt-4 py-3 bg-cyber-dark border border-cyber-table-border rounded-lg text-cyber-blue font-bold">もう一度読み込む</button>
+    </section>
+
+    <!-- 送信済みロック -->
+    <section id="screen-locked" class="hidden">
+      <div class="text-center py-10">
+        <p class="font-sf text-cyber-orange text-2xl mb-3">LOCKED</p>
+        <p class="text-sm text-gray-300 leading-relaxed mb-1">このチームのオーダーとデッキは<br>すでに受付に送信されています。</p>
+        <p id="locked-team" class="text-lg font-bold text-cyber-text mt-4 mb-6"></p>
+        <div class="text-left bg-cyber-dark border-l-4 border-cyber-orange p-3">
+          <p class="text-sm text-gray-300 leading-relaxed">
+            内容の確認・修正が必要な場合は、運営スタッフにお申し出ください。<br>
+            運営がリセットを行うまで、この画面からの再送信はできません。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 出場メンバー＆オーダー決定 -->
+    <section id="screen-order" class="hidden">
+      <div class="bg-cyber-dark border-l-4 border-cyber-blue p-3 mb-4">
+        <p id="order-team-name" class="text-base font-bold text-cyber-text mb-1"></p>
+        <p id="order-vs" class="text-xs text-gray-400"></p>
+        <p id="order-handicap" class="text-xs text-cyber-orange mt-2 leading-relaxed hidden"></p>
+      </div>
+
+      <p class="text-xs text-gray-400 mb-1">STEP 1 ／ 出場3名とオーダーを決める</p>
+      <p id="order-guide" class="text-sm text-gray-300 mb-3 leading-relaxed"></p>
+
+      <div id="order-list" class="mb-3"></div>
+
+      <div id="order-warn" class="hidden bg-cyber-dark border-l-4 border-cyber-red p-3 mb-3">
+        <p id="order-warn-body" class="text-xs text-cyber-red font-bold"></p>
+      </div>
+
+      <button id="btn-order-next" onclick="goDecks()" class="tap w-full py-4 rounded-lg font-bold text-base">デッキ登録へ進む</button>
+    </section>
+
+    <!-- チーム全体のデッキ一覧 -->
+    <section id="screen-team" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs text-gray-400">STEP 2 ／ 各選手のベイを登録</p>
+        <button onclick="backToOrder()" class="tap text-sm text-cyber-blue px-1">‹ オーダーを直す</button>
+      </div>
+      <p id="team-progress" class="text-xs text-cyber-blue mb-3"></p>
+
+      <div id="team-list" class="mb-4"></div>
+
+      <button id="btn-team-next" onclick="showConfirm()" class="tap w-full py-4 rounded-lg font-bold text-base"></button>
+      <p class="text-sm text-gray-400 mt-3 leading-relaxed">デッキを登録したあとで出場順を入れ替えても、選手とデッキの組み合わせはそのまま引き継がれます。</p>
+    </section>
+
+    <!-- 個人のデッキ -->
+    <section id="screen-deck" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div class="min-w-0">
+          <p id="deck-pos" class="text-xs text-cyber-blue font-bold"></p>
+          <p id="deck-name" class="text-lg font-bold text-cyber-text break-all"></p>
+        </div>
+        <button onclick="showTeam()" class="tap text-sm text-cyber-blue px-1 shrink-0">‹ 一覧へ</button>
+      </div>
+      <p id="deck-progress" class="text-xs text-cyber-blue mb-2"></p>
+      <div id="deck-list" class="mb-3"></div>
+      <div id="deck-warn" class="hidden bg-cyber-dark border-l-4 border-cyber-orange p-3 mb-3">
+        <p class="text-xs text-cyber-orange font-bold mb-1">パーツの重複があります</p>
+        <p id="deck-warn-body" class="text-xs text-gray-300 leading-relaxed"></p>
+      </div>
+      <button id="btn-add" onclick="startAdd()"
+              class="tap w-full py-3 border border-dashed border-cyber-table-border rounded-lg text-cyber-blue text-sm mb-3">＋ ベイを追加する</button>
+      <button onclick="showTeam()" class="tap w-full py-4 rounded-lg font-bold text-base bg-cyber-dark border border-cyber-table-border text-cyber-text">一覧に戻る</button>
+    </section>
+
+    <!-- タイプ選択 -->
+    <section id="screen-type" class="hidden">
+      <button onclick="showDeck()" class="tap text-sm text-cyber-blue mb-3 px-1">‹ 戻る</button>
+      <p class="text-xs text-gray-400 mb-3">ベイのタイプを選んでください</p>
+      <div id="type-list" class="grid grid-cols-2 gap-2"></div>
+    </section>
+
+    <!-- パーツ選択 -->
+    <section id="screen-part" class="hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <button onclick="partBack()" class="tap text-sm text-cyber-blue px-1">‹ 戻る</button>
+        <span id="part-title" class="text-sm text-cyber-blue font-bold"></span>
+      </div>
+      <div id="part-note" class="hidden bg-cyber-dark border-l-4 border-cyber-orange p-2 mb-3">
+        <p id="part-note-body" class="text-xs text-cyber-orange"></p>
+      </div>
+      <div id="part-chosen" class="text-xs text-gray-500 mb-2 leading-relaxed"></div>
+      <input id="part-search" type="search" inputmode="search" placeholder="検索"
+             class="w-full bg-cyber-dark border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600 mb-2">
+      <p id="part-count" class="text-xs text-gray-500 mb-2"></p>
+      <div id="part-list"></div>
+    </section>
+
+    <!-- 最終確認 -->
+    <section id="screen-confirm" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs text-gray-400">STEP 3 ／ 最終確認</p>
+        <button onclick="showTeam()" class="tap text-sm text-cyber-blue px-1">‹ 直す</button>
+      </div>
+      <div id="confirm-list" class="mb-4"></div>
+      <div class="bg-cyber-dark border-l-4 border-cyber-red p-3 mb-4">
+        <p class="text-sm text-cyber-red font-bold mb-1">送信すると変更できません</p>
+        <p class="text-sm text-gray-300 leading-relaxed">
+          相手チームへの後出しを防ぐため、一度送信したオーダーとデッキは、
+          運営がリセットしない限り修正できません。内容をよく確認してから送信してください。
+        </p>
+      </div>
+      <button id="btn-submit" onclick="submitTeam()" class="tap w-full py-4 rounded-lg font-bold text-base"></button>
+    </section>
+
+    <!-- 完了 -->
+    <section id="screen-done" class="hidden">
+      <div class="text-center py-8">
+        <p class="font-sf text-cyber-green text-2xl mb-3">SENT</p>
+        <p class="text-sm text-gray-300 mb-1">受付に送信しました</p>
+        <p id="done-team" class="text-lg font-bold text-cyber-text mb-6"></p>
+        <div id="done-list" class="text-left mb-6"></div>
+        <div class="text-left">
+          <p class="text-sm text-cyber-orange font-bold mb-2">【注意事項】</p>
+          <ul class="text-sm text-gray-300 leading-relaxed space-y-2">
+            <li>・このアプリから再度オーダーやデッキの確認・修正を行うことはできません。記録を残したい方はスクリーンショットを撮ってください。</li>
+            <li>・修正が必要な場合は運営スタッフにお申し出ください。</li>
+            <li>・オーダーは運営が「オーダー公開」を行うまで、相手チームには表示されません。</li>
+            <li>・これで登録は完了です。この画面は閉じていただいて問題ありません。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- はい／いいえ 確認ダイアログ -->
+<div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+  <div class="bg-cyber-dark border border-cyber-orange rounded-lg p-5 w-full max-w-sm">
+    <p id="confirm-msg" class="text-sm text-cyber-text leading-relaxed mb-5 whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="confirm-no" class="tap flex-1 py-3 rounded-lg border border-cyber-table-border text-gray-300 font-bold">いいえ</button>
+      <button id="confirm-yes" class="tap flex-1 py-3 rounded-lg bg-cyber-orange text-cyber-on-orange font-bold">はい</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// 設定
+//
+// deck_entry.html（個人戦のデッキ登録）と同じGASを使うが、
+// すべてのリクエストに mode=team を付けてデータを分離する。
+// mode を付けないリクエストは従来どおり個人戦として扱われる。
+// ==========================================
+
+/** GASウェブアプリのURL。末尾は必ず /exec（/dev では動かない） */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+
+/**
+ * 特定パーツを選ぶと以降の工程を飛ばす規則（deck_entry.html と同一）。
+ *   UXE : UXエクスパンド。ラチェットを装備できない
+ *   RAE : Tr / Op。ビットを装備できない特殊ラチェット
+ */
+const PART_SKIP_RULES = { 'UXE': 'RC2', 'RAE': 'BT' };
+
+/** 工程の表示名 */
+const PART_LABELS = {
+  BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード',
+  MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード',
+  RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット'
+};
+
+/** ロックチップの重複を警告する対象（tournament_de.html と同じ規則） */
+const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+
+const MAX_BEYS = 3;
+
+/** ポジション。pos の値はGAS・sit_battle.html と共有するのでASCIIで固定する */
+const POSITIONS = [
+  { id: 'senpo',  label: '先鋒' },
+  { id: 'jiho',   label: '次鋒' },
+  { id: 'taisho', label: '大将' }
+];
+function posLabel(id) {
+  const p = POSITIONS.find(x => x.id === id);
+  return p ? p.label : '';
+}
+
+/** 手入力（登録外）の選手を選ぶための擬似オプション */
+const NEW_GUEST = '__new_guest__';
+
+// ==========================================
+// 状態
+//
+// 選手は entrantKey で扱う。
+//   登録メンバー … 'p' + 参加者ID
+//   手入力の選手 … 'g1', 'g2', …
+// デッキは entrantKey をキーに持つので、出場順を入れ替えても
+// 手入力の選手を別のポジションに移しても、デッキは本人について回る。
+// ==========================================
+
+let sessionCode = '';
+let teamKey = '';           // 'A' | 'B'
+let teamName = '';
+let opponentName = '';
+let teamSide = '';          // 'home' | 'away'
+let partsData = [];
+let members = [];           // 登録メンバー [{ id, name }]（人数は不定。5名前後を想定）
+let guests = [];            // 手入力の選手 [{ key, name }]
+let guestSeq = 0;
+let slots = {};             // { senpo: entrantKey, jiho: ..., taisho: ... }
+let decks = {};             // { entrantKey: [ {type,name,parts}, ... ] }
+let currentKey = null;      // 編集中の選手の entrantKey
+let sel = {};               // 選択中のパーツ（hudName）
+let selIds = {};            // 選択中のパーツID（スキップ判定用）
+let path = [];
+let step = 0;
+let sending = false;
+
+// ==========================================
+// entrant ヘルパー
+// ==========================================
+
+function memberKey(m) { return 'p' + m.id; }
+
+/** entrantKey から選手情報を引く。{ key, id, name, guest } / 見つからなければ null */
+function entrantByKey(key) {
+  if (!key) return null;
+  if (key.charAt(0) === 'p') {
+    const m = members.find(x => memberKey(x) === key);
+    return m ? { key: key, id: m.id, name: m.name, guest: false } : null;
+  }
+  const g = guests.find(x => x.key === key);
+  return g ? { key: key, id: null, name: g.name, guest: true } : null;
+}
+
+function entrantName(key) {
+  const e = entrantByKey(key);
+  return e ? e.name : '';
+}
+
+/** そのポジションに割り当てられている entrantKey */
+function keyForPos(posId) {
+  return slots[posId] || '';
+}
+
+/** 他のポジションで使われている entrantKey の一覧 */
+function keysUsedElsewhere(posId) {
+  return POSITIONS.filter(p => p.id !== posId).map(p => slots[p.id]).filter(Boolean);
+}
+
+function ensureDeck(key) {
+  if (key && !decks[key]) decks[key] = [];
+}
+
+// ==========================================
+// 起動
+// ==========================================
+
+window.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  sessionCode = (params.get('s') || '').trim();
+  if (!/^[0-9]{4}$/.test(sessionCode)) sessionCode = '';
+
+  teamKey = (params.get('team') || '').trim().toUpperCase();
+  if (teamKey !== 'A' && teamKey !== 'B') {
+    return fail('チームが指定されていません。運営が表示しているチーム用のQRコードを読み取ってください。');
+  }
+
+  if (GAS_URL.indexOf('http') !== 0) {
+    return fail('このページの設定が終わっていません。運営にお知らせください。');
+  }
+
+  try {
+    partsData = await loadParts();
+  } catch (err) {
+    return fail('パーツ情報を読み込めませんでした。通信状況を確認して、もう一度読み込んでください。');
+  }
+
+  try {
+    const res = await fetchTeamRoster();
+    if (!res) return;   // fetchTeamRoster 内で fail 済み
+    applyRoster(res);
+    if (res.submitted) return showLocked();
+    showOrder();
+  } catch (err) {
+    return fail('通信できませんでした。電波の良い場所でもう一度読み込んでください。');
+  }
+}
+
+/** 名簿取得。失敗時は画面を出して null を返す */
+async function fetchTeamRoster() {
+  const q = { a: 'roster', mode: 'team', team: teamKey };
+  if (sessionCode) q.s = sessionCode;
+  const res = await apiGet(q);
+
+  if (!res.ok) {
+    if (res.reason === 'no_active' || res.reason === 'no_session') {
+      fail('いま受付は開いていません。運営にお知らせください。');
+    } else if (res.reason === 'unknown_team') {
+      fail('このQRコードのチームが、いまの対戦カードに含まれていません。運営にお知らせください。');
+    } else {
+      fail('受付情報を取得できませんでした。もう一度読み込んでください。');
+    }
+    return null;
+  }
+  if (!res.open) {
+    fail('受付は終了しています。運営に直接お申し出ください。');
+    return null;
+  }
+  return res;
+}
+
+function applyRoster(res) {
+  sessionCode = res.code || sessionCode;
+  teamName = res.teamName || ('チーム' + teamKey);
+  opponentName = res.opponentName || '';
+  teamSide = res.side || '';
+  members = (res.members || []).map(m => ({ id: m.id, name: m.name }));
+
+  document.getElementById('hdr-team').textContent = teamName;
+
+  POSITIONS.forEach(p => { if (!(p.id in slots)) slots[p.id] = ''; });
+}
+
+function fail(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  show('error');
+}
+
+// ==========================================
+// 通信
+// ==========================================
+
+async function apiGet(params) {
+  const q = new URLSearchParams(params).toString();
+  const res = await fetch(GAS_URL + '?' + q, { method: 'GET' });
+  return await res.json();
+}
+
+/**
+ * Content-Type は text/plain にする。
+ * application/json にするとブラウザが preflight(OPTIONS) を投げ、
+ * GAS が応答できないため通信が失敗する。
+ */
+async function apiPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  return await res.json();
+}
+
+// ==========================================
+// parts.csv（deck_entry.html と同一）
+// ==========================================
+
+async function loadParts() {
+  const res = await fetch('parts.csv?v=' + Date.now());
+  if (!res.ok) throw new Error('parts.csv');
+  return parsePartsCSV(await res.text());
+}
+
+function parsePartsCSV(csvText) {
+  const lines = csvText.split('\n');
+  const parts = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const v = line.replace(/\r/g, '').split(',');
+    const part = {
+      id: (v[0] || '').trim(),
+      selectionName: (v[1] || '').trim(),
+      hudName: (v[2] || '').trim(),
+      isFrequent: parseFloat(v[3]) === 1
+    };
+    if (part.id && part.selectionName) parts.push(part);
+  }
+  parts.sort((a, b) => {
+    if (a.isFrequent !== b.isFrequent) return a.isFrequent ? -1 : 1;
+    return a.selectionName.localeCompare(b.selectionName, 'ja');
+  });
+  return parts;
+}
+
+/**
+ * parts.csv の「（なし）」行。
+ * このアプリは UXE・RAE で工程を自動で飛ばすので一覧には出さない。
+ */
+function isNonePart(p) {
+  return p.selectionName === '（なし）';
+}
+
+function getPartsByCategory(categoryId) {
+  let list;
+  if (categoryId === 'RC2') list = partsData.filter(p => p.id.indexOf('RA') === 0);
+  else if (categoryId === 'BT') list = partsData.filter(p => p.id.indexOf('BT') === 0);
+  else list = partsData.filter(p => p.id.indexOf(categoryId) === 0);
+  return list.filter(p => !isNonePart(p));
+}
+
+// ==========================================
+// 画面切り替え
+// ==========================================
+
+const SCREENS = ['loading', 'error', 'locked', 'order', 'team', 'deck', 'type', 'part', 'confirm', 'done'];
+
+function show(name) {
+  SCREENS.forEach(k => {
+    document.getElementById('screen-' + k).classList.toggle('hidden', k !== name);
+  });
+  window.scrollTo(0, 0);
+}
+
+function showLocked() {
+  document.getElementById('locked-team').textContent = teamName;
+  show('locked');
+}
+
+// ==========================================
+// STEP 1: 出場3名とオーダー
+// ==========================================
+
+function showOrder() {
+  show('order');
+
+  document.getElementById('order-team-name').textContent = teamName;
+  document.getElementById('order-vs').textContent =
+    opponentName ? ('対戦相手: ' + opponentName) : '';
+
+  document.getElementById('order-guide').textContent =
+    '登録メンバー ' + members.length + '名から出場する3名を選び、先鋒・次鋒・大将に割り当ててください。' +
+    '名簿にない選手（当日枠など）は「＋ 名前を入力」で追加できます。';
+
+  // 大将戦のハンデを最初に伝える。あとで知ると納得感が損なわれるため
+  const hc = document.getElementById('order-handicap');
+  if (teamSide === 'home') {
+    hc.textContent = '◆ ホーム：大将戦は 4ポイント先取で勝利です。';
+    hc.classList.remove('hidden');
+  } else if (teamSide === 'away') {
+    hc.textContent = '◆ アウェイ：大将戦のみ 5ポイント先取が必要です（先鋒・次鋒は4ポイント先取）。';
+    hc.classList.remove('hidden');
+  } else {
+    hc.classList.add('hidden');
+  }
+
+  renderOrder();
+}
+
+function renderOrder() {
+  const wrap = document.getElementById('order-list');
+  wrap.innerHTML = '';
+
+  POSITIONS.forEach(p => {
+    const cur = keyForPos(p.id);
+    const used = keysUsedElsewhere(p.id);
+    const e = entrantByKey(cur);
+
+    const box = document.createElement('div');
+    box.className = 'bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-2';
+
+    const head = document.createElement('div');
+    head.className = 'flex items-center justify-between gap-2 mb-2';
+    const pl = document.createElement('span');
+    pl.className = 'font-sf text-xs text-cyber-orange';
+    pl.textContent = p.label;
+    head.appendChild(pl);
+    // 状態を色以外でも判別できるようにする（UI原則3）
+    const tag = document.createElement('span');
+    tag.className = 'text-xs font-bold ' + (e ? 'text-cyber-green' : 'text-gray-500');
+    tag.textContent = e ? '✓ 決定' : '未選択';
+    head.appendChild(tag);
+    box.appendChild(head);
+
+    const sl = document.createElement('select');
+    sl.className = 'tap w-full bg-cyber-bg border border-cyber-table-border rounded-lg px-3 py-3 text-sm text-cyber-text';
+
+    const o0 = document.createElement('option');
+    o0.value = ''; o0.textContent = '（未選択）';
+    sl.appendChild(o0);
+
+    members.forEach(m => {
+      const k = memberKey(m);
+      const o = document.createElement('option');
+      o.value = k;
+      // 他のポジションで使用中の選手は選べないようにする
+      const taken = used.indexOf(k) >= 0;
+      o.textContent = m.name + (taken ? '（出場済み）' : '');
+      o.disabled = taken;
+      sl.appendChild(o);
+    });
+
+    guests.forEach(g => {
+      const taken = used.indexOf(g.key) >= 0;
+      const o = document.createElement('option');
+      o.value = g.key;
+      o.textContent = (g.name || '（名前未入力）') + '（手入力）' + (taken ? '・出場済み' : '');
+      o.disabled = taken;
+      sl.appendChild(o);
+    });
+
+    const og = document.createElement('option');
+    og.value = NEW_GUEST;
+    og.textContent = '＋ 名前を入力（名簿にない選手）';
+    sl.appendChild(og);
+
+    sl.value = cur || '';
+    sl.onchange = () => onSlotChange(p.id, sl.value);
+    box.appendChild(sl);
+
+    // 手入力の選手なら、その場で名前を編集できるようにする
+    if (e && e.guest) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = e.name;
+      inp.placeholder = '選手名を入力';
+      inp.className = 'tap w-full mt-2 bg-cyber-bg border border-cyber-orange rounded-lg px-3 py-3 text-sm text-cyber-text placeholder-gray-600';
+      inp.oninput = () => {
+        // 受付サーバーはタグになる文字を含む名前を受け付けない。
+        // 送信してから跳ね返されると理由が分からないので、入力時点で落とす
+        const cleaned = inp.value.replace(/[<>"'&`]/g, '');
+        if (cleaned !== inp.value) {
+          const at = inp.selectionStart;
+          inp.value = cleaned;
+          try { inp.setSelectionRange(at - 1, at - 1); } catch (err) {}
+        }
+        const g = guests.find(x => x.key === e.key);
+        if (g) g.name = cleaned.trim();
+        updateOrderValidity();
+      };
+      box.appendChild(inp);
+
+      const note = document.createElement('p');
+      note.className = 'text-[11px] text-cyber-orange mt-1 leading-relaxed';
+      note.textContent = '名簿にない選手として登録されます。運営側の画面にも「登録外」と表示されます。' +
+        '記号（< > " \' & `）は使えません。';
+      box.appendChild(note);
+    }
+
+    wrap.appendChild(box);
+  });
+
+  updateOrderValidity();
+}
+
+function onSlotChange(posId, value) {
+  if (value === NEW_GUEST) {
+    guestSeq++;
+    const key = 'g' + guestSeq;
+    guests.push({ key: key, name: '' });
+    slots[posId] = key;
+    ensureDeck(key);
+  } else {
+    slots[posId] = value;
+    ensureDeck(value);
+  }
+  renderOrder();
+}
+
+/** ボタンと警告だけを更新する（入力中に再描画すると入力欄のフォーカスが飛ぶため） */
+function updateOrderValidity() {
+  const err = orderError();
+  const warn = document.getElementById('order-warn');
+  warn.classList.toggle('hidden', !err);
+  document.getElementById('order-warn-body').textContent = err || '';
+
+  const btn = document.getElementById('btn-order-next');
+  btn.disabled = !!err;
+  btn.className = 'tap w-full py-4 rounded-lg font-bold text-base ' +
+    (err ? 'bg-cyber-dark text-gray-600 border border-cyber-table-border'
+         : 'bg-cyber-blue text-cyber-on-blue');
+}
+
+/** オーダーの不備を1つだけ返す。問題なければ '' */
+function orderError() {
+  const keys = POSITIONS.map(p => keyForPos(p.id));
+  if (keys.some(k => !k)) return 'まだ選手が決まっていないポジションがあります。';
+
+  const uniq = new Set(keys);
+  if (uniq.size !== keys.length) return '同じ選手を2つのポジションに割り当てることはできません。';
+
+  for (let i = 0; i < keys.length; i++) {
+    const e = entrantByKey(keys[i]);
+    if (!e) return '選手の情報を読み込めませんでした。画面を再読み込みしてください。';
+    if (!e.name) return posLabel(POSITIONS[i].id) + ' の選手名を入力してください。';
+  }
+
+  // 手入力どうしの名前重複も弾く（運営側で見分けがつかなくなるため）
+  const names = keys.map(k => entrantName(k));
+  if (new Set(names).size !== names.length) return '同じ名前の選手が複数います。名前を変えてください。';
+
+  return '';
+}
+
+function backToOrder() {
+  showOrder();
+}
+
+function goDecks() {
+  if (orderError()) return;
+  showTeam();
+}
+
+// ==========================================
+// STEP 2: チーム全体のデッキ一覧
+// ==========================================
+
+function showTeam() {
+  show('team');
+
+  POSITIONS.forEach(p => ensureDeck(keyForPos(p.id)));
+
+  const total = POSITIONS.reduce((n, p) => {
+    const k = keyForPos(p.id);
+    return n + (k && decks[k] ? decks[k].length : 0);
+  }, 0);
+  document.getElementById('team-progress').textContent =
+    'ベイ登録 ' + total + ' / ' + (MAX_BEYS * 3) + '（1人 ' + MAX_BEYS + '体）';
+
+  const wrap = document.getElementById('team-list');
+  wrap.innerHTML = '';
+
+  POSITIONS.forEach(p => {
+    const k = keyForPos(p.id);
+    const e = entrantByKey(k);
+    if (!e) return;
+    const list = decks[k] || [];
+    const done = list.length === MAX_BEYS;
+
+    const card = document.createElement('button');
+    card.className = 'tap w-full text-left bg-cyber-dark border-l-4 rounded-r-lg p-3 mb-2 ' +
+      (done ? 'border-cyber-green' : 'border-cyber-orange');
+    card.onclick = () => openDeck(k);
+
+    const head = document.createElement('div');
+    head.className = 'flex items-center justify-between gap-2 mb-1';
+
+    const posName = document.createElement('div');
+    posName.className = 'min-w-0';
+    const pl = document.createElement('span');
+    pl.className = 'font-sf text-xs ' + (done ? 'text-cyber-green' : 'text-cyber-orange');
+    pl.textContent = p.label + (e.guest ? '　（登録外）' : '');
+    const nm = document.createElement('p');
+    nm.className = 'text-base font-bold text-cyber-text break-all';
+    nm.textContent = e.name;
+    posName.appendChild(pl); posName.appendChild(nm);
+    head.appendChild(posName);
+
+    // 色だけに頼らず、状態を文字でも出す（UI原則3）
+    const tag = document.createElement('span');
+    tag.className = 'text-xs shrink-0 font-bold ' + (done ? 'text-cyber-green' : 'text-cyber-orange');
+    tag.textContent = done ? '✓ 登録済み ' + list.length + '/' + MAX_BEYS
+                           : '未完了 ' + list.length + '/' + MAX_BEYS;
+    head.appendChild(tag);
+    card.appendChild(head);
+
+    list.forEach(b => {
+      const line = document.createElement('p');
+      line.className = 'text-xs text-gray-400 break-all';
+      line.textContent = '・' + b.name;
+      card.appendChild(line);
+    });
+    if (!list.length) {
+      const line = document.createElement('p');
+      line.className = 'text-xs text-gray-600';
+      line.textContent = 'タップしてベイを登録';
+      card.appendChild(line);
+    }
+
+    if (deckWarnings(k).length) {
+      const w = document.createElement('p');
+      w.className = 'text-xs text-cyber-orange mt-1';
+      w.textContent = '⚠ パーツ重複あり';
+      card.appendChild(w);
+    }
+
+    wrap.appendChild(card);
+  });
+
+  const ready = POSITIONS.every(p => {
+    const k = keyForPos(p.id);
+    return k && decks[k] && decks[k].length === MAX_BEYS;
+  });
+  const btn = document.getElementById('btn-team-next');
+  btn.disabled = !ready;
+  btn.className = 'tap w-full py-4 rounded-lg font-bold text-base ' +
+    (ready ? 'bg-cyber-blue text-cyber-on-blue'
+           : 'bg-cyber-dark text-gray-600 border border-cyber-table-border');
+  btn.textContent = ready ? '登録内容を確認する' : '全員が' + MAX_BEYS + '体そろうと進めます';
+}
+
+// ==========================================
+// 個人のデッキ
+// ==========================================
+
+function openDeck(key) {
+  currentKey = key;
+  ensureDeck(key);
+  showDeck();
+}
+
+function showDeck() {
+  show('deck');
+  const e = entrantByKey(currentKey);
+  if (!e) return showTeam();
+
+  const posId = POSITIONS.map(p => p.id).find(id => keyForPos(id) === currentKey) || '';
+  document.getElementById('deck-pos').textContent =
+    posLabel(posId) + (e.guest ? '　（登録外）' : '');
+  document.getElementById('deck-name').textContent = e.name;
+
+  const list = decks[currentKey] || [];
+  document.getElementById('deck-progress').textContent = 'デッキ ' + list.length + ' / ' + MAX_BEYS;
+
+  const wrap = document.getElementById('deck-list');
+  wrap.innerHTML = '';
+  list.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'bg-cyber-dark border-l-4 border-cyber-green px-3 py-2 mb-2 flex items-start justify-between gap-2';
+    const left = document.createElement('div');
+    left.className = 'min-w-0';
+    const n = document.createElement('p');
+    n.className = 'text-sm break-all text-cyber-text';
+    n.textContent = b.name;
+    const t = document.createElement('p');
+    t.className = 'text-xs text-gray-500 mt-1';
+    t.textContent = b.type;
+    left.appendChild(n); left.appendChild(t);
+    div.appendChild(left);
+
+    const del = document.createElement('button');
+    // 破壊的操作は他のボタンから離す（UI原則1）
+    del.className = 'tap text-xs text-cyber-red shrink-0 px-3 py-2 border border-cyber-red rounded';
+    del.textContent = '削除';
+    del.onclick = () => { decks[currentKey].splice(i, 1); showDeck(); };
+    div.appendChild(del);
+
+    wrap.appendChild(div);
+  });
+
+  const warns = deckWarnings(currentKey);
+  document.getElementById('deck-warn').classList.toggle('hidden', warns.length === 0);
+  document.getElementById('deck-warn-body').textContent = warns.join(' / ');
+
+  document.getElementById('btn-add').classList.toggle('hidden', list.length >= MAX_BEYS);
+}
+
+/**
+ * 名称は違うが、ルール上は同一ブレードとして扱う組。同じデッキに入れられない。
+ * tournament_de.html / deck_entry.html にも同じ表がある。片方だけ直さないこと。
+ */
+const SAME_BLADE_GROUPS = [
+  ['ドランソード', 'ドランソードv2'],
+  ['ティラノビート', 'T-レックス'],
+  ['プテラスイング', 'ケツァルコアトルス'],
+  ['ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（ｱｯﾊﾟｰ型）', 'ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（連打型）',
+   'ライトニングエルドラゴ（アッパー型）', 'ライトニングエルドラゴ（連打型）']
+];
+const BLADE_KEYS = ['BX', 'UX', 'CX'];
+
+function dupKey(k, v) {
+  if (BLADE_KEYS.indexOf(k) >= 0) {
+    for (let g = 0; g < SAME_BLADE_GROUPS.length; g++) {
+      if (SAME_BLADE_GROUPS[g].indexOf(v) >= 0) return '同一ブレード#' + g;
+    }
+  }
+  return v;
+}
+
+/**
+ * パーツ重複を洗い出す（送信は止めない。注意喚起のみ）。
+ *
+ * 対抗戦では「1人の選手が組んだ3体の中」だけを見る。
+ * チームメイト同士でパーツが被るのはルール上許されているため、
+ * 選手をまたいだ比較はしない。
+ */
+function deckWarnings(key) {
+  const list = decks[key] || [];
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i].parts, b = list[j].parts;
+      Object.keys(a).forEach(k => {
+        if (k === 'type') return;
+        const v = a[k];
+        if (!v || v === 'なし') return;
+        if (k === 'RC' && RC_NO_DUP.indexOf(v) < 0) return;
+        const w = b[k];
+        if (!w || dupKey(k, w) !== dupKey(k, v)) return;
+        const label = PART_LABELS[k] || k;
+        out.push(w === v
+          ? label + '「' + v + '」'
+          : label + '「' + v + '」と「' + w + '」（同一ブレード扱い）');
+      });
+    }
+  }
+  return Array.from(new Set(out));
+}
+
+/** 出場3名のうち、重複警告が出ている選手名 */
+function membersWithWarnings() {
+  return POSITIONS
+    .map(p => keyForPos(p.id))
+    .filter(k => k && deckWarnings(k).length > 0)
+    .map(k => entrantName(k));
+}
+
+// ==========================================
+// タイプ選択
+// ==========================================
+
+const TYPES = [
+  { id: 'BX',   label: 'BX ライン' },
+  { id: 'UX',   label: 'UX ライン' },
+  { id: 'CX',   label: 'CX ライン' },
+  { id: 'CXEX', label: 'CX (EX) ライン' }
+];
+
+function startAdd() {
+  show('type');
+  const wrap = document.getElementById('type-list');
+  wrap.innerHTML = '';
+  TYPES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tap py-5 bg-cyber-dark border border-cyber-table-border rounded-lg text-cyber-text font-bold text-sm';
+    btn.textContent = t.label;
+    btn.onclick = () => pickType(t.id);
+    wrap.appendChild(btn);
+  });
+}
+
+function baseSelectionPath(typeId) {
+  const paths = {
+    'BX':   ['BX'],
+    'UX':   ['UX'],
+    'CX':   ['RC', 'CX', 'AB'],
+    'CXEX': ['RC', 'MB', 'OB', 'AB']
+  };
+  return (paths[typeId] || []).concat(['RC2', 'BT']);
+}
+
+/**
+ * 選択済みのパーツIDからスキップ規則を再適用して工程を作り直す。
+ * 破壊的に削らず毎回作り直すので、「戻る」を何度押しても壊れない。
+ */
+function rebuildPath() {
+  let p = baseSelectionPath(sel.type);
+  Object.keys(selIds).forEach(cat => {
+    const skip = PART_SKIP_RULES[selIds[cat]];
+    if (skip) p = p.filter(c => c !== skip);
+  });
+  return p;
+}
+
+function pickType(typeId) {
+  sel = { type: typeId };
+  selIds = {};
+  path = baseSelectionPath(typeId);
+  step = 0;
+  renderPart();
+}
+
+// ==========================================
+// パーツ選択
+// ==========================================
+
+function renderPart() {
+  if (step >= path.length) return finishBey();
+
+  show('part');
+  const cat = path[step];
+
+  document.getElementById('part-title').textContent =
+    (PART_LABELS[cat] || cat) + '（' + (step + 1) + '/' + path.length + '）';
+
+  const note = document.getElementById('part-note');
+  const skipped = baseSelectionPath(sel.type).filter(c => path.indexOf(c) < 0);
+  if (skipped.length) {
+    note.classList.remove('hidden');
+    document.getElementById('part-note-body').textContent =
+      skipped.map(c => PART_LABELS[c] || c).join('・') + ' は装備できないパーツを選んでいるため飛ばしています';
+  } else {
+    note.classList.add('hidden');
+  }
+
+  const chosen = path.slice(0, step).map(c => (PART_LABELS[c] || c) + ' ' + sel[c]);
+  document.getElementById('part-chosen').textContent = chosen.join(' / ');
+
+  const box = document.getElementById('part-search');
+  box.value = '';
+  box.oninput = () => renderPartList(cat);
+  renderPartList(cat);
+}
+
+function renderPartList(cat) {
+  const q = document.getElementById('part-search').value.trim().toLowerCase();
+  const all = getPartsByCategory(cat);
+  const list = all
+    .filter(p => !q || p.selectionName.toLowerCase().indexOf(q) >= 0)
+    .slice()
+    .sort((a, b) => a.selectionName.localeCompare(b.selectionName, 'ja'));
+  const frequent = list.filter(p => p.isFrequent);
+
+  document.getElementById('part-count').textContent = list.length + '件';
+
+  const wrap = document.getElementById('part-list');
+  wrap.innerHTML = '';
+
+  if (!list.length) {
+    wrap.innerHTML = '<p class="text-sm text-gray-500 py-6 text-center">該当するパーツがありません</p>';
+    return;
+  }
+
+  const addHeading = text => {
+    const h = document.createElement('p');
+    h.className = 'text-xs text-cyber-blue font-bold mt-4 mb-1';
+    h.textContent = text;
+    wrap.appendChild(h);
+  };
+  const addRow = p => {
+    const btn = document.createElement('button');
+    btn.className = 'tap row w-full text-left py-3 px-1 flex items-center justify-between gap-2';
+    const n = document.createElement('span');
+    n.className = 'text-base break-all text-cyber-text';
+    n.textContent = p.selectionName;
+    btn.appendChild(n);
+    if (PART_SKIP_RULES[p.id]) {
+      const tag = document.createElement('span');
+      tag.className = 'text-[10px] bg-cyber-orange text-cyber-on-orange rounded-full px-2 py-0.5 shrink-0 font-bold';
+      tag.textContent = 'EX';
+      btn.appendChild(tag);
+    }
+    btn.onclick = () => pickPart(cat, p);
+    wrap.appendChild(btn);
+  };
+
+  if (frequent.length) {
+    addHeading('■ ピックアップパーツ（50音順）');
+    frequent.forEach(addRow);
+  }
+  addHeading('■ 全パーツ（50音順）');
+  list.forEach(addRow);
+}
+
+function pickPart(cat, part) {
+  sel[cat] = part.hudName;
+  selIds[cat] = part.id;
+  path = rebuildPath();
+  step++;
+  renderPart();
+}
+
+function partBack() {
+  if (step === 0) return startAdd();
+  step--;
+  const cat = path[step];
+  delete sel[cat];
+  delete selIds[cat];
+  path = rebuildPath();
+  renderPart();
+}
+
+/** 工程をすべて終えた。ベイ名を組み立てて、いま編集中の選手のデッキに加える */
+function finishBey() {
+  const full = baseSelectionPath(sel.type);
+
+  // 飛ばした工程は「なし」で埋める。未定義のまま持ち回すと親機側で undefined になるため
+  full.forEach(c => { if (!(c in sel)) sel[c] = 'なし'; });
+
+  const name = full
+    .map(c => sel[c])
+    .filter(v => v && v !== 'なし')
+    .join('');
+
+  ensureDeck(currentKey);
+  decks[currentKey].push({
+    type: sel.type === 'CXEX' ? 'CX(EX)' : sel.type,
+    name: name,
+    parts: Object.assign({}, sel)
+  });
+
+  sel = {}; selIds = {}; path = []; step = 0;
+  showDeck();
+}
+
+// ==========================================
+// STEP 3: 最終確認 → 送信
+// ==========================================
+
+function showConfirm() {
+  show('confirm');
+
+  const wrap = document.getElementById('confirm-list');
+  wrap.innerHTML = '';
+
+  POSITIONS.forEach(p => {
+    const k = keyForPos(p.id);
+    const e = entrantByKey(k);
+    if (!e) return;
+
+    const box = document.createElement('div');
+    box.className = 'bg-cyber-dark border-l-4 border-cyber-blue p-3 mb-2';
+
+    const head = document.createElement('p');
+    head.className = 'text-xs font-sf text-cyber-blue mb-1';
+    head.textContent = p.label + (e.guest ? '　（登録外）' : '');
+    box.appendChild(head);
+
+    const nm = document.createElement('p');
+    nm.className = 'text-base font-bold text-cyber-text break-all mb-2';
+    nm.textContent = e.name;
+    box.appendChild(nm);
+
+    (decks[k] || []).forEach(b => {
+      const line = document.createElement('p');
+      line.className = 'text-xs text-gray-300 break-all leading-relaxed';
+      line.textContent = '・' + b.name;
+      box.appendChild(line);
+    });
+
+    const warns = deckWarnings(k);
+    if (warns.length) {
+      const w = document.createElement('p');
+      w.className = 'text-xs text-cyber-orange mt-2 leading-relaxed';
+      w.textContent = '⚠ パーツ重複: ' + warns.join(' / ');
+      box.appendChild(w);
+    }
+
+    wrap.appendChild(box);
+  });
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = sending;
+  btn.className = 'tap w-full py-4 rounded-lg font-bold text-base ' +
+    (sending ? 'bg-cyber-dark text-gray-600 border border-cyber-table-border'
+             : 'bg-cyber-green text-cyber-on-green');
+  btn.textContent = sending ? '送信中…' : '受付に送信する';
+}
+
+/** はい／いいえ の確認。はい で true を返す */
+function askConfirm(msg) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirm-modal');
+    const yes = document.getElementById('confirm-yes');
+    const no = document.getElementById('confirm-no');
+    document.getElementById('confirm-msg').textContent = msg;
+    modal.classList.remove('hidden');
+    const done = v => {
+      modal.classList.add('hidden');
+      yes.onclick = null; no.onclick = null;
+      resolve(v);
+    };
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+  });
+}
+
+/**
+ * 送信ペイロード。
+ * 名簿の選手は participantId を入れる。手入力の選手は participantId:null ＋ guest:true。
+ * 運営アプリ側はこの2つを見分けて取り込む。
+ */
+function buildOrderPayload() {
+  return POSITIONS.map(p => {
+    const k = keyForPos(p.id);
+    const e = entrantByKey(k);
+    return {
+      pos: p.id,
+      participantId: e ? e.id : null,
+      name: e ? e.name : '',
+      guest: e ? e.guest : false,
+      // 内部フラグは送らず、type / name / parts だけを送る
+      beyblades: (decks[k] || []).map(b => ({ type: b.type, name: b.name, parts: b.parts }))
+    };
+  });
+}
+
+async function submitTeam() {
+  if (sending) return;
+  if (orderError()) return showOrder();
+
+  const ready = POSITIONS.every(p => {
+    const k = keyForPos(p.id);
+    return k && decks[k] && decks[k].length === MAX_BEYS;
+  });
+  if (!ready) return showTeam();
+
+  const dupNames = membersWithWarnings();
+  if (dupNames.length) {
+    const ok = await askConfirm(
+      dupNames.join('・') + ' のデッキ内にパーツの重複があります。\nそれでも送信しますか？');
+    if (!ok) return;
+    if (sending) return;
+  }
+
+  const ok2 = await askConfirm(
+    'このオーダーとデッキで送信します。\n送信後は運営がリセットしない限り変更できません。\nよろしいですか？');
+  if (!ok2) return;
+
+  sending = true;
+  showConfirm();
+
+  try {
+    const res = await apiPost({
+      a: 'submit',
+      mode: 'team',
+      s: sessionCode,
+      team: teamKey,
+      teamName: teamName,
+      order: buildOrderPayload()
+    });
+
+    if (res.ok) return showDone();
+
+    if (res.reason === 'locked') {
+      return showLocked();
+    }
+    if (res.reason === 'closed') {
+      return fail('受付は終了しました。運営に直接お申し出ください。');
+    }
+    if (res.reason === 'unknown_team') {
+      return fail('このチームが、いまの対戦カードに含まれていません。運営に直接お申し出ください。');
+    }
+    if (res.reason === 'changed') {
+      // 送信前に運営が対戦カードを組み直した
+      sending = false;
+      alert('運営側で対戦カードが変わりました。お手数ですが、画面を再読み込みしてください。');
+      return location.reload();
+    }
+    sending = false;
+    showConfirm();
+    alert('送信できませんでした。もう一度お試しください。');
+  } catch (err) {
+    sending = false;
+    showConfirm();
+    alert('通信できませんでした。電波の良い場所でもう一度お試しください。');
+  }
+}
+
+function showDone() {
+  show('done');
+  document.getElementById('done-team').textContent = teamName;
+
+  const wrap = document.getElementById('done-list');
+  wrap.innerHTML = '';
+
+  POSITIONS.forEach(p => {
+    const k = keyForPos(p.id);
+    const e = entrantByKey(k);
+    if (!e) return;
+
+    const box = document.createElement('div');
+    box.className = 'bg-cyber-dark border-l-4 border-cyber-green p-3 mb-2';
+
+    const head = document.createElement('p');
+    head.className = 'text-xs font-sf text-cyber-green mb-1';
+    head.textContent = p.label + (e.guest ? '　（登録外）' : '');
+    box.appendChild(head);
+
+    const nm = document.createElement('p');
+    nm.className = 'text-base font-bold text-cyber-text break-all mb-2';
+    nm.textContent = e.name;
+    box.appendChild(nm);
+
+    (decks[k] || []).forEach(b => {
+      const line = document.createElement('p');
+      line.className = 'text-xs text-gray-300 break-all leading-relaxed';
+      line.textContent = '・' + b.name;
+      box.appendChild(line);
+    });
+
+    wrap.appendChild(box);
+  });
+}
+</script>
+</body>
+</html>

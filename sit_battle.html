@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>S.I.T BATTLE LEAGUE - 対抗戦運営</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          'sans': ['Noto Sans JP', 'sans-serif'],
+          'orbitron': ['Orbitron', 'sans-serif'],
+        },
+        colors: {
+          'cyber-bg': '#0a0e17',
+          'cyber-dark': '#111827',
+          'cyber-blue': '#0ea5e9',
+          'cyber-green': '#22c55e',
+          'cyber-pink': '#ec4899',
+          'cyber-orange': '#ffaa00',
+          'cyber-red': '#ff0055',
+          'cyber-red-orange': '#ff4500',
+          'cyber-text': '#e2e8f0',
+          'cyber-table-border': '#1f2937',
+          'cyber-on-blue': '#04263a',
+          'cyber-on-green': '#04220f',
+          'cyber-on-orange': '#1a1200',
+          'cyber-on-pink': '#2b0c1a'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color: #0a0e17; color: #e2e8f0; -webkit-text-size-adjust: 100%; }
+  .font-sf { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px; }
+  button, select, input { touch-action: manipulation; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid #facc15; outline-offset: 2px;
+  }
+  /* 操作系のタップ対象は最小44px（UI原則1） */
+  .tap { min-height: 44px; min-width: 44px; }
+  .tab-btn.active { background: #0ea5e9; color: #04263a; }
+  .team-badge { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 1px; padding: 2px 7px; border-radius: 4px; }
+  select {
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230ea5e9' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px;
+  }
+  /* 紙面はオフスクリーンで保持する。プレビューは transform で縮小表示し、撮影直前に解除する */
+  .report-canvas { position: absolute; left: -9999px; top: 0; width: 1200px; height: 1350px; }
+  table.board td, table.board th { border: 1px solid #1f2937; }
+</style>
+</head>
+<body class="font-sans pb-24">
+
+<!-- ================= ヘッダー ================= -->
+<header class="sticky top-0 z-30 bg-cyber-dark border-b border-cyber-table-border px-3 py-2">
+  <div class="flex items-center justify-between gap-2">
+    <div class="min-w-0">
+      <p class="font-sf text-cyber-blue text-xs leading-none">S.I.T BATTLE LEAGUE</p>
+      <p id="hdr-event" class="text-[11px] text-gray-400 truncate mt-1">対抗戦運営</p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <span id="link-status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+      <input id="linkCodeInput" type="tel" maxlength="4" placeholder="0511"
+             class="w-14 bg-cyber-bg border border-cyber-table-border rounded px-2 py-2 text-center font-sf text-sm text-cyber-text">
+      <button id="btn-connect" onclick="connectLink()"
+              class="tap px-3 py-2 rounded font-sf text-xs border border-cyber-blue text-cyber-blue">CONN</button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= タブ ================= -->
+<nav class="sticky top-[57px] z-20 bg-cyber-bg border-b border-cyber-table-border flex">
+  <button class="tab-btn tap flex-1 py-3 text-xs font-bold active" data-tab="setup" onclick="switchTab('setup')">対戦セット</button>
+  <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="board" onclick="switchTab('board')">対戦ボード</button>
+  <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="members" onclick="switchTab('members')">参加者</button>
+  <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="result" onclick="switchTab('result')">結果</button>
+</nav>
+
+<main class="px-3 py-4 max-w-2xl mx-auto">
+
+<!-- ============ 対戦セット ============ -->
+<section id="tab-setup">
+
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <label class="block text-xs text-gray-400 mb-1">大会名（score.html / レポートに表示）</label>
+    <input id="input-event-name" oninput="onEventNameInput()" placeholder="S.I.T BATTLE LEAGUE 第1節"
+           class="w-full bg-cyber-bg border border-cyber-table-border rounded px-3 py-3 text-sm text-cyber-text">
+  </div>
+
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <p class="font-sf text-cyber-blue text-xs mb-3">MATCH CARD</p>
+
+    <label class="block text-xs text-gray-400 mb-1">チーム A</label>
+    <select id="sel-team-a" onchange="onTeamSelect()"
+            class="tap w-full bg-cyber-bg border border-cyber-table-border rounded px-3 py-3 text-sm text-cyber-text mb-3"></select>
+
+    <label class="block text-xs text-gray-400 mb-1">チーム B</label>
+    <select id="sel-team-b" onchange="onTeamSelect()"
+            class="tap w-full bg-cyber-bg border border-cyber-table-border rounded px-3 py-3 text-sm text-cyber-text mb-3"></select>
+
+    <p class="text-xs text-gray-400 mb-2">ホーム（大将戦のハンデ：アウェイ側は5ポイント先取）</p>
+    <div class="flex gap-2 mb-2">
+      <button id="btn-home-a" onclick="setHome('A')" class="tap flex-1 py-3 rounded text-xs font-bold"></button>
+      <button id="btn-home-b" onclick="setHome('B')" class="tap flex-1 py-3 rounded text-xs font-bold"></button>
+    </div>
+    <p id="home-note" class="text-xs text-cyber-orange leading-relaxed"></p>
+  </div>
+
+  <!-- QR -->
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <div class="flex items-center justify-between mb-2">
+      <p class="font-sf text-cyber-blue text-xs">TEAM ENTRY QR</p>
+      <span class="font-sf text-cyber-orange text-lg" id="entry-code">----</span>
+    </div>
+    <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+      各チームの代表者に、自チームのQRコードだけを読ませてください。
+      QRにはチーム識別子が入っているため、相手チームの画面は開けません。
+    </p>
+    <div id="qr-wrap" class="grid grid-cols-2 gap-3 mb-3"></div>
+    <button id="btn-entry-toggle" onclick="toggleEntryOpen()" class="tap w-full py-3 rounded font-bold text-xs"></button>
+  </div>
+
+  <!-- 受信状況 -->
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <div class="flex items-center justify-between mb-2">
+      <p class="font-sf text-cyber-blue text-xs">ENTRY STATUS</p>
+      <button onclick="refreshTeamEntry()" class="tap text-xs text-cyber-blue border border-cyber-blue rounded px-3 py-2">再取得</button>
+    </div>
+    <div id="entry-status" class="mb-3"></div>
+    <button id="btn-reveal" onclick="toggleReveal()" class="tap w-full py-4 rounded font-bold text-sm"></button>
+    <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+      公開するまで、オーダーは対戦ボードにも score.html にも出ません（後出し防止）。
+    </p>
+  </div>
+
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3">
+    <p class="font-sf text-cyber-blue text-xs mb-2">RESET</p>
+    <div class="flex flex-col gap-2">
+      <button onclick="execResetTeamEntry('A')" class="tap w-full py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">チームA の登録をリセット（再送信を許可）</button>
+      <button onclick="execResetTeamEntry('B')" class="tap w-full py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">チームB の登録をリセット（再送信を許可）</button>
+      <div class="h-2"></div>
+      <button onclick="execClearSave()" class="tap w-full py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">保存データを全消去</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 対戦ボード ============ -->
+<section id="tab-board" class="hidden">
+  <div id="board-locked" class="bg-cyber-dark border-l-4 border-cyber-orange p-4 mb-3 hidden">
+    <p class="text-sm text-cyber-orange font-bold mb-1">オーダー未公開</p>
+    <p class="text-sm text-gray-300 leading-relaxed">
+      両チームの登録がそろったら、「対戦セット」タブの <span class="text-cyber-green font-bold">オーダー公開</span> を押してください。
+    </p>
+  </div>
+
+  <div id="board-main" class="hidden">
+    <!-- 星取表 -->
+    <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+      <div id="board-score" class="flex items-center justify-between mb-3"></div>
+      <div id="board-cards"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <button onclick="sendTeamAnnounce()" class="tap py-3 rounded font-bold text-xs bg-cyber-blue text-cyber-on-blue">📢 全体アナウンス</button>
+      <button onclick="hideOverlay()" class="tap py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-blue text-cyber-blue">アナウンス消去</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 参加者 ============ -->
+<section id="tab-members" class="hidden">
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <p class="font-sf text-cyber-blue text-xs mb-2">CSV / TSV インポート</p>
+    <p class="text-xs text-gray-400 leading-relaxed mb-3">
+      <span class="text-cyber-blue">名前, チーム名, ランク, ベイパワー, 試合数, 勝利数, 敗北数, XF, BF, OF, SF</span> の順。<br>
+      2列目（旧「メモ」）を<span class="text-cyber-orange font-bold">チーム名</span>として読み込みます。
+    </p>
+    <div class="flex gap-2">
+      <button onclick="openPasteModal()" class="tap flex-1 py-3 rounded font-bold text-xs bg-cyber-blue text-cyber-on-blue">貼り付けて取り込む</button>
+      <button onclick="addParticipant()" class="tap px-4 py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-blue text-cyber-blue">＋1名</button>
+    </div>
+  </div>
+
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3">
+    <p id="members-count" class="text-xs text-gray-400 mb-2"></p>
+    <div id="members-list"></div>
+  </div>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section id="tab-result" class="hidden">
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+    <p class="font-sf text-cyber-blue text-xs mb-3">FINAL RESULT</p>
+    <div id="result-summary" class="mb-3"></div>
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="showTeamWinner()" class="tap py-3 rounded font-bold text-xs bg-cyber-green text-cyber-on-green">🏆 WINNER 演出</button>
+      <button onclick="hideOverlay()" class="tap py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-blue text-cyber-blue">演出を消す</button>
+    </div>
+  </div>
+
+  <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3">
+    <p class="font-sf text-cyber-blue text-xs mb-2">EVENT REPORT</p>
+    <label class="block text-xs text-gray-400 mb-1">編集後記</label>
+    <textarea id="report-note" oninput="onReportNoteChange()" rows="3" placeholder="今日の一言"
+              class="w-full bg-cyber-bg border border-cyber-table-border rounded px-3 py-2 text-sm text-cyber-text mb-3"></textarea>
+    <button onclick="openReportModal()" class="tap w-full py-4 rounded font-bold text-sm bg-cyber-orange text-cyber-on-orange">📰 レポートを作る</button>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= 貼り付けモーダル ================= -->
+<div id="pasteModal" class="hidden fixed inset-0 z-50 bg-black/80 items-center justify-center p-4">
+  <div class="bg-cyber-dark border border-cyber-blue rounded-lg p-4 w-full max-w-lg">
+    <p class="font-sf text-cyber-blue text-sm mb-2">PASTE DATA</p>
+    <textarea id="pasteArea" rows="10" class="w-full bg-cyber-bg border border-cyber-table-border rounded p-2 text-xs text-cyber-text mb-3"></textarea>
+    <div class="flex gap-2">
+      <button onclick="closePasteModal()" class="tap flex-1 py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">キャンセル</button>
+      <button onclick="processPasteData()" class="tap flex-1 py-3 rounded text-xs font-bold bg-cyber-blue text-cyber-on-blue">取り込む</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= リモコンモーダル ================= -->
+<div id="remoteModal" class="hidden fixed inset-0 z-50 bg-cyber-bg overflow-y-auto">
+  <div class="max-w-2xl mx-auto p-3">
+    <div class="flex items-center justify-between mb-3">
+      <p id="remote-title" class="font-sf text-cyber-blue text-sm"></p>
+      <button onclick="closeRemoteModal()" class="tap px-4 py-2 rounded text-xs font-bold bg-cyber-dark border border-cyber-table-border text-gray-300">閉じる</button>
+    </div>
+
+    <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+      <div class="flex items-stretch gap-2">
+        <div class="flex-1 text-center">
+          <p id="remote-a-name" class="text-sm font-bold text-cyber-text break-all leading-tight"></p>
+          <p id="remote-a-team" class="text-[11px] mb-1"></p>
+          <p id="remote-a-score" class="font-sf text-4xl text-cyber-blue">0</p>
+          <p id="remote-a-limit" class="text-[11px] text-cyber-orange"></p>
+        </div>
+        <div class="flex items-center font-sf text-gray-600 text-xs">VS</div>
+        <div class="flex-1 text-center">
+          <p id="remote-b-name" class="text-sm font-bold text-cyber-text break-all leading-tight"></p>
+          <p id="remote-b-team" class="text-[11px] mb-1"></p>
+          <p id="remote-b-score" class="font-sf text-4xl text-cyber-pink">0</p>
+          <p id="remote-b-limit" class="text-[11px] text-cyber-orange"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用ベイ -->
+    <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+      <p class="font-sf text-cyber-blue text-xs mb-2">BEY IN USE</p>
+      <div class="grid grid-cols-2 gap-2">
+        <div id="remote-a-beys"></div>
+        <div id="remote-b-beys"></div>
+      </div>
+    </div>
+
+    <!-- スコア操作 -->
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2">
+        <p class="text-[11px] text-center text-cyber-blue mb-2 font-bold">左 / P1</p>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="scoreCmd('a','P1_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
+          <button onclick="scoreCmd('a','P1_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
+          <button onclick="scoreCmd('a','P1_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
+          <button onclick="scoreCmd('a','P1_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
+          <button onclick="scoreCmd('a','P1_MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
+          <button onclick="scoreCmd('a','P1_PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
+        </div>
+      </div>
+      <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2">
+        <p class="text-[11px] text-center text-cyber-pink mb-2 font-bold">右 / P2</p>
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="scoreCmd('b','P2_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
+          <button onclick="scoreCmd('b','P2_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
+          <button onclick="scoreCmd('b','P2_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
+          <button onclick="scoreCmd('b','P2_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
+          <button onclick="scoreCmd('b','P2_MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
+          <button onclick="scoreCmd('b','P2_PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 mb-3">
+      <button onclick="sendRemoteCmd('TIMER')" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">TIMER</button>
+      <button onclick="undoRemoteBattle()" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-green text-cyber-green">↩ 1本戻す</button>
+      <button onclick="execRemoteReset()" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">RESET</button>
+    </div>
+
+    <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+      <p class="font-sf text-cyber-blue text-xs mb-2">BATTLE LOG</p>
+      <div id="remote-log" class="text-xs text-gray-400 leading-relaxed"></div>
+    </div>
+
+    <!-- 勝者確定：破壊的操作なので他ボタンから離す（UI原則1） -->
+    <div class="h-4"></div>
+    <p class="text-xs text-gray-400 mb-2">勝者を確定する（もう一度押すと取り消し）</p>
+    <div class="grid grid-cols-2 gap-3">
+      <button id="btn-win-a" onclick="setMatchWinner('a')" class="tap py-4 rounded font-bold text-sm"></button>
+      <button id="btn-win-b" onclick="setMatchWinner('b')" class="tap py-4 rounded font-bold text-sm"></button>
+    </div>
+    <div class="h-10"></div>
+  </div>
+</div>
+
+<!-- ================= レポートモーダル ================= -->
+<div id="reportModal" class="hidden fixed inset-0 z-50 bg-cyber-bg overflow-y-auto">
+  <div class="max-w-2xl mx-auto p-3">
+    <div class="flex items-center justify-between mb-3">
+      <p class="font-sf text-cyber-blue text-sm">EVENT REPORT</p>
+      <button onclick="closeReportModal()" class="tap px-4 py-2 rounded text-xs font-bold bg-cyber-dark border border-cyber-table-border text-gray-300">閉じる</button>
+    </div>
+    <p id="report-status" class="text-xs text-gray-400 mb-3"></p>
+    <div id="report-preview-1" class="mb-4 overflow-hidden"></div>
+    <div id="report-preview-2" class="mb-4 overflow-hidden"></div>
+    <div class="grid grid-cols-2 gap-2 mb-10">
+      <button onclick="downloadReportPng(1)" class="tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green">1枚目を保存</button>
+      <button onclick="downloadReportPng(2)" class="tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green">2枚目を保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 紙面本体（オフスクリーン） -->
+<div id="report-canvas-1" class="report-canvas"></div>
+<div id="report-canvas-2" class="report-canvas"></div>
+
+<!-- ================= alert / confirm ================= -->
+<div id="alertModal" class="hidden fixed inset-0 z-[60] bg-black/80 items-center justify-center p-4">
+  <div class="bg-cyber-dark border border-cyber-blue rounded-lg p-5 w-full max-w-sm">
+    <p id="alert-msg" class="text-sm text-cyber-text leading-relaxed mb-5 whitespace-pre-line"></p>
+    <button id="alert-ok" class="tap w-full py-3 rounded font-bold text-sm bg-cyber-blue text-cyber-on-blue">OK</button>
+  </div>
+</div>
+<div id="confirmModal" class="hidden fixed inset-0 z-[60] bg-black/80 items-center justify-center p-4">
+  <div class="bg-cyber-dark border border-cyber-orange rounded-lg p-5 w-full max-w-sm">
+    <p id="confirm-msg" class="text-sm text-cyber-text leading-relaxed mb-5 whitespace-pre-line"></p>
+    <div class="flex gap-3">
+      <button id="confirm-no" class="tap flex-1 py-3 rounded border border-cyber-table-border text-gray-300 font-bold">いいえ</button>
+      <button id="confirm-yes" class="tap flex-1 py-3 rounded bg-cyber-orange text-cyber-on-orange font-bold">はい</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================================
+// S.I.T BATTLE LEAGUE 対抗戦運営アプリ
+//
+// tournament_de.html のシェル（PeerJS連携・GASデッキ受付・レポート）を
+// 2チーム3on3の対抗戦向けに作り直したもの。
+// 保存キー・GASのモードとも個人戦とは完全に分離している。
+// ==========================================================
+
+/** 保存キー。tbh_tournament / tbh_tournament_de とは別系統 */
+const SAVE_KEY = 'tbh_sit_battle';
+/** 編集後記。大会データと混ぜない（容量事故の防止） */
+const NOTE_KEY = 'tbh_sit_report_note';
+
+/** デッキ受付GAS。deck_entry.html と同じURLだが mode=team で分離する */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyjN-_OlAfycHbqvo0ZRg0YqHyxZvSzBwrQCUe_Z1cJ2Qhyv8poFCUNYcVdJ243VMALgQ/exec';
+/** 代表者が読むページ。QRにはここへ ?s=コード&team=A/B を付ける */
+const ENTRY_PAGE_URL = 'https://itabashibayblade.pages.dev/team_entry.html';
+
+/** 次戦予告・全体アナウンスの背景 */
+const BG_IMAGE = 'stibattle.jpg';
+/**
+ * 紙面のロゴ候補。前から順に試す。
+ * maintitle_white.png は945×945で透明余白が大きいため、
+ * 読み込んだあと reportTrimTransparent() で実行時に余白を落とす。
+ * trim 済み画像でも余白がなければ何もしないので、どちらでも正しく出る。
+ * 全滅したときは null を返し、ロゴなしで紙面を成立させる。
+ */
+const REPORT_LOGO_CANDIDATES = ['maintitle_white_trim.png', 'maintitle_white.png'];
+
+const GAS_TIMEOUT_MS = 12000;
+const POLL_MS = 15000;
+
+const POSITIONS = [
+  { id: 'senpo',  label: '先鋒' },
+  { id: 'jiho',   label: '次鋒' },
+  { id: 'taisho', label: '大将' }
+];
+const KIMARITE_LABEL = { XF: 'XTREME', BF: 'BURST', OF: 'OVER', SF: 'SPIN' };
+
+// ==========================================================
+// 状態
+// ==========================================================
+
+let participants = [];
+let pidCounter = 1;
+let eventName = '';
+let teamAName = '';
+let teamBName = '';
+let homeSide = 'A';                  // 'A' | 'B'
+let entry = {
+  code: '',
+  open: false,
+  received: { A: null, B: null },    // { order:[{pos,participantId,name,beyblades}], submittedAt }
+  revealed: false
+};
+let matches = [];                    // POSITIONS と同じ並びで3件
+let currentTab = 'setup';
+let pollTimer = null;
+let gasBusy = false;
+
+// PeerJS
+let peer = null, conn = null;
+let _retryCount = 0, _retryTarget = null, _retryTimer = null;
+
+// リモコン
+let currentMatchIdx = -1;
+
+// ==========================================================
+// 保存 / 復元
+// ==========================================================
+
+function blankMatches() {
+  return POSITIONS.map(p => ({
+    pos: p.id,
+    winner: null,        // 'a' | 'b' | null
+    scoreA: 0, scoreB: 0,
+    battles: [],         // [{winner:'a'|'b', finish:'XF', pts, scoreA, scoreB, aBey, bBey, ts}]
+    aBeyUsed: '', bBeyUsed: '',
+    updatedAt: null
+  }));
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      version: 1,
+      participants, pidCounter, eventName,
+      teamAName, teamBName, homeSide,
+      entry, matches,
+      savedAt: Date.now()
+    }));
+  } catch (e) { console.warn('saveState error:', e); }
+}
+
+function loadState() {
+  let raw;
+  try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  let st;
+  try { st = JSON.parse(raw); } catch (e) { return false; }
+  if (!st) return false;
+
+  participants = Array.isArray(st.participants) ? st.participants : [];
+  pidCounter = Number(st.pidCounter) || (participants.length + 1);
+  eventName = st.eventName || '';
+  teamAName = st.teamAName || '';
+  teamBName = st.teamBName || '';
+  homeSide = (st.homeSide === 'B') ? 'B' : 'A';
+  if (st.entry) {
+    entry = {
+      code: st.entry.code || '',
+      open: st.entry.open === true,
+      received: {
+        A: st.entry.received ? (st.entry.received.A || null) : null,
+        B: st.entry.received ? (st.entry.received.B || null) : null
+      },
+      revealed: st.entry.revealed === true
+    };
+  }
+  matches = (Array.isArray(st.matches) && st.matches.length === 3) ? st.matches : blankMatches();
+  return true;
+}
+
+async function execClearSave() {
+  if (!await showConfirm('保存データをすべて消去します。\nよろしいですか？')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  location.reload();
+}
+
+// ==========================================================
+// 起動
+// ==========================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  if (!matches.length) matches = blankMatches();
+  if (!/^[0-9]{4}$/.test(entry.code)) {
+    entry.code = String(Math.floor(1000 + Math.random() * 9000));
+    entry.open = false;
+  }
+  document.getElementById('input-event-name').value = eventName;
+  document.getElementById('report-note').value = loadReportNote();
+  renderAll();
+  saveState();
+  if (entry.open) startPolling();
+});
+
+function renderAll() {
+  renderHeader();
+  renderTeamSelects();
+  renderHomeButtons();
+  renderEntryPanel();
+  renderMembers();
+  renderBoard();
+  renderResult();
+}
+
+function renderHeader() {
+  document.getElementById('hdr-event').textContent = eventName || '対抗戦運営';
+}
+
+function onEventNameInput() {
+  eventName = document.getElementById('input-event-name').value.trim();
+  renderHeader();
+  saveState();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['setup', 'board', 'members', 'result'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  window.scrollTo(0, 0);
+  if (tab === 'board') renderBoard();
+  if (tab === 'result') renderResult();
+}
+
+// ==========================================================
+// 参加者（CSV取り込み）
+// ==========================================================
+
+function calculateRate(wins, matchesN) {
+  if (!matchesN) return '0.00%';
+  return ((wins / matchesN) * 100).toFixed(2) + '%';
+}
+
+function openPasteModal() {
+  document.getElementById('pasteArea').value = '';
+  const m = document.getElementById('pasteModal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+  setTimeout(() => document.getElementById('pasteArea').focus(), 100);
+}
+function closePasteModal() {
+  const m = document.getElementById('pasteModal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+}
+
+/**
+ * 貼り付けデータの取り込み。
+ * tournament_de.html と同じ列順だが、2列目は「メモ」ではなく「チーム名」として扱う。
+ */
+function processPasteData() {
+  const text = document.getElementById('pasteArea').value;
+  if (!text.trim()) return showAlert('テキストが入力されていません');
+  const lines = text.split(/\r\n|\n/);
+  let count = 0;
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    const delimiter = line.includes('\t') ? '\t' : ',';
+    const cols = line.split(delimiter);
+    if (!cols[0] || cols[0].trim() === '') return;
+    const power = parseInt(cols[3]) || 10000;
+    const mt = parseInt(cols[4]) || 0;
+    const wins = parseInt(cols[5]) || 0;
+    const loses = parseInt(cols[6]) || 0;
+    participants.push({
+      id: pidCounter++,
+      name: cols[0].trim(),
+      team: cols[1] ? cols[1].trim() : '',
+      rank: cols[2] ? cols[2].trim() : '--',
+      currentStats: { power, matches: mt, wins, loses, rate: calculateRate(wins, mt) },
+      finCounts: {
+        XF: parseInt(cols[7]) || 0, BF: parseInt(cols[8]) || 0,
+        OF: parseInt(cols[9]) || 0, SF: parseInt(cols[10]) || 0
+      }
+    });
+    count++;
+  });
+  closePasteModal();
+  renderMembers();
+  renderTeamSelects();
+  saveState();
+  if (count > 0) showAlert(count + ' 名追加しました');
+}
+
+function addParticipant() {
+  const name = prompt('ブレーダー名を入力');
+  if (!name || !name.trim()) return;
+  const team = prompt('チーム名を入力') || '';
+  participants.push({
+    id: pidCounter++, name: name.trim(), team: team.trim(), rank: '--',
+    currentStats: { power: 10000, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+    finCounts: { XF: 0, BF: 0, OF: 0, SF: 0 }
+  });
+  renderMembers(); renderTeamSelects(); saveState();
+}
+
+async function execRemoveParticipant(id) {
+  const p = participants.find(x => x.id === id);
+  if (!p) return;
+  if (!await showConfirm(p.name + ' を削除しますか？')) return;
+  participants = participants.filter(x => x.id !== id);
+  renderMembers(); renderTeamSelects(); saveState();
+}
+
+function renameParticipant(id) {
+  const p = participants.find(x => x.id === id);
+  if (!p) return;
+  const v = prompt('新しいブレーダー名', p.name);
+  if (!v || !v.trim()) return;
+  p.name = v.trim();
+  renderMembers(); renderBoard(); saveState();
+}
+
+function editTeam(id) {
+  const p = participants.find(x => x.id === id);
+  if (!p) return;
+  const v = prompt('チーム名', p.team || '');
+  if (v === null) return;
+  p.team = v.trim();
+  renderMembers(); renderTeamSelects(); saveState();
+}
+
+function teamNames() {
+  const set = [];
+  participants.forEach(p => {
+    const t = (p.team || '').trim();
+    if (t && set.indexOf(t) < 0) set.push(t);
+  });
+  return set.sort((a, b) => a.localeCompare(b, 'ja'));
+}
+
+function membersOfTeam(name) {
+  if (!name) return [];
+  return participants.filter(p => (p.team || '').trim() === name);
+}
+
+function renderMembers() {
+  document.getElementById('members-count').textContent =
+    participants.length + '名 / ' + teamNames().length + 'チーム';
+
+  const wrap = document.getElementById('members-list');
+  wrap.innerHTML = '';
+
+  if (!participants.length) {
+    wrap.innerHTML = '<p class="text-sm text-gray-500 py-6 text-center">まだ登録がありません</p>';
+    return;
+  }
+
+  teamNames().concat(['']).forEach(tn => {
+    const list = participants.filter(p => (p.team || '').trim() === tn);
+    if (!list.length) return;
+
+    const h = document.createElement('p');
+    h.className = 'font-sf text-xs text-cyber-orange mt-3 mb-1';
+    h.textContent = tn || '（チーム名なし）';
+    wrap.appendChild(h);
+
+    list.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 py-2 border-b border-cyber-table-border';
+
+      const no = document.createElement('span');
+      no.className = 'font-sf text-xs text-cyber-blue w-6 text-right shrink-0';
+      no.textContent = p.id;
+      row.appendChild(no);
+
+      const nm = document.createElement('span');
+      nm.className = 'flex-1 text-sm text-cyber-text break-all';
+      nm.textContent = p.name;
+      row.appendChild(nm);
+
+      const bp = document.createElement('span');
+      bp.className = 'text-[11px] text-gray-500 shrink-0';
+      bp.textContent = 'BP ' + (p.currentStats ? p.currentStats.power : '-');
+      row.appendChild(bp);
+
+      const bt = document.createElement('button');
+      bt.className = 'tap text-[11px] text-cyber-blue border border-cyber-blue rounded px-2 shrink-0';
+      bt.textContent = 'チーム';
+      bt.onclick = () => editTeam(p.id);
+      row.appendChild(bt);
+
+      const br = document.createElement('button');
+      br.className = 'tap text-[11px] text-cyber-blue border border-cyber-blue rounded px-2 shrink-0';
+      br.textContent = '改名';
+      br.onclick = () => renameParticipant(p.id);
+      row.appendChild(br);
+
+      const bd = document.createElement('button');
+      bd.className = 'tap text-[11px] text-cyber-red border border-cyber-red rounded px-2 shrink-0 ml-2';
+      bd.textContent = 'DEL';
+      bd.onclick = () => execRemoveParticipant(p.id);
+      row.appendChild(bd);
+
+      wrap.appendChild(row);
+    });
+  });
+}
+
+// ==========================================================
+// チーム選択 / ホーム・アウェイ
+// ==========================================================
+
+function renderTeamSelects() {
+  const names = teamNames();
+  [['sel-team-a', teamAName], ['sel-team-b', teamBName]].forEach(([id, cur]) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    const o0 = document.createElement('option');
+    o0.value = ''; o0.textContent = '（未選択）';
+    sel.appendChild(o0);
+    names.forEach(n => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n + '（' + membersOfTeam(n).length + '名）';
+      sel.appendChild(o);
+    });
+    sel.value = cur || '';
+  });
+}
+
+function onTeamSelect() {
+  const a = document.getElementById('sel-team-a').value;
+  const b = document.getElementById('sel-team-b').value;
+  if (a && b && a === b) {
+    showAlert('チームA と チームB に同じチームは選べません');
+    document.getElementById('sel-team-b').value = teamBName || '';
+    return;
+  }
+  const changed = (a !== teamAName || b !== teamBName);
+  teamAName = a; teamBName = b;
+
+  if (changed) {
+    // 対戦カードが変わったら受信済みのオーダーは無効。公開も解除する
+    entry.received = { A: null, B: null };
+    entry.revealed = false;
+    matches = blankMatches();
+  }
+  saveState();
+  renderHomeButtons();
+  renderEntryPanel();
+  renderBoard();
+  renderResult();
+  if (changed) pushTeamSession().catch(e => console.warn('pushTeamSession:', e));
+}
+
+function setHome(side) {
+  homeSide = side;
+  saveState();
+  renderHomeButtons();
+  renderBoard();
+  pushTeamSession().catch(e => console.warn('pushTeamSession:', e));
+}
+
+function renderHomeButtons() {
+  const on = 'tap flex-1 py-3 rounded text-xs font-bold bg-cyber-green text-cyber-on-green';
+  const off = 'tap flex-1 py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-400';
+  const a = document.getElementById('btn-home-a');
+  const b = document.getElementById('btn-home-b');
+  a.className = homeSide === 'A' ? on : off;
+  b.className = homeSide === 'B' ? on : off;
+  // 色だけでなく文字でもホーム側を示す（UI原則3）
+  a.textContent = (homeSide === 'A' ? '● HOME ' : '○ AWAY ') + (teamAName || 'チームA');
+  b.textContent = (homeSide === 'B' ? '● HOME ' : '○ AWAY ') + (teamBName || 'チームB');
+
+  const away = homeSide === 'A' ? (teamBName || 'チームB') : (teamAName || 'チームA');
+  document.getElementById('home-note').textContent =
+    '大将戦は ' + away + '（アウェイ）のみ 5ポイント先取。他はすべて4ポイント先取。';
+}
+
+/** 指定サイドの大将戦の勝利ポイント */
+function taishoLimit(side) {
+  return (side === homeSide) ? 4 : 5;
+}
+/** 試合ごとの勝利ポイント {a, b} */
+function limitsOf(idx) {
+  if (POSITIONS[idx].id !== 'taisho') return { a: 4, b: 4 };
+  return { a: taishoLimit('A'), b: taishoLimit('B') };
+}
+
+// ==========================================================
+// GAS（チーム戦モード）
+// ==========================================================
+
+async function gasGet(params) {
+  const q = new URLSearchParams(params).toString();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), GAS_TIMEOUT_MS);
+  try {
+    const res = await fetch(GAS_URL + '?' + q, { method: 'GET', signal: ctrl.signal });
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+
+/**
+ * Content-Type は必ず text/plain。
+ * application/json にするとブラウザが preflight(OPTIONS) を投げ、GASが応答できない。
+ */
+async function gasPost(body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), GAS_TIMEOUT_MS);
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal
+    });
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+
+/** 対戦カードと出場メンバーをGASへ送る。これが唯一の正 */
+async function pushTeamSession() {
+  return await gasPost({
+    a: 'session',
+    mode: 'team',
+    s: entry.code,
+    eventName: eventName || '',
+    open: entry.open,
+    home: homeSide,
+    teams: {
+      A: { name: teamAName || '', members: membersOfTeam(teamAName).map(p => ({ id: p.id, name: p.name })) },
+      B: { name: teamBName || '', members: membersOfTeam(teamBName).map(p => ({ id: p.id, name: p.name })) }
+    }
+  });
+}
+
+async function toggleEntryOpen() {
+  if (gasBusy) return;
+  if (!teamAName || !teamBName) return showAlert('先に チームA と チームB を選んでください');
+  gasBusy = true;
+  try {
+    entry.open = !entry.open;
+    saveState();
+    renderEntryPanel();
+    if (entry.open) startPolling(); else stopPolling();
+    const res = await pushTeamSession();
+    if (!res || !res.ok) showAlert('受付情報を送れませんでした。通信状況を確認してください。');
+  } catch (e) {
+    showAlert('通信できませんでした。ネットワークを確認してください。');
+  } finally {
+    gasBusy = false;
+  }
+}
+
+/** 参加者から届いた文字列を、画面に埋め込んでも安全な形にする */
+function cleanText(v, max) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/[<>"'&`\u0000-\u001f]/g, '').trim().slice(0, max);
+}
+
+const ENTRY_TYPES = ['BX', 'UX', 'CX', 'CX(EX)'];
+const ENTRY_PART_KEYS = ['type', 'BX', 'UX', 'CX', 'MB', 'OB', 'AB', 'RC', 'RC2', 'BT'];
+
+/**
+ * 代表者スマホから届いたベイ配列を無害化する。
+ * 申請はGAS経由で誰でも直接送れるので中身を信用しない。
+ * 形が崩れているベイは落とす（呼び出し側で件数を比べて判定する）。
+ */
+function sanitizeBeys(list) {
+  const out = [];
+  (Array.isArray(list) ? list : []).slice(0, 3).forEach(b => {
+    if (!b || typeof b !== 'object') return;
+    if (ENTRY_TYPES.indexOf(b.type) < 0) return;
+    const name = cleanText(b.name, 200);
+    if (!name) return;
+    const parts = {};
+    if (b.parts && typeof b.parts === 'object') {
+      ENTRY_PART_KEYS.forEach(k => {
+        if (b.parts[k] != null) parts[k] = cleanText(String(b.parts[k]), 80);
+      });
+    }
+    out.push({ type: b.type, name: name, parts: parts });
+  });
+  return out;
+}
+
+/**
+ * 届いたオーダーを検証して取り込む。
+ * 1人でも壊れていたらチームごと採用しない（体数がずれると進行が壊れるため）。
+ *
+ * 選手は2種類ある。
+ *   名簿の選手   … participantId が名簿と一致すること。表示名は名簿の名前を使う
+ *                  （申請側の name は自由に書き換えられるため信用しない）
+ *   登録外の選手 … participantId が無い当日枠など。名前しか手がかりがないので
+ *                  必ず無害化してから受け入れ、guest フラグを立てる
+ */
+function acceptTeamEntry(teamKey, payload) {
+  const rawOrder = Array.isArray(payload.order) ? payload.order : [];
+  if (rawOrder.length !== 3) return null;
+
+  const seenPos = {};
+  const seenWho = {};
+  const built = [];
+
+  for (let i = 0; i < rawOrder.length; i++) {
+    const o = rawOrder[i];
+    if (!o || POSITIONS.findIndex(x => x.id === o.pos) < 0) return null;
+    if (seenPos[o.pos]) return null;
+    seenPos[o.pos] = true;
+
+    const beys = sanitizeBeys(o.beyblades);
+    if (beys.length !== 3) return null;
+
+    let entry;
+    if (o.participantId == null || o.participantId === '') {
+      const name = cleanText(o.name, 40);
+      if (!name) return null;
+      entry = { pos: o.pos, participantId: null, name: name, guest: true, beyblades: beys };
+    } else {
+      const p = participants.find(x => String(x.id) === String(o.participantId));
+      if (!p) return null;
+      entry = { pos: o.pos, participantId: p.id, name: p.name, guest: false, beyblades: beys };
+    }
+
+    // 同じ選手を2つのポジションに出せない
+    const who = entry.participantId != null ? ('p' + entry.participantId) : ('g:' + entry.name);
+    if (seenWho[who]) return null;
+    seenWho[who] = true;
+
+    built.push(entry);
+  }
+  return { order: built, submittedAt: payload.submittedAt || Date.now() };
+}
+
+async function refreshTeamEntry() {
+  if (gasBusy) return;
+  gasBusy = true;
+  try {
+    const res = await gasGet({ a: 'pending', mode: 'team', s: entry.code });
+    if (!res || !res.ok) return;
+
+    const accepted = [];
+    const rejected = [];
+    const stale = [];
+    (res.entries || []).forEach(e => {
+      const key = (e.team === 'A' || e.team === 'B') ? e.team : null;
+      if (!key) return;
+      if (entry.received[key]) {
+        // すでに取り込み済み。GAS側が pending のままだと毎回拾い直すので倒しておく
+        stale.push(key);
+        return;
+      }
+      const built = acceptTeamEntry(key, e);
+      if (!built) { rejected.push(key); return; }
+      entry.received[key] = built;
+      accepted.push(key);
+    });
+
+    if (accepted.length) {
+      saveState();
+      renderEntryPanel();
+    }
+    const toApprove = accepted.concat(stale);
+    if (toApprove.length) {
+      try { await gasPost({ a: 'mark', mode: 'team', s: entry.code, teams: toApprove, state: 'approved' }); }
+      catch (err) { console.warn('mark:', err); }
+    }
+    if (rejected.length) {
+      // rejected にしないと毎回のポーリングで同じ申請を拾い続ける
+      try { await gasPost({ a: 'mark', mode: 'team', s: entry.code, teams: rejected, state: 'rejected' }); }
+      catch (err) { console.warn('mark(rejected):', err); }
+      showAlert('チーム' + rejected.join('・') + ' の登録内容が不正だったため取り込みませんでした。\n' +
+                '下の「リセット」を押してから、代表者に再登録を依頼してください。');
+      renderEntryPanel();
+    }
+  } catch (e) {
+    console.warn('refreshTeamEntry:', e);
+  } finally {
+    gasBusy = false;
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(refreshTeamEntry, POLL_MS);
+  refreshTeamEntry();
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function execResetTeamEntry(teamKey) {
+  const tn = teamKey === 'A' ? (teamAName || 'チームA') : (teamBName || 'チームB');
+  if (!await showConfirm(tn + ' の登録をリセットします。\n代表者が再送信できるようになります。\nよろしいですか？')) return;
+  entry.received[teamKey] = null;
+  entry.revealed = false;
+  matches = blankMatches();
+  saveState();
+  renderEntryPanel(); renderBoard(); renderResult();
+  try {
+    const res = await gasPost({ a: 'reset', mode: 'team', s: entry.code, team: teamKey });
+    if (!res || !res.ok) showAlert('GAS側のリセットに失敗しました。通信状況を確認してください。');
+  } catch (e) {
+    showAlert('通信できませんでした。GAS側のリセットができていません。');
+  }
+}
+
+// ==========================================================
+// 受付パネル / QR
+// ==========================================================
+
+function entryUrl(teamKey) {
+  return ENTRY_PAGE_URL + '?s=' + encodeURIComponent(entry.code) + '&team=' + teamKey;
+}
+
+function renderEntryPanel() {
+  document.getElementById('entry-code').textContent = entry.code || '----';
+
+  // QR
+  const wrap = document.getElementById('qr-wrap');
+  wrap.innerHTML = '';
+  [['A', teamAName], ['B', teamBName]].forEach(([key, name]) => {
+    const box = document.createElement('div');
+    box.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-2 text-center';
+
+    const h = document.createElement('p');
+    h.className = 'font-sf text-xs mb-1 ' + (key === 'A' ? 'text-cyber-blue' : 'text-cyber-pink');
+    h.textContent = 'TEAM ' + key;
+    box.appendChild(h);
+
+    const nm = document.createElement('p');
+    nm.className = 'text-[11px] text-cyber-text break-all mb-2 leading-tight';
+    nm.textContent = name || '（未選択）';
+    box.appendChild(nm);
+
+    const qr = document.createElement('div');
+    qr.className = 'flex justify-center';
+    box.appendChild(qr);
+
+    if (name) {
+      new QRCode(qr, { text: entryUrl(key), width: 130, height: 130, correctLevel: QRCode.CorrectLevel.M });
+    } else {
+      qr.innerHTML = '<p class="text-[11px] text-gray-600 py-10">チーム未選択</p>';
+    }
+    wrap.appendChild(box);
+  });
+
+  // 受付トグル
+  const tg = document.getElementById('btn-entry-toggle');
+  if (entry.open) {
+    tg.className = 'tap w-full py-3 rounded font-bold text-xs bg-cyber-green text-cyber-on-green';
+    tg.textContent = '受付中（押すと締める）';
+  } else {
+    tg.className = 'tap w-full py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-red text-cyber-red';
+    tg.textContent = '受付停止中（押すと開ける）';
+  }
+
+  // 受信状況
+  const st = document.getElementById('entry-status');
+  st.innerHTML = '';
+  [['A', teamAName], ['B', teamBName]].forEach(([key, name]) => {
+    const got = !!entry.received[key];
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between gap-2 py-2 border-b border-cyber-table-border';
+
+    const l = document.createElement('span');
+    l.className = 'text-sm text-cyber-text break-all';
+    l.textContent = 'TEAM ' + key + '　' + (name || '（未選択）');
+    row.appendChild(l);
+
+    const r = document.createElement('span');
+    r.className = 'text-xs font-bold shrink-0 ' + (got ? 'text-cyber-green' : 'text-gray-500');
+    r.textContent = got ? '✓ 受信済み' : '未着';
+    row.appendChild(r);
+
+    st.appendChild(row);
+  });
+
+  const both = !!(entry.received.A && entry.received.B);
+  const rv = document.getElementById('btn-reveal');
+  if (entry.revealed) {
+    rv.className = 'tap w-full py-4 rounded font-bold text-sm bg-cyber-bg border border-cyber-orange text-cyber-orange';
+    rv.textContent = '公開中（押すと非公開に戻す）';
+    rv.disabled = false;
+  } else if (both) {
+    rv.className = 'tap w-full py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green';
+    rv.textContent = '▶ オーダー公開';
+    rv.disabled = false;
+  } else {
+    rv.className = 'tap w-full py-4 rounded font-bold text-sm bg-cyber-dark border border-cyber-table-border text-gray-600';
+    rv.textContent = '両チームの登録がそろうと公開できます';
+    rv.disabled = true;
+  }
+}
+
+function toggleReveal() {
+  if (!entry.revealed) {
+    if (!(entry.received.A && entry.received.B)) return;
+    entry.revealed = true;
+  } else {
+    entry.revealed = false;
+  }
+  saveState();
+  renderEntryPanel();
+  renderBoard();
+  renderResult();
+  if (entry.revealed) switchTab('board');
+}
+
+// ==========================================================
+// PeerJS（score.html への送信）
+// ==========================================================
+
+function initPeer() {
+  if (peer) peer.destroy();
+  peer = new Peer();
+  peer.on('error', (err) => {
+    console.error(err);
+    if (err.type === 'peer-unavailable' && _retryTarget && _retryCount < 5) {
+      _retryCount++;
+      document.getElementById('btn-connect').innerText = 'RETRY ' + _retryCount + '/5';
+      _retryTimer = setTimeout(() => {
+        if (conn) conn.close();
+        conn = peer.connect('itabashi-link-' + _retryTarget, { reliable: true });
+        attachConnHandlers(conn);
+      }, 3000);
+    } else {
+      _retryCount = 0; _retryTarget = null;
+      resetLinkUI();
+      if (err.type !== 'peer-unavailable') showAlert('通信エラーが発生しました: ' + err.type);
+      else showAlert('接続できませんでした。\nスコアアプリが起動しているか確認し、\n再度コードを入力してください。');
+    }
+  });
+  peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
+}
+
+function attachConnHandlers(c) {
+  const btn = document.getElementById('btn-connect');
+  c.on('open', () => {
+    _retryCount = 0; _retryTarget = null;
+    btn.innerText = 'DISCONN';
+    btn.classList.replace('text-cyber-blue', 'text-cyber-green');
+    btn.classList.replace('border-cyber-blue', 'border-cyber-green');
+    document.getElementById('link-status-dot').classList.replace('bg-red-500', 'bg-cyber-green');
+  });
+  c.on('close', () => resetLinkUI());
+}
+
+function resetLinkUI() {
+  const btn = document.getElementById('btn-connect');
+  btn.innerText = 'CONN';
+  btn.classList.replace('text-cyber-green', 'text-cyber-blue');
+  btn.classList.replace('border-cyber-green', 'border-cyber-blue');
+  document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
+  conn = null;
+}
+
+function connectLink() {
+  if (conn && conn.open) { conn.close(); resetLinkUI(); return; }
+  const code = document.getElementById('linkCodeInput').value || '0511';
+  document.getElementById('btn-connect').innerText = 'WAIT...';
+  if (conn) conn.close();
+  if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
+  _retryCount = 0; _retryTarget = code;
+  if (!peer || peer.destroyed) {
+    initPeer();
+    peer.once('open', () => {
+      conn = peer.connect('itabashi-link-' + code, { reliable: true });
+      attachConnHandlers(conn);
+    });
+  } else {
+    conn = peer.connect('itabashi-link-' + code, { reliable: true });
+    attachConnHandlers(conn);
+  }
+}
+
+function sendToScore(msg) {
+  if (!conn || !conn.open) return false;
+  conn.send(msg);
+  return true;
+}
+
+function sendRemoteCmd(cmd) {
+  if (!sendToScore({ type: 'REMOTE_CMD', cmd: cmd })) {
+    showAlert('⚠️ スコアアプリ（score.html）にリンクされていません。');
+  }
+}
+
+function hideOverlay() {
+  sendToScore({ type: 'HIDE_OVERLAY' });
+  sendToScore({ type: 'HIDE_PREVIEW' });
+  sendToScore({ type: 'SHOW_SCORE_VIEW' });
+}
+
+// ==========================================================
+// 対戦ボード
+// ==========================================================
+
+/** 公開済みのオーダーから、指定試合の選手を引く */
+function playerOf(idx, side) {
+  if (!entry.revealed) return null;
+  const rec = entry.received[side === 'a' ? 'A' : 'B'];
+  if (!rec) return null;
+  const posId = POSITIONS[idx].id;
+  const o = rec.order.find(x => x.pos === posId);
+  if (!o) return null;
+  // 登録外の選手は名簿に無いので、戦績は空のまま進行する
+  const p = (o.participantId == null)
+    ? null
+    : participants.find(x => String(x.id) === String(o.participantId));
+  return {
+    id: o.participantId,
+    name: o.name,
+    guest: !!o.guest,
+    beyblades: o.beyblades,
+    rank: p ? p.rank : '--',
+    stats: p ? p.currentStats : null,
+    fin: p ? p.finCounts : null
+  };
+}
+
+function teamNameOf(side) {
+  return (side === 'a' ? teamAName : teamBName) || (side === 'a' ? 'チームA' : 'チームB');
+}
+function sideKey(side) { return side === 'a' ? 'A' : 'B'; }
+function isHome(side) { return sideKey(side) === homeSide; }
+
+/** 現在の星取 {a, b} */
+function teamWins() {
+  let a = 0, b = 0;
+  matches.forEach(m => { if (m.winner === 'a') a++; else if (m.winner === 'b') b++; });
+  return { a, b };
+}
+
+/**
+ * チーム勝者。先に2勝した側。
+ * 消化試合となった大将戦の結果は、チーム勝敗そのものには影響しない。
+ */
+function teamWinnerSide() {
+  let a = 0, b = 0;
+  for (let i = 0; i < matches.length; i++) {
+    if (matches[i].winner === 'a') a++;
+    else if (matches[i].winner === 'b') b++;
+    if (a === 2) return 'a';
+    if (b === 2) return 'b';
+  }
+  return null;
+}
+
+function allMatchesDone() {
+  return matches.every(m => m.winner !== null);
+}
+
+function renderBoard() {
+  const locked = document.getElementById('board-locked');
+  const main = document.getElementById('board-main');
+  if (!entry.revealed) {
+    locked.classList.remove('hidden');
+    main.classList.add('hidden');
+    return;
+  }
+  locked.classList.add('hidden');
+  main.classList.remove('hidden');
+
+  const w = teamWins();
+
+  const head = document.getElementById('board-score');
+  head.innerHTML = '';
+  const mk = (side, wins) => {
+    const d = document.createElement('div');
+    d.className = 'flex-1 text-center min-w-0';
+    const t = document.createElement('p');
+    t.className = 'text-xs font-bold break-all ' + (side === 'a' ? 'text-cyber-blue' : 'text-cyber-pink');
+    t.textContent = teamNameOf(side);
+    const h = document.createElement('p');
+    h.className = 'text-[10px] text-gray-500';
+    h.textContent = isHome(side) ? 'HOME' : 'AWAY';
+    const s = document.createElement('p');
+    s.className = 'font-sf text-4xl ' + (side === 'a' ? 'text-cyber-blue' : 'text-cyber-pink');
+    s.textContent = wins;
+    d.appendChild(t); d.appendChild(h); d.appendChild(s);
+    return d;
+  };
+  head.appendChild(mk('a', w.a));
+  const vs = document.createElement('div');
+  vs.className = 'font-sf text-gray-600 text-sm px-2';
+  vs.textContent = 'VS';
+  head.appendChild(vs);
+  head.appendChild(mk('b', w.b));
+
+  const wrap = document.getElementById('board-cards');
+  wrap.innerHTML = '';
+
+  matches.forEach((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    const lim = limitsOf(idx);
+
+    const card = document.createElement('div');
+    card.className = 'border border-cyber-table-border rounded-lg p-3 mb-2 bg-cyber-bg';
+
+    const top = document.createElement('div');
+    top.className = 'flex items-center justify-between mb-2';
+    const pl = document.createElement('span');
+    pl.className = 'font-sf text-xs text-cyber-orange';
+    pl.textContent = POSITIONS[idx].label + '戦';
+    top.appendChild(pl);
+    const lm = document.createElement('span');
+    lm.className = 'text-[11px] text-gray-400';
+    lm.textContent = lim.a + 'P 先取 / ' + lim.b + 'P 先取';
+    top.appendChild(lm);
+    card.appendChild(top);
+
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 mb-3';
+
+    const cell = (side, p) => {
+      const d = document.createElement('div');
+      d.className = 'flex-1 min-w-0 text-center';
+      const n = document.createElement('p');
+      n.className = 'text-sm font-bold break-all leading-tight ' +
+        (m.winner === side ? 'text-cyber-green' : 'text-cyber-text');
+      n.textContent = p ? p.name : '---';
+      d.appendChild(n);
+      if (p && p.guest) {
+        const g = document.createElement('p');
+        g.className = 'text-[10px] text-cyber-orange leading-none';
+        g.textContent = '登録外';
+        d.appendChild(g);
+      }
+      // 勝敗は色だけでなく文字でも示す（UI原則3）
+      const r = document.createElement('p');
+      r.className = 'text-[11px] font-bold mt-1 ' +
+        (m.winner === side ? 'text-cyber-green' : (m.winner ? 'text-gray-500' : 'text-gray-600'));
+      r.textContent = m.winner === side ? '● WIN' : (m.winner ? '× LOSE' : '－');
+      d.appendChild(r);
+      return d;
+    };
+    row.appendChild(cell('a', pa));
+
+    const sc = document.createElement('div');
+    sc.className = 'font-sf text-lg text-cyber-text px-1 shrink-0';
+    sc.textContent = m.scoreA + ' - ' + m.scoreB;
+    row.appendChild(sc);
+
+    row.appendChild(cell('b', pb));
+    card.appendChild(row);
+
+    const btns = document.createElement('div');
+    btns.className = 'grid grid-cols-2 gap-2';
+
+    const bRemote = document.createElement('button');
+    bRemote.className = 'tap py-3 rounded text-xs font-bold bg-cyber-blue text-cyber-on-blue';
+    bRemote.textContent = '🎮 リモコン';
+    bRemote.onclick = () => openRemoteModal(idx);
+    btns.appendChild(bRemote);
+
+    const bCall = document.createElement('button');
+    bCall.className = 'tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue';
+    bCall.textContent = '📢 次戦予告';
+    bCall.onclick = () => sendMatchPreview(idx);
+    btns.appendChild(bCall);
+
+    card.appendChild(btns);
+    wrap.appendChild(card);
+  });
+}
+
+// ==========================================================
+// アナウンス
+// ==========================================================
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** 個別対戦のアナウンス（従来どおりの SHOW_PREVIEW） */
+function sendMatchPreview(idx) {
+  const pa = playerOf(idx, 'a');
+  const pb = playerOf(idx, 'b');
+  if (!pa || !pb) return showAlert('オーダーが公開されていません');
+
+  const lim = limitsOf(idx);
+  const label = POSITIONS[idx].label + '戦　' + teamNameOf('a') + ' vs ' + teamNameOf('b');
+  const cp = (POSITIONS[idx].id === 'taisho')
+    ? 'アウェイは5ポイント先取。シマを賭けた大将戦！'
+    : 'チームの命運を背負う' + POSITIONS[idx].label + '戦！';
+
+  const ok = sendToScore({
+    type: 'SHOW_PREVIEW',
+    p1: pa.name, p2: pb.name,
+    label: label,
+    p1Stats: pa.stats ? { rank: pa.rank, power: pa.stats.power, rate: pa.stats.rate } : null,
+    p2Stats: pb.stats ? { rank: pb.rank, power: pb.stats.power, rate: pb.stats.rate } : null,
+    catchphrase: cp,
+    showLogo: true,
+    previewBackground: BG_IMAGE,
+    logoSrc: BG_IMAGE,
+    logoDataUrl: null,
+    // 写真素材なので画面いっぱいに敷く（score.html の既定はロゴ用の contain）
+    previewBgMode: 'cover',
+    previewBgOpacity: 0.3
+  });
+  if (!ok) showAlert('⚠️ スコアアプリにリンクされていません。');
+
+  // 予告と同時に勝利ポイントも合わせておく
+  sendToScore({ type: 'SET_WIN_LIMITS', p1: lim.a, p2: lim.b });
+}
+
+/**
+ * 全体アナウンス。
+ * 未対戦の試合は選手名だけを出し、ベイは伏せる。
+ * すでに終わった組み合わせは勝敗・スコア・使用ベイまで出す。
+ */
+function buildAnnounceHtml() {
+  const w = teamWins();
+  const rows = matches.map((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    const done = m.winner !== null;
+
+    const beyList = (p, side) => {
+      if (!done) return '<div class="an-hide">BEY 非公開</div>';
+      const used = side === 'a' ? m.aBeyUsed : m.bBeyUsed;
+      const list = (p && p.beyblades) ? p.beyblades : [];
+      return '<div class="an-beys">' + list.map(b => {
+        const on = used && b.name === used;
+        return '<div class="an-bey' + (on ? ' an-bey-on' : '') + '">' + escapeHtml(b.name) + '</div>';
+      }).join('') + '</div>';
+    };
+
+    const mark = side => {
+      if (!done) return '<span class="an-mark an-mark-none">－</span>';
+      return m.winner === side
+        ? '<span class="an-mark an-mark-win">●&nbsp;WIN</span>'
+        : '<span class="an-mark an-mark-lose">×&nbsp;LOSE</span>';
+    };
+
+    return `
+      <div class="an-row">
+        <div class="an-pos">${escapeHtml(POSITIONS[idx].label)}戦</div>
+        <div class="an-grid">
+          <div class="an-side">
+            <div class="an-name">${escapeHtml(pa ? pa.name : '---')}</div>
+            ${mark('a')}
+            ${beyList(pa, 'a')}
+          </div>
+          <div class="an-mid">${done ? (m.scoreA + ' - ' + m.scoreB) : 'VS'}</div>
+          <div class="an-side">
+            <div class="an-name">${escapeHtml(pb ? pb.name : '---')}</div>
+            ${mark('b')}
+            ${beyList(pb, 'b')}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@700;900&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      .an-outer {
+        width: 100vw; height: 100vh; position: relative; overflow: hidden;
+        background: #0a0e17; color: #e2e8f0;
+        font-family: 'Noto Sans JP', sans-serif;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 2vh 2vw;
+      }
+      .an-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.22; z-index: 0; }
+      .an-inner { position: relative; z-index: 1; width: 100%; max-width: 1200px; }
+      .an-head { text-align: center; margin-bottom: 1.6vh; }
+      .an-event { font-family: 'Orbitron', sans-serif; font-size: clamp(10px, 1.4vw, 16px); letter-spacing: 4px; color: #0ea5e9; }
+      .an-teams { display: flex; align-items: center; justify-content: center; gap: 2vw; margin-top: 0.6vh; }
+      .an-team { font-weight: 900; font-size: clamp(16px, 2.6vw, 34px); }
+      .an-team-a { color: #0ea5e9; }
+      .an-team-b { color: #ec4899; }
+      .an-ha { font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 1vw, 12px); letter-spacing: 2px; color: #94a3b8; display: block; }
+      .an-count { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(22px, 3.4vw, 46px); color: #ffaa00; }
+      .an-row { border: 1px solid #1f2937; border-left: 5px solid #ffaa00; background: rgba(17,24,39,0.82); padding: 1.1vh 1.2vw; margin-bottom: 1.1vh; }
+      .an-pos { font-family: 'Orbitron', sans-serif; font-size: clamp(9px, 1.1vw, 14px); letter-spacing: 2px; color: #ffaa00; margin-bottom: 0.5vh; }
+      .an-grid { display: flex; align-items: flex-start; gap: 1.2vw; }
+      .an-side { flex: 1; min-width: 0; text-align: center; }
+      .an-mid { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(14px, 2vw, 28px); color: #e2e8f0; padding-top: 0.4vh; }
+      .an-name { font-weight: 900; font-size: clamp(13px, 1.9vw, 26px); line-height: 1.2; word-break: break-all; }
+      .an-mark { font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 1vw, 13px); letter-spacing: 1px; display: inline-block; margin-top: 0.3vh; }
+      .an-mark-win { color: #22c55e; }
+      .an-mark-lose { color: #64748b; }
+      .an-mark-none { color: #475569; }
+      .an-beys { margin-top: 0.5vh; display: flex; flex-direction: column; gap: 2px; }
+      .an-bey { font-size: clamp(8px, 0.95vw, 13px); color: #94a3b8; word-break: break-all; line-height: 1.3; }
+      .an-bey-on { color: #ffaa00; font-weight: 700; }
+      .an-hide { margin-top: 0.5vh; font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 0.95vw, 12px); letter-spacing: 2px; color: #475569; }
+    </style>
+    <div class="an-outer">
+      <img class="an-bg" src="${BG_IMAGE}" alt="">
+      <div class="an-inner">
+        <div class="an-head">
+          <div class="an-event">${escapeHtml(eventName || 'S.I.T BATTLE LEAGUE')}</div>
+          <div class="an-teams">
+            <div>
+              <span class="an-ha">${isHome('a') ? 'HOME' : 'AWAY'}</span>
+              <span class="an-team an-team-a">${escapeHtml(teamNameOf('a'))}</span>
+            </div>
+            <div class="an-count">${w.a} - ${w.b}</div>
+            <div>
+              <span class="an-ha">${isHome('b') ? 'HOME' : 'AWAY'}</span>
+              <span class="an-team an-team-b">${escapeHtml(teamNameOf('b'))}</span>
+            </div>
+          </div>
+        </div>
+        ${rows}
+      </div>
+    </div>`;
+}
+
+function sendTeamAnnounce() {
+  if (!entry.revealed) return showAlert('先にオーダーを公開してください');
+  sendToScore({ type: 'HIDE_PREVIEW' });
+  if (!sendToScore({ type: 'SHOW_OVERLAY', html: buildAnnounceHtml() })) {
+    showAlert('⚠️ スコアアプリにリンクされていません。');
+  }
+}
+
+// ==========================================================
+// チーム戦メッセージ / WINNER 演出
+// ==========================================================
+
+/**
+ * 個人戦が決した直後に score.html へ出すメッセージ。
+ * 進行状況（何勝何敗になったか）で文言を変える。
+ */
+function teamMessageFor(idx) {
+  const upto = matches.slice(0, idx + 1);
+  let a = 0, b = 0;
+  upto.forEach(m => { if (m.winner === 'a') a++; else if (m.winner === 'b') b++; });
+
+  const side = matches[idx].winner;
+  if (!side) return '';
+  const win = teamNameOf(side);
+  const lose = teamNameOf(side === 'a' ? 'b' : 'a');
+  const myW = side === 'a' ? a : b;
+  const opW = side === 'a' ? b : a;
+
+  if (idx === 0) return win + '、先制！';
+
+  if (idx === 1) {
+    if (myW === 2) return win + '、2連勝でチーム勝利を決めた！';
+    return win + '、意地の1勝！ 1勝1敗のタイスコア！';
+  }
+
+  // 大将戦
+  if (myW === 2 && opW === 1) return win + '、大将が締めた！ チーム勝利！';
+  if (myW === 3) return win + '、完全制圧！ 3勝0敗！';
+  return win + '、一矢報いる！ ' + lose + 'の完封を阻止！';
+}
+
+function sendMatchComment(idx) {
+  const text = teamMessageFor(idx);
+  if (!text) return;
+  const side = matches[idx].winner;
+  sendToScore({ type: 'MATCH_COMMENT', comment: text, highlights: [teamNameOf(side)] });
+}
+
+function buildTeamWinnerHtml() {
+  const side = teamWinnerSide();
+  const w = teamWins();
+  const name = side ? teamNameOf(side) : '---';
+  const accent = side === 'b' ? '#ec4899' : '#0ea5e9';
+  const scoreText = side === 'a' ? (w.a + ' - ' + w.b) : (w.b + ' - ' + w.a);
+
+  const lines = matches.map((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    return `<div class="tw-line">
+      <span class="tw-pos">${escapeHtml(POSITIONS[idx].label)}</span>
+      <span class="tw-n ${m.winner === 'a' ? 'tw-w' : ''}">${escapeHtml(pa ? pa.name : '---')}</span>
+      <span class="tw-s">${m.scoreA} - ${m.scoreB}</span>
+      <span class="tw-n ${m.winner === 'b' ? 'tw-w' : ''}">${escapeHtml(pb ? pb.name : '---')}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Noto+Sans+JP:wght@900&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      @keyframes twIn { 0% { transform: scale(2.4); opacity: 0; } 60% { transform: scale(0.94); opacity: 1; } 100% { transform: scale(1); } }
+      @keyframes twPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.72; } }
+      @keyframes twSweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+      .tw-outer {
+        width: 100vw; height: 100vh; position: relative; overflow: hidden;
+        background: #05070c; color: #fff; font-family: 'Noto Sans JP', sans-serif;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      }
+      .tw-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.28; z-index: 0; }
+      .tw-sweep {
+        position: absolute; top: 0; left: 0; width: 40vw; height: 100vh; z-index: 1;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0) 100%);
+        animation: twSweep 2.6s ease-in-out infinite;
+      }
+      .tw-in { position: relative; z-index: 2; text-align: center; width: 100%; padding: 0 3vw; }
+      .tw-label {
+        font-family: 'Orbitron', sans-serif; font-weight: 900;
+        font-size: clamp(14px, 2.4vw, 30px); letter-spacing: 12px; color: ${accent};
+        animation: twPulse 1.6s ease-in-out infinite;
+      }
+      .tw-name {
+        font-weight: 900; font-size: clamp(34px, 8vw, 118px); line-height: 1.05;
+        margin: 1.4vh 0; word-break: break-all;
+        animation: twIn 0.75s cubic-bezier(.16,1,.3,1) both;
+      }
+      .tw-score {
+        font-family: 'Orbitron', sans-serif; font-weight: 900;
+        font-size: clamp(26px, 5vw, 68px); color: #ffaa00; letter-spacing: 6px;
+      }
+      .tw-list { margin-top: 3vh; display: inline-block; text-align: left; }
+      .tw-line {
+        display: flex; align-items: center; gap: 1.2vw;
+        border-top: 1px solid rgba(255,255,255,0.14); padding: 0.8vh 0;
+        font-size: clamp(11px, 1.5vw, 20px);
+      }
+      .tw-pos { font-family: 'Orbitron', sans-serif; color: #ffaa00; width: 4em; font-size: clamp(9px, 1.1vw, 14px); letter-spacing: 2px; }
+      .tw-n { width: 9em; text-align: center; color: #94a3b8; word-break: break-all; }
+      .tw-w { color: #22c55e; font-weight: 900; }
+      .tw-s { font-family: 'Orbitron', sans-serif; color: #e2e8f0; width: 4em; text-align: center; }
+    </style>
+    <div class="tw-outer">
+      <img class="tw-bg" src="${BG_IMAGE}" alt="">
+      <div class="tw-sweep"></div>
+      <div class="tw-in">
+        <div class="tw-label">TEAM WINNER</div>
+        <div class="tw-name">${escapeHtml(name)}</div>
+        <div class="tw-score">${scoreText}</div>
+        <div class="tw-list">${lines}</div>
+      </div>
+    </div>`;
+}
+
+function showTeamWinner() {
+  if (!teamWinnerSide()) return showAlert('まだチームの勝敗が決まっていません');
+  sendToScore({ type: 'HIDE_PREVIEW' });
+  if (!sendToScore({ type: 'SHOW_OVERLAY', html: buildTeamWinnerHtml() })) {
+    showAlert('⚠️ スコアアプリにリンクされていません。');
+  }
+}
+
+// ==========================================================
+// リモコン
+// ==========================================================
+
+function openRemoteModal(idx) {
+  const pa = playerOf(idx, 'a');
+  const pb = playerOf(idx, 'b');
+  if (!pa || !pb) return showAlert('オーダーが公開されていません');
+
+  currentMatchIdx = idx;
+  const lim = limitsOf(idx);
+
+  // 予告・オーバーレイを閉じてスコア画面へ戻す
+  sendToScore({ type: 'HIDE_PREVIEW' });
+  sendToScore({ type: 'HIDE_OVERLAY' });
+  sendToScore({ type: 'SHOW_SCORE_VIEW' });
+
+  const sent = sendToScore({
+    type: 'SET_MATCH',
+    p1: pa.name, p2: pb.name,
+    tName: eventName || 'S.I.T BATTLE LEAGUE',
+    p1Stats: pa.stats ? { rank: pa.rank, power: pa.stats.power, rate: pa.stats.rate, fin: pa.fin } : null,
+    p2Stats: pb.stats ? { rank: pb.rank, power: pb.stats.power, rate: pb.stats.rate, fin: pb.fin } : null,
+    // 大将戦のハンデはここで score.html に渡す
+    winLimitP1: lim.a,
+    winLimitP2: lim.b
+  });
+  if (!sent) showAlert('⚠️ スコアアプリにリンクされていません。勝敗の記録は可能です。');
+
+  const m = document.getElementById('remoteModal');
+  m.classList.remove('hidden');
+  renderRemote();
+}
+
+function closeRemoteModal() {
+  document.getElementById('remoteModal').classList.add('hidden');
+  currentMatchIdx = -1;
+  renderBoard();
+  renderResult();
+}
+
+function renderRemote() {
+  if (currentMatchIdx < 0) return;
+  const idx = currentMatchIdx;
+  const m = matches[idx];
+  const pa = playerOf(idx, 'a');
+  const pb = playerOf(idx, 'b');
+  const lim = limitsOf(idx);
+
+  document.getElementById('remote-title').textContent =
+    POSITIONS[idx].label + '戦　' + teamNameOf('a') + ' vs ' + teamNameOf('b');
+
+  document.getElementById('remote-a-name').textContent =
+    (pa ? pa.name : '---') + (pa && pa.guest ? '（登録外）' : '');
+  document.getElementById('remote-b-name').textContent =
+    (pb ? pb.name : '---') + (pb && pb.guest ? '（登録外）' : '');
+  const ta = document.getElementById('remote-a-team');
+  ta.textContent = teamNameOf('a') + (isHome('a') ? '（HOME）' : '（AWAY）');
+  ta.className = 'text-[11px] mb-1 text-cyber-blue';
+  const tb = document.getElementById('remote-b-team');
+  tb.textContent = teamNameOf('b') + (isHome('b') ? '（HOME）' : '（AWAY）');
+  tb.className = 'text-[11px] mb-1 text-cyber-pink';
+
+  document.getElementById('remote-a-score').textContent = m.scoreA;
+  document.getElementById('remote-b-score').textContent = m.scoreB;
+  document.getElementById('remote-a-limit').textContent = lim.a + 'P 先取';
+  document.getElementById('remote-b-limit').textContent = lim.b + 'P 先取';
+
+  renderRemoteBeys('a', pa, m);
+  renderRemoteBeys('b', pb, m);
+  renderRemoteLog(m);
+
+  const wa = document.getElementById('btn-win-a');
+  const wb = document.getElementById('btn-win-b');
+  const onA = 'tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green';
+  const offA = 'tap py-4 rounded font-bold text-sm bg-cyber-bg border border-cyber-blue text-cyber-blue';
+  const onB = 'tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green';
+  const offB = 'tap py-4 rounded font-bold text-sm bg-cyber-bg border border-cyber-pink text-cyber-pink';
+  wa.className = m.winner === 'a' ? onA : offA;
+  wb.className = m.winner === 'b' ? onB : offB;
+  wa.textContent = (m.winner === 'a' ? '✓ ' : '') + (pa ? pa.name : '左') + ' WIN';
+  wb.textContent = (m.winner === 'b' ? '✓ ' : '') + (pb ? pb.name : '右') + ' WIN';
+}
+
+function renderRemoteBeys(side, p, m) {
+  const wrap = document.getElementById('remote-' + side + '-beys');
+  wrap.innerHTML = '';
+  if (!p) return;
+  const used = side === 'a' ? m.aBeyUsed : m.bBeyUsed;
+  p.beyblades.forEach(b => {
+    const btn = document.createElement('button');
+    const on = used === b.name;
+    btn.className = 'tap w-full text-left px-2 py-2 mb-1 rounded text-[11px] leading-tight break-all ' +
+      (on ? 'bg-cyber-orange text-cyber-on-orange font-bold'
+          : 'bg-cyber-bg border border-cyber-table-border text-gray-300');
+    btn.textContent = (on ? '▶ ' : '') + b.name;
+    btn.onclick = () => selectBey(side, b.name);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectBey(side, name) {
+  if (currentMatchIdx < 0) return;
+  const m = matches[currentMatchIdx];
+  if (side === 'a') m.aBeyUsed = (m.aBeyUsed === name) ? '' : name;
+  else m.bBeyUsed = (m.bBeyUsed === name) ? '' : name;
+
+  sendToScore({
+    type: 'SET_BEYBLADE',
+    player: side === 'a' ? 1 : 2,
+    beyblade: side === 'a' ? m.aBeyUsed : m.bBeyUsed
+  });
+  saveState();
+  renderRemote();
+}
+
+function renderRemoteLog(m) {
+  const wrap = document.getElementById('remote-log');
+  if (!m.battles.length) {
+    wrap.innerHTML = '<p class="text-gray-600">まだ記録がありません</p>';
+    return;
+  }
+  wrap.innerHTML = m.battles.map((b, i) =>
+    (i + 1) + '本目　' + (b.winner === 'a' ? '◀ ' : '▶ ') +
+    KIMARITE_LABEL[b.finish] + ' +' + b.pts + '　（' + b.scoreA + '-' + b.scoreB + '）'
+  ).join('<br>');
+}
+
+const CMD_PTS = { P1_X: 3, P1_B: 2, P1_O: 2, P1_S: 1, P2_X: 3, P2_B: 2, P2_O: 2, P2_S: 1 };
+const CMD_FINISH = { P1_X: 'XF', P1_B: 'BF', P1_O: 'OF', P1_S: 'SF', P2_X: 'XF', P2_B: 'BF', P2_O: 'OF', P2_S: 'SF' };
+
+function scoreCmd(side, cmd, pts) {
+  if (currentMatchIdx < 0) return;
+  const m = matches[currentMatchIdx];
+  const lim = limitsOf(currentMatchIdx);
+
+  sendRemoteCmd(cmd);
+
+  if (side === 'a') m.scoreA = Math.max(0, Math.min(m.scoreA + pts, lim.a));
+  else m.scoreB = Math.max(0, Math.min(m.scoreB + pts, lim.b));
+
+  const finish = CMD_FINISH[cmd];
+  if (finish) {
+    m.battles.push({
+      winner: side, finish: finish, pts: pts,
+      scoreA: m.scoreA, scoreB: m.scoreB,
+      aBey: m.aBeyUsed || '', bBey: m.bBeyUsed || '',
+      ts: Date.now()
+    });
+  }
+  m.updatedAt = Date.now();
+  saveState();
+  renderRemote();
+}
+
+function undoRemoteBattle() {
+  if (currentMatchIdx < 0) return;
+  const m = matches[currentMatchIdx];
+  const last = m.battles.pop();
+  if (!last) return;
+  // 直前の1本ぶんを戻す。score.html 側は UNDO ボタンで別途戻す
+  if (last.winner === 'a') m.scoreA = Math.max(0, m.scoreA - last.pts);
+  else m.scoreB = Math.max(0, m.scoreB - last.pts);
+  sendRemoteCmd(last.winner === 'a' ? 'P1_MINUS' : 'P2_MINUS');
+  saveState();
+  renderRemote();
+}
+
+async function execRemoteReset() {
+  if (currentMatchIdx < 0) return;
+  if (!await showConfirm('この試合のスコアと記録をリセットします。\nよろしいですか？')) return;
+  const m = matches[currentMatchIdx];
+  m.scoreA = 0; m.scoreB = 0; m.battles = [];
+  sendRemoteCmd('SYS_RESET');
+  saveState();
+  renderRemote();
+}
+
+/**
+ * 勝者を確定する。同じ側をもう一度押すと取り消す。
+ * 確定のたびにチーム戦用メッセージを送り、3試合そろったらWINNER演出を出す。
+ */
+function setMatchWinner(side) {
+  if (currentMatchIdx < 0) return;
+  const idx = currentMatchIdx;
+  const m = matches[idx];
+
+  if (m.winner === side) {
+    m.winner = null;
+    m.updatedAt = Date.now();
+    saveState();
+    renderRemote(); renderBoard(); renderResult();
+    return;
+  }
+
+  m.winner = side;
+  m.updatedAt = Date.now();
+  saveState();
+
+  sendRemoteCmd(side === 'a' ? 'P1_WIN' : 'P2_WIN');
+  sendMatchComment(idx);
+
+  renderRemote(); renderBoard(); renderResult();
+
+  if (allMatchesDone()) {
+    // 3試合すべて終わったらチーム戦の決着演出へ
+    setTimeout(() => {
+      closeRemoteModal();
+      showTeamWinner();
+      switchTab('result');
+    }, 3000);
+  }
+}
+
+// ==========================================================
+// 結果タブ
+// ==========================================================
+
+function renderResult() {
+  const wrap = document.getElementById('result-summary');
+  wrap.innerHTML = '';
+
+  if (!entry.revealed) {
+    wrap.innerHTML = '<p class="text-sm text-gray-500">オーダーが公開されていません</p>';
+    return;
+  }
+
+  const w = teamWins();
+  const side = teamWinnerSide();
+
+  const head = document.createElement('p');
+  head.className = 'text-base font-bold mb-2 ' + (side ? 'text-cyber-green' : 'text-gray-400');
+  head.textContent = side
+    ? ('🏆 ' + teamNameOf(side) + ' の勝利（' + (side === 'a' ? w.a + '勝' + w.b + '敗' : w.b + '勝' + w.a + '敗') + '）')
+    : '進行中';
+  wrap.appendChild(head);
+
+  matches.forEach((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 py-2 border-b border-cyber-table-border text-xs';
+    row.innerHTML =
+      '<span class="font-sf text-cyber-orange w-10 shrink-0">' + escapeHtml(POSITIONS[idx].label) + '</span>' +
+      '<span class="flex-1 text-right break-all ' + (m.winner === 'a' ? 'text-cyber-green font-bold' : 'text-gray-400') + '">' +
+        escapeHtml(pa ? pa.name : '---') + (m.winner === 'a' ? ' ●' : '') + '</span>' +
+      '<span class="font-sf text-cyber-text shrink-0">' + m.scoreA + '-' + m.scoreB + '</span>' +
+      '<span class="flex-1 break-all ' + (m.winner === 'b' ? 'text-cyber-green font-bold' : 'text-gray-400') + '">' +
+        (m.winner === 'b' ? '● ' : '') + escapeHtml(pb ? pb.name : '---') + '</span>';
+    wrap.appendChild(row);
+  });
+}
+
+// ==========================================================
+// レポート（PNG新聞 2枚）
+//
+// html2canvas の制約により、紙面内では以下を使わない:
+//   box-shadow / text-shadow / filter / backdrop-filter /
+//   グラデーション / CSS変数 / Tailwind クラス
+// インラインstyleで単色のみを使う。
+// ==========================================================
+
+function loadReportNote() {
+  try { return localStorage.getItem(NOTE_KEY) || ''; } catch (e) { return ''; }
+}
+function onReportNoteChange() {
+  try { localStorage.setItem(NOTE_KEY, document.getElementById('report-note').value); } catch (e) {}
+}
+
+async function loadImageDataUrl(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(url);
+  const blob = await res.blob();
+  return await new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 透明余白を実行時にトリムする。
+ * 余白がない画像には何もせず元のdataURLを返す。
+ */
+function reportTrimTransparent(dataUrl, alphaThreshold = 8) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+        let minX = width, minY = height, maxX = -1, maxY = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (data[(y * width + x) * 4 + 3] > alphaThreshold) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        if (maxX < minX || maxY < minY) return resolve(dataUrl);
+        const w = maxX - minX + 1, h = maxY - minY + 1;
+        if (w === width && h === height) return resolve(dataUrl);
+        const out = document.createElement('canvas');
+        out.width = w; out.height = h;
+        out.getContext('2d').drawImage(c, minX, minY, w, h, 0, 0, w, h);
+        resolve(out.toDataURL('image/png'));
+      } catch (e) {
+        console.warn('ロゴの余白トリムに失敗（元画像を使用）:', e);
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+let reportLogoCache = null;
+
+/** 候補を順に試す。全滅したら null（ロゴなしで紙面を組む） */
+async function reportGetLogo() {
+  if (reportLogoCache !== null) return reportLogoCache;
+  for (const src of REPORT_LOGO_CANDIDATES) {
+    try {
+      const raw = await loadImageDataUrl(src);
+      reportLogoCache = await reportTrimTransparent(raw);
+      return reportLogoCache;
+    } catch (e) {
+      console.warn('ロゴ画像の読み込みに失敗:', src, e);
+    }
+  }
+  return null;
+}
+
+function reportDateStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+function reportFileDateStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate());
+}
+
+/** 決まり手の集計 */
+function reportKimariteDist() {
+  const dist = { XF: 0, BF: 0, OF: 0, SF: 0 };
+  matches.forEach(m => m.battles.forEach(b => { if (dist[b.finish] != null) dist[b.finish]++; }));
+  return dist;
+}
+
+/**
+ * 逆転勝ちだったか。
+ * 途中で敗者側が先行していたら逆転とみなす。
+ */
+function reportWasComeback(m) {
+  if (!m.winner) return false;
+  let aheadByLoser = false;
+  m.battles.forEach(b => {
+    if (m.winner === 'a' && b.scoreB > b.scoreA) aheadByLoser = true;
+    if (m.winner === 'b' && b.scoreA > b.scoreB) aheadByLoser = true;
+  });
+  return aheadByLoser;
+}
+
+/** 紙面1枚目の「本日の記録」カード */
+function reportRecords() {
+  const done = matches.map((m, idx) => ({ m, idx })).filter(x => x.m.winner !== null);
+  const label = idx => POSITIONS[idx].label + '戦';
+  const nameOf = (idx, side) => {
+    const p = playerOf(idx, side);
+    return p ? p.name : '---';
+  };
+
+  const cards = [];
+
+  cards.push({
+    head: 'TOTAL BATTLES',
+    main: reportTotalBattles() + ' 本',
+    sub: '3試合の合計バトル数'
+  });
+
+  // 最長試合
+  let longest = null;
+  done.forEach(x => {
+    if (!longest || x.m.battles.length > longest.m.battles.length) longest = x;
+  });
+  cards.push(longest && longest.m.battles.length
+    ? { head: 'LONGEST', main: longest.m.battles.length + ' 本', sub: label(longest.idx) + '　' + nameOf(longest.idx, 'a') + ' vs ' + nameOf(longest.idx, 'b') }
+    : { head: 'LONGEST', main: '—', sub: '記録なし' });
+
+  // 完封（相手を0点に抑えた試合）
+  const shutout = done.find(x => (x.m.winner === 'a' && x.m.scoreB === 0) || (x.m.winner === 'b' && x.m.scoreA === 0));
+  cards.push(shutout
+    ? { head: 'SHUTOUT', main: shutout.m.scoreA + ' - ' + shutout.m.scoreB, sub: label(shutout.idx) + '　' + nameOf(shutout.idx, shutout.m.winner) }
+    : { head: 'SHUTOUT', main: 'なし', sub: '完封決着はなし' });
+
+  // 逆転勝ち
+  const comeback = done.find(x => reportWasComeback(x.m));
+  cards.push(comeback
+    ? { head: 'COMEBACK', main: nameOf(comeback.idx, comeback.m.winner), sub: label(comeback.idx) + '　' + comeback.m.scoreA + ' - ' + comeback.m.scoreB + ' で逆転' }
+    : { head: 'COMEBACK', main: 'なし', sub: '逆転勝ちはなし' });
+
+  return cards;
+}
+
+function reportTotalBattles() {
+  return matches.reduce((n, m) => n + m.battles.length, 0);
+}
+
+/** 共通パーツ：マストヘッド（ロゴが白抜きなので黒帯にする） */
+function reportMasthead(logoDataUrl, page) {
+  const logoHtml = logoDataUrl
+    ? `<img src="${logoDataUrl}" alt="" style="height:${page === 1 ? '62px' : '40px'};width:auto;display:block;">`
+    : `<div style="color:#ffffff;font-family:'Orbitron',sans-serif;font-weight:900;font-size:${page === 1 ? '30px' : '20px'};letter-spacing:3px;">ITABASHI</div>`;
+  return `
+    <div style="flex:0 0 auto;background:#14161a;padding:${page === 1 ? '26px 40px' : '18px 40px'};display:flex;align-items:center;justify-content:space-between;">
+      ${logoHtml}
+      <div style="text-align:right;color:#ffffff;font-family:'Orbitron',sans-serif;">
+        <div style="font-size:${page === 1 ? '20px' : '15px'};font-weight:900;letter-spacing:4px;">S.I.T BATTLE LEAGUE</div>
+        <div style="font-size:13px;letter-spacing:2px;color:#b9c0cc;margin-top:4px;">${reportDateStr()}　／　PAGE ${page}</div>
+      </div>
+    </div>`;
+}
+
+function reportNameBand() {
+  return `
+    <div style="flex:0 0 auto;background:#ff1f3d;color:#ffffff;padding:12px 40px;font-family:'Noto Sans JP',sans-serif;font-weight:900;font-size:26px;letter-spacing:2px;">
+      ${escapeHtml(eventName || 'S.I.T BATTLE LEAGUE 対抗戦')}
+    </div>`;
+}
+
+function reportFooter(page) {
+  return `
+    <div style="flex:0 0 auto;margin-top:auto;border-top:3px solid #14161a;padding:14px 40px;display:flex;justify-content:space-between;color:#5a6270;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;">
+      <span>ITABASHI BEYBLADE CLUB</span>
+      <span>S.I.T BATTLE LEAGUE　／　PAGE ${page} OF 2</span>
+    </div>`;
+}
+
+/** 1枚目：見出し＋チーム結果＋星取表＋両チーム全選手 */
+function reportPage1(logoDataUrl) {
+  const side = teamWinnerSide();
+  const w = teamWins();
+  const winName = side ? teamNameOf(side) : '---';
+  const loseName = side ? teamNameOf(side === 'a' ? 'b' : 'a') : '---';
+  const myW = side === 'a' ? w.a : w.b;
+  const opW = side === 'a' ? w.b : w.a;
+
+  const headline = side
+    ? (myW === 3 ? winName + '、完全制圧' : winName + '、' + loseName + 'を下す')
+    : '対抗戦、進行中';
+
+  const rows = matches.map((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    const aWin = m.winner === 'a', bWin = m.winner === 'b';
+    return `
+      <tr>
+        <td style="border:1px solid #d2d6dd;padding:12px 10px;background:#f2f4f7;font-family:'Orbitron',sans-serif;font-size:15px;color:#14161a;width:110px;text-align:center;font-weight:700;">${escapeHtml(POSITIONS[idx].label)}</td>
+        <td style="border:1px solid #d2d6dd;padding:12px 14px;font-size:21px;font-weight:${aWin ? '900' : '400'};color:${aWin ? '#14161a' : '#767d8a'};text-align:right;">${escapeHtml(pa ? pa.name : '---')}${aWin ? '　●' : ''}</td>
+        <td style="border:1px solid #d2d6dd;padding:12px 10px;font-family:'Orbitron',sans-serif;font-size:22px;color:#14161a;text-align:center;width:120px;font-weight:700;">${m.scoreA} - ${m.scoreB}</td>
+        <td style="border:1px solid #d2d6dd;padding:12px 14px;font-size:21px;font-weight:${bWin ? '900' : '400'};color:${bWin ? '#14161a' : '#767d8a'};">${bWin ? '●　' : ''}${escapeHtml(pb ? pb.name : '---')}</td>
+      </tr>`;
+  }).join('');
+
+  const records = reportRecords();
+
+  const roster = (side, color) => {
+    const name = side === 'a' ? teamAName : teamBName;
+    // 名簿の選手に加えて、当日の登録外選手も「全選手名」として載せる
+    const names = membersOfTeam(name).map(x => escapeHtml(x.name));
+    const rec = entry.received[sideKey(side)];
+    if (rec) {
+      rec.order.forEach(o => {
+        if (!o.guest || !o.name) return;
+        const tagged = escapeHtml(o.name) + '（登録外）';
+        if (names.indexOf(tagged) < 0) names.push(tagged);
+      });
+    }
+    return `
+      <div style="flex:1;border:2px solid ${color};padding:14px 16px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:${color};margin-bottom:6px;">TEAM ${side === 'a' ? 'A' : 'B'}　${isHome(side) ? 'HOME' : 'AWAY'}</div>
+        <div style="font-size:22px;font-weight:900;color:#14161a;margin-bottom:8px;">${escapeHtml(name || '---')}</div>
+        <div style="font-size:16px;color:#3b414d;line-height:1.7;">${names.join('　／　') || '---'}</div>
+      </div>`;
+  };
+
+  return `
+    <div style="width:1200px;height:1350px;background:#ffffff;display:flex;flex-direction:column;font-family:'Noto Sans JP',sans-serif;">
+      ${reportMasthead(logoDataUrl, 1)}
+      ${reportNameBand()}
+
+      <div style="flex:0 0 auto;padding:26px 40px 10px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;">RESULT</div>
+        <div style="font-size:58px;font-weight:900;color:#14161a;line-height:1.15;margin-top:6px;">${escapeHtml(headline)}</div>
+        <div style="font-size:20px;color:#3b414d;margin-top:10px;">
+          ${side ? escapeHtml(winName) + '　' + myW + '勝' + opW + '敗　' + escapeHtml(loseName) : '決着前'}
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:12px 40px 0;">
+        <div style="display:flex;align-items:flex-end;justify-content:center;gap:34px;border-top:3px solid #14161a;border-bottom:3px solid #14161a;padding:20px 0;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:3px;color:#767d8a;">${homeSide === 'A' ? 'HOME' : 'AWAY'}</div>
+            <div style="font-size:30px;font-weight:900;color:#0b6f9e;line-height:1.2;">${escapeHtml(teamNameOf('a'))}</div>
+          </div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:66px;font-weight:900;color:#14161a;line-height:1;">${w.a} - ${w.b}</div>
+          <div style="text-align:center;flex:1;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:3px;color:#767d8a;">${homeSide === 'B' ? 'HOME' : 'AWAY'}</div>
+            <div style="font-size:30px;font-weight:900;color:#b3246f;line-height:1.2;">${escapeHtml(teamNameOf('b'))}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:22px 40px 0;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">MATCH RESULTS</div>
+        <table style="width:100%;border-collapse:collapse;">${rows}</table>
+      </div>
+
+      <div style="flex:0 0 auto;padding:24px 40px 0;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">ENTRY MEMBERS</div>
+        <div style="display:flex;gap:18px;">
+          ${roster('a', '#0b6f9e')}
+          ${roster('b', '#b3246f')}
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:24px 40px 0;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">TODAY'S RECORD</div>
+        <div style="display:flex;gap:14px;">
+          ${records.map(c => `
+            <div style="flex:1;border-top:4px solid #14161a;padding:12px 6px 0;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:#767d8a;">${c.head}</div>
+              <div style="font-size:28px;font-weight:900;color:#14161a;margin:6px 0 4px;line-height:1.2;word-break:break-all;">${escapeHtml(c.main)}</div>
+              <div style="font-size:13px;color:#3b414d;line-height:1.5;">${escapeHtml(c.sub)}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:22px 40px 0;">
+        <div style="border-left:6px solid #ff1f3d;background:#f7f8fa;padding:12px 16px;font-size:15px;color:#3b414d;line-height:1.7;">
+          大将戦のみ、アウェイ側は5ポイント先取が勝利条件（ホーム側は4ポイント先取）。
+          先鋒・次鋒で決着がついても大将戦は必ず実施し、星として記録する。
+        </div>
+      </div>
+
+      ${reportFooter(1)}
+    </div>`;
+}
+
+/** 2枚目：各試合の詳細（使用ベイ・決まり手）＋記録＋編集後記 */
+function reportPage2(logoDataUrl) {
+  const dist = reportKimariteDist();
+  const total = reportTotalBattles();
+  const pct = k => total ? Math.round((dist[k] / total) * 100) : 0;
+
+  const bar = [
+    ['XF', 'XTREME', '#ff1f3d'],
+    ['BF', 'BURST', '#ff4500'],
+    ['OF', 'OVER', '#d98a00'],
+    ['SF', 'SPIN', '#0b6f9e']
+  ].map(([k, label, color]) => `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:15px;color:#14161a;margin-bottom:4px;">
+        <span style="font-family:'Orbitron',sans-serif;letter-spacing:2px;">${label}</span>
+        <span>${dist[k]}本　${pct(k)}%</span>
+      </div>
+      <div style="height:16px;background:#e6e9ee;">
+        <div style="height:16px;width:${pct(k)}%;background:${color};"></div>
+      </div>
+    </div>`).join('');
+
+  const details = matches.map((m, idx) => {
+    const pa = playerOf(idx, 'a');
+    const pb = playerOf(idx, 'b');
+    const lim = limitsOf(idx);
+    const kim = m.battles.map(b =>
+      (b.winner === 'a' ? (pa ? pa.name : '左') : (pb ? pb.name : '右')) + ' ' + KIMARITE_LABEL[b.finish]
+    ).join('　→　') || '記録なし';
+
+    const beyLine = (p, used) => {
+      const list = (p && p.beyblades) ? p.beyblades : [];
+      return list.map(b =>
+        (b.name === used
+          ? '<span style="color:#14161a;font-weight:900;">' + escapeHtml(b.name) + '</span>'
+          : '<span style="color:#767d8a;">' + escapeHtml(b.name) + '</span>')
+      ).join('<br>');
+    };
+
+    return `
+      <div style="flex:0 0 auto;border-left:6px solid #ff1f3d;background:#f7f8fa;padding:14px 18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+          <span style="font-family:'Orbitron',sans-serif;font-size:15px;letter-spacing:3px;color:#ff1f3d;font-weight:700;">${escapeHtml(POSITIONS[idx].label)}</span>
+          <span style="font-size:13px;color:#767d8a;">${lim.a}P先取 / ${lim.b}P先取</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="flex:1;text-align:right;">
+            <div style="font-size:20px;font-weight:${m.winner === 'a' ? '900' : '400'};color:${m.winner === 'a' ? '#14161a' : '#767d8a'};">${escapeHtml(pa ? pa.name : '---')}</div>
+            <div style="font-size:13px;line-height:1.6;margin-top:4px;">${beyLine(pa, m.aBeyUsed)}</div>
+          </div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:26px;font-weight:700;color:#14161a;width:110px;text-align:center;">${m.scoreA} - ${m.scoreB}</div>
+          <div style="flex:1;">
+            <div style="font-size:20px;font-weight:${m.winner === 'b' ? '900' : '400'};color:${m.winner === 'b' ? '#14161a' : '#767d8a'};">${escapeHtml(pb ? pb.name : '---')}</div>
+            <div style="font-size:13px;line-height:1.6;margin-top:4px;">${beyLine(pb, m.bBeyUsed)}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:13px;color:#3b414d;border-top:1px solid #d2d6dd;padding-top:8px;">${escapeHtml(kim)}</div>
+      </div>`;
+  }).join('');
+
+  const note = (document.getElementById('report-note').value || '').trim();
+
+  return `
+    <div style="width:1200px;height:1350px;background:#ffffff;display:flex;flex-direction:column;font-family:'Noto Sans JP',sans-serif;">
+      ${reportMasthead(logoDataUrl, 2)}
+      ${reportNameBand()}
+
+      <div style="flex:0 0 auto;padding:22px 40px 0;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:12px;">MATCH DETAIL</div>
+        ${details}
+      </div>
+
+      <div style="flex:0 0 auto;padding:6px 40px 0;display:flex;gap:22px;">
+        <div style="flex:1;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">FINISH TYPES</div>
+          ${bar}
+          <div style="font-size:13px;color:#767d8a;margin-top:4px;">総バトル数 ${total} 本</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">EDITOR'S NOTE</div>
+          <div style="border:1px solid #d2d6dd;padding:14px 16px;font-size:15px;line-height:1.9;color:#3b414d;min-height:150px;white-space:pre-wrap;">${escapeHtml(note || '—')}</div>
+        </div>
+      </div>
+
+      ${reportFooter(2)}
+    </div>`;
+}
+
+let reportBuilt = false;
+
+async function openReportModal() {
+  if (!entry.revealed) return showAlert('オーダーが公開されていません');
+  document.getElementById('reportModal').classList.remove('hidden');
+  const status = document.getElementById('report-status');
+  status.textContent = '紙面を作成しています…';
+
+  try {
+    const logo = await reportGetLogo();
+    // フォント読み込み前に幅を実測すると初回だけレイアウトが崩れるため必ず待つ
+    await document.fonts.ready;
+
+    document.getElementById('report-canvas-1').innerHTML = reportPage1(logo);
+    document.getElementById('report-canvas-2').innerHTML = reportPage2(logo);
+    reportBuilt = true;
+
+    mountPreview(1);
+    mountPreview(2);
+    status.textContent = '完成しました。保存ボタンでPNGを書き出します。';
+  } catch (e) {
+    console.warn('report error:', e);
+    status.textContent = '紙面の作成に失敗しました。Live Server 経由で開いているか確認してください。';
+  }
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal').classList.add('hidden');
+}
+
+/** プレビューは transform で縮小表示する（撮影直前に解除する） */
+function mountPreview(page) {
+  const src = document.getElementById('report-canvas-' + page);
+  const box = document.getElementById('report-preview-' + page);
+  box.innerHTML = '';
+  const scale = Math.min(1, (box.clientWidth || 360) / 1200);
+  const holder = document.createElement('div');
+  holder.style.width = '1200px';
+  holder.style.height = '1350px';
+  holder.style.transform = 'scale(' + scale + ')';
+  holder.style.transformOrigin = 'top left';
+  holder.innerHTML = src.innerHTML;
+  box.style.height = Math.round(1350 * scale) + 'px';
+  box.appendChild(holder);
+}
+
+async function downloadReportPng(page) {
+  if (!reportBuilt) return showAlert('先にレポートを作成してください');
+  const el = document.getElementById('report-canvas-' + page);
+  const status = document.getElementById('report-status');
+  status.textContent = 'PNGを書き出しています…';
+  try {
+    await document.fonts.ready;
+    // 撮影前に transform を解除する（かかったまま撮ると縮小されたPNGになる）
+    el.style.transform = 'none';
+    const canvas = await html2canvas(el.firstElementChild, {
+      backgroundColor: '#ffffff', scale: 1, width: 1200, height: 1350,
+      windowWidth: 1200, windowHeight: 1350, useCORS: true, logging: false
+    });
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = sanitizeFilename(eventName || 'sit_battle') + '_report_' + reportFileDateStr() + '_p' + page + '.png';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+    status.textContent = '保存しました。';
+  } catch (e) {
+    console.warn('png error:', e);
+    status.textContent = 'PNGの書き出しに失敗しました。';
+  }
+}
+
+function sanitizeFilename(name) {
+  return String(name).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60) || 'report';
+}
+
+// ==========================================================
+// alert / confirm（ネイティブダイアログは使わない）
+// ==========================================================
+
+function showAlert(msg) {
+  const m = document.getElementById('alertModal');
+  document.getElementById('alert-msg').textContent = msg;
+  m.classList.remove('hidden'); m.classList.add('flex');
+  document.getElementById('alert-ok').onclick = () => {
+    m.classList.add('hidden'); m.classList.remove('flex');
+  };
+}
+
+function showConfirm(msg) {
+  return new Promise(resolve => {
+    const m = document.getElementById('confirmModal');
+    document.getElementById('confirm-msg').textContent = msg;
+    m.classList.remove('hidden'); m.classList.add('flex');
+    const yes = document.getElementById('confirm-yes');
+    const no = document.getElementById('confirm-no');
+    const done = v => {
+      m.classList.add('hidden'); m.classList.remove('flex');
+      yes.onclick = null; no.onclick = null;
+      resolve(v);
+    };
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+  });
+}
+</script>
+</body>
+</html>
