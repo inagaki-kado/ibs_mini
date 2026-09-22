@@ -1781,6 +1781,8 @@
         updateRemoteKimariteUI();
         if(conn && conn.open) {
             conn.send({ type: 'SET_MATCH', p1: match.p1.name, p2: match.p2.name, tName: tournamentName,
+                // tournament_de.html側はremoteWinScoreLimit=4固定運用のため、同期時にscore.html側も必ず4ポイント先取に揃える
+                winMode: '4',
                 p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate, fin: getLiveFinCounts(match.p1) },
                 p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate, fin: getLiveFinCounts(match.p2) }
             });

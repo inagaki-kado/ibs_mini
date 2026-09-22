@@ -650,6 +650,9 @@
             box-shadow: 0 0 12px;
             font-family: 'Chakra Petch', sans-serif;
             font-size: clamp(11px, 1.8vw, 18px);
+            /* line-heightを文字数別クラス間で固定し、フォントサイズが縮んでも
+               左右の枠の高さ・bottom:15pxからの文字位置がズレないようにする */
+            line-height: 24px;
             font-weight: 700;
             font-style: italic;
             color: #fff;
@@ -660,6 +663,10 @@
             white-space: nowrap;
             display: none; /* デフォルトは非表示 */
         }
+        /* 文字数別の縮小段階（.name-inputのname-len-m/l/xlと同じ閾値: 9-12 / 13-16 / 17以上） */
+        .beyblade-box.bey-len-m { font-size: clamp(9px, 1.4vw, 14px); }
+        .beyblade-box.bey-len-l { font-size: clamp(8px, 1.1vw, 11px); }
+        .beyblade-box.bey-len-xl { font-size: clamp(7px, 0.9vw, 9px); }
         .beyblade-box.p1 {
             left: max(11px, calc(var(--safe-left) + 11px));
             border-color: #0ea5e9;
@@ -2612,6 +2619,20 @@
          * @param {number} playerNum - 1 or 2
          * @param {string} beybladeName - ベイブレード名
          */
+        // .name-inputのadjustNameFontSizeと同じ閾値（9-12 / 13-16 / 17以上）でベイ名も段階的に縮小する
+        function adjustBeyFontSize(el, text) {
+            if (!el) return;
+            const len = (text || '').length;
+            el.classList.remove('bey-len-m', 'bey-len-l', 'bey-len-xl');
+            if (len <= 12) {
+                if (len > 8) el.classList.add('bey-len-m');
+            } else if (len <= 16) {
+                el.classList.add('bey-len-l');
+            } else {
+                el.classList.add('bey-len-xl');
+            }
+        }
+
         function updateBeybladeBar(playerNum, beybladeName) {
             const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
 
@@ -2619,6 +2640,7 @@
             if (boxEl) {
                 if (beybladeName) {
                     boxEl.textContent = beybladeName;
+                    adjustBeyFontSize(boxEl, beybladeName);
                     boxEl.style.display = 'block';
                 } else {
                     boxEl.textContent = '';

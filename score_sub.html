@@ -30,7 +30,7 @@
     border-radius: 10px;
     padding: 3px 8px;
     font-family: 'Orbitron', sans-serif;
-    font-size: clamp(8px, 1.6vw, 11px);
+    font-size: clamp(8px, 1.6vw, 18px);
     color: #94a3b8;
   }
   #link-dot { width: 7px; height: 7px; border-radius: 50%; background: #64748b; flex-shrink: 0; }
@@ -45,40 +45,48 @@
   .player-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; padding: 0 6px; }
   .p-name {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: clamp(13px, 4vw, 30px);
+    font-size: clamp(52px, 11vw, 150px);
     color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
     text-shadow: 1px 1px 0 #000;
   }
-  /* 文字数別の縮小段階（score.htmlのname-len-m/l/xlと同じ閾値: 9-12 / 13-16 / 17以上） */
-  .p-name.name-len-m { font-size: clamp(10px, 3vw, 22px); }
-  .p-name.name-len-l { font-size: clamp(9px, 2.3vw, 17px); }
-  .p-name.name-len-xl { font-size: clamp(8px, 1.9vw, 14px); }
+  /* 文字数別の縮小段階（score.htmlのname-len-m/l/xlと同じ閾値: 9-12 / 13-16 / 17以上。
+     1920×1000ディスプレイ向けに拡大しつつ、score-num・bey-nameと縦に積んでも画面高に収まる上限にしている */
+  .p-name.name-len-m { font-size: clamp(40px, 8vw, 118px); }
+  .p-name.name-len-l { font-size: clamp(36px, 6.5vw, 95px); }
+  .p-name.name-len-xl { font-size: clamp(32px, 5.5vw, 78px); }
   .p1-col .p-name { text-shadow: 0 0 10px rgba(14,165,233,0.7), 1px 1px 0 #000; }
   .p2-col .p-name { text-shadow: 0 0 10px rgba(236,72,153,0.7), 1px 1px 0 #000; }
   .score-num {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: min(42vw, 62vh);
+    font-size: min(42vw, 55vh);
     line-height: 1; color: #fff; text-shadow: 2px 2px 0 #000;
   }
   .bey-name {
     font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
-    font-size: clamp(11px, 1.8vw, 18px);
+    font-size: clamp(44px, 4.5vw, 75px);
+    /* line-heightを文字数別クラス間で固定（基準サイズの約1.2倍）にし、
+       フォントサイズが縮んでも文字の視覚的な上端位置が左右でズレないようにする */
+    line-height: clamp(53px, 5.4vw, 90px);
     color: #fff; margin-top: 2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
+  /* 文字数別の縮小段階（.p-nameと同じ閾値: 9-12 / 13-16 / 17以上） */
+  .bey-name.bey-len-m { font-size: clamp(34px, 3.5vw, 60px); }
+  .bey-name.bey-len-l { font-size: clamp(28px, 2.85vw, 48px); }
+  .bey-name.bey-len-xl { font-size: clamp(23px, 2.34vw, 38px); }
   /* 上中央のバトル数（score.htmlの#battle-counter-areaと同じ表示） */
   #battle-counter-area {
-    position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 90;
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 90;
     text-align: center; white-space: nowrap; pointer-events: none;
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    background: rgba(0,0,0,0.55); border-radius: 8px; padding: 2px 12px;
+    background: rgba(0,0,0,0.55); border-radius: 8px; padding: 4px 20px;
     box-shadow: 0 0 0 1px rgba(255,170,0,0.25) inset;
   }
-  #battle-ordinal { font-size: clamp(16px, 3vw, 32px); color: #facc15; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-right: 5px; }
-  .battle-label { font-size: clamp(11px, 1.9vw, 20px); color: #fff; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); }
+  #battle-ordinal { font-size: clamp(16px, 3vw, 48px); color: #facc15; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-right: 5px; }
+  .battle-label { font-size: clamp(11px, 1.9vw, 30px); color: #fff; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); }
   .vs-sep {
     font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-    font-size: clamp(14px, 3vw, 26px); color: #facc15; flex-shrink: 0; padding: 0 6px;
+    font-size: clamp(14px, 3vw, 44px); color: #facc15; flex-shrink: 0; padding: 0 6px;
   }
   @media (orientation: portrait) {
     #main-view { flex-direction: column; }
@@ -94,7 +102,7 @@
   }
   #win-text {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: clamp(24px, 9vw, 84px); color: #fff; text-align: center;
+    font-size: clamp(24px, 9vw, 160px); color: #fff; text-align: center;
     letter-spacing: 0.06em;
     text-shadow: 0 0 22px rgba(251,191,36,0.9), 0 0 55px rgba(251,191,36,0.5), 2px 2px 0 #000;
   }
@@ -104,7 +112,7 @@
     position: fixed; top: 68%; left: 50%; transform: translate(-50%, 0);
     z-index: 210; max-width: 82vw;
     font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
-    font-size: clamp(11px, 2.4vw, 20px); color: #e2e8f0; text-align: center; line-height: 1.5;
+    font-size: clamp(11px, 2.4vw, 38px); color: #e2e8f0; text-align: center; line-height: 1.5;
     text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
     background: rgba(10,14,23,0.55); border-radius: 8px; padding: 6px 14px;
   }
@@ -117,29 +125,29 @@
   }
   #preview-label {
     font-family: 'Orbitron', sans-serif; font-weight: 700;
-    font-size: clamp(11px, 2vw, 16px); color: #64748b; letter-spacing: 0.2em;
+    font-size: clamp(11px, 2vw, 28px); color: #64748b; letter-spacing: 0.2em;
   }
   #preview-catchphrase {
     font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-    font-size: clamp(14px, 3.4vw, 34px); color: #facc15; text-align: center; max-width: 90vw;
+    font-size: clamp(14px, 3.4vw, 60px); color: #facc15; text-align: center; max-width: 90vw;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     text-shadow: 0 0 14px rgba(250,204,21,0.85), 0 2px 4px rgba(0,0,0,0.8);
   }
-  #preview-vs { display: flex; align-items: center; gap: clamp(10px, 3vw, 30px); }
+  #preview-vs { display: flex; align-items: center; gap: clamp(10px, 3vw, 50px); }
   .preview-player-col { display: flex; flex-direction: column; align-items: center; max-width: 38vw; }
   #preview-p1, #preview-p2 {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: clamp(20px, 6vw, 60px); color: #fff; max-width: 100%;
+    font-size: clamp(20px, 6vw, 110px); color: #fff; max-width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .preview-stats {
     font-family: 'Orbitron', sans-serif; font-weight: 700;
-    font-size: clamp(9px, 1.8vw, 15px); color: #38bdf8; margin-top: 4px; max-width: 100%;
+    font-size: clamp(9px, 1.8vw, 26px); color: #38bdf8; margin-top: 4px; max-width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .preview-vs-mark {
     font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
-    font-size: clamp(16px, 4vw, 40px); color: #facc15;
+    font-size: clamp(16px, 4vw, 70px); color: #facc15;
   }
 
   /* 休憩中 */
@@ -150,7 +158,7 @@
   }
   #break-title {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: clamp(28px, 8vw, 80px); color: #fff; letter-spacing: 0.1em;
+    font-size: clamp(28px, 8vw, 150px); color: #fff; letter-spacing: 0.1em;
     text-shadow: 0 0 20px rgba(251,191,36,0.9), 0 0 55px rgba(251,191,36,0.5), 2px 2px 0 #000;
   }
 
@@ -162,7 +170,7 @@
   }
   #call-text {
     font-family: 'Orbitron', sans-serif; font-weight: 900;
-    font-size: clamp(30px, 12vw, 130px); color: #facc15; letter-spacing: 0.05em;
+    font-size: clamp(30px, 12vw, 230px); color: #facc15; letter-spacing: 0.05em;
     text-shadow: 0 0 24px rgba(250,204,21,0.9);
   }
 
@@ -178,14 +186,14 @@
   }
   #qr-announce-title {
     font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
-    font-size: clamp(13px, 3.2vw, 22px); color: #fff; line-height: 1.6; letter-spacing: 0.04em;
+    font-size: clamp(13px, 3.2vw, 40px); color: #fff; line-height: 1.6; letter-spacing: 0.04em;
     text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.85);
   }
   #qr-announce-box {
     background: #FFFFFF;
     max-width: 80vmin; max-height: 80vmin;
     aspect-ratio: 1 / 1;
-    width: min(80vmin, 320px);
+    width: min(80vmin, 560px);
     display: flex; align-items: center; justify-content: center;
     border-radius: 10px;
     padding: clamp(8px, 2vw, 16px);
@@ -198,14 +206,14 @@
   }
   #qr-announce-caption {
     font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
-    font-size: clamp(10px, 2.2vw, 15px); color: #ffaa00; line-height: 1.5; letter-spacing: 0.02em;
+    font-size: clamp(10px, 2.2vw, 26px); color: #ffaa00; line-height: 1.5; letter-spacing: 0.02em;
   }
 
   #btn-reload {
-    position: fixed; right: 8px; bottom: 8px; z-index: 500;
-    width: 38px; height: 38px; border-radius: 50%;
+    position: fixed; right: 12px; bottom: 12px; z-index: 500;
+    width: 48px; height: 48px; border-radius: 50%;
     background: rgba(0,0,0,0.5); border: 1px solid #334155; color: #e2e8f0;
-    font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; line-height: 1; display: flex; align-items: center; justify-content: center;
     touch-action: manipulation;
   }
 </style>
@@ -288,18 +296,21 @@
 
     function $(id) { return document.getElementById(id); }
 
-    // score.htmlのadjustNameFontSizeと同じ閾値で文字数別の縮小クラスを付ける
-    function adjustNameFontSize(el, text) {
+    // score.htmlのadjustNameFontSizeと同じ閾値（9-12 / 13-16 / 17以上）で文字数別の縮小クラスを付ける。
+    // prefixで .name-len-* / .bey-len-* を切り替え、ブレーダー名・ベイ名の両方に使う
+    function applyLenClass(el, text, prefix) {
       const len = (text || '').length;
-      el.classList.remove('name-len-m', 'name-len-l', 'name-len-xl');
+      el.classList.remove(prefix + '-m', prefix + '-l', prefix + '-xl');
       if (len <= 12) {
-        if (len > 8) el.classList.add('name-len-m');
+        if (len > 8) el.classList.add(prefix + '-m');
       } else if (len <= 16) {
-        el.classList.add('name-len-l');
+        el.classList.add(prefix + '-l');
       } else {
-        el.classList.add('name-len-xl');
+        el.classList.add(prefix + '-xl');
       }
     }
+    function adjustNameFontSize(el, text) { applyLenClass(el, text, 'name-len'); }
+    function adjustBeyFontSize(el, text) { applyLenClass(el, text, 'bey-len'); }
 
     // score.htmlのupdateBattleCounterDisplayと同じ判定（両者が上限-1でFINAL）
     function updateBattleCounter() {
@@ -317,6 +328,8 @@
       $('score2').textContent = s2;
       $('bey1').textContent = bey1;
       $('bey2').textContent = bey2;
+      adjustBeyFontSize($('bey1'), bey1);
+      adjustBeyFontSize($('bey2'), bey2);
       updateBattleCounter();
     }
 
