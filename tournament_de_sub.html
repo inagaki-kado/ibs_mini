@@ -1169,10 +1169,13 @@
 
   function selectSubBeyblade(logicalSide, beybladeName) {
     if (!currentMatch) return;
-    if (logicalSide === 'p1') beyP1 = beybladeName; else beyP2 = beybladeName;
+    // 選択中のベイをもう一度タップした場合は選択を解除する（空文字に戻す）
+    const current = logicalSide === 'p1' ? beyP1 : beyP2;
+    const nextValue = (current === beybladeName) ? '' : beybladeName;
+    if (logicalSide === 'p1') beyP1 = nextValue; else beyP2 = nextValue;
     renderBeySelectUI();
     // score/score_subへ即座に反映。player は表示side基準（dispToScorePlayerと同じ規約）で送る。
-    sendToScoreLinks({ type: 'SET_BEYBLADE', data: { player: dispToScorePlayer(logicalToDisp(logicalSide)), beyblade: beybladeName, timestamp: Date.now() } });
+    sendToScoreLinks({ type: 'SET_BEYBLADE', data: { player: dispToScorePlayer(logicalToDisp(logicalSide)), beyblade: nextValue, timestamp: Date.now() } });
     // 親機へ通知してmatch.beyP1/beyP2として保存させる（双方向共有）
     if (conn?.open) {
       if (currentHostMode === 'de') {
@@ -1188,7 +1191,7 @@
           type: 'GEN_BEY_SELECT',
           matchRef: buildMatchRef(currentMatch.bracket, currentMatch.roundIdx, currentMatch.matchIdx),
           side: logicalSide === 'p1' ? 'P1' : 'P2',
-          beyblade: beybladeName,
+          beyblade: nextValue,
           updatedAt: Date.now()
         });
       }

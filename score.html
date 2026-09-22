@@ -2592,8 +2592,10 @@
          */
         function handleBeybladeSelection(data) {
             console.log('📥 ベイブレード受信:', data);
-            
-            if (!data || !data.player || !data.beyblade) {
+
+            // beyblade === '' は選択解除（表示クリア）の合図として許容する。
+            // player未指定や型不正のみ弾く（従来はfalsyチェックで空文字も弾いていたため解除できなかった）
+            if (!data || !data.player || typeof data.beyblade !== 'string') {
                 console.warn('⚠️ 無効なベイブレードデータ:', data);
                 return;
             }

@@ -546,8 +546,9 @@
     }
 
     // SET_BEYBLADEの実配線は { type:'SET_BEYBLADE', data:{ player, beyblade, timestamp } }（tournament_de.html準拠）
+    // beyblade === '' は選択解除（表示クリア）の合図として許容する
     function handleSetBeyblade(payload) {
-      if (!payload || !payload.player || !payload.beyblade) return;
+      if (!payload || !payload.player || typeof payload.beyblade !== 'string') return;
       const player = String(payload.player).toUpperCase();
       if (player === 'P1') bey1 = payload.beyblade;
       else if (player === 'P2') bey2 = payload.beyblade;
