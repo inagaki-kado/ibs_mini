@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(node --check _score_script_check.js)",
+      "Bash(rm -f _score_script_check.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -m http.server 8791)",
+      "Bash(curl -sv http://127.0.0.1:8791/score.html -o /dev/null)",
+      "Bash(rm tournament_de.html.backup2)",
+      "Bash(cp tournament_de.html tournament_de.html.backup)"
+    ]
+  }
+}

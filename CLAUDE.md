@@ -30,7 +30,7 @@
 
 ### 実装時に守ること
 
-- PeerJS: 既存 `type` の変更・削除は禁止。新機能は新しい `type` を追加する（[`peerjs-protection.md`](.claude/rules/peerjs-protection.md) 参照）
+- PeerJS: 既存 `type` の変更・削除は禁止。新機能は新しい `type` を追加する（下記「絶対に守るルール」2章の type 一覧が正。`.claude/rules/` は存在しない）
 - デザインテーマ（サイバーダーク）・`localStorage` キー/スキーマは無断で変更しない
 - 同じバグを2回直した、または「なぜそうなっているか」説明できない場合は、いったん手を止めて仮説を再検討してから修正する
 - ユーザーが「調査だけ」と指定した場合は実装せず調査結果のみ報告する
@@ -44,7 +44,7 @@
 - 内容: [1〜2文]
 
 ## 確認手順
-[Live Server でのテスト方法]
+[ローカルサーバー（localhost:5500）でのテスト方法]
 ```
 
 ### 例外
@@ -128,7 +128,7 @@
 | `player_stats.html` | ブレーダー統計ポータル（Google Sheets連携） | 緑 `#00ff88` |
 | `lottery.html` | 抽選アプリ | — |
 | `spectator.html` | 観客向け表示 | — |
-| `score_sub.html` | `tournament_de_sub.html` 連携用の軽量スコアHUD（iPhone SE / iOS 15 想定。Tailwind・DSEG7・カメラ機能不使用） | — |
+| `score_sub.html` | `tournament_de_sub.html` 連携用の軽量スコアHUD（1920×1000ディスプレイ想定。Tailwind・DSEG7・カメラ機能不使用） | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
@@ -268,7 +268,12 @@
 
 ### 5. file:// 制限
 - `fetch('parts.csv')` はローカルの `file://` では動作しない
-- 開発時は **Live Server**（VS Code 拡張等）でサーバー経由アクセスすること
+- 開発時はローカルサーバー経由でアクセスすること（macOS 環境）:
+  ```bash
+  cd "/Users/yamiz/Documents/ベイ会アプリ" && python3 -m http.server 5500
+  ```
+  → `http://localhost:5500/tournament_de.html` 等で開く。VS Code の Live Server 拡張でも可
+- 実機 iPhone で確認する場合は Mac と同一 Wi-Fi で `http://<MacのIP>:5500/` にアクセス（IP は `ipconfig getifaddr en0`）。iOS Simulator でも確認可
 
 ### 6. localStorage キーの分離
 
@@ -596,7 +601,7 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | **OBS** | 配信。score.htmlをブラウザソースとして使用 |
 | **Tonamel** | 事前参加登録・公開イベントページのみ（API連携なし） |
 | **allorigins.win** | CORSプロキシ（OGP画像取得用） |
-| **Live Server（VS Code 等）** | ローカル開発（CSV fetch対応） |
+| **ローカルサーバー（`python3 -m http.server` / Live Server 等）** | ローカル開発（CSV fetch対応） |
 | **X (Twitter) @yamizaki** | クラブ公式アカウント |
 
 ---
@@ -642,8 +647,18 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 ### 作業手順
 
 1. タスク発生 → **Claude Code** に依頼
-2. Claude Code が調査 → そのまま直接実装 → Live Server で確認
+2. Claude Code が調査 → そのまま直接実装 → ローカルサーバー（ルール5参照）で確認
 3. 確認NGなら結果を Claude に返す → 前回の仮説を破棄して再調査・再修正
+
+### 開発環境（macOS）
+
+- 2026-10 に Windows から macOS へ移行済み。作業ディレクトリ: `/Users/yamiz/Documents/ベイ会アプリ`
+- 改行は LF（CRLF の混入なし）。シェルは zsh（日本語パスは必ず引用符で囲む）
+- `node` / `pwsh`（PowerShell）は未インストール。DE ブラケット検証は Python 版を使う:
+  `python3 _verify_de_bracket.py`（20人DEのルーティング全出力）/
+  `python3 _verify_lb_map.py`（参考画像との LB 対応表）。共通ロジックは `_de_topology.py`。
+  `python3 _verify_cp.py`（キャッチコピー生成ロジックのセルフチェック。旧 `_verify_cp.js` の移植）。
+- 大きな動画・PDF（`movie.mov` 等）は作業ディレクトリ直下にあるが、アプリの動作には不要
 
 ### バックアップ
 

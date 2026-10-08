@@ -50,7 +50,7 @@
 
 ### parts.csv
 - マスターデータ。`window.addEventListener('DOMContentLoaded')` でロード
-- `fetch('parts.csv')` はローカル `file://` では動作しないため、**Live Server** 等でサーバー経由アクセスすること
+- `fetch('parts.csv')` はローカル `file://` では動作しないため、ローカルサーバー（`python3 -m http.server 5500` / Live Server 等）経由でアクセスすること
 
 ### パーツIDプリフィックス
 
