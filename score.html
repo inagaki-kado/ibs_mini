@@ -27,6 +27,10 @@
 
         body.green-mode { background-color: #00ff00 !important; }
         body.green-mode #video-container { display: none !important; }
+        /* iOSアプリ(BeyHUD)内: カメラはネイティブ層が描画するため WebView を透過させる（ブラウザでは無関係） */
+        html.native-cam, html.native-cam body { background: transparent; }
+        html.native-cam #camera-bg { visibility: hidden; }
+        html.native-cam #replay-video { background: transparent; } /* リプレイ映像もネイティブ層。要素はダブルタップ判定用に残す */
 
         body.hud-hidden #main-hud,
         body.hud-hidden .system-btn,
@@ -943,6 +947,55 @@
         let beybladeP1 = '';
         let beybladeP2 = '';
 
+        // ===== iOSアプリ(BeyHUD)連携 =====
+        // アプリ内で開かれた場合のみ、カメラをネイティブ層(AVFoundation)に任せる。ブラウザでは NATIVE=null で従来通り。
+        const NATIVE = (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.beyNative) || null;
+        function nativeSend(cmd, data) {
+            if (!NATIVE) return;
+            try { NATIVE.postMessage(Object.assign({ cmd }, data || {})); } catch (e) {}
+        }
+        let nativeCamState = null;
+        window.onNativeCamera = (s) => {
+            nativeCamState = s;
+            const btn = document.getElementById('btn-cammode');
+            if (btn) { btn.textContent = String(s.requestedFps || 60); btn.classList.toggle('active', (s.requestedFps || 60) > 60); }
+            if (s.error) updateStatusMsg(s.error, 3000);
+            if (fpsDebugOn) updateCamDebugSettings();
+        };
+        window.onNativeCameraFps = (d) => {
+            const el = document.getElementById('cd-real');
+            if (el && fpsDebugOn) el.innerText = d.fps.toFixed(1);
+        };
+        // アプリ内では replayVideo をこの代役に差し替える。<video> と同じプロパティ/メソッドで
+        // ネイティブ再生(AVPlayer)を操作するので、既存のリプレイ処理（REPLAY_* コマンド・シーク・ループ）はそのまま動く。
+        function createNativeReplayVideo(el) {
+            const st = { t: 0, dur: NaN, paused: true, rate: 1 };
+            const listeners = { timeupdate: [], loadedmetadata: [] };
+            window.onNativeReplay = (s) => {
+                if (s.error) { stopReplay(); updateStatusMsg(s.error, 2000); return; }
+                const firstMeta = !(st.dur > 0) && s.dur > 0;
+                st.t = s.t; st.dur = s.dur; st.paused = s.paused; st.rate = s.rate;
+                if (firstMeta) listeners.loadedmetadata.forEach(f => f());
+                listeners.timeupdate.forEach(f => f());
+            };
+            return {
+                style: el.style,
+                get duration() { return st.dur; },
+                get currentTime() { return st.t; },
+                set currentTime(v) { st.t = v; nativeSend('replaySeek', { t: v }); },
+                get paused() { return st.paused; },
+                get playbackRate() { return st.rate; },
+                set playbackRate(v) { st.rate = v; nativeSend('replayRate', { rate: v }); },
+                play() { st.paused = false; nativeSend('replayPlay', { rate: st.rate }); return Promise.resolve(); },
+                pause() { st.paused = true; nativeSend('replayPause'); },
+                load() {}, removeAttribute() {}, set src(v) {},
+                onerror: null, oncanplay: null, ontimeupdate: null,
+                addEventListener(type, fn) { if (listeners[type]) listeners[type].push(fn); else el.addEventListener(type, fn); },
+                getBoundingClientRect() { return el.getBoundingClientRect(); },
+                resetState() { st.t = 0; st.dur = NaN; st.paused = true; st.rate = 1; },
+            };
+        }
+
         let currentScale = parseFloat(localStorage.getItem('tbh_cam_scale')) || 1;
         let currentTranslateX = parseFloat(localStorage.getItem('tbh_cam_tx')) || 0;
         let currentTranslateY = parseFloat(localStorage.getItem('tbh_cam_ty')) || 0;
@@ -954,7 +1007,7 @@
         let isHudVisible = true; // HUD表示状態（初期：表示あり）
 
         const camVideo = document.getElementById('camera-bg');
-        const replayVideo = document.getElementById('replay-video');
+        const replayVideo = NATIVE ? createNativeReplayVideo(document.getElementById('replay-video')) : document.getElementById('replay-video');
         const replayLabel = document.getElementById('replay-indicator');
         const replayStatus = document.getElementById('replay-status');
         const replaySeekbar = document.getElementById('replay-seekbar');
@@ -1081,6 +1134,9 @@
             }
             localStorage.setItem('tbh_cam_scale', currentScale); localStorage.setItem('tbh_cam_tx', currentTranslateX);
             localStorage.setItem('tbh_cam_ty', currentTranslateY); localStorage.setItem('tbh_cam_rot', currentRotation);
+            const zoomed = isReplayMode && replayZoomMult > 1;
+            nativeSend('transform', { rot: currentRotation, scale: currentScale, tx: currentTranslateX, ty: currentTranslateY,
+                rscale: replayScale, ox: zoomed ? replayZoomOriginX : 50, oy: zoomed ? replayZoomOriginY : 50 });
         }
         applyTransforms();
 
@@ -1275,6 +1331,7 @@
         let camMode = 'fps'; // 'fps' = 60fps優先 / 'hq' = 画質優先
         function toggleCamMode() {
             blurFocus();
+            if (NATIVE) { nativeSend('cameraCycle'); return; } // アプリ内: 60→120→240fps を切替（表示は onNativeCamera で更新）
             camMode = camMode === 'fps' ? 'hq' : 'fps';
             const btn = document.getElementById('btn-cammode');
             btn.textContent = camMode === 'fps' ? '60' : 'HQ';
@@ -1283,6 +1340,7 @@
         }
 
         async function initMedia(withMic = false) {
+            if (NATIVE) { nativeSend('cameraStart'); return; }
             if (currentStream) currentStream.getTracks().forEach(t => t.stop());
             const attempts = camMode === 'hq'
                 ? [{ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: withMic }]
@@ -1346,6 +1404,7 @@
 
         // 大会リセット時などにヘッダーだけ残してデータ部分を破棄する（stop/startせず継続録画のまま巻き戻す）
         function flushRecorderBuffer() {
+            nativeSend('replayFlush');
             if (recorderChunks.length > 1) recorderChunks = [recorderChunks[0]];
         }
 
@@ -1374,6 +1433,7 @@
             clearReplayLoop();
             const dur = replayVideo.duration;
             if (!isFinite(dur) || dur <= 0) return;
+            if (NATIVE) { nativeSend('replayStep', { dir }); updateStatusMsg(dir > 0 ? "▶ +1F" : "◀ -1F", 800); return; } // 撮影fpsの1コマ単位
             const step = getReplayFrameStep();
             replayVideo.currentTime = Math.max(0, Math.min(dur, replayVideo.currentTime + dir * step));
             updateReplaySeekUI();
@@ -1393,6 +1453,7 @@
             if (!isReplayMode) return;
             isReplayMode = false;
             replayVideo.pause();
+            nativeSend('replayStop');
             // 停止処理で発生する読み込みエラー等を拾わないよう、ハンドラを先に解除する
             replayVideo.onerror = null;
             replayVideo.oncanplay = null;
@@ -1418,6 +1479,20 @@
 
         async function toggleReplayMode() {
             if (!isReplayMode) {
+                if (NATIVE) {
+                    // アプリ内: ネイティブが直近60秒をつないで末尾15秒前から再生する（録画は止めない）
+                    isReplayMode = true;
+                    replaySpeedIdx = -1;
+                    resetReplayExtras();
+                    replayVideo.resetState();
+                    replayVideo.style.display = 'block'; replayLabel.style.display = 'block'; replayStatus.style.display = 'block';
+                    document.body.classList.add('replay-mode');
+                    document.querySelectorAll('.beyblade-box').forEach(b => b.style.display = 'none');
+                    hideMatchComment();
+                    updateStatusMsg("▶ 1.0");
+                    nativeSend('replayStart');
+                    return;
+                }
                 if (!recorderChunks || recorderChunks.length < 3) { updateStatusMsg("録画データなし", 2000); return; }
                 isReplayMode = true;
                 replaySpeedIdx = -1;
@@ -1515,9 +1590,15 @@
             fpsDebugOn = !fpsDebugOn;
             document.getElementById('cam-debug').style.display = fpsDebugOn ? 'block' : 'none';
             document.getElementById('btn-fps').classList.toggle('active', fpsDebugOn);
-            if (fpsDebugOn) { updateCamDebugSettings(); startFpsMeasure(); }
+            if (fpsDebugOn) { updateCamDebugSettings(); if (!NATIVE) startFpsMeasure(); } // アプリ内の REAL はネイティブ実測値
         }
         function updateCamDebugSettings() {
+            if (NATIVE) {
+                const s = nativeCamState || {};
+                document.getElementById('cd-res').innerText = (s.width || '--') + '×' + (s.height || '--');
+                document.getElementById('cd-set').innerText = s.activeFps ? Number(s.activeFps).toFixed(1) : '--';
+                return;
+            }
             try {
                 const track = currentStream && currentStream.getVideoTracks()[0];
                 if (!track) return;

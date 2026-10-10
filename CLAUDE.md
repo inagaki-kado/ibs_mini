@@ -129,6 +129,7 @@
 | `lottery.html` | 抽選アプリ | — |
 | `spectator.html` | 観客向け表示 | — |
 | `score_sub.html` | `tournament_de_sub.html` 連携用の軽量スコアHUD（1920×1000ディスプレイ想定。Tailwind・DSEG7・カメラ機能不使用） | — |
+| `ios/BeyHUD.xcodeproj` | `score.html` を包む iOS アプリ（ネイティブカメラ 60/120/240fps＋ネイティブリプレイ）。詳細は score.html 固有仕様「iOSアプリ連携」 | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
@@ -394,6 +395,7 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 - 旧実装（`stop()` / `start()` を定期的に繰り返す方式）には戻さないこと。
   iOS Safari の MediaRecorder は `stop()` 完了（`onstop`）後でないと Blob が生成できず、
   周期的な停止・再開はフレーム落ちと取りこぼしの原因になる
+- 上記はブラウザ版の仕組み。**iOSアプリ（BeyHUD）内ではリプレイをネイティブが担当する**（下記「iOSアプリ連携」参照）
 
 ### 表示モード
 
@@ -408,6 +410,38 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 - 接続ステータス（`#link-dot` の `connected` クラス）は「1本以上openなら点灯」
 - `broadcastToConns(msg)` は将来の全接続一斉送信用ヘルパー（現状未使用）
 - 既存の `data.type` ハンドラ群は無変更
+
+### iOSアプリ連携（BeyHUD）
+
+`ios/BeyHUD.xcodeproj` は score.html を包む iOS アプリ。**カメラ表示の滑らかさ向上とリプレイ安定化**が目的。
+ネイティブ（Swift/AVFoundation）のカメラ層の上に、透過させた WKWebView で score.html を重ねる構成。
+
+| 層（下→上） | 担当 |
+|---|---|
+| `CameraPreviewView` | 背面広角カメラ。60/120/240fps（1080p優先）。実機 iPhone で 240fps 安定を確認済 |
+| `ReplayPlayerView` | リプレイ再生（AVPlayer）。リプレイ中のみ表示 |
+| WKWebView | score.html（HUD・PeerJS・スコア処理は従来通り） |
+
+- **score.html の原本はリポジトリ直下の1つだけ。** ビルド時の Run Script が `score.html`・`maintitle_white.png`・`torabo_logo.png`・`font/DSEG7Classic-BoldItalic.ttf` をアプリに同梱する。score.html を直したらアプリを再ビルドするだけで反映される
+- score.html 側は `window.webkit.messageHandlers.beyNative` の有無で判定（`const NATIVE`）。**ブラウザでは `NATIVE = null` で全分岐が無効になり、従来動作のまま**
+- アプリ内では `<html class="native-cam">` が付き、背景と `#camera-bg` を透過・非表示にする
+- リプレイ: `ReplayRecorder` が約2秒ごとの完結した HEVC mp4 を書き続け、直近60秒を保持（録画を止めずにリプレイを生成）。score.html の `replayVideo` はアプリ内だけ `createNativeReplayVideo()` の代役オブジェクトに差し替わり、`<video>` と同じプロパティ/メソッドでネイティブ再生を操作する。**既存の REPLAY_* 処理は代役経由でそのまま動くため、`replayVideo` の使い方を変える場合は代役側も合わせること**
+- コマ送りはアプリ内では撮影fpsの1コマ単位（240fpsなら1/240秒）。ブラウザ版は1/60秒
+- 音声は扱わない（iOS 標準の画面収録のマイク録音と競合させないため）。**動画撮影はアプリに搭載せず、iOS 標準の画面収録を使う方針**
+- 映像出力は USB-C → HDMI のミラーリング（外部出力は実質60Hz上限。高fpsの効果は主にリプレイのスロー）
+- 端末が危険温度（`thermalState == .critical`）になると自動で 60fps に落とす
+- JS ↔ Swift ブリッジ（PeerJS の `type` とは別系統）:
+
+| 方向 | 名前 | 用途 |
+|---|---|---|
+| JS→Swift | `cameraStart` / `cameraCycle` | カメラ起動 / 60→120→240fps 切替（「60」ボタン） |
+| JS→Swift | `transform` | 180°回転・ピンチ拡大・移動・リプレイ2xズーム（`rot`/`scale`/`tx`/`ty`/`rscale`/`ox`/`oy`） |
+| JS→Swift | `replayStart` / `replayStop` / `replayPlay` / `replayPause` / `replayRate` / `replaySeek` / `replayStep` / `replayFlush` | リプレイ操作 |
+| Swift→JS | `onNativeCamera` / `onNativeCameraFps` | カメラ状態・実測fps（FPSデバッグ表示） |
+| Swift→JS | `onNativeReplay` | リプレイ状態（`t`/`dur`/`paused`/`rate`、失敗時 `error`） |
+
+- ビルド: Xcode で `ios/BeyHUD.xcodeproj` を開き、Signing の Team に Apple ID を設定して実機へ ▶（Simulator にはカメラがないためカメラ・リプレイは実機で確認する）
+- 📋 未着手: 外部モニター専用 16:9 画面（ミラーリングの黒帯・操作ボタン映り込みの解消）
 
 ---
 
@@ -659,6 +693,7 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
   `python3 _verify_lb_map.py`（参考画像との LB 対応表）。共通ロジックは `_de_topology.py`。
   `python3 _verify_cp.py`（キャッチコピー生成ロジックのセルフチェック。旧 `_verify_cp.js` の移植）。
 - 大きな動画・PDF（`movie.mov` 等）は作業ディレクトリ直下にあるが、アプリの動作には不要
+- Xcode 27 導入済（iOS アプリ `ios/BeyHUD.xcodeproj` のビルド用）。署名は Xcode の自動署名（Apple ID）
 
 ### バックアップ
 
@@ -682,3 +717,5 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | CXチャートの Base64 → iframe 分離（約552KB削減） | `tournament.html`, `tournament_de.html` | 📋 検討中 |
 | `cx_parts_chart.html` の内容を正とする統合 | `cx_parts_chart.html` | 📋 検討中 |
 | UI原則の既存箇所への段階適用（44px / focus-visible / on-color） | 操作系全ファイル | 📋 検討中 |
+| score.html の iOS アプリ化（ネイティブカメラ・リプレイ） | `ios/BeyHUD`, `score.html` | ✅ 実装済（実機確認済） |
+| iOS アプリ: 外部モニター専用 16:9 画面 | `ios/BeyHUD` | 📋 検討中 |
