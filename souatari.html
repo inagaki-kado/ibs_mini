@@ -182,6 +182,7 @@
           <h2 class="text-xl md:text-2xl font-sf text-cyber-green border-l-4 border-cyber-green pl-4" id="displayLeagueName"></h2>
         </div>
         <div class="flex items-center gap-2">
+          <button id="btn-undo" onclick="undoLastAction()" style="touch-action: manipulation; min-height: 44px; min-width: 44px;" class="bg-cyber-dark border border-cyber-green text-cyber-green px-3 py-2 rounded font-bold font-sf text-xs transition-colors whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyber-green opacity-40" disabled>↩ 1手戻す</button>
           <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
           <button onclick="openExportModal()" class="bg-cyber-dark border border-cyber-green hover:bg-cyber-green/20 text-cyber-green px-3 py-2 rounded font-bold font-sf text-xs transition-colors" style="touch-action:manipulation;">📝 CSV出力</button>
           <button id="showResultsBtn" onclick="showResults()" class="hidden bg-cyber-pink hover:bg-cyber-pink/80 text-white px-6 py-2 rounded-full font-bold font-sf shadow-[0_0_10px_#ec4899] transition-transform active:scale-95">SHOW RESULTS 🏆</button>
@@ -688,9 +689,70 @@
         });
 
         if (!isLeagueStarted) return;
+        // loadState後は match.p1/p2 が participants と別オブジェクト（JSON復元のコピー）になるため、
+        // 集計前に participants の最新オブジェクトへ再リンクする（しないと参加者側の戦績が反映されない）
+        const pMap = {};
+        participants.forEach(p => { pMap[p.id] = p; });
+        leagueMatches.forEach(m => {
+            if (m.p1 && pMap[m.p1.id]) m.p1 = pMap[m.p1.id];
+            if (m.p2 && pMap[m.p2.id]) m.p2 = pMap[m.p2.id];
+        });
         leagueMatches.forEach(m => processMatchForStats(m));
     }
 
+
+    // ==========================================
+    // 結果入力 UNDO（メモリ内のみ・localStorageには保存しない）
+    // 対象: leagueMatches（p1/p2 は id 参照で保持し復元時に participants へ再リンク）と tieBreaker。
+    // syncToSheets は呼ばない（シート側の巻き戻しは対象外）。
+    // ==========================================
+    const undoStack = [];
+    const UNDO_LIMIT = 15;
+
+    function pushUndoSnapshot() {
+      try {
+        const matches = leagueMatches.map(m => {
+          const c = Object.assign({}, m);
+          c.p1 = m.p1 ? m.p1.id : null;
+          c.p2 = m.p2 ? m.p2.id : null;
+          return c;
+        });
+        const tieBreakers = {};
+        participants.forEach(p => { tieBreakers[p.id] = p.tieBreaker || 0; });
+        undoStack.push(JSON.stringify({ matches, tieBreakers }));
+        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+      } catch (e) { console.warn('undo snapshot failed:', e); }
+      updateUndoButtonState();
+    }
+
+    function undoLastAction() {
+      if (!undoStack.length) return showAlert('戻せる操作がありません');
+      let s;
+      try { s = JSON.parse(undoStack[undoStack.length - 1]); } catch (e) { return showAlert('復元に失敗しました'); }
+      undoStack.pop();
+      const byId = {};
+      participants.forEach(p => { byId[p.id] = p; });
+      leagueMatches = s.matches.map(m => {
+        const c = Object.assign({}, m);
+        c.p1 = byId[m.p1] || m.p1;
+        c.p2 = byId[m.p2] || m.p2;
+        return c;
+      });
+      participants.forEach(p => { if (s.tieBreakers && p.id in s.tieBreakers) p.tieBreaker = s.tieBreakers[p.id]; });
+      currentRemoteMatch = null;
+      recalculateAllStats();
+      updateLeagueDisplay(); // saveState を内包
+      if (typeof broadcastGenSync === 'function') broadcastGenSync();
+      updateUndoButtonState();
+    }
+
+    function updateUndoButtonState() {
+      const btn = document.getElementById('btn-undo');
+      if (!btn) return;
+      const disabled = undoStack.length === 0;
+      btn.disabled = disabled;
+      btn.classList.toggle('opacity-40', disabled);
+    }
 
     // ==========================================
     // BEY-ROULETTE LINK SYSTEM
@@ -867,6 +929,7 @@
       const m = leagueMatches.find(x => x.id === matchId);
       if (!m) { sc.send({ type: 'GEN_RESULT_ACK', ok: false, reason: 'invalid' }); return; }
       if (m.winner !== null) { sc.send({ type: 'GEN_RESULT_ACK', ok: false, reason: 'already_set' }); return; }
+      pushUndoSnapshot();
 
       let s1 = null, s2 = null;
       if (typeof msg.score === 'string' && msg.score.indexOf('-') >= 0) {
@@ -879,6 +942,7 @@
       m.s1 = s1;
       m.s2 = s2;
       m.winner = (msg.winner === 1 || msg.winner === 2) ? msg.winner : null;
+      if (m.winner) m.updatedAt = Date.now();
       m.kimarite = msg.kimarite || '';
       m.kimarite_p1 = msg.kimarite_p1 || '';
       m.kimarite_p2 = msg.kimarite_p2 || '';
@@ -903,18 +967,19 @@
       broadcastGenSync();
     }
 
-    /** サブ機の📢リクエスト。souatari本体の sendNextBattle() と同じ簡易パターン（キャッチフレーズ生成基盤は未実装のため含めない） */
+    /** サブ機の📢リクエスト。souatari本体の sendNextBattle() と同じ内容（キャッチコピー・rate含む）を送る */
     async function handleGenPreviewRequest(sc, msg) {
       const matchId = msg.matchRef && msg.matchRef.matchId;
       const m = leagueMatches.find(x => x.id === matchId);
       if (!m || !m.p1 || !m.p2) return;
       const label = 'LEAGUE MATCH';
       const hud = getShowPreviewHudFields();
-      const rows = await loadH2HHistory();
-      const { p1Wins, p2Wins } = calcH2H(rows, m.p1.name, m.p2.name);
+      const ex = await buildLeaguePreviewExtras(m);
       const payload = {
         p1: m.p1.name, p2: m.p2.name, label,
-        h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+        p1Stats: ex.p1Stats, p2Stats: ex.p2Stats,
+        h2hP1Wins: ex.p1Wins, h2hP2Wins: ex.p2Wins,
+        catchphrase: ex.catchphrase,
         ...hud, showLogo: logoDisplayEnabled && hud.showLogo
       };
       if (conn && conn.open) conn.send({ type: 'SHOW_PREVIEW', ...payload });
@@ -1341,6 +1406,282 @@
       return { p1Wins, p2Wins };
     }
 
+    // 📋名簿の関係性（親/子/夫婦/サークル/属性/女性）参照。コメント・レポートの枕詞用。
+    const RANGE_ROSTER = encodeURIComponent("'📋 名簿'!A3:T");
+    const ROSTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_ROSTER}?key=${API_KEY_H2H}`;
+    let _rosterRelMap = null;
+
+    async function loadRosterRelations(timeoutMs = 5000) {
+      if (_rosterRelMap) return _rosterRelMap;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(ROSTER_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return null;
+        const json = await res.json();
+        const split = s => String(s || '').split(/[,、]/).map(x => x.trim()).filter(Boolean);
+        const map = new Map();
+        (json.values || []).forEach(r => {
+          const name = String(r[0] || '').trim();
+          if (!name) return;
+          map.set(name, {
+            parents:  split(r[14]),
+            children: split(r[15]),
+            spouses:  split(r[16]),
+            circle:   String(r[17] || '').trim(),
+            attr:     String(r[18] || '').trim(),
+            female:   String(r[19] || '').trim() === '1'
+          });
+        });
+        _rosterRelMap = map;
+        return _rosterRelMap;
+      } catch (e) {
+        console.warn('名簿の関係性取得失敗（枕詞なしで継続）', e);
+        return null;
+      }
+    }
+
+    // 2人の関係を1つだけ返す。優先: 夫婦 > 親子 > きょうだい > 同サークル > 属性一致 > サークル対抗
+    // 女性フラグ(T列)は「母」の呼称判定にのみ使う。女性同士であること自体は出力しない。
+    function getRelation(nameA, nameB) {
+      const map = _rosterRelMap;
+      if (!map || !nameA || !nameB || nameA === nameB) return null;
+      const a = map.get(nameA), b = map.get(nameB);
+      if (!a || !b) return null;
+      if (a.spouses.includes(nameB) || b.spouses.includes(nameA)) return { kind: 'spouse' };
+      if (a.parents.includes(nameB) || b.children.includes(nameA)) return { kind: 'parent_child', parent: nameB, child: nameA, motherSide: b.female };
+      if (b.parents.includes(nameA) || a.children.includes(nameB)) return { kind: 'parent_child', parent: nameA, child: nameB, motherSide: a.female };
+      if (a.parents.length && a.parents.some(p => b.parents.includes(p))) return { kind: 'sibling' };
+      if (a.circle && b.circle && a.circle === b.circle) return { kind: 'same_circle', circle: a.circle };
+      if (a.attr && b.attr && a.attr === b.attr) return { kind: 'same_attr', attr: a.attr };
+      if (a.circle && b.circle && a.circle !== b.circle) return { kind: 'cross_circle', circles: [a.circle, b.circle] };
+      return null;
+    }
+
+    // 試合後コメント先頭の枕詞。該当なしは空文字。
+    function buildRelationPrefix(winnerName, loserName) {
+      const rel = getRelation(winnerName, loserName);
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return pickRandom(['会でも希少な夫婦対決。', '夫婦がスタジアムを挟んで向き合った。']);
+      }
+      if (rel.kind === 'parent_child') {
+        const oya = rel.motherSide ? '母' : '親';
+        return (winnerName === rel.child)
+          ? pickRandom([`${oya}を相手に一歩も引かない親子対決。`, `${oya}の背中を追う子が挑んだ親子対決。`])
+          : pickRandom([`${oya}の貫禄が示された親子対決。`, `子の挑戦を受けて立つ親子対決。`]);
+      }
+      if (rel.kind === 'sibling')      return pickRandom(['きょうだい対決となった一戦。', '同じ家で腕を磨いた者同士の一戦。']);
+      if (rel.kind === 'same_circle')  return pickRandom([`同じ${rel.circle}に集う両者の同門対決。`, `${rel.circle}の内輪を懸けた一戦。`]);
+      if (rel.kind === 'same_attr')    return pickRandom([`ともに${rel.attr}の顔を持つ両者の読み合い。`, `${rel.attr}同士、読み合いの一戦。`]);
+      if (rel.kind === 'cross_circle') return `${rel.circles[0]}と${rel.circles[1]}、サークルの威信を懸けた一戦。`;
+      return '';
+    }
+
+    // ===== 次戦予告キャッチコピー（tournament.html から移植。cpFromStage のみ総当たり向けに作り直し） =====
+    // ランク文字列("80F"/"XF"/"--")を帯index(0..5)に変換。判定不能はnull
+    function cpRankTier(rankStr) {
+      const s = String(rankStr || '').trim().toUpperCase();
+      if (!s || s === '--') return null;
+      if (s.startsWith('X')) return 5;
+      const n = parseInt(s, 10);
+      if (isNaN(n)) return null;
+      if (n < 40) return 0;
+      if (n < 60) return 1;
+      if (n < 80) return 2;
+      if (n < 90) return 3;
+      return 4;
+    }
+    function cpRateNum(rateStr) {
+      const v = parseFloat(String(rateStr || '').replace('%', ''));
+      return isNaN(v) ? null : v;
+    }
+    // 前半×後半を組み合わせる。直近8件のリングバッファと重複する場合は最大5回まで引き直す
+    const _catchphraseHistory = [];
+    const CATCHPHRASE_HISTORY_LIMIT = 8;
+    function cpCombine(heads, tails) {
+      let out = pickRandom(heads) + pickRandom(tails);
+      let tries = 0;
+      while (_catchphraseHistory.includes(out) && tries < 5) {
+        out = pickRandom(heads) + pickRandom(tails);
+        tries++;
+      }
+      _catchphraseHistory.push(out);
+      if (_catchphraseHistory.length > CATCHPHRASE_HISTORY_LIMIT) _catchphraseHistory.shift();
+      return out;
+    }
+    // 属性名(S列)は自由記述でカラム文字数を保証できないため、キャッチフレーズ合成時は5文字に丸める
+    // （17文字制限の逆算：cpGrandFinalWithRelation の head<=3 + tail<=9 に対し w<=5 が必要）
+    function cpTruncateAttr(s) {
+      const arr = [...String(s || '')];
+      return arr.length > 5 ? arr.slice(0, 5).join('') : arr.join('');
+    }
+    // 関係性 → 合成用の短い呼称
+    function cpRelWord(rel) {
+      if (!rel) return '';
+      if (rel.kind === 'spouse') return '夫婦';
+      if (rel.kind === 'parent_child') return rel.motherSide ? '母子' : '親子';
+      if (rel.kind === 'sibling') return 'きょうだい';
+      if (rel.kind === 'same_circle') return '同門';
+      if (rel.kind === 'same_attr') return cpTruncateAttr(rel.attr);
+      if (rel.kind === 'cross_circle') return '他流';
+      return '';
+    }
+    // 優先1: 関係性ベース
+    function cpFromRelation(rel) {
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return cpCombine(
+          ['愛と闘志の', '誓いを交わした', '家庭を懸けた', '最も近い好敵手、', '譲れぬ', '公私を懸けた', '阿吽の呼吸で挑む', '日常を持ち込んだ'],
+          ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', 'カップルマッチ！', '夫婦の意地！', '夫婦ダービー！', '夫婦頂上決戦！']);
+      }
+      if (rel.kind === 'parent_child') {
+        const kin = rel.motherSide ? '母子' : '親子';
+        return cpCombine(
+          ['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '譲れぬ想いの', '親から子へ', '背中を追いかけた', '血筋が交わる'],
+          [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, 'ファミリーマッチ！', `${kin}頂上戦！`, `${kin}の意地！`, `${kin}激突！`]);
+      }
+      if (rel.kind === 'sibling') {
+        return cpCombine(
+          ['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '血で血を洗う', '切磋琢磨してきた', '幼馴染以上の', '同じ血を継ぐ'],
+          ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'ファミリーマッチ！', 'きょうだいの意地！', 'きょうだい頂上戦！', 'きょうだい激突！']);
+      }
+      if (rel.kind === 'same_circle') {
+        return cpCombine(
+          ['意地とプライドの', '同じ看板の', '手の内知り尽くす', '練習の成果、', '気心知れた', '稽古仲間の', '同じ道場で鍛えた', '切磋琢磨の末の'],
+          ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '仲間割れマッチ！', '同門の意地！', '道場対抗戦！', 'クラブ内頂上戦！']);
+      }
+      if (rel.kind === 'same_attr') {
+        const a = cpTruncateAttr(rel.attr);
+        return cpCombine(
+          ['同業対決、', '手練れ同士の', '切れ味対決、', '経験と経験の', '似た者同士の', '玄人対決、', '駆け引き光る', '読み合い上等'],
+          [`${a}対決！`, `${a}マッチ！`, `${a}の意地！`, `${a}激突！`, `${a}バトル！`, `${a}戦！`, `${a}頂上戦！`, `${a}決戦！`]);
+      }
+      if (rel.kind === 'cross_circle') {
+        return cpCombine(
+          ['威信を懸けた', '看板を背負う', '越境してきた', '名誉を懸けた', '二つの会が交わる', '会の誇りを懸けた', '遠征してきた', '初参戦の意地'],
+          ['サークル対抗戦！', 'クラブ対抗マッチ！', '越境対決！', '他流試合！', '交流戦の頂点！', 'クラブ代表対決！', '他クラブとの激突！', '対抗戦の華！']);
+      }
+      return '';
+    }
+    // 優先2: 段階（総当たり向け）。ctx = { matchNo, total, isOpening, isLast, isTopClash }
+    // 通常の試合は '' を返し、優先3(H2H)以降へ流す。
+    function cpFromStage(ctx) {
+      if (!ctx) return '';
+      if (ctx.isLast && ctx.isTopClash) {
+        return cpCombine(
+          ['優勝を懸けた', '頂点が決まる', '全てが決まる', '栄冠を懸けた', '運命の', '首位を懸けた', '最後に笑うのは', '決着をつける'],
+          ['最終戦！', '最終決戦！', '大一番！', '総当たり最終戦！', 'ラストバトル！', '頂上決戦！', '優勝決定戦！', '大会最終戦！']);
+      }
+      if (ctx.isLast) {
+        return cpCombine(
+          ['リーグ締めの', '最後の', '総当たりの', '大会を締める', '全てを出し切る', '意地を懸けた', '有終の美を懸けた', '最後に笑うのは'],
+          ['最終戦！', 'ラストバトル！', '最終戦の一番！', '最後の一戦！', 'ファイナルマッチ！', '締めの一戦！', '有終の一番！', '大会最終戦！']);
+      }
+      if (ctx.isTopClash) {
+        return cpCombine(
+          ['首位を懸けた', '頂点が見える', '優勝争いの', '上位直接対決', '勝てば首位、', 'トップ同士の', '王座を狙う', '譲れぬ首位の'],
+          ['首位攻防戦！', '首位決戦！', '頂上対決！', '優勝争いの大一番！', '首位攻防！', 'トップ対決！', '王座争奪戦！', '首位をかけた戦い！']);
+      }
+      if (ctx.isOpening) {
+        return cpCombine(
+          ['幕開けの', '総当たりの', '火蓋を切る', '最初の', '開幕を告げる', '全ての始まり、', '波乱の予感、', '口火を切る'],
+          ['開幕戦！', '第1試合！', 'オープニングマッチ！', '開幕の一戦！', 'ファーストバトル！', '初陣の一戦！', 'キックオフマッチ！', '開幕戦の幕開け！']);
+      }
+      return '';
+    }
+    // 優先3: H2H
+    function cpFromH2H(w1, w2) {
+      if (w1 == null || w2 == null) return '';
+      if (w1 >= 1 && w2 >= 1) {
+        return cpCombine(
+          ['宿命の', '何度目かの', '決着つかぬ', '因縁深き', '譲れぬ', '幾度となき', '積年の', '決着を急ぐ', '三度目の', '火花散る', '伝説の再演、', '雌雄を決する'],
+          ['ライバル対決！', '再戦マッチ！', '好敵手対決！', '決着戦！', 'リマッチ！', 'ライバル決戦！', '因縁の一戦！', '決着マッチ！', '宿命の激突！', '再戦の行方！', '因縁再燃！', '決戦の再来！']);
+      }
+      if (w1 >= 1 || w2 >= 1) {
+        return cpCombine(
+          ['執念の', '借りを返す', '雪辱を期す', '過去を塗り替える', '牙を研いだ', '雪辱に燃える', '借りは返す、', '牙を磨いた', '再挑戦の', '捲土重来の', '意地を見せる', '汚名返上の'],
+          ['リベンジマッチ！', '仕返しの一戦！', '再戦！', '挑戦状！', '返り討ちなるか！', 'リベンジ戦！', '雪辱の一戦！', '再戦の行方！', '意地の一戦！', '牙を剥く一戦！', '雪辱の刻！', '再戦成るか！']);
+      }
+      return '';
+    }
+    // 優先5: 初顔合わせ（関係性・ステージ・H2H・戦績のいずれでも決まらない場合の最終手段）
+    function cpFirstMeeting() {
+      return cpCombine(
+        ['予測不能の', '手の内知らぬ', '未知数の', 'データなしの', '互いに初めての', '情報戦の', '初対面同士の', '手探りの', '未体験の', '見えない相性の', 'ぶっつけ本番の', '互いに探り合う'],
+        ['初顔合わせ！', 'ファーストマッチ！', '初対決！', 'ぶつかり合い！', '未知の激突！', '初対面の激突！', '未知との遭遇！', '霧の中の一戦！', 'データなき戦い！', '読み合いの初陣！', '前例なき激突！', '初陣を飾れるか！']);
+    }
+    // 優先4: 戦績
+    function cpFromStats(p1, p2) {
+      const t1 = cpRankTier(p1.rank), t2 = cpRankTier(p2.rank);
+      if (t1 === null || t2 === null) return '';
+      const r1 = cpRateNum(p1.currentStats && p1.currentStats.rate);
+      const r2 = cpRateNum(p2.currentStats && p2.currentStats.rate);
+      const bp1 = Number(p1.currentStats && p1.currentStats.power) || 0;
+      const bp2 = Number(p2.currentStats && p2.currentStats.power) || 0;
+      const bothTop = (t1 >= 3 && t2 >= 3) || (r1 != null && r2 != null && r1 >= 60 && r2 >= 60);
+      if (bothTop) {
+        return cpCombine(
+          ['トップランカーの', '上位陣が激突する', '実力者同士の', '高ランク同士の', '会を代表する', '選ばれし者達の', '名だたる強者の', '頂点に立つ者の', '王者候補同士の', '格の違いなき', '一流対決、', '折り紙付き同士の'],
+          ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！', '頂上対決！', '王者の風格！', '頂点への布石！', '実力伯仲！', '最強決定戦！', '真の実力対決！', '頂上の激突！']);
+      }
+      if (Math.abs(t1 - t2) >= 2 || Math.abs(bp1 - bp2) >= 3000) {
+        return cpCombine(
+          ['魅せろ、', '金星を狙う', '下剋上を狙う', '格上に挑む', '常識を覆す', '風穴を開ける', '一発逆転狙う', '波乱を呼ぶ', '格差を覆す', '格上食いの', '下剋上なるか', '伏兵の一撃'],
+          ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！', '波乱の幕開け！', '金星ゲット！', '伏兵参上！', '格上撃破！', '大金星なるか！', '常識崩し！', '一矢報いる！']);
+      }
+      return cpCombine(
+        ['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '譲らぬ両者の', '一歩も譲らぬ', '紙一重の', '一歩も引かぬ', '伯仲同士の', '互角すぎる', '決着つかぬ', '実力互角の'],
+        ['ガチンコバトル！', '真っ向勝負！', '総力戦！', '一騎打ち！', '大接戦必至！', '大熱戦必至！', '紙一重の勝負！', '五分の激突！', '一進一退！', '接戦必至！', '手に汗握る一戦！', '死闘必至！']);
+    }
+    // 統括：優先1(関係性)→2(段階)→3(H2H)→4(戦績)→5(初顔合わせ)の順に評価し、最初に得られた1文を返す
+    // stageCtx は buildLeagueStageCtx() の戻り値
+    function buildNextBattleCatchphrase(p1, p2, stageCtx, h2hP1Wins, h2hP2Wins) {
+      const rel = getRelation(p1.name, p2.name);
+      return cpFromRelation(rel)
+          || cpFromStage(stageCtx)
+          || cpFromH2H(h2hP1Wins, h2hP2Wins)
+          || cpFromStats(p1, p2)
+          || cpFirstMeeting()
+          || '';
+    }
+
+    // 総当たりの試合文脈。ordinal は試合番号(#id)、isLast は「未消化がこの1試合のみ」、
+    // isTopClash は現順位の上位2名同士（かつ双方2試合以上消化済み）
+    function buildLeagueStageCtx(m) {
+      const live = leagueMatches.filter(x => x.p1 && x.p2 && x.p1.id !== 'BYE' && x.p2.id !== 'BYE');
+      const unfinished = live.filter(x => x.winner === null || x.winner === 0);
+      const isLast = unfinished.length === 1 && unfinished[0].id === m.id;
+      let isTopClash = false;
+      try {
+        const st = computeLeagueStandings();
+        if (st.length >= 2) {
+          const top = [st[0], st[1]];
+          const ids = top.map(x => x.id);
+          isTopClash = ids.includes(m.p1.id) && ids.includes(m.p2.id) && top.every(x => x.games >= 2);
+        }
+      } catch (e) {}
+      return { matchNo: m.id, total: live.length, isOpening: m.id === (live[0] && live[0].id), isLast, isTopClash };
+    }
+
+    // 参加者本体（currentStats の最新値を持つ）を引く。見つからなければ試合側の参照をそのまま使う
+    function resolveLeaguePlayer(p) {
+      return (p && participants.find(x => x.id === p.id)) || p;
+    }
+
+    // SHOW_PREVIEW 共通ペイロード（キャッチコピー・p1Stats/p2Stats.rate を含む）。送信側2箇所から共用
+    async function buildLeaguePreviewExtras(m) {
+      const a = resolveLeaguePlayer(m.p1), b = resolveLeaguePlayer(m.p2);
+      const [rows] = await Promise.all([loadH2HHistory(), loadRosterRelations()]);
+      const { p1Wins, p2Wins } = calcH2H(rows, a.name, b.name);
+      let catchphrase = '';
+      try { catchphrase = buildNextBattleCatchphrase(a, b, buildLeagueStageCtx(m), p1Wins, p2Wins); }
+      catch (e) { console.warn('catchphrase failed', e); }
+      const st = (p) => ({ rank: p.rank, power: p.currentStats && p.currentStats.power, rate: p.currentStats && p.currentStats.rate });
+      return { p1Wins, p2Wins, catchphrase, p1Stats: st(a), p2Stats: st(b) };
+    }
+
     async function fetchBeyUsageTop5(playerName, timeoutMs = 4000) {
       try {
         const controller = new AbortController();
@@ -1511,8 +1852,8 @@
                 p1: match.p1.name, 
                 p2: match.p2.name, 
                 tName: leagueName,
-                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate },
-                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate }
+                p1Stats: { rank: match.p1.rank, power: match.p1.currentStats.power, rate: match.p1.currentStats.rate, fin: getLiveFinCounts(match.p1) },
+                p2Stats: { rank: match.p2.rank, power: match.p2.currentStats.power, rate: match.p2.currentStats.rate, fin: getLiveFinCounts(match.p2) }
             });
         } else {
             showAlert("⚠️ スコアシステムとリンクされていません！リモコン機能は動作しませんが、勝敗の決定は可能です。");
@@ -1898,7 +2239,29 @@
       ]);
     }
 
-    // 展開パターン別の総括1文を返す
+    // buildLoserPraise() は「〜を見せ、」のような連用形で終わるため、
+    // 文末に置けるよう終止形へ変換する。語尾は閉じた集合なので対応表で処理する。
+    const LOSER_PRAISE_ENDINGS = [
+      ['食い下がり', '食い下がった'], ['持ち込み', '持ち込んだ'],
+      ['沸かせ', '沸かせた'], ['見せ', '見せた'], ['示し', '示した'],
+      ['握り', '握った'], ['作り', '作った'], ['演じ', '演じた'],
+      ['進め', '進めた'], ['貫き', '貫いた'], ['報い', '報いた'],
+      ['放ち', '放った'], ['挑み', '挑んだ'], ['光り', '光った'],
+      ['崩さず', '崩さなかった'],
+      ['反撃し', '反撃した'], ['肉薄し', '肉薄した'],
+      ['健闘し', '健闘した'], ['展開し', '展開した']
+    ];
+    function terminateLoserPraise(text) {
+      if (!text) return '';
+      let s = String(text).replace(/、\s*$/, '');
+      for (const [from, to] of LOSER_PRAISE_ENDINGS) {
+        if (s.endsWith(from)) return s.slice(0, s.length - from.length) + to + '。';
+      }
+      // 想定外の語尾はそのまま句点で閉じる（文法崩れより出力欠落を避ける）
+      return s + '。';
+    }
+
+    // 展開パターン別の総括1文を返す（DE/トーナメント版に追従し、現在は generateLocalComment から呼ばない）
     function buildSummary(flow, gap, shutout) {
       const pattern = flow ? flow.pattern : null;
       if (pattern === 'comeback') {
@@ -2059,7 +2422,27 @@
       }
       // ▲ 試合展開の分析ここまで
 
-      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout);
+      const relationPrefix = buildRelationPrefix(data.winner, data.loser);
+      return relationPrefix + firstSentence + terminateLoserPraise(buildLoserPraise(data, flow, loserBeyTop5));
+    }
+
+    // 大会中に確定した試合の決まり手を集計し、貼り付け時点の通算値(finCounts)に足した値を返す。
+    // leagueMatches を毎回スキャンする冪等な実装。UNDO・結果取り消しでも整合が崩れない。
+    function getLiveFinCounts(player) {
+      const base = (player && player.finCounts) || { XF:0, BF:0, OF:0, SF:0 };
+      const out = { XF: Number(base.XF)||0, BF: Number(base.BF)||0, OF: Number(base.OF)||0, SF: Number(base.SF)||0 };
+      if (!player || player.id == null) return out;
+      (leagueMatches || []).forEach(m => {
+        if (!m || !m.winner || !m.p1 || !m.p2) return;
+        let stored = null;
+        if (m.p1.id === player.id) stored = m.kimarite_p1;
+        else if (m.p2.id === player.id) stored = m.kimarite_p2;
+        if (!stored) return;
+        String(stored).split(',').map(x => x.trim().toUpperCase()).forEach(k => {
+          if (Object.prototype.hasOwnProperty.call(out, k)) out[k]++;
+        });
+      });
+      return out;
     }
 
     function sendMatchComment(comment, highlights) {
@@ -2075,7 +2458,8 @@
           .sort((a, b) => b.length - a.length);
         const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
           fetchBeyUsageTop5(data.winner),
-          fetchBeyUsageTop5(data.loser)
+          fetchBeyUsageTop5(data.loser),
+          loadRosterRelations()
         ]);
         const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
         if (targetMatch) {
@@ -2089,6 +2473,7 @@
 
     function handleRemoteWinner(side) {
         if (!currentRemoteMatch) return;
+        pushUndoSnapshot(); // 結果・スコア書込みの前に積む
 
         let finalWinnerVal;
         let finalScore1 = isRemoteSwapped ? remoteScoreRight : remoteScoreLeft;
@@ -2104,6 +2489,7 @@
         currentRemoteMatch.s1 = finalScore1;
         currentRemoteMatch.s2 = finalScore2;
         currentRemoteMatch.winner = finalWinnerVal;
+        currentRemoteMatch.updatedAt = Date.now(); // BREAK_RECAP の新しい順ソート用
         currentRemoteMatch.kimarite = serializeKimariteList(remoteKimariteList);
         currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
         currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
@@ -2292,12 +2678,15 @@
           let initialMatches = parseInt(cols[4]) || 0;
           let initialWins = parseInt(cols[5]) || 0;
           let initialLoses = parseInt(cols[6]) || 0;
+          let finXF = parseInt(cols[7]) || 0, finBF = parseInt(cols[8]) || 0;
+          let finOF = parseInt(cols[9]) || 0, finSF = parseInt(cols[10]) || 0;
 
           participants.push({ 
             id: pidCounter++, name: cols[0].trim(), memo1: cols[1] ? cols[1].trim() : '', 
             rank: cols[2] ? cols[2].trim() : '--',
             initialStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses },
             currentStats: { power: initialPower, matches: initialMatches, wins: initialWins, loses: initialLoses, rate: calculateRate(initialWins, initialMatches) },
+            finCounts: { XF: finXF, BF: finBF, OF: finOF, SF: finSF },
             bayChecked: false, bayImage: null, tieBreaker: 0 
           }); 
           count++; 
@@ -2315,6 +2704,7 @@
           id: pidCounter++, name, memo1: '', rank: '--',
           initialStats: { power: 1500, matches: 0, wins: 0, loses: 0 },
           currentStats: { power: 1500, matches: 0, wins: 0, loses: 0, rate: '0.00%' },
+          finCounts: { XF: 0, BF: 0, OF: 0, SF: 0 },
           bayChecked: false, bayImage: null, tieBreaker: 0
       });
       renderParticipants();
@@ -2510,6 +2900,7 @@
         }
         pList.splice(1, 0, pList.pop());
       }
+      undoStack.length = 0; updateUndoButtonState();
       updateLeagueDisplay();
       saveState();
     }
@@ -2549,6 +2940,7 @@
     async function resetScoreMatch() {
       if(!await showConfirm("この試合を未対戦の状態に戻しますか？")) return;
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
+      pushUndoSnapshot();
       match.s1 = null; match.s2 = null; match.winner = null; 
       recalculateAllStats();
       updateLeagueDisplay(); closeScoreModal();
@@ -2557,7 +2949,9 @@
     async function saveScoreMatch() {
       const match = leagueMatches.find(m => m.id === currentScoreMatchId);
       if (tempScoreP1 === tempScoreP2) { await showAlert("ベイブレードの公式ルールでは引き分けはありません。勝者が決まるまで再試合を行ってからスコアを入力してください。"); return; }
+      pushUndoSnapshot();
       match.s1 = tempScoreP1; match.s2 = tempScoreP2; match.winner = tempScoreP1 > tempScoreP2 ? 1 : 2;
+      match.updatedAt = Date.now();
       
       recalculateAllStats();
       updateLeagueDisplay(); closeScoreModal();
@@ -2565,7 +2959,7 @@
 
     function changeTieBreaker(pid, amount) {
       const p = participants.find(x => x.id === pid);
-      if(p) { p.tieBreaker = (p.tieBreaker || 0) + amount; updateLeagueDisplay(); }
+      if(p) { pushUndoSnapshot(); p.tieBreaker = (p.tieBreaker || 0) + amount; updateLeagueDisplay(); }
     }
 
     function toggleSort(type) {
@@ -2588,9 +2982,13 @@
       } else {
         const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
         const hud = getShowPreviewHudFields();
-        const rows = await loadH2HHistory();
-        const { p1Wins, p2Wins } = calcH2H(rows, p1, p2);
-        if (conn) conn.send({ type: 'SHOW_PREVIEW', p1, p2, label, h2hP1Wins: p1Wins, h2hP2Wins: p2Wins, ...hud, showLogo: logoDisplayEnabled && hud.showLogo });
+        const m = leagueMatches.find(x => x.id === matchId);
+        let ex = null;
+        if (m) ex = await buildLeaguePreviewExtras(m);
+        else { const rows = await loadH2HHistory(); const h = calcH2H(rows, p1, p2); ex = { p1Wins: h.p1Wins, p2Wins: h.p2Wins, catchphrase: '', p1Stats: null, p2Stats: null }; }
+        const msg = { type: 'SHOW_PREVIEW', p1, p2, label, h2hP1Wins: ex.p1Wins, h2hP2Wins: ex.p2Wins, catchphrase: ex.catchphrase, ...hud, showLogo: logoDisplayEnabled && hud.showLogo };
+        if (ex.p1Stats) { msg.p1Stats = ex.p1Stats; msg.p2Stats = ex.p2Stats; }
+        if (conn) conn.send(msg);
         activeNextBattleId = matchId;
       }
     }
@@ -2619,6 +3017,41 @@
         saveState();
     }
 
+    // 休憩中の振り返り演出（BREAK_RECAP）用データ生成（REFERENCE.md 6章準拠）。
+    // 確定済みの全試合を新しい順（updatedAt降順、未記録は試合番号降順）に最大50件。
+    // コメントは match.comment を使い、休憩中に新規fetchはしない。
+    function buildBreakRecapData() {
+      const items = [];
+      (leagueMatches || []).forEach(m => {
+        if (!m || !m.p1 || !m.p2 || m.p1.id === 'BYE' || m.p2.id === 'BYE' || m.winner === null || m.winner === 0) return;
+        let score1 = null, score2 = null;
+        if (typeof m.s1 === 'number' && typeof m.s2 === 'number' && Number.isFinite(m.s1) && Number.isFinite(m.s2)) { score1 = m.s1; score2 = m.s2; }
+        const kimarite = (Array.isArray(m.battles) && m.battles.length)
+          ? m.battles.map(b => b.finish || b.k).filter(Boolean).join(',')
+          : '';
+        items.push({
+          label: `第${m.id}試合`,
+          p1: m.p1.name,
+          p2: m.p2.name,
+          score1, score2,
+          winnerIs: m.winner,
+          kimarite: kimarite || null,
+          comment: m.comment || null,
+          _updatedAt: m.updatedAt || 0,
+          _id: m.id
+        });
+      });
+      items.sort((a, b) => (b._updatedAt - a._updatedAt) || (b._id - a._id));
+      return items.slice(0, 50).map(({ _updatedAt, _id, ...rest }) => rest);
+    }
+
+    function sendBreakRecap() {
+      if (!conn || !conn.open) return;
+      const items = buildBreakRecapData();
+      if (!items.length) return;
+      conn.send({ type: 'BREAK_RECAP', items, intervalMs: 8000 });
+    }
+
     function sendBreakStart() {
         if (!conn || !conn.open) return;
         const hudFields = getShowPreviewHudFields();
@@ -2629,6 +3062,7 @@
             ...hudFields,
             showLogo: logoDisplayEnabled && hudFields.showLogo
         });
+        sendBreakRecap();
         isBreakMode = true;
         updateBreakButton();
     }
@@ -2643,6 +3077,7 @@
             ...hudFields,
             showLogo: logoDisplayEnabled && hudFields.showLogo
         });
+        sendBreakRecap();
         isBreakMode = true;
         updateBreakButton();
     }

@@ -6790,31 +6790,42 @@
       const photoHtml = reportBuildPhoto(photoDataUrl);
       const spacerHtml = photoHtml ? '' : `<div style="flex:1 1 auto;"></div>`;
 
-      const page1Sections = [
+      // 紙面が1350pxを超えた場合に、優先度の低い項目から段階的に減らして収める。
+      // page1: 0=全項目 / 1=逆転劇カードを除外
+      // page2: 0=全項目 / 1=名勝負カード2件 / 2=名勝負カード1件 / 3=名勝負カード除外 / 4=+決まり手を呼ぶパーツ除外 / 5=+勝てたパーツ除外
+      const buildPage1 = (level) => [
         reportBuildMasthead(logo, 1),
         reportBuildNameBand(data, 1),
         reportBuildHeadline(data),
         reportBuildStandings(data),
         reportBuildHighlights(data),
-        reportBuildComeback(data),
+        level >= 1 ? '' : reportBuildComeback(data),
         photoHtml,
         spacerHtml,
         reportBuildFooter(1)
       ].filter(Boolean).join('');
 
-      const page2Sections = [
-        reportBuildMasthead(logo, 2),
-        reportBuildNameBand(data, 2),
-        reportBuildParts(data),
-        reportBuildPartsWinRate(data),
-        reportBuildFinishByParts(data),
-        reportBuildBladeMatchups(data),
-        reportBuildRecords(data),
-        // 編集後記のスペース確保のため「本日のオンリーワン」は紙面から除外（関数は残置）
-        reportBuildAllStandings(data),
-        reportBuildEditorial(noteText, nextEventText),
-        reportBuildFooter(2)
-      ].filter(Boolean).join('');
+      const makePageData = (level) => {
+        const full = data.bladeMatchups || [];
+        const n = level === 1 ? 2 : level === 2 ? 1 : level >= 3 ? 0 : full.length;
+        return Object.assign({}, data, { bladeMatchups: full.slice(0, n) });
+      };
+      const buildPage2 = (level) => {
+        const d = makePageData(level);
+        return [
+          reportBuildMasthead(logo, 2),
+          reportBuildNameBand(data, 2),
+          reportBuildParts(data),
+          level >= 5 ? '' : reportBuildPartsWinRate(data),
+          level >= 4 ? '' : reportBuildFinishByParts(data),
+          d.bladeMatchups.length ? reportBuildBladeMatchups(d) : '',
+          reportBuildRecords(data),
+          // 編集後記のスペース確保のため「本日のオンリーワン」は紙面から除外（関数は残置）
+          reportBuildAllStandings(data),
+          reportBuildEditorial(noteText, nextEventText),
+          reportBuildFooter(2)
+        ].filter(Boolean).join('');
+      };
 
       const makePage = (id, sectionsHtml) => {
         const el = document.createElement('div');
@@ -6825,8 +6836,24 @@
         return el;
       };
 
-      const canvas1 = makePage('report-canvas-1', page1Sections);
-      const canvas2 = makePage('report-canvas-2', page2Sections);
+      // フォント確定後でないと高さを正しく測れないため、最初のページを作る前に待つ
+      try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
+
+      let page1Level = 0, page2Level = 0;
+      let canvas1 = makePage('report-canvas-1', buildPage1(page1Level));
+      while (canvas1.scrollHeight > 1350 && page1Level < 1) {
+        canvas1.remove(); page1Level++;
+        canvas1 = makePage('report-canvas-1', buildPage1(page1Level));
+      }
+      let canvas2 = makePage('report-canvas-2', buildPage2(page2Level));
+      while (canvas2.scrollHeight > 1350 && page2Level < 5) {
+        canvas2.remove(); page2Level++;
+        canvas2 = makePage('report-canvas-2', buildPage2(page2Level));
+      }
+      if (page1Level || page2Level) {
+        console.info(`[イベントレポート] 紙面超過のため項目を削減しました（1枚目 level=${page1Level} / 2枚目 level=${page2Level}）`);
+      }
+      const dataForFit = Object.assign({}, data, { bladeMatchups: makePageData(page2Level).bladeMatchups });
 
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
 
@@ -6850,7 +6877,7 @@
       reportFitStandingsRows(data);
       reportFitPartsNames(data);
       reportFitPartsWinRateNames(data);
-      reportFitBladeMatchupNames(data);
+      reportFitBladeMatchupNames(dataForFit);
 
       [canvas1, canvas2].forEach((canvas, idx) => {
         const overflow = canvas.scrollHeight - 1350;

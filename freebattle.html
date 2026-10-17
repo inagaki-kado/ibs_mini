@@ -100,6 +100,7 @@
         <button onclick="addParticipant()" class="bg-cyber-dark border border-cyber-orange hover:bg-cyber-orange/20 text-cyber-orange px-3 py-2 rounded font-bold shadow text-xs transition-colors">＋ 手動追加</button>
         <button onclick="exportParticipantsCSV()" class="bg-cyber-dark border border-cyber-pink hover:bg-cyber-pink/20 text-cyber-pink px-3 py-2 rounded font-bold shadow text-xs transition-colors">📝 CSV出力</button>
         <button onclick="openDeckEntryModal()" id="btn-deck-entry" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors relative">📱 デッキ受付<span id="deck-entry-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-cyber-orange text-cyber-bg px-1.5 py-0.5 rounded-full font-bold">0</span></button>
+        <button onclick="toggleQrAnnounce()" id="btn-qr-announce" style="touch-action: manipulation; min-height: 44px;" class="bg-cyber-dark border border-cyber-orange text-cyber-orange hover:bg-cyber-orange/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors focus-visible:ring-2 focus-visible:ring-white">📢QR告知: OFF</button>
         <button onclick="exportBladeOnlyText()" class="bg-cyber-dark border border-purple-400 hover:bg-purple-400/20 text-purple-400 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔩 ブレード出力</button>
         <button onclick="toggleSetupSwapMode()" id="btn-setup-swap" class="bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-2 rounded font-bold shadow text-xs transition-colors">🔄 配置入替</button>
         <button onclick="toggleCommentMode()" id="btn-toggle-comment" style="touch-action: manipulation;" class="bg-cyber-pink text-white border border-cyber-pink px-3 py-2 rounded font-bold shadow-[0_0_8px_#ec4899] text-xs transition-colors active:scale-95 whitespace-nowrap">💬 コメント: ON</button>
@@ -176,7 +177,11 @@
       <div class="flex-1 bg-cyber-dark border border-cyber-table-border rounded-lg overflow-hidden flex flex-col min-h-0">
         <h3 class="bg-[#1f2937] text-cyber-text font-sf font-bold py-2 px-4 shrink-0 border-b border-cyber-table-border flex justify-between items-center">
             <span>MATCH HISTORY</span>
-            <span class="text-xs font-normal opacity-70" id="matchCountDisplay">0 Matches</span>
+            <span class="flex items-center gap-2">
+              <button id="btn-undo" onclick="undoLastAction()" style="touch-action: manipulation; min-height: 44px; min-width: 44px;" class="text-xs bg-cyber-dark border border-cyber-orange text-cyber-orange px-3 py-1 rounded font-bold transition-colors opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-white" disabled>↩ 1手戻す</button>
+              <button id="btn-break" onclick="toggleBreak()" style="touch-action: manipulation; min-height: 44px; min-width: 44px;" class="text-xs bg-cyber-dark border border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 px-3 py-1 rounded font-bold transition-colors focus-visible:ring-2 focus-visible:ring-white">☕ 休憩</button>
+              <span class="text-xs font-normal opacity-70" id="matchCountDisplay">0 Matches</span>
+            </span>
         </h3>
         <div class="overflow-y-auto p-4 space-y-3 flex-1" id="matchList"></div>
       </div>
@@ -461,6 +466,14 @@
                 };
             }
         });
+        // loadState後は match.p1/p2 が participants と別オブジェクト（JSON復元のコピー）になるため、
+        // 集計前に participants の最新オブジェクトへ再リンクする（しないと参加者側の戦績が反映されず試合側のコピーに二重加算される）
+        const pMap = {};
+        participants.forEach(p => { pMap[p.id] = p; });
+        matches.forEach(m => {
+            if (m.p1 && pMap[m.p1.id]) m.p1 = pMap[m.p1.id];
+            if (m.p2 && pMap[m.p2.id]) m.p2 = pMap[m.p2.id];
+        });
         matches.forEach(m => processMatchForStats(m));
     }
 
@@ -593,6 +606,7 @@
       const btn = document.getElementById('btn-connect');
       c.on('open', () => {
         _retryCount = 0; _retryTarget = null;
+        if (isQrAnnounceActive) sendQrAnnounceMsg({ type: 'SHOW_QR_ANNOUNCE', url: DECK_ENTRY_PAGE_URL }); // 再接続時にQR告知を復元
         btn.innerText = 'DISCONN'; btn.classList.replace('text-cyber-orange', 'text-cyber-green'); btn.classList.replace('border-cyber-orange', 'border-cyber-green');
         const dot = document.getElementById('link-status-dot');
         dot.classList.replace('bg-red-500', 'bg-cyber-green'); dot.classList.replace('shadow-[0_0_5px_#ef4444]', 'shadow-[0_0_5px_#22c55e]');
@@ -751,6 +765,7 @@
         if (conn && conn.open) { conn.send({ type: 'HIDE_PREVIEW' }); conn.send({ type: 'SHOW_SCORE_VIEW' }); }
         if (conn) conn.send({ type: 'HIDE_OVERLAY' });
         activeNextBattleId = null;
+        if (isBreakMode) { isBreakMode = false; updateBreakButton(); } // SHOW_SCORE_VIEW で休憩表示も消えるため
         currentRemoteMatch = match;
         remoteKimariteP1 = parseKimariteStored(match.kimarite_p1 || '');
         remoteKimariteP2 = parseKimariteStored(match.kimarite_p2 || '');
@@ -934,6 +949,8 @@
       const lastEvent = events[events.length - 1];
       const finishPhrase = { XF: '豪快なXF', BF: 'バースト', OF: 'オーバーフィニッシュ', SF: 'スピンフィニッシュ' }[lastEvent.k] || '決め手';
       const lastBey = (lastEvent.bey || '').trim();
+      const loserSide = winnerIsP1 ? 'p2' : 'p1';
+      const loserEvents = events.filter(ev => ev.who === loserSide);
 
       let pattern = null;
       if (maxWinnerDeficit >= 2) {
@@ -949,7 +966,7 @@
         }
       }
 
-      return { pattern, maxWinnerDeficit, finishPhrase, lastBey };
+      return { pattern, maxWinnerDeficit, finishPhrase, lastBey, loserEvents };
     }
 
     // ベイ名があるときだけ助詞付きフレーズを返す（未登録なら空文字で自然な文になる）
@@ -964,6 +981,23 @@
       }
     }
 
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // TOP5に入っているベイ名なら前置詞を付けて装飾する（未登録・取得失敗時は空配列が渡り無装飾のまま）
+    function decorateBeyName(beyName, top5List) {
+      const b = (beyName || '').trim();
+      if (!b) return '';
+      // 「🌀 ベイ集計」にはブレード名のみ（ラチェット/ビット抜き）で登録されているため、
+      // 実際の使用ベイ名がそのブレード名を含んでいれば得意ベイ扱いにする（完全一致ではなく部分一致）
+      if (Array.isArray(top5List) && top5List.some(entry => entry && b.includes(entry))) {
+        return pickRandom(['相棒', '魂のベイ', '得意の', '愛機']) + b;
+      }
+      return b;
+    }
+
+    // 敗者の見せ場を分析して「敗れた◯◯も…」の1文を返す
     function buildLoserPraise(data, flow, loserBeyTop5) {
       const loser = data.loser;
       const decoratedLoserBey = decorateBeyName(data.loserBey, loserBeyTop5);
@@ -986,75 +1020,97 @@
 
       if (loserFinishes.includes('XF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せた。`,
-          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示した。`,
-          `敗れた${loser}も${bey}力強いXFで会場を沸かせた。`,
-          `敗れた${loser}も${bey}XFを決め意地を示した。`,
-          `敗れた${loser}も${bey}鋭いXFで一矢報いた。`,
-          `敗れた${loser}も${bey}XFの一撃で存在感を放った。`,
-          `敗れた${loser}も${bey}見事なXFを披露し健闘した。`,
-          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せた。`
+          `敗れた${loser}も${bey}豪快なXFを叩き込む力強さを見せ、`,
+          `敗れた${loser}も${bey}XFを奪う攻撃力の高さを示し、`,
+          `敗れた${loser}も${bey}力強いXFで会場を沸かせ、`,
+          `敗れた${loser}も${bey}XFを決めて意地を示し、`,
+          `敗れた${loser}も${bey}鋭いXFで一矢報い、`,
+          `敗れた${loser}も${bey}XFの一撃で存在感を放ち、`,
+          `敗れた${loser}も${bey}見事なXFを披露して健闘し、`,
+          `敗れた${loser}も${bey}XFを奪い最後まで抵抗を見せ、`
         ]);
       }
       if (loserFinishes.includes('BF')) {
         return pickRandom([
-          `敗れた${loser}も${bey}バーストを決める鋭さを見せた。`,
-          `敗れた${loser}も${bey}バーストを奪い意地を見せた。`,
-          `敗れた${loser}も${bey}鮮やかなバーストで反撃した。`,
-          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせた。`,
-          `敗れた${loser}も${bey}バーストを決め食い下がった。`,
-          `敗れた${loser}も${bey}バーストを奪う技巧を見せた。`,
-          `敗れた${loser}も${bey}見事なバーストで一矢報いた。`,
-          `敗れた${loser}も${bey}バーストを決め最後まで粘りを見せた。`
+          `敗れた${loser}も${bey}バーストを決める鋭さを見せ、`,
+          `敗れた${loser}も${bey}バーストを奪って意地を見せ、`,
+          `敗れた${loser}も${bey}鮮やかなバーストで反撃し、`,
+          `敗れた${loser}も${bey}バーストの一撃で会場を沸かせ、`,
+          `敗れた${loser}も${bey}バーストを決めて食い下がり、`,
+          `敗れた${loser}も${bey}バーストを奪う技巧を見せ、`,
+          `敗れた${loser}も${bey}見事なバーストで一矢報い、`,
+          `敗れた${loser}も${bey}バーストを決めて最後まで粘りを見せ、`
         ]);
       }
       if (flow && (flow.pattern === 'comeback')) {
         // 逆転された＝敗者は先行していた
         return pickRandom([
-          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せた。`,
-          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せた。`,
-          `敗れた${loser}も${bey}試合序盤は主導権を握っていた。`,
-          `敗れた${loser}も${bey}一時は優勢に試合を進めていた。`,
-          `敗れた${loser}も${bey}先行してリードを広げる場面を作った。`,
-          `敗れた${loser}も${bey}序盤は攻勢を強め主導権を握った。`,
-          `敗れた${loser}も${bey}一時はリードを奪う展開を作った。`,
-          `敗れた${loser}も${bey}試合を優位に進める時間帯があった。`
+          `敗れた${loser}も${bey}序盤の主導権を握る好スタートを見せ、`,
+          `敗れた${loser}も${bey}一時はリードを奪う善戦を見せ、`,
+          `敗れた${loser}も${bey}試合序盤は主導権を握り、`,
+          `敗れた${loser}も${bey}一時は優勢に試合を進め、`,
+          `敗れた${loser}も${bey}先行してリードを広げる場面を作り、`,
+          `敗れた${loser}も${bey}序盤は攻勢を強めて主導権を握り、`,
+          `敗れた${loser}も${bey}一時はリードを奪う展開を作り、`,
+          `敗れた${loser}も${bey}試合を優位に進める時間帯を作り、`
         ]);
       }
       if (closeGame) {
         return pickRandom([
-          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じた。`,
-          `敗れた${loser}も${bey}わずか1点差まで肉薄した。`,
-          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せた。`,
-          `敗れた${loser}も${bey}僅差の勝負に持ち込んだ。`,
-          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せた。`,
-          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫いた。`,
-          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せた。`
+          `敗れた${loser}も${bey}1点差まで食らいつく粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで勝敗の行方を分からなくする接戦を演じ、`,
+          `敗れた${loser}も${bey}わずか1点差まで肉薄し、`,
+          `敗れた${loser}も${bey}最後まで食い下がる粘りを見せ、`,
+          `敗れた${loser}も${bey}僅差の勝負に持ち込み、`,
+          `敗れた${loser}も${bey}土俵際まで追い詰める粘りを見せ、`,
+          `敗れた${loser}も${bey}最後まで諦めない姿勢を貫き、`,
+          `敗れた${loser}も${bey}1点差の接戦に持ち込む健闘を見せ、`
         ]);
       }
       if (shutout) {
         return pickRandom([
-          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫いた。`,
-          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑んだ。`,
-          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さなかった。`,
-          `敗れた${loser}も${bey}果敢に食らいつく姿を見せた。`,
-          `敗れた${loser}も${bey}最後まで戦う姿勢を貫いた。`,
-          `敗れた${loser}も${bey}粘り強く食い下がった。`,
-          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せた。`,
-          `敗れた${loser}も${bey}真っ向勝負を最後まで貫いた。`
+          `敗れた${loser}も${bey}最後まで果敢に攻めの姿勢を貫き、`,
+          `敗れた${loser}も${bey}臆することなく真っ向勝負を挑み、`,
+          `敗れた${loser}も${bey}最後まで攻めの姿勢を崩さず、`,
+          `敗れた${loser}も${bey}果敢に食らいつく姿を見せ、`,
+          `敗れた${loser}も${bey}最後まで戦う姿勢を貫き、`,
+          `敗れた${loser}も${bey}粘り強く食い下がり、`,
+          `敗れた${loser}も${bey}最後まで諦めぬ戦いぶりを見せ、`,
+          `敗れた${loser}も${bey}真っ向勝負を最後まで貫き、`
         ]);
       }
       return pickRandom([
-        `敗れた${loser}も${bey}随所に見せ場を作った。`,
-        `敗れた${loser}も${bey}好プレーで観客を沸かせた。`,
-        `敗れた${loser}も${bey}健闘が光る内容だった。`,
-        `敗れた${loser}も${bey}見応えのある試合を展開した。`,
-        `敗れた${loser}も${bey}実力の一端を示した。`,
-        `敗れた${loser}も${bey}力の拮抗した試合を演じた。`,
-        `敗れた${loser}も${bey}随所に好プレーを見せた。`,
-        `敗れた${loser}も${bey}持ち味を発揮する場面があった。`
+        `敗れた${loser}も${bey}随所に見せ場を作り、`,
+        `敗れた${loser}も${bey}好プレーで観客を沸かせ、`,
+        `敗れた${loser}も${bey}健闘が光り、`,
+        `敗れた${loser}も${bey}見応えのある試合を展開し、`,
+        `敗れた${loser}も${bey}実力の一端を示し、`,
+        `敗れた${loser}も${bey}力の拮抗した試合を演じ、`,
+        `敗れた${loser}も${bey}随所に好プレーを見せ、`,
+        `敗れた${loser}も${bey}持ち味を発揮する場面を作り、`
       ]);
+    }
+
+    // buildLoserPraise() は「〜を見せ、」のような連用形で終わるため、
+    // 文末に置けるよう終止形へ変換する。語尾は閉じた集合なので対応表で処理する。
+    const LOSER_PRAISE_ENDINGS = [
+      ['食い下がり', '食い下がった'], ['持ち込み', '持ち込んだ'],
+      ['沸かせ', '沸かせた'], ['見せ', '見せた'], ['示し', '示した'],
+      ['握り', '握った'], ['作り', '作った'], ['演じ', '演じた'],
+      ['進め', '進めた'], ['貫き', '貫いた'], ['報い', '報いた'],
+      ['放ち', '放った'], ['挑み', '挑んだ'], ['光り', '光った'],
+      ['崩さず', '崩さなかった'],
+      ['反撃し', '反撃した'], ['肉薄し', '肉薄した'],
+      ['健闘し', '健闘した'], ['展開し', '展開した']
+    ];
+    function terminateLoserPraise(text) {
+      if (!text) return '';
+      let s = String(text).replace(/、\s*$/, '');
+      for (const [from, to] of LOSER_PRAISE_ENDINGS) {
+        if (s.endsWith(from)) return s.slice(0, s.length - from.length) + to + '。';
+      }
+      // 想定外の語尾はそのまま句点で閉じる（文法崩れより出力欠落を避ける）
+      return s + '。';
     }
 
     // 展開パターン別の総括1文を返す
@@ -1132,22 +1188,6 @@
       ]);
     }
 
-    function pickRandom(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
-
-    // TOP5に入っているベイ名なら前置詞を付けて装飾する（未登録・取得失敗時は空配列が渡り無装飾のまま）
-    function decorateBeyName(beyName, top5List) {
-      const b = (beyName || '').trim();
-      if (!b) return '';
-      // 「🌀 ベイ集計」にはブレード名のみ（ラチェット/ビット抜き）で登録されているため、
-      // 実際の使用ベイ名がそのブレード名を含んでいれば得意ベイ扱いにする（完全一致ではなく部分一致）
-      if (Array.isArray(top5List) && top5List.some(entry => entry && b.includes(entry))) {
-        return pickRandom(['相棒', '魂のベイ', '得意の', '愛機']) + b;
-      }
-      return b;
-    }
-
     function generateLocalComment(data, winnerBeyTop5, loserBeyTop5) {
       const { style } = analyzeFinishPattern(data.finishHistory);
       const [wScore, lScore] = data.score.split('-').map(Number);
@@ -1155,11 +1195,18 @@
       const shutout = Math.min(wScore, lScore) === 0;
       const scoreText = `${wScore}－${lScore}`;
 
-      const styleText = {
-        attack: '怒涛のXFで畳み掛けて',
-        grind: '最後まで回転を残す粘りを見せて',
-        burst: 'バーストで一気に決めて',
-        balance: '堅実な戦いを見せて'
+      // 文1を1文に統合するため、連体形（〜した◯◯が）と連用形（〜し）の2種を用意する
+      const styleAdn = {
+        attack: '怒涛のXFで畳み掛けた',
+        grind: '最後まで回転を残す粘りを見せた',
+        burst: 'バーストで一気に決めた',
+        balance: '堅実な戦いを見せた'
+      }[style];
+      const styleRen = {
+        attack: '怒涛のXFで畳み掛け',
+        grind: '最後まで回転を残す粘りを見せ',
+        burst: 'バーストで一気に決め',
+        balance: '堅実な戦いを見せ'
       }[style];
       const closeText = shutout ? '完封の圧倒的な強さ'
         : gap === 1 ? '一歩も引かない攻防' : '実力を見せつけた';
@@ -1179,28 +1226,28 @@
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${flow.maxWinnerDeficit}点ビハインドを跳ね返す逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}と押し切った。`,
-          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が値千金の逆転勝ち。${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
-          `一時は${flow.maxWinnerDeficit}点のリードを許した${data.loser}だったが、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
+          `${flow.maxWinnerDeficit}点差を追う展開から、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ち。`,
+          `${flow.maxWinnerDeficit}点差の劣勢を跳ね返し、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と値千金の逆転勝ち。`,
+          `一時は${flow.maxWinnerDeficit}点のリードを許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で流れを引き寄せ${scoreText}の大逆転。`,
           `${flow.maxWinnerDeficit}点のビハインドをはねのけ、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝利を収めた。`,
           `${data.loser}に${flow.maxWinnerDeficit}点先行を許しながらも、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}まで追い上げ逆転に成功した。`,
           `序盤の劣勢をものともせず、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が終盤${finishBey}${flow.finishPhrase}を決めて${scoreText}で逆転を果たした。`,
-          `${flow.maxWinnerDeficit}点差を最後にひっくり返したのは${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
-          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れが一変。${scoreText}で逆転勝利を手にした。`
+          `${flow.maxWinnerDeficit}点差を最後にひっくり返した${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}と逆転勝ちを収めた。`,
+          `苦しい展開が続いた${data.winner}だったが、${finishBey}${flow.finishPhrase}を境に流れを変え${scoreText}で逆転勝利を手にした。`
         ]);
       } else if (flow && flow.pattern === 'seesaw') {
         const decoratedFinishBey = (flow.lastBey && flow.lastBey !== data.winnerBey)
           ? decorateBeyName(flow.lastBey, winnerBeyTop5) : null;
         const finishBey = decoratedFinishBey ? beyPhrase(decoratedFinishBey, 'no') : '';
         firstSentence = pickRandom([
-          `一進一退のシーソーゲームを制したのは${data.winner}。${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
-          `リードが目まぐるしく入れ替わる熱戦を制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。最後は${finishBey}${flow.finishPhrase}で${scoreText}とした。`,
+          `一進一退のシーソーゲームを制した${data.winner}が、${beyPhrase(decoratedWinnerBey, 'no')}${finishBey}${flow.finishPhrase}で${scoreText}の決着をつけた。`,
+          `リードが目まぐるしく入れ替わる熱戦を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と制した。`,
           `どちらが勝ってもおかしくない拮抗した試合を、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とものにした。`,
-          `一進一退の攻防を制したのは${data.winner}。${finishBey}${flow.finishPhrase}が${scoreText}の決め手となった。`,
+          `一進一退の攻防を制した${data.winner}が、${finishBey}${flow.finishPhrase}を決め手に${scoreText}とした。`,
           `目まぐるしくリードが入れ替わる展開の末、${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`,
           `勝敗の行方が読めない拮抗した試合は、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし決着した。`,
-          `激しい主導権争いを制したのは${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}。${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
-          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}とし競り勝った。`
+          `激しい主導権争いを制した${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が、${finishBey}${flow.finishPhrase}で${scoreText}とまとめ上げた。`,
+          `一歩も譲らぬ攻防が続いた末、${data.winner}が${finishBey}${flow.finishPhrase}で${scoreText}と競り勝った。`
         ]);
       } else if (flow && flow.pattern === 'wire') {
         firstSentence = pickRandom([
@@ -1215,19 +1262,20 @@
         ]);
       } else {
         firstSentence = pickRandom([
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を下した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}${data.loser}を突き放した。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}見事に勝利を収めた。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。${styleText}白星を積み重ねた。`,
-          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${scoreText}で${closeText}。${styleText}${data.loser}を退けた。`,
-          `${data.winner}が${scoreText}のスコアで${closeText}。${styleText}勝利をつかんだ。`,
-          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}とし${closeText}。${styleText}実力の差を見せつけた。`,
-          `${scoreText}のスコアで${data.winner}が${closeText}。${styleText}${data.loser}に土をつけた。`
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${closeText}。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で${data.loser}を下した。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${closeText}。`,
+          `${beyPhrase(decoratedWinnerBey, 'pilot')}${data.winner}が${styleRen}${scoreText}で${data.loser}を突き放した。`,
+          `${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${styleRen}${scoreText}と白星を積み重ねた。`,
+          `${styleAdn}${data.winner}が${beyPhrase(decoratedWinnerBey, 'with')}${scoreText}で勝利を収めた。`,
+          `${scoreText}のスコアで${styleAdn}${data.winner}が${data.loser}に土をつけた。`,
+          `${styleAdn}${data.winner}が${scoreText}で${closeText}。`
         ]);
       }
       // ▲ 試合展開の分析ここまで
 
-      return firstSentence + buildLoserPraise(data, flow, loserBeyTop5) + buildSummary(flow, gap, shutout);
+      const relationPrefix = buildRelationPrefix(data.winner, data.loser);
+      return relationPrefix + firstSentence + terminateLoserPraise(buildLoserPraise(data, flow, loserBeyTop5));
     }
 
     function sendMatchComment(comment, highlights) {
@@ -1249,7 +1297,8 @@
         .sort((a, b) => b.length - a.length);
       const [winnerBeyTop5, loserBeyTop5] = await Promise.all([
         fetchBeyUsageTop5(data.winner),
-        fetchBeyUsageTop5(data.loser)
+        fetchBeyUsageTop5(data.loser),
+        loadRosterRelations() // 関係性の枕詞用（失敗・5秒タイムアウトでも枕詞なしで継続）
       ]);
       const comment = generateLocalComment(data, winnerBeyTop5, loserBeyTop5);
       if (targetMatch) {
@@ -1261,12 +1310,14 @@
 
     function handleRemoteWinner(side) {
         if (!currentRemoteMatch) return;
+        pushUndoSnapshot(); // スコア・決まり手の書き込み前に積む（UNDOで勝者とスコアを一緒に戻す）
         let winnerVal = (side === 'left') ? (isRemoteSwapped ? 2 : 1) : (isRemoteSwapped ? 1 : 2);
         let scoreP1, scoreP2;
         if (isRemoteSwapped) { scoreP1 = remoteScoreRight; scoreP2 = remoteScoreLeft; }
         else { scoreP1 = remoteScoreLeft; scoreP2 = remoteScoreRight; }
         currentRemoteMatch.score = `${scoreP1}-${scoreP2}`;
         currentRemoteMatch.winner = winnerVal;
+        currentRemoteMatch.updatedAt = Date.now(); // BREAK_RECAP の新しい順ソート用
         currentRemoteMatch.kimarite_p1 = serializeKimariteList(remoteKimariteP1);
         currentRemoteMatch.kimarite_p2 = serializeKimariteList(remoteKimariteP2);
         currentRemoteMatch.kimarite = serializeKimariteList(remoteKimariteList);
@@ -1872,6 +1923,7 @@
         const p1 = participants.find(p => p.id === p1Id);
         const p2 = participants.find(p => p.id === p2Id);
 
+        pushUndoSnapshot();
         matches.push({ id: matchIdCounter++, p1: p1, p2: p2, winner: null, score: null });
 
         document.getElementById('select-p1').value = "";
@@ -1885,8 +1937,9 @@
         const match = matches.find(m => m.id === matchId);
         if (!match) return;
 
+        pushUndoSnapshot();
         if (match.winner === winnerVal) { match.winner = null; match.score = null; }
-        else { match.winner = winnerVal; }
+        else { match.winner = winnerVal; match.updatedAt = Date.now(); } // updatedAt は BREAK_RECAP の新しい順ソート用
         recalculateAllStats();
         renderMatches();
         saveState();
@@ -1932,6 +1985,390 @@
         document.getElementById('matchCountDisplay').innerText = `TOTAL: ${matches.length} MATCHES`;
         saveState();
     }
+
+    // 📋名簿の関係性（親/子/夫婦/サークル/属性/女性）参照。コメント・レポートの枕詞用。
+    const RANGE_ROSTER = encodeURIComponent("'📋 名簿'!A3:T");
+    const ROSTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_ROSTER}?key=${API_KEY_H2H}`;
+    let _rosterRelMap = null;
+
+    async function loadRosterRelations(timeoutMs = 5000) {
+      if (_rosterRelMap) return _rosterRelMap;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(ROSTER_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return null;
+        const json = await res.json();
+        const split = s => String(s || '').split(/[,、]/).map(x => x.trim()).filter(Boolean);
+        const map = new Map();
+        (json.values || []).forEach(r => {
+          const name = String(r[0] || '').trim();
+          if (!name) return;
+          map.set(name, {
+            parents:  split(r[14]),
+            children: split(r[15]),
+            spouses:  split(r[16]),
+            circle:   String(r[17] || '').trim(),
+            attr:     String(r[18] || '').trim(),
+            female:   String(r[19] || '').trim() === '1'
+          });
+        });
+        _rosterRelMap = map;
+        return _rosterRelMap;
+      } catch (e) {
+        console.warn('名簿の関係性取得失敗（枕詞なしで継続）', e);
+        return null;
+      }
+    }
+
+    // 2人の関係を1つだけ返す。優先: 夫婦 > 親子 > きょうだい > 同サークル > 属性一致 > サークル対抗
+    // 女性フラグ(T列)は「母」の呼称判定にのみ使う。女性同士であること自体は出力しない。
+    function getRelation(nameA, nameB) {
+      const map = _rosterRelMap;
+      if (!map || !nameA || !nameB || nameA === nameB) return null;
+      const a = map.get(nameA), b = map.get(nameB);
+      if (!a || !b) return null;
+      if (a.spouses.includes(nameB) || b.spouses.includes(nameA)) return { kind: 'spouse' };
+      if (a.parents.includes(nameB) || b.children.includes(nameA)) return { kind: 'parent_child', parent: nameB, child: nameA, motherSide: b.female };
+      if (b.parents.includes(nameA) || a.children.includes(nameB)) return { kind: 'parent_child', parent: nameA, child: nameB, motherSide: a.female };
+      if (a.parents.length && a.parents.some(p => b.parents.includes(p))) return { kind: 'sibling' };
+      if (a.circle && b.circle && a.circle === b.circle) return { kind: 'same_circle', circle: a.circle };
+      if (a.attr && b.attr && a.attr === b.attr) return { kind: 'same_attr', attr: a.attr };
+      if (a.circle && b.circle && a.circle !== b.circle) return { kind: 'cross_circle', circles: [a.circle, b.circle] };
+      return null;
+    }
+
+    // 試合後コメント先頭の枕詞。該当なしは空文字。
+    function buildRelationPrefix(winnerName, loserName) {
+      const rel = getRelation(winnerName, loserName);
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return pickRandom(['会でも希少な夫婦対決。', '夫婦がスタジアムを挟んで向き合った。']);
+      }
+      if (rel.kind === 'parent_child') {
+        const oya = rel.motherSide ? '母' : '親';
+        return (winnerName === rel.child)
+          ? pickRandom([`${oya}を相手に一歩も引かない親子対決。`, `${oya}の背中を追う子が挑んだ親子対決。`])
+          : pickRandom([`${oya}の貫禄が示された親子対決。`, `子の挑戦を受けて立つ親子対決。`]);
+      }
+      if (rel.kind === 'sibling')      return pickRandom(['きょうだい対決となった一戦。', '同じ家で腕を磨いた者同士の一戦。']);
+      if (rel.kind === 'same_circle')  return pickRandom([`同じ${rel.circle}に集う両者の同門対決。`, `${rel.circle}の内輪を懸けた一戦。`]);
+      if (rel.kind === 'same_attr')    return pickRandom([`ともに${rel.attr}の顔を持つ両者の読み合い。`, `${rel.attr}同士、読み合いの一戦。`]);
+      if (rel.kind === 'cross_circle') return `${rel.circles[0]}と${rel.circles[1]}、サークルの威信を懸けた一戦。`;
+      return '';
+    }
+
+    // ===== 次戦予告キャッチコピー（フリー対戦用）=====
+    // 段階（ブロック/決勝等）の概念が無いため cpFromStage は使わない。
+    // 優先順: 関係性 → H2H → 戦績 → 初顔合わせ
+    // ランク文字列("80F"/"XF"/"--")を帯index(0..5)に変換。判定不能はnull
+    function cpRankTier(rankStr) {
+      const s = String(rankStr || '').trim().toUpperCase();
+      if (!s || s === '--') return null;
+      if (s.startsWith('X')) return 5;
+      const n = parseInt(s, 10);
+      if (isNaN(n)) return null;
+      if (n < 40) return 0;
+      if (n < 60) return 1;
+      if (n < 80) return 2;
+      if (n < 90) return 3;
+      return 4;
+    }
+    function cpRateNum(rateStr) {
+      const v = parseFloat(String(rateStr || '').replace('%', ''));
+      return isNaN(v) ? null : v;
+    }
+    // 前半×後半を組み合わせる。直近8件のリングバッファと重複する場合は最大5回まで引き直す
+    const _catchphraseHistory = [];
+    const CATCHPHRASE_HISTORY_LIMIT = 8;
+    function cpCombine(heads, tails) {
+      let out = pickRandom(heads) + pickRandom(tails);
+      let tries = 0;
+      while (_catchphraseHistory.includes(out) && tries < 5) {
+        out = pickRandom(heads) + pickRandom(tails);
+        tries++;
+      }
+      _catchphraseHistory.push(out);
+      if (_catchphraseHistory.length > CATCHPHRASE_HISTORY_LIMIT) _catchphraseHistory.shift();
+      return out;
+    }
+    // 属性名(S列)は自由記述でカラム文字数を保証できないため、キャッチフレーズ合成時は5文字に丸める
+    // （17文字制限の逆算：cpGrandFinalWithRelation の head<=3 + tail<=9 に対し w<=5 が必要）
+    function cpTruncateAttr(s) {
+      const arr = [...String(s || '')];
+      return arr.length > 5 ? arr.slice(0, 5).join('') : arr.join('');
+    }
+    function cpFromRelation(rel) {
+      if (!rel) return '';
+      if (rel.kind === 'spouse') {
+        return cpCombine(
+          ['愛と闘志の', '誓いを交わした', '家庭を懸けた', '最も近い好敵手、', '譲れぬ', '公私を懸けた', '阿吽の呼吸で挑む', '日常を持ち込んだ'],
+          ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', 'カップルマッチ！', '夫婦の意地！', '夫婦ダービー！', '夫婦頂上決戦！']);
+      }
+      if (rel.kind === 'parent_child') {
+        const kin = rel.motherSide ? '母子' : '親子';
+        return cpCombine(
+          ['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '譲れぬ想いの', '親から子へ', '背中を追いかけた', '血筋が交わる'],
+          [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, 'ファミリーマッチ！', `${kin}頂上戦！`, `${kin}の意地！`, `${kin}激突！`]);
+      }
+      if (rel.kind === 'sibling') {
+        return cpCombine(
+          ['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '血で血を洗う', '切磋琢磨してきた', '幼馴染以上の', '同じ血を継ぐ'],
+          ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'ファミリーマッチ！', 'きょうだいの意地！', 'きょうだい頂上戦！', 'きょうだい激突！']);
+      }
+      if (rel.kind === 'same_circle') {
+        return cpCombine(
+          ['意地とプライドの', '同じ看板の', '手の内知り尽くす', '練習の成果、', '気心知れた', '稽古仲間の', '同じ道場で鍛えた', '切磋琢磨の末の'],
+          ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '仲間割れマッチ！', '同門の意地！', '道場対抗戦！', 'クラブ内頂上戦！']);
+      }
+      if (rel.kind === 'same_attr') {
+        const a = cpTruncateAttr(rel.attr);
+        return cpCombine(
+          ['同業対決、', '手練れ同士の', '切れ味対決、', '経験と経験の', '似た者同士の', '玄人対決、', '駆け引き光る', '読み合い上等'],
+          [`${a}対決！`, `${a}マッチ！`, `${a}の意地！`, `${a}激突！`, `${a}バトル！`, `${a}戦！`, `${a}頂上戦！`, `${a}決戦！`]);
+      }
+      if (rel.kind === 'cross_circle') {
+        return cpCombine(
+          ['威信を懸けた', '看板を背負う', '越境してきた', '名誉を懸けた', '二つの会が交わる', '会の誇りを懸けた', '遠征してきた', '初参戦の意地'],
+          ['サークル対抗戦！', 'クラブ対抗マッチ！', '越境対決！', '他流試合！', '交流戦の頂点！', 'クラブ代表対決！', '他クラブとの激突！', '対抗戦の華！']);
+      }
+      return '';
+    }
+    function cpFromH2H(w1, w2) {
+      if (w1 == null || w2 == null) return '';
+      if (w1 >= 1 && w2 >= 1) {
+        return cpCombine(
+          ['宿命の', '何度目かの', '決着つかぬ', '因縁深き', '譲れぬ', '幾度となき', '積年の', '決着を急ぐ', '三度目の', '火花散る', '伝説の再演、', '雌雄を決する'],
+          ['ライバル対決！', '再戦マッチ！', '好敵手対決！', '決着戦！', 'リマッチ！', 'ライバル決戦！', '因縁の一戦！', '決着マッチ！', '宿命の激突！', '再戦の行方！', '因縁再燃！', '決戦の再来！']);
+      }
+      if (w1 >= 1 || w2 >= 1) {
+        return cpCombine(
+          ['執念の', '借りを返す', '雪辱を期す', '過去を塗り替える', '牙を研いだ', '雪辱に燃える', '借りは返す、', '牙を磨いた', '再挑戦の', '捲土重来の', '意地を見せる', '汚名返上の'],
+          ['リベンジマッチ！', '仕返しの一戦！', '再戦！', '挑戦状！', '返り討ちなるか！', 'リベンジ戦！', '雪辱の一戦！', '再戦の行方！', '意地の一戦！', '牙を剥く一戦！', '雪辱の刻！', '再戦成るか！']);
+      }
+      return '';
+    }
+    function cpFirstMeeting() {
+      return cpCombine(
+        ['予測不能の', '手の内知らぬ', '未知数の', 'データなしの', '互いに初めての', '情報戦の', '初対面同士の', '手探りの', '未体験の', '見えない相性の', 'ぶっつけ本番の', '互いに探り合う'],
+        ['初顔合わせ！', 'ファーストマッチ！', '初対決！', 'ぶつかり合い！', '未知の激突！', '初対面の激突！', '未知との遭遇！', '霧の中の一戦！', 'データなき戦い！', '読み合いの初陣！', '前例なき激突！', '初陣を飾れるか！']);
+    }
+    function cpFromStats(p1, p2) {
+      const t1 = cpRankTier(p1.rank), t2 = cpRankTier(p2.rank);
+      if (t1 === null || t2 === null) return '';
+      const r1 = cpRateNum(p1.currentStats && p1.currentStats.rate);
+      const r2 = cpRateNum(p2.currentStats && p2.currentStats.rate);
+      const bp1 = Number(p1.currentStats && p1.currentStats.power) || 0;
+      const bp2 = Number(p2.currentStats && p2.currentStats.power) || 0;
+      const bothTop = (t1 >= 3 && t2 >= 3) || (r1 != null && r2 != null && r1 >= 60 && r2 >= 60);
+      if (bothTop) {
+        return cpCombine(
+          ['トップランカーの', '上位陣が激突する', '実力者同士の', '高ランク同士の', '会を代表する', '選ばれし者達の', '名だたる強者の', '頂点に立つ者の', '王者候補同士の', '格の違いなき', '一流対決、', '折り紙付き同士の'],
+          ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！', '頂上対決！', '王者の風格！', '頂点への布石！', '実力伯仲！', '最強決定戦！', '真の実力対決！', '頂上の激突！']);
+      }
+      if (Math.abs(t1 - t2) >= 2 || Math.abs(bp1 - bp2) >= 3000) {
+        return cpCombine(
+          ['魅せろ、', '金星を狙う', '下剋上を狙う', '格上に挑む', '常識を覆す', '風穴を開ける', '一発逆転狙う', '波乱を呼ぶ', '格差を覆す', '格上食いの', '下剋上なるか', '伏兵の一撃'],
+          ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！', '波乱の幕開け！', '金星ゲット！', '伏兵参上！', '格上撃破！', '大金星なるか！', '常識崩し！', '一矢報いる！']);
+      }
+      return cpCombine(
+        ['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '譲らぬ両者の', '一歩も譲らぬ', '紙一重の', '一歩も引かぬ', '伯仲同士の', '互角すぎる', '決着つかぬ', '実力互角の'],
+        ['ガチンコバトル！', '真っ向勝負！', '総力戦！', '一騎打ち！', '大接戦必至！', '大熱戦必至！', '紙一重の勝負！', '五分の激突！', '一進一退！', '接戦必至！', '手に汗握る一戦！', '死闘必至！']);
+    }
+
+    // 統括：関係性 → H2H → 戦績 → 初顔合わせの順に評価し、最初に得られた1文を返す
+    function buildNextBattleCatchphrase(p1, p2, h2hP1Wins, h2hP2Wins) {
+      const rel = getRelation(p1.name, p2.name);
+      return cpFromRelation(rel)
+          || cpFromH2H(h2hP1Wins, h2hP2Wins)
+          || cpFromStats(p1, p2)
+          || cpFirstMeeting()
+          || '';
+    }
+
+    // ==========================================
+    // 結果入力 UNDO（メモリ内のみ・localStorageには保存しない）
+    // 勝者の誤タップ・誤確定を救う。フリー対戦は syncToSheets が無いため同期処理は不要
+    // ==========================================
+    const undoStack = [];
+    const UNDO_LIMIT = 15;
+    const UNDO_RESULT_KEYS = ['winner', 'score', 'kimarite', 'kimarite_p1', 'kimarite_p2', 'comment', 'updatedAt', 'p1BeyUsed', 'p2BeyUsed'];
+
+    function pushUndoSnapshot() {
+      try {
+        undoStack.push(JSON.stringify({
+          matchIdCounter,
+          matches: matches.map(m => {
+            const r = { id: m.id };
+            UNDO_RESULT_KEYS.forEach(k => { if (m[k] !== undefined) r[k] = m[k]; });
+            return r;
+          })
+        }));
+        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+      } catch (e) { console.warn('undo snapshot failed:', e); }
+      updateUndoButtonState();
+    }
+
+    function undoLastAction() {
+      if (!undoStack.length) return showAlert('戻せる操作がありません');
+      let s;
+      try { s = JSON.parse(undoStack[undoStack.length - 1]); } catch (e) { return showAlert('復元に失敗しました'); }
+      undoStack.pop();
+      const byId = new Map(matches.map(m => [m.id, m]));
+      matches = s.matches.map(r => {
+        const m = byId.get(r.id);
+        if (!m) return null;
+        UNDO_RESULT_KEYS.forEach(k => { if (k in r) m[k] = r[k]; else delete m[k]; });
+        return m;
+      }).filter(Boolean);
+      matchIdCounter = s.matchIdCounter;
+      if (activeNextBattleId !== null && !matches.some(m => m.id === activeNextBattleId)) activeNextBattleId = null;
+      recalculateAllStats();
+      renderMatches(); // saveState を内包
+      if (document.getElementById('view-ranking').classList.contains('flex')) renderRanking();
+      updateUndoButtonState();
+    }
+
+    function updateUndoButtonState() {
+      const btn = document.getElementById('btn-undo');
+      if (!btn) return;
+      const disabled = undoStack.length === 0;
+      btn.disabled = disabled;
+      btn.classList.toggle('opacity-40', disabled);
+    }
+
+    // ==========================================
+    // 休憩オーバーレイ（BREAK_START / BREAK_END / BREAK_RECAP）
+    // ==========================================
+    let isBreakMode = false;
+
+    // 休憩中の振り返り演出（BREAK_RECAP）用データ。確定済みの全対戦を新しい順（updatedAt降順）に最大50件。
+    // コメントは match.comment に保存済みのものを使い、休憩中に新規fetchはしない。
+    function buildBreakRecapData() {
+      const items = [];
+      matches.forEach(m => {
+        if (!m || !m.p1 || !m.p2 || m.winner === null || m.winner === undefined || m.winner === 0) return;
+        // m.score が未記録（手動で勝者だけ確定）の場合は "0-0" と誤読させないよう score1/score2 を null にする
+        let score1 = null, score2 = null;
+        if (m.score) {
+          const sp = String(m.score).split('-');
+          score1 = parseInt(sp[0], 10);
+          score2 = parseInt(sp[1], 10);
+          if (!Number.isFinite(score1) || !Number.isFinite(score2)) { score1 = null; score2 = null; }
+        }
+        // m.kimarite は 'P1_X,P2_B' 形式（再生順）。受信側が期待する 'XF,BF' 形式に直す
+        const kimarite = toFullKimariteList(parseKimariteStored(m.kimarite || '').map(c => c.replace(/^P[12]_/, ''))).join(',');
+        items.push({
+          label: `${matchName} - 第${m.id}戦`,
+          p1: m.p1.name,
+          p2: m.p2.name,
+          score1, score2,
+          winnerIs: m.winner,
+          kimarite: kimarite || null,
+          comment: m.comment || null,
+          _updatedAt: m.updatedAt || 0
+        });
+      });
+      items.sort((a, b) => b._updatedAt - a._updatedAt);
+      return items.slice(0, 50).map(({ _updatedAt, ...rest }) => rest);
+    }
+
+    function sendBreakRecap() {
+      if (!conn || !conn.open) return;
+      const items = buildBreakRecapData();
+      if (!items.length) return;
+      conn.send({ type: 'BREAK_RECAP', items, intervalMs: 8000 });
+    }
+
+    function getBreakHudFields() {
+      return { ...getShowPreviewHudFields(), ...(previewLogoDataUrl ? { logoDataUrl: previewLogoDataUrl, showLogo: true } : {}) };
+    }
+
+    function sendBreakStart() {
+      if (!conn || !conn.open) return;
+      conn.send({ type: 'BREAK_START', p1: '', p2: '', ...getBreakHudFields() });
+      sendBreakRecap();
+      isBreakMode = true;
+      updateBreakButton();
+    }
+
+    function sendBreakStartWithNext(p1, p2) {
+      if (!conn || !conn.open) return;
+      conn.send({ type: 'BREAK_START', p1: p1 || '', p2: p2 || '', ...getBreakHudFields() });
+      sendBreakRecap();
+      isBreakMode = true;
+      updateBreakButton();
+    }
+
+    function sendBreakEnd() {
+      if (!conn || !conn.open) return;
+      conn.send({ type: 'BREAK_END' });
+      isBreakMode = false;
+      updateBreakButton();
+    }
+
+    function toggleBreak() {
+      if (!conn || !conn.open) return showAlert('スコアシステムとリンクされていません');
+      if (isBreakMode) sendBreakEnd(); else sendBreakStart();
+    }
+
+    function updateBreakButton() {
+      const btn = document.getElementById('btn-break');
+      if (!btn) return;
+      if (isBreakMode) {
+        btn.textContent = '▶ 再開';
+        btn.classList.remove('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+        btn.classList.add('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                          'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+      } else {
+        btn.textContent = '☕ 休憩';
+        btn.classList.remove('border-cyber-green', 'text-cyber-green', 'hover:bg-cyber-green/20',
+                             'shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'animate-pulse');
+        btn.classList.add('border-yellow-400', 'text-yellow-400', 'hover:bg-yellow-400/20');
+      }
+    }
+
+    // ==========================================
+    // QR告知（SHOW_QR_ANNOUNCE / HIDE_QR_ANNOUNCE）。デッキ登録ページのQRを score.html に掲示する
+    // ==========================================
+    let isQrAnnounceActive = false;
+
+    function updateQrAnnounceButton() {
+      const btn = document.getElementById('btn-qr-announce');
+      if (!btn) return;
+      if (isQrAnnounceActive) {
+        btn.classList.remove('bg-cyber-dark', 'text-cyber-orange');
+        btn.classList.add('bg-cyber-orange', 'shadow-[0_0_8px_#ffaa00]');
+        btn.style.color = '#1a1200';
+        btn.innerText = '📢QR告知: ON';
+      } else {
+        btn.classList.remove('bg-cyber-orange', 'shadow-[0_0_8px_#ffaa00]');
+        btn.classList.add('bg-cyber-dark', 'text-cyber-orange');
+        btn.style.color = '';
+        btn.innerText = '📢QR告知: OFF';
+      }
+    }
+
+    function sendQrAnnounceMsg(msg) {
+      if (conn && conn.open) { try { conn.send(msg); } catch (e) {} }
+    }
+
+    /** 再押下以外のOFFトリガー（受付締め）から呼ぶ共有ヘルパー */
+    function forceQrAnnounceOff() {
+      if (!isQrAnnounceActive) return;
+      isQrAnnounceActive = false;
+      updateQrAnnounceButton();
+      sendQrAnnounceMsg({ type: 'HIDE_QR_ANNOUNCE' });
+    }
+
+    function toggleQrAnnounce() {
+      if (isQrAnnounceActive) { forceQrAnnounceOff(); return; }
+      isQrAnnounceActive = true;
+      updateQrAnnounceButton();
+      sendQrAnnounceMsg({ type: 'SHOW_QR_ANNOUNCE', url: DECK_ENTRY_PAGE_URL });
+    }
+
 
     // ==========================================
     // ランキング描画
@@ -1979,8 +2416,9 @@
         if (!match || !match.p1 || !match.p2) return;
         const p1 = match.p1, p2 = match.p2;
         const label = stage ? (round ? `${stage} - ${round}` : stage) : 'NEXT MATCH';
-        const rows = await loadH2HHistory();
+        const [rows] = await Promise.all([loadH2HHistory(), loadRosterRelations()]);
         const { p1Wins, p2Wins } = calcH2H(rows, p1.name, p2.name);
+        const catchphrase = buildNextBattleCatchphrase(p1, p2, p1Wins, p2Wins);
         if (conn) {
           const hud = getShowPreviewHudFields();
           conn.send({
@@ -1988,9 +2426,10 @@
             p1: p1.name,
             p2: p2.name,
             label,
-            p1Stats: { rank: p1.rank, power: p1.currentStats.power },
-            p2Stats: { rank: p2.rank, power: p2.currentStats.power },
+            p1Stats: { rank: p1.rank, power: p1.currentStats.power, rate: p1.currentStats.rate },
+            p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate },
             h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
+            catchphrase,
             ...hud,
             ...(previewLogoDataUrl ? { logoDataUrl: previewLogoDataUrl, showLogo: true } : {})
           });
@@ -2370,6 +2809,7 @@
       deckEntryBusy = true;
       try {
         deckEntryOpen = !deckEntryOpen;
+        if (!deckEntryOpen) forceQrAnnounceOff(); // 受付を締めたらQR告知も自動OFF
         saveDeckEntryState();
         renderDeckEntryToggle();
         if (deckEntryOpen) startDeckEntryPolling(); else stopDeckEntryPolling();
