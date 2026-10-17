@@ -175,6 +175,14 @@
       <button onclick="sendTeamAnnounce()" class="tap py-3 rounded font-bold text-xs bg-cyber-blue text-cyber-on-blue">📢 全体アナウンス</button>
       <button onclick="hideOverlay()" class="tap py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-blue text-cyber-blue">アナウンス消去</button>
     </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-1">
+      <button id="btn-break" onclick="toggleBreak()" style="touch-action: manipulation;"
+              class="tap py-3 rounded font-bold text-xs bg-cyber-bg border border-yellow-400 text-yellow-400">☕ 休憩</button>
+      <button id="btn-undo" onclick="undoMatchAction()" style="touch-action: manipulation;" disabled
+              class="tap py-3 rounded font-bold text-xs bg-cyber-bg border border-cyber-blue text-cyber-blue opacity-40">↩ 試合を1手戻す</button>
+    </div>
+    <p class="text-[11px] text-gray-500 mb-3 leading-relaxed">「試合を1手戻す」は勝者の確定・取り消し・リセットを元に戻します（このアプリ側の記録のみ。score.html の表示は別途リモコンで合わせてください）。</p>
   </div>
 </section>
 
@@ -298,6 +306,8 @@
       <button onclick="undoRemoteBattle()" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-green text-cyber-green">↩ 1本戻す</button>
       <button onclick="execRemoteReset()" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">RESET</button>
     </div>
+    <button id="btn-undo-remote" onclick="undoMatchAction()" style="touch-action: manipulation;" disabled
+            class="tap w-full py-3 mb-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue opacity-40">↩ 試合を1手戻す（勝者確定・リセットの取消）</button>
 
     <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
       <p class="font-sf text-cyber-blue text-xs mb-2">BATTLE LOG</p>
@@ -498,6 +508,9 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('report-note').value = loadReportNote();
   renderAll();
   saveState();
+  updateUndoButtonState();
+  updateBreakButton();
+  loadRosterRelations();   // 先読み（失敗しても何も起きない）。次戦予告・コメントの待ち時間を減らす
   if (entry.open) startPolling();
 });
 
@@ -1154,6 +1167,7 @@ function resetLinkUI() {
   btn.classList.replace('border-cyber-green', 'border-cyber-blue');
   document.getElementById('link-status-dot').classList.replace('bg-cyber-green', 'bg-red-500');
   conn = null;
+  if (isBreakMode) { isBreakMode = false; updateBreakButton(); }
 }
 
 function connectLink() {
@@ -1191,6 +1205,8 @@ function hideOverlay() {
   sendToScore({ type: 'HIDE_OVERLAY' });
   sendToScore({ type: 'HIDE_PREVIEW' });
   sendToScore({ type: 'SHOW_SCORE_VIEW' });
+  // SHOW_SCORE_VIEW は休憩も消すので、ボタン表示も合わせる
+  if (isBreakMode) { isBreakMode = false; updateBreakButton(); }
 }
 
 // ==========================================================
@@ -1216,8 +1232,40 @@ function playerOf(idx, side) {
     beyblades: o.beyblades,
     rank: p ? p.rank : '--',
     stats: p ? p.currentStats : null,
-    fin: p ? p.finCounts : null
+    // 取り込み時点の通算 + この対抗戦で決まった決まり手（getLiveFinCounts）
+    fin: p ? getLiveFinCounts(p) : null
   };
+}
+
+/** 公開済みオーダーから、指定試合・側の participantId を返す（playerOf を経由しない） */
+function orderParticipantId(idx, side) {
+  if (!entry.revealed) return null;
+  const rec = entry.received[side === 'a' ? 'A' : 'B'];
+  if (!rec || !rec.order) return null;
+  const o = rec.order.find(x => x.pos === POSITIONS[idx].id);
+  return o ? o.participantId : null;
+}
+
+/**
+ * 取り込み時点の通算決まり手に、この対抗戦で確定したバトルの決まり手を足して返す。
+ * matches を毎回走査する冪等な実装（UNDO・バトル取消でも整合が崩れない）。
+ * 決まり手はバトルの勝者（得点した側）に計上する。登録外選手は participantId が無いので対象外。
+ */
+function getLiveFinCounts(player) {
+  const base = (player && player.finCounts) || {};
+  const out = { XF: Number(base.XF) || 0, BF: Number(base.BF) || 0, OF: Number(base.OF) || 0, SF: Number(base.SF) || 0 };
+  if (!player || player.id == null || !Array.isArray(matches)) return out;
+  matches.forEach((m, idx) => {
+    if (!m || !Array.isArray(m.battles)) return;
+    ['a', 'b'].forEach(side => {
+      const pid = orderParticipantId(idx, side);
+      if (pid == null || String(pid) !== String(player.id)) return;
+      m.battles.forEach(b => {
+        if (b.winner === side && Object.prototype.hasOwnProperty.call(out, b.finish)) out[b.finish]++;
+      });
+    });
+  });
+  return out;
 }
 
 function teamNameOf(side) {
@@ -1368,6 +1416,400 @@ function renderBoard() {
 }
 
 // ==========================================================
+// 名簿の関係性（tournament_de.html と同一の📋名簿 O〜T列）
+// 取得失敗・タイムアウト時は null を返し、関係性なしで通常動作する（当日に止めない）
+// ==========================================================
+
+const SHEET_ID_H2H = '1mJB7cH1I471WhFYqLh7B_IOECD6CuybuawFB89SN9Uc';
+const API_KEY_H2H  = 'AIzaSyCSfxgBXjAuUEV3JslZnSOpJTdTcr6Jysk';
+const RANGE_ROSTER = encodeURIComponent("'📋 名簿'!A3:T");
+const ROSTER_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_H2H}/values/${RANGE_ROSTER}?key=${API_KEY_H2H}`;
+let _rosterRelMap = null;
+let _rosterFailedAt = 0;               // 失敗後は60秒間リトライしない（操作を毎回待たせない）
+const ROSTER_RETRY_COOLDOWN_MS = 60000;
+
+async function loadRosterRelations(timeoutMs = 5000) {
+  if (_rosterRelMap) return _rosterRelMap;
+  if (_rosterFailedAt && Date.now() - _rosterFailedAt < ROSTER_RETRY_COOLDOWN_MS) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(ROSTER_URL, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) { _rosterFailedAt = Date.now(); return null; }
+    const json = await res.json();
+    const split = v => String(v || '').split(/[,、]/).map(x => x.trim()).filter(Boolean);
+    const map = new Map();
+    (json.values || []).forEach(r => {
+      const name = String(r[0] || '').trim();
+      if (!name) return;
+      map.set(name, {
+        parents:  split(r[14]),
+        children: split(r[15]),
+        spouses:  split(r[16]),
+        circle:   String(r[17] || '').trim(),
+        attr:     String(r[18] || '').trim(),
+        female:   String(r[19] || '').trim() === '1'
+      });
+    });
+    _rosterRelMap = map;
+    return _rosterRelMap;
+  } catch (e) {
+    _rosterFailedAt = Date.now();
+    console.warn('名簿の関係性取得失敗（関係性なしで継続）', e);
+    return null;
+  }
+}
+
+/** 2人の関係を1つだけ返す。優先: 夫婦 > 親子 > きょうだい > 同サークル > 属性一致 > サークル対抗 */
+function getRelation(nameA, nameB) {
+  const map = _rosterRelMap;
+  if (!map || !nameA || !nameB || nameA === nameB) return null;
+  const a = map.get(nameA), b = map.get(nameB);
+  if (!a || !b) return null;
+  if (a.spouses.includes(nameB) || b.spouses.includes(nameA)) return { kind: 'spouse' };
+  if (a.parents.includes(nameB) || b.children.includes(nameA)) return { kind: 'parent_child', parent: nameB, child: nameA, motherSide: b.female };
+  if (b.parents.includes(nameA) || a.children.includes(nameB)) return { kind: 'parent_child', parent: nameA, child: nameB, motherSide: a.female };
+  if (a.parents.length && a.parents.some(p => b.parents.includes(p))) return { kind: 'sibling' };
+  if (a.circle && b.circle && a.circle === b.circle) return { kind: 'same_circle', circle: a.circle };
+  if (a.attr && b.attr && a.attr === b.attr) return { kind: 'same_attr', attr: a.attr };
+  if (a.circle && b.circle && a.circle !== b.circle) return { kind: 'cross_circle', circles: [a.circle, b.circle] };
+  return null;
+}
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+/** 試合後コメント先頭の枕詞。該当なしは空文字 */
+function buildRelationPrefix(winnerName, loserName) {
+  const rel = getRelation(winnerName, loserName);
+  if (!rel) return '';
+  if (rel.kind === 'spouse') {
+    return pickRandom(['会でも希少な夫婦対決。', '夫婦がスタジアムを挟んで向き合った。']);
+  }
+  if (rel.kind === 'parent_child') {
+    const oya = rel.motherSide ? '母' : '親';
+    return (winnerName === rel.child)
+      ? pickRandom([`${oya}を相手に一歩も引かない親子対決。`, `${oya}の背中を追う子が挑んだ親子対決。`])
+      : pickRandom([`${oya}の貫禄が示された親子対決。`, `子の挑戦を受けて立つ親子対決。`]);
+  }
+  if (rel.kind === 'sibling')      return pickRandom(['きょうだい対決となった一戦。', '同じ家で腕を磨いた者同士の一戦。']);
+  if (rel.kind === 'same_circle')  return pickRandom([`同じ${rel.circle}に集う両者の同門対決。`, `${rel.circle}の内輪を懸けた一戦。`]);
+  if (rel.kind === 'same_attr')    return pickRandom([`ともに${rel.attr}の顔を持つ両者の読み合い。`, `${rel.attr}同士、読み合いの一戦。`]);
+  if (rel.kind === 'cross_circle') return `${rel.circles[0]}と${rel.circles[1]}、サークルの威信を懸けた一戦。`;
+  return '';
+}
+
+// ==========================================================
+// 次戦予告キャッチコピー（対抗戦向け）
+//   優先順: 強い関係性（夫婦/親子/きょうだい/同門）> 対抗戦の局面（決着戦・王手・消化試合）
+//           > 弱い関係性（属性一致/サークル対抗）> 大将戦の定型 > 戦績 > 先鋒/次鋒の定型
+//   文言は全角17文字以内（score.html の1行 nowrap の上限。cpCombine / cpFit が保証する）
+// ==========================================================
+
+const CP_MAX_LEN = 17;
+const _catchphraseHistory = [];
+const CATCHPHRASE_HISTORY_LIMIT = 8;
+
+function cpFit(text) { return [...String(text || '')].length <= CP_MAX_LEN; }
+
+/** 前半×後半を合成。17字超は引き直し、直近8件と重複しても最大5回まで引き直す。収まらなければ '' */
+function cpCombine(heads, tails) {
+  let out = '', tries = 0;
+  while (tries < 12) {
+    const cand = pickRandom(heads) + pickRandom(tails);
+    tries++;
+    if (!cpFit(cand)) continue;
+    out = cand;
+    if (!_catchphraseHistory.includes(cand) || tries >= 5) break;
+  }
+  if (out) {
+    _catchphraseHistory.push(out);
+    if (_catchphraseHistory.length > CATCHPHRASE_HISTORY_LIMIT) _catchphraseHistory.shift();
+  }
+  return out;
+}
+
+/** 単独フレーズから選ぶ（17字を超えるものは候補から除く） */
+function cpPick(list) {
+  const fit = list.filter(cpFit);
+  const fresh = fit.filter(x => !_catchphraseHistory.includes(x));
+  const out = pickRandom(fresh.length ? fresh : fit) || '';
+  if (out) {
+    _catchphraseHistory.push(out);
+    if (_catchphraseHistory.length > CATCHPHRASE_HISTORY_LIMIT) _catchphraseHistory.shift();
+  }
+  return out;
+}
+
+function cpRankTier(rankStr) {
+  const s = String(rankStr || '').trim().toUpperCase();
+  if (!s || s === '--') return null;
+  if (s.startsWith('X')) return 5;
+  const n = parseInt(s, 10);
+  if (isNaN(n)) return null;
+  if (n < 40) return 0;
+  if (n < 60) return 1;
+  if (n < 80) return 2;
+  if (n < 90) return 3;
+  return 4;
+}
+function cpRateNum(rateStr) {
+  const v = parseFloat(String(rateStr || '').replace('%', ''));
+  return isNaN(v) ? null : v;
+}
+function cpTruncateAttr(s) {
+  const arr = [...String(s || '')];
+  return arr.length > 5 ? arr.slice(0, 5).join('') : arr.join('');
+}
+
+/** 強い関係性（個人の因縁）。対抗戦の局面より優先する */
+function cpFromStrongRelation(rel) {
+  if (!rel) return '';
+  if (rel.kind === 'spouse') {
+    return cpCombine(
+      ['愛と闘志の', '誓いを交わした', '家庭を懸けた', '譲れぬ', '公私を懸けた', '日常を持ち込んだ'],
+      ['夫婦対決！', '夫婦決戦！', '夫婦バトル！', '夫婦の一戦！', '夫婦の意地！', '夫婦頂上決戦！']);
+  }
+  if (rel.kind === 'parent_child') {
+    const kin = rel.motherSide ? '母子' : '親子';
+    return cpCombine(
+      ['血を分けた', '世代を超えた', '絆を懸けた', '受け継がれし', '背中を追いかけた', '血筋が交わる'],
+      [`${kin}対決！`, `${kin}決戦！`, `${kin}バトル！`, `${kin}の一戦！`, `${kin}の意地！`, `${kin}激突！`]);
+  }
+  if (rel.kind === 'sibling') {
+    return cpCombine(
+      ['負けられない', '幼き日からの', '同じ屋根の下、', '譲れぬ意地の', '切磋琢磨してきた', '同じ血を継ぐ'],
+      ['きょうだい対決！', 'きょうだい決戦！', 'きょうだいバトル！', 'きょうだいの一戦！', 'きょうだいの意地！', 'きょうだい激突！']);
+  }
+  if (rel.kind === 'same_circle') {
+    return cpCombine(
+      ['意地とプライドの', '同じ看板の', '手の内知り尽くす', '気心知れた', '稽古仲間の', '切磋琢磨の末の'],
+      ['同門対決！', '同門決戦！', '同門バトル！', '内輪の頂上決戦！', '同門の意地！', '同門激突！']);
+  }
+  return '';
+}
+
+/** 弱い関係性（属性一致・サークル対抗）。局面（決着戦など）に譲る */
+function cpFromWeakRelation(rel) {
+  if (!rel) return '';
+  if (rel.kind === 'same_attr') {
+    const a = cpTruncateAttr(rel.attr);
+    return cpCombine(
+      ['同業対決、', '手練れ同士の', '経験と経験の', '似た者同士の', '玄人対決、', '読み合い上等'],
+      [`${a}対決！`, `${a}マッチ！`, `${a}の意地！`, `${a}激突！`, `${a}バトル！`, `${a}決戦！`]);
+  }
+  if (rel.kind === 'cross_circle') {
+    return cpCombine(
+      ['威信を懸けた', '看板を背負う', '名誉を懸けた', '会の誇りを懸けた', '二つの会が交わる'],
+      ['サークル対抗戦！', 'クラブ対抗マッチ！', '他流試合！', '対抗戦の華！', 'クラブ代表対決！']);
+  }
+  return '';
+}
+
+/**
+ * 対抗戦の局面（先鋒戦/次鋒戦/大将戦/決着戦）。
+ *   決着戦  = 大将戦が 1-1 で回ってきたとき（勝った方がチーム勝利）
+ *   王手    = 次鋒戦で片方が先制済み（勝てばチーム勝利/負ければタイ）
+ *   消化    = 大将戦の時点で2勝0敗が決まっている（星には影響しない）
+ * 該当しなければ ''（定型は cpFromPosition で後段に回す）
+ */
+function cpFromSituation(idx) {
+  let a = 0, b = 0;
+  for (let i = 0; i < idx; i++) {
+    if (matches[i].winner === 'a') a++;
+    else if (matches[i].winner === 'b') b++;
+  }
+  const id = POSITIONS[idx].id;
+  if (id === 'taisho') {
+    if (a === 1 && b === 1) {
+      return cpPick(['勝てばチーム勝利の決着戦！', '全てが決まる決着戦！', '星は五分、大将の決着戦！', 'チームの運命を決する一戦！', '勝者がチームを勝利に導く！']);
+    }
+    if (a === 2 || b === 2) {
+      return cpPick(['完封か一矢か、大将戦！', 'チーム勝敗は決した、意地！', '大将の誇りを懸けた一戦！', '最後の一番、意地を見せろ！']);
+    }
+    return '';
+  }
+  if (id === 'jiho' && a + b === 1) {
+    return cpPick(['王手か五分か、次鋒戦！', '勝てば決着、負ければ五分！', '星の行方を決める次鋒戦！', '勝って王手をかけられるか！']);
+  }
+  return '';
+}
+
+/** 位置ごとの定型 */
+function cpFromPosition(idx) {
+  const id = POSITIONS[idx].id;
+  if (id === 'senpo') return cpPick(['先陣を切る先鋒戦！', '流れを決める一番槍！', '火蓋を切る先鋒戦！', 'チームの顔、先鋒戦！', '勝利への一番手！', '先手必勝の先鋒戦！']);
+  if (id === 'jiho')  return cpPick(['流れを握る次鋒戦！', 'つなぐ者、次鋒戦！', '大将へ託す次鋒戦！', '勝負の行方を握る一戦！', '勝敗の分かれ目、次鋒戦！']);
+  return cpPick(['アウェイ5P先取の大将戦！', 'シマを賭けた大将戦！', '大将同士の頂上決戦！', '全てを託す大将戦！', '看板を背負う大将戦！']);
+}
+
+/** 戦績（頂上 → 格差 → 伯仲）。ランク不明（登録外・"--"）はスキップ */
+function cpFromStats(pa, pb) {
+  if (!pa || !pb) return '';
+  const t1 = cpRankTier(pa.rank), t2 = cpRankTier(pb.rank);
+  if (t1 === null || t2 === null) return '';
+  const r1 = cpRateNum(pa.stats && pa.stats.rate), r2 = cpRateNum(pb.stats && pb.stats.rate);
+  const bp1 = Number(pa.stats && pa.stats.power) || 0, bp2 = Number(pb.stats && pb.stats.power) || 0;
+  if ((t1 >= 3 && t2 >= 3) || (r1 != null && r2 != null && r1 >= 60 && r2 >= 60)) {
+    return cpCombine(
+      ['トップランカーの', '実力者同士の', '会を代表する', '選ばれし者達の', '王者候補同士の', '折り紙付き同士の'],
+      ['頂上決戦！', 'ハイレベルマッチ！', '頂点争い！', 'エリート対決！', '最高峰の一戦！', '実力伯仲！']);
+  }
+  if (Math.abs(t1 - t2) >= 2 || Math.abs(bp1 - bp2) >= 3000) {
+    return cpCombine(
+      ['金星を狙う', '下剋上を狙う', '格上に挑む', '一発逆転狙う', '波乱を呼ぶ', '伏兵の一撃'],
+      ['ジャイアントキリング！', '番狂わせ！', '下剋上マッチ！', '挑戦者の一撃！', 'アップセット！', '大金星なるか！']);
+  }
+  return cpCombine(
+    ['実力伯仲の', '互角の', '甲乙つけがたい', '五分と五分の', '紙一重の', '一歩も引かぬ'],
+    ['ガチンコバトル！', '真っ向勝負！', '一騎打ち！', '大接戦必至！', '紙一重の勝負！', '五分の激突！']);
+}
+
+/**
+ * 次戦予告の一言。個人対個人（idx 番目の試合）で判定する。
+ * 関係性は名簿が読めているときだけ効く（読めなければ null として以降のチェーンへ）。
+ */
+function buildNextBattleCatchphrase(idx, pa, pb) {
+  const rel = (pa && pb) ? getRelation(pa.name, pb.name) : null;
+  return cpFromStrongRelation(rel)
+      || cpFromSituation(idx)
+      || cpFromWeakRelation(rel)
+      || (POSITIONS[idx].id === 'taisho' ? cpFromPosition(idx) : '')
+      || cpFromStats(pa, pb)
+      || cpFromPosition(idx)
+      || '';
+}
+
+// ==========================================================
+// 試合結果の UNDO（メモリ内のみ・localStorage には保存しない）
+// 勝者の確定・取り消し・リセットの直前に matches 全体のスナップショットを積む。
+// 既存の undoRemoteBattle（バトル単位の1本戻し）とは別系統。
+// このアプリには Sheets 同期が無いため、UNDO 時に外部へ書き込むものは無い。
+// ==========================================================
+
+const matchUndoStack = [];
+const MATCH_UNDO_LIMIT = 15;
+
+function pushMatchUndoSnapshot() {
+  try {
+    matchUndoStack.push(JSON.stringify(matches));
+    if (matchUndoStack.length > MATCH_UNDO_LIMIT) matchUndoStack.shift();
+  } catch (e) { console.warn('undo snapshot failed:', e); }
+  updateUndoButtonState();
+}
+
+function undoMatchAction() {
+  if (!matchUndoStack.length) return showAlert('戻せる操作がありません');
+  let snap;
+  try { snap = JSON.parse(matchUndoStack[matchUndoStack.length - 1]); }
+  catch (e) { return showAlert('復元に失敗しました'); }
+  if (!Array.isArray(snap) || snap.length !== POSITIONS.length) return showAlert('復元に失敗しました');
+  matchUndoStack.pop();
+  matches = snap;
+  saveState();
+  renderBoard();
+  renderResult();
+  if (currentMatchIdx >= 0) renderRemote();
+  updateUndoButtonState();
+}
+
+function updateUndoButtonState() {
+  const disabled = matchUndoStack.length === 0;
+  ['btn-undo', 'btn-undo-remote'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = disabled;
+    btn.classList.toggle('opacity-40', disabled);
+  });
+}
+
+// ==========================================================
+// 休憩オーバーレイ（BREAK_START / BREAK_RECAP / BREAK_END）
+// ==========================================================
+
+let isBreakMode = false;
+
+/** 次戦予告・休憩で共通のロゴ設定（このアプリは固定背景 BG_IMAGE を使う） */
+function getShowPreviewHudFields() {
+  return { showLogo: true, previewBackground: BG_IMAGE, logoSrc: BG_IMAGE, logoDataUrl: null };
+}
+
+/** 休憩振り返り用。確定済みの試合を新しい順（updatedAt降順）に。コメントは保存済みのものを使い、新規fetchしない */
+function buildBreakRecapData() {
+  const items = [];
+  matches.forEach((m, idx) => {
+    if (!m || !m.winner) return;
+    const pa = playerOf(idx, 'a'), pb = playerOf(idx, 'b');
+    if (!pa || !pb) return;
+    // 手動確定でスコア未記録のとき "0-0" と誤読させないよう null にする
+    const hasScore = Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB) && (m.scoreA + m.scoreB) > 0;
+    const kimarite = (Array.isArray(m.battles) && m.battles.length)
+      ? m.battles.map(b => b.finish).filter(Boolean).join(',') : '';
+    items.push({
+      label: (eventName || 'S.I.T BATTLE LEAGUE') + ' - ' + POSITIONS[idx].label + '戦',
+      p1: pa.name, p2: pb.name,
+      score1: hasScore ? m.scoreA : null,
+      score2: hasScore ? m.scoreB : null,
+      winnerIs: m.winner === 'a' ? 1 : 2,
+      kimarite: kimarite || null,
+      comment: m.comment || null,
+      _updatedAt: m.updatedAt || 0
+    });
+  });
+  items.sort((x, y) => y._updatedAt - x._updatedAt);
+  return items.slice(0, 50).map(({ _updatedAt, ...rest }) => rest);
+}
+
+function sendBreakRecap() {
+  if (!conn || !conn.open) return;
+  const items = buildBreakRecapData();
+  if (!items.length) return;
+  conn.send({ type: 'BREAK_RECAP', items, intervalMs: 8000 });
+}
+
+function updateBreakButton() {
+  const btn = document.getElementById('btn-break');
+  if (!btn) return;
+  if (isBreakMode) {
+    btn.textContent = '▶ 再開（休憩中）';
+    btn.classList.remove('border-yellow-400', 'text-yellow-400');
+    btn.classList.add('border-cyber-green', 'text-cyber-green');
+  } else {
+    btn.textContent = '☕ 休憩';
+    btn.classList.remove('border-cyber-green', 'text-cyber-green');
+    btn.classList.add('border-yellow-400', 'text-yellow-400');
+  }
+}
+
+function sendBreakStart() {
+  if (!conn || !conn.open) return showAlert('⚠️ スコアアプリにリンクされていません。');
+  // 次に行う試合（最初の未決着）を休憩画面の「次戦」に出す
+  const nextIdx = matches.findIndex(m => !m.winner);
+  const pa = nextIdx >= 0 ? playerOf(nextIdx, 'a') : null;
+  const pb = nextIdx >= 0 ? playerOf(nextIdx, 'b') : null;
+  conn.send({
+    type: 'BREAK_START',
+    p1: pa && pb ? pa.name : '',
+    p2: pa && pb ? pb.name : '',
+    ...getShowPreviewHudFields()
+  });
+  sendBreakRecap();
+  isBreakMode = true;
+  updateBreakButton();
+}
+
+function sendBreakEnd() {
+  if (!conn || !conn.open) { isBreakMode = false; updateBreakButton(); return; }
+  conn.send({ type: 'BREAK_END' });
+  isBreakMode = false;
+  updateBreakButton();
+}
+
+function toggleBreak() {
+  if (isBreakMode) sendBreakEnd(); else sendBreakStart();
+}
+
+// ==========================================================
 // アナウンス
 // ==========================================================
 
@@ -1378,16 +1820,16 @@ function escapeHtml(str) {
 }
 
 /** 個別対戦のアナウンス（従来どおりの SHOW_PREVIEW） */
-function sendMatchPreview(idx) {
+async function sendMatchPreview(idx) {
   const pa = playerOf(idx, 'a');
   const pb = playerOf(idx, 'b');
   if (!pa || !pb) return showAlert('オーダーが公開されていません');
 
   const lim = limitsOf(idx);
   const label = POSITIONS[idx].label + '戦　' + teamNameOf('a') + ' vs ' + teamNameOf('b');
-  const cp = (POSITIONS[idx].id === 'taisho')
-    ? 'アウェイは5ポイント先取。シマを賭けた大将戦！'
-    : 'チームの命運を背負う' + POSITIONS[idx].label + '戦！';
+  // 名簿の関係性を読み込む（失敗・5秒タイムアウトでも null になるだけで、関係性なしで続行する）
+  await loadRosterRelations();
+  const cp = buildNextBattleCatchphrase(idx, pa, pb);
 
   const ok = sendToScore({
     type: 'SHOW_PREVIEW',
@@ -1557,10 +1999,20 @@ function teamMessageFor(idx) {
   return win + '、一矢報いる！ ' + lose + 'の完封を阻止！';
 }
 
-function sendMatchComment(idx) {
-  const text = teamMessageFor(idx);
-  if (!text) return;
+async function sendMatchComment(idx) {
+  const base = teamMessageFor(idx);
+  if (!base) return;
   const side = matches[idx].winner;
+  // 個人対個人の関係性（夫婦・親子・同門など）を枕詞にする。名簿が読めなければ従来文言のまま
+  await loadRosterRelations();
+  // 待っている間に勝者が取り消された/変わった場合は送らない
+  if (matches[idx].winner !== side) return;
+  const w = playerOf(idx, side);
+  const l = playerOf(idx, side === 'a' ? 'b' : 'a');
+  const prefix = (w && l) ? buildRelationPrefix(w.name, l.name) : '';
+  const text = prefix + base;
+  matches[idx].comment = text;     // 休憩の振り返り（BREAK_RECAP）で使う
+  saveState();
   sendToScore({ type: 'MATCH_COMMENT', comment: text, highlights: [teamNameOf(side)] });
 }
 
@@ -1662,6 +2114,7 @@ function openRemoteModal(idx) {
   sendToScore({ type: 'HIDE_PREVIEW' });
   sendToScore({ type: 'HIDE_OVERLAY' });
   sendToScore({ type: 'SHOW_SCORE_VIEW' });
+  if (isBreakMode) { isBreakMode = false; updateBreakButton(); }
 
   const sent = sendToScore({
     type: 'SET_MATCH',
@@ -1817,6 +2270,7 @@ function undoRemoteBattle() {
 async function execRemoteReset() {
   if (currentMatchIdx < 0) return;
   if (!await showConfirm('この試合のスコアと記録をリセットします。\nよろしいですか？')) return;
+  pushMatchUndoSnapshot();
   const m = matches[currentMatchIdx];
   m.scoreA = 0; m.scoreB = 0; m.battles = [];
   sendRemoteCmd('SYS_RESET');
@@ -1833,8 +2287,11 @@ function setMatchWinner(side) {
   const idx = currentMatchIdx;
   const m = matches[idx];
 
+  pushMatchUndoSnapshot();
+
   if (m.winner === side) {
     m.winner = null;
+    m.comment = null;
     m.updatedAt = Date.now();
     saveState();
     renderRemote(); renderBoard(); renderResult();
@@ -1846,13 +2303,15 @@ function setMatchWinner(side) {
   saveState();
 
   sendRemoteCmd(side === 'a' ? 'P1_WIN' : 'P2_WIN');
-  sendMatchComment(idx);
+  sendMatchComment(idx);   // 関係性の枕詞つき。名簿取得は非同期（失敗時は枕詞なし）
 
   renderRemote(); renderBoard(); renderResult();
 
   if (allMatchesDone()) {
     // 3試合すべて終わったらチーム戦の決着演出へ
     setTimeout(() => {
+      // 3秒の間に「試合を1手戻す」で取り消された場合は演出しない
+      if (!allMatchesDone()) return;
       closeRemoteModal();
       showTeamWinner();
       switchTab('result');
@@ -2093,8 +2552,13 @@ function reportFooter(page) {
     </div>`;
 }
 
-/** 1枚目：見出し＋チーム結果＋星取表＋両チーム全選手 */
-function reportPage1(logoDataUrl) {
+/**
+ * 1枚目：見出し＋チーム結果＋星取表＋両チーム全選手
+ * level は紙面が1350pxを超えたときの削減段階（0=全部載せ）。
+ *   1: 大将戦ルールの注記を外す / 2: 両チームの選手一覧(ENTRY MEMBERS)を外す / 3: TODAY'S RECORD を外す
+ * 見出し・チーム結果・星取表・フッターは削らない。
+ */
+function reportPage1(logoDataUrl, level = 0) {
   const side = teamWinnerSide();
   const w = teamWins();
   const winName = side ? teamNameOf(side) : '---';
@@ -2173,14 +2637,16 @@ function reportPage1(logoDataUrl) {
         <table style="width:100%;border-collapse:collapse;">${rows}</table>
       </div>
 
+      ${level >= 2 ? '' : `
       <div style="flex:0 0 auto;padding:24px 40px 0;">
         <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">ENTRY MEMBERS</div>
         <div style="display:flex;gap:18px;">
           ${roster('a', '#0b6f9e')}
           ${roster('b', '#b3246f')}
         </div>
-      </div>
+      </div>`}
 
+      ${level >= 3 ? '' : `
       <div style="flex:0 0 auto;padding:24px 40px 0;">
         <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">TODAY'S RECORD</div>
         <div style="display:flex;gap:14px;">
@@ -2191,21 +2657,27 @@ function reportPage1(logoDataUrl) {
               <div style="font-size:13px;color:#3b414d;line-height:1.5;">${escapeHtml(c.sub)}</div>
             </div>`).join('')}
         </div>
-      </div>
+      </div>`}
 
+      ${level >= 1 ? '' : `
       <div style="flex:0 0 auto;padding:22px 40px 0;">
         <div style="border-left:6px solid #ff1f3d;background:#f7f8fa;padding:12px 16px;font-size:15px;color:#3b414d;line-height:1.7;">
           大将戦のみ、アウェイ側は5ポイント先取が勝利条件（ホーム側は4ポイント先取）。
           先鋒・次鋒で決着がついても大将戦は必ず実施し、星として記録する。
         </div>
-      </div>
+      </div>`}
 
       ${reportFooter(1)}
     </div>`;
 }
 
-/** 2枚目：各試合の詳細（使用ベイ・決まり手）＋記録＋編集後記 */
-function reportPage2(logoDataUrl) {
+/**
+ * 2枚目：各試合の詳細（使用ベイ・決まり手）＋記録＋編集後記
+ * level は紙面が1350pxを超えたときの削減段階（0=全部載せ）。
+ *   1: 登録ベイ一覧を「使用ベイのみ」にする / 2: 各試合の決まり手の流れ(→)を外す / 3: 編集後記の最小高さを外す
+ * 試合ごとの星取・FINISH TYPES・編集後記本文・フッターは削らない。
+ */
+function reportPage2(logoDataUrl, level = 0) {
   const dist = reportKimariteDist();
   const total = reportTotalBattles();
   const pct = k => total ? Math.round((dist[k] / total) * 100) : 0;
@@ -2235,7 +2707,8 @@ function reportPage2(logoDataUrl) {
     ).join('　→　') || '記録なし';
 
     const beyLine = (p, used) => {
-      const list = (p && p.beyblades) ? p.beyblades : [];
+      let list = (p && p.beyblades) ? p.beyblades : [];
+      if (level >= 1) list = list.filter(b => b.name === used);
       return list.map(b =>
         (b.name === used
           ? '<span style="color:#14161a;font-weight:900;">' + escapeHtml(b.name) + '</span>'
@@ -2260,7 +2733,7 @@ function reportPage2(logoDataUrl) {
             <div style="font-size:13px;line-height:1.6;margin-top:4px;">${beyLine(pb, m.bBeyUsed)}</div>
           </div>
         </div>
-        <div style="margin-top:10px;font-size:13px;color:#3b414d;border-top:1px solid #d2d6dd;padding-top:8px;">${escapeHtml(kim)}</div>
+        ${level >= 2 ? '' : `<div style="margin-top:10px;font-size:13px;color:#3b414d;border-top:1px solid #d2d6dd;padding-top:8px;">${escapeHtml(kim)}</div>`}
       </div>`;
   }).join('');
 
@@ -2284,7 +2757,7 @@ function reportPage2(logoDataUrl) {
         </div>
         <div style="flex:1;">
           <div style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:4px;color:#ff1f3d;margin-bottom:10px;">EDITOR'S NOTE</div>
-          <div style="border:1px solid #d2d6dd;padding:14px 16px;font-size:15px;line-height:1.9;color:#3b414d;min-height:150px;white-space:pre-wrap;">${escapeHtml(note || '—')}</div>
+          <div style="border:1px solid #d2d6dd;padding:14px 16px;font-size:15px;line-height:1.9;color:#3b414d;${level >= 3 ? '' : 'min-height:150px;'}white-space:pre-wrap;">${escapeHtml(note || '—')}</div>
         </div>
       </div>
 
@@ -2305,8 +2778,23 @@ async function openReportModal() {
     // フォント読み込み前に幅を実測すると初回だけレイアウトが崩れるため必ず待つ
     await document.fonts.ready;
 
-    document.getElementById('report-canvas-1').innerHTML = reportPage1(logo);
-    document.getElementById('report-canvas-2').innerHTML = reportPage2(logo);
+    // 紙面が1350pxを超えたら、優先度の低い項目から段階的に減らして作り直す（上限は各3段階）
+    const c1 = document.getElementById('report-canvas-1');
+    const c2 = document.getElementById('report-canvas-2');
+    let page1Level = 0, page2Level = 0;
+    c1.innerHTML = reportPage1(logo, page1Level);
+    while (c1.scrollHeight > 1350 && page1Level < 3) {
+      page1Level++;
+      c1.innerHTML = reportPage1(logo, page1Level);
+    }
+    c2.innerHTML = reportPage2(logo, page2Level);
+    while (c2.scrollHeight > 1350 && page2Level < 3) {
+      page2Level++;
+      c2.innerHTML = reportPage2(logo, page2Level);
+    }
+    if (page1Level || page2Level) {
+      console.info('[レポート] 紙面超過のため項目を削減しました（1枚目 level=' + page1Level + ' / 2枚目 level=' + page2Level + '）');
+    }
     reportBuilt = true;
 
     mountPreview(1);
