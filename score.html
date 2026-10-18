@@ -1034,6 +1034,16 @@
                 savedAt: Date.now()
             };
         }
+        // ★ベイ名の表示まわりの定数。restoreMatchState()（下で同期的に呼ばれる）が updateBeybladeBar を通るため、
+        //   必ず restoreMatchState() の呼び出しより前で宣言すること。
+        //   const を後ろで宣言すると「初期化前にアクセス」(TDZ)のエラーでスクリプト全体が止まり、
+        //   PeerJS接続(initPeer)まで到達せず CONNECTING... のまま固まる。
+        const KIMARITE_BEY_OVERLAP_MAX_WIDTH = 700;   // fin-group とベイ名枠の重なり対策を効かせる最大幅
+        const BEY_BOX_BOTTOM = 15;      // CSSの bottom と同じ
+        const BEY_BOX_MIN_H = 28;       // XF欄の下に十分な空きがない端末でも、XF欄に重ならない範囲で文字を縮めて収める
+        const BEY_BOX_MAX_H = 64;
+        const BEY_FONT_MAX = 24, BEY_FONT_ONE_LINE_MIN = 14, BEY_FONT_MIN = 8;
+
         function saveMatchState() {
             try { localStorage.setItem(MATCH_STATE_KEY, JSON.stringify(getMatchStateSnapshot())); } catch (e) {}
         }
@@ -1071,8 +1081,15 @@
             if (Array.isArray(st.activeHistory)) {
                 st.activeHistory.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('active-history'); });
             }
-            if (st.beybladeP1) { beybladeP1 = st.beybladeP1; updateBeybladeBar(1, st.beybladeP1); }
-            if (st.beybladeP2) { beybladeP2 = st.beybladeP2; updateBeybladeBar(2, st.beybladeP2); }
+            // 復元のどこかで例外が出ても、スクリプト全体（PeerJS接続など）を止めないよう個別に保護する
+            if (st.beybladeP1) {
+                beybladeP1 = st.beybladeP1;
+                try { updateBeybladeBar(1, st.beybladeP1); } catch (e) { console.warn('P1ベイ名の復元に失敗:', e); }
+            }
+            if (st.beybladeP2) {
+                beybladeP2 = st.beybladeP2;
+                try { updateBeybladeBar(2, st.beybladeP2); } catch (e) { console.warn('P2ベイ名の復元に失敗:', e); }
+            }
             updateStatusMsg('前回の進行状況を復元しました', 2000);
         }
         function cancelPendingAdvance() {
@@ -2705,9 +2722,6 @@
          * ベイ名の枠の高さを「XF欄の直下〜画面下端」に合わせる（XF欄は隠さない）。
          * XF欄が見つからない/非表示のときは既定の高さのまま。
          */
-        const BEY_BOX_BOTTOM = 15;      // CSSの bottom と同じ
-        const BEY_BOX_MIN_H = 28;   // XF欄の下に十分な空きがない端末でも、XF欄に重ならない範囲で文字を縮めて収める
-        const BEY_BOX_MAX_H = 64;
         function layoutBeyBoxes() {
             [1, 2].forEach(n => {
                 const box = document.getElementById(`beyblade-box-p${n}`);
@@ -2729,7 +2743,6 @@
          * 14px未満になるなら折り返し(最大2〜3行)を許可して、収まる最大サイズを探す。
          * ※ 枠が表示状態(display:flex)でないと寸法が測れないため、表示後に呼ぶこと。
          */
-        const BEY_FONT_MAX = 24, BEY_FONT_ONE_LINE_MIN = 14, BEY_FONT_MIN = 8;
         function fitBeyName(box) {
             const t = box && box.querySelector('.bey-text');
             if (!t) return;
@@ -2792,11 +2805,11 @@
         window.addEventListener('orientationchange', refitBeyBoxes);
         // Chakra Petch の読み込み後に文字幅が変わるので、読み込み完了時にも合わせ直す
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(refitBeyBoxes);
+        window.addEventListener('load', refitBeyBoxes);
 
         // 決まり手データ(fin-group)とベイ名表示枠の重なり対策フォールバック。
         // CSSでの縮小だけでは狭幅端末で重なりが残る場合に、ベイ名表示中のfin-groupを排他的に隠す。
         // getBoundingClientRect()の常時ポーリングは行わず、ベイ名変更時とresize/orientationchange時のみ判定する。
-        const KIMARITE_BEY_OVERLAP_MAX_WIDTH = 700;
         function updateFinGroupOverlapState() {
             const narrow = window.innerWidth <= KIMARITE_BEY_OVERLAP_MAX_WIDTH;
             const p1Fin = document.getElementById('p1-fin-group');
