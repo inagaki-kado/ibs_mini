@@ -285,28 +285,32 @@
     </div>
 
     <div id="remote-score-area">
+    <!-- 左右入れ替え（score.html の名前・得点・ベイ・戦績も一緒に入れ替わる） -->
+    <button onclick="execRemoteSwap()" class="tap w-full py-3 mb-1 rounded text-sm font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">⇄ 左右を入れ替える（SWAP）</button>
+    <p id="remote-swap-state" class="text-[11px] text-gray-400 mb-3 leading-relaxed">score.html の左右・得点・ベイ・戦績も一緒に入れ替わります。</p>
+
     <!-- スコア操作 -->
     <div class="grid grid-cols-2 gap-2 mb-3">
       <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2">
-        <p class="text-[11px] text-center text-cyber-blue mb-2 font-bold">左 / P1</p>
+        <p id="remote-ctl-lbl-L" class="text-[11px] text-center text-cyber-blue mb-2 font-bold break-all">左 / P1</p>
         <div class="grid grid-cols-2 gap-1">
-          <button onclick="scoreCmd('a','P1_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
-          <button onclick="scoreCmd('a','P1_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
-          <button onclick="scoreCmd('a','P1_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
-          <button onclick="scoreCmd('a','P1_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
-          <button onclick="scoreCmd('a','P1_MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
-          <button onclick="scoreCmd('a','P1_PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
+          <button onclick="scoreCmdPos('L','X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
+          <button onclick="scoreCmdPos('L','B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
+          <button onclick="scoreCmdPos('L','O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
+          <button onclick="scoreCmdPos('L','S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
+          <button onclick="scoreCmdPos('L','MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
+          <button onclick="scoreCmdPos('L','PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
         </div>
       </div>
       <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2">
-        <p class="text-[11px] text-center text-cyber-pink mb-2 font-bold">右 / P2</p>
+        <p id="remote-ctl-lbl-R" class="text-[11px] text-center text-cyber-pink mb-2 font-bold break-all">右 / P2</p>
         <div class="grid grid-cols-2 gap-1">
-          <button onclick="scoreCmd('b','P2_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
-          <button onclick="scoreCmd('b','P2_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
-          <button onclick="scoreCmd('b','P2_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
-          <button onclick="scoreCmd('b','P2_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
-          <button onclick="scoreCmd('b','P2_MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
-          <button onclick="scoreCmd('b','P2_PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
+          <button onclick="scoreCmdPos('R','X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF +3</button>
+          <button onclick="scoreCmdPos('R','B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF +2</button>
+          <button onclick="scoreCmdPos('R','O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF +2</button>
+          <button onclick="scoreCmdPos('R','S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF +1</button>
+          <button onclick="scoreCmdPos('R','MINUS',-1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">−1</button>
+          <button onclick="scoreCmdPos('R','PLUS',1)" class="tap py-2 rounded text-xs font-bold bg-cyber-bg border border-cyber-table-border text-gray-300">＋1</button>
         </div>
       </div>
     </div>
@@ -328,19 +332,19 @@
           <div>
             <p id="remote-replay-lbl-a" class="text-[11px] text-center text-cyber-blue font-bold mb-1 break-all">左 / P1</p>
             <div class="grid grid-cols-4 gap-1">
-              <button onclick="scoreCmd('a','P1_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
-              <button onclick="scoreCmd('a','P1_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
-              <button onclick="scoreCmd('a','P1_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
-              <button onclick="scoreCmd('a','P1_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
+              <button onclick="scoreCmdPos('L','X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
+              <button onclick="scoreCmdPos('L','B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
+              <button onclick="scoreCmdPos('L','O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
+              <button onclick="scoreCmdPos('L','S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
             </div>
           </div>
           <div>
             <p id="remote-replay-lbl-b" class="text-[11px] text-center text-cyber-pink font-bold mb-1 break-all">右 / P2</p>
             <div class="grid grid-cols-4 gap-1">
-              <button onclick="scoreCmd('b','P2_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
-              <button onclick="scoreCmd('b','P2_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
-              <button onclick="scoreCmd('b','P2_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
-              <button onclick="scoreCmd('b','P2_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
+              <button onclick="scoreCmdPos('R','X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
+              <button onclick="scoreCmdPos('R','B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
+              <button onclick="scoreCmdPos('R','O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
+              <button onclick="scoreCmdPos('R','S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
             </div>
           </div>
         </div>
@@ -375,8 +379,8 @@
     <div class="h-4"></div>
     <p class="text-xs text-gray-400 mb-2">勝者を確定する（もう一度押すと取り消し）</p>
     <div class="grid grid-cols-2 gap-3">
-      <button id="btn-win-a" onclick="setMatchWinner('a')" class="tap py-4 rounded font-bold text-sm"></button>
-      <button id="btn-win-b" onclick="setMatchWinner('b')" class="tap py-4 rounded font-bold text-sm"></button>
+      <button id="btn-win-a" onclick="setMatchWinnerPos('L')" class="tap py-4 rounded font-bold text-sm"></button>
+      <button id="btn-win-b" onclick="setMatchWinnerPos('R')" class="tap py-4 rounded font-bold text-sm"></button>
     </div>
     <div class="h-10"></div>
   </div>
@@ -492,6 +496,40 @@ const ENTRY_PAGE_URL = 'https://itabashibayblade.pages.dev/team_entry.html';
 
 /** 次戦予告・全体アナウンスの背景 */
 const BG_IMAGE = 'stibattle.jpg';
+
+/**
+ * 背景画像のデータURL。score.html は iOSアプリ（BeyHUD）に同梱されたファイルだけを持ち、
+ * stibattle.jpg は含まれない。ファイル名だけ送ると見つからず「？」アイコンになるため、
+ * このアプリで読み込んだ画像データそのものを送る（score.html は logoDataUrl を優先する）。
+ * 読み込めなかったとき（file:// など）は従来どおりファイル名で送る。
+ */
+let bgDataUrl = null;
+let bgLoading = null;
+function loadBgDataUrl() {
+  if (bgDataUrl) return Promise.resolve(bgDataUrl);
+  if (bgLoading) return bgLoading;
+  bgLoading = (async () => {
+    try {
+      const res = await fetch(BG_IMAGE);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const blob = await res.blob();
+      bgDataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('背景画像を読み込めませんでした（ファイル名で送ります）:', e);
+    } finally {
+      bgLoading = null;
+    }
+    return bgDataUrl;
+  })();
+  return bgLoading;
+}
+/** オーバーレイHTMLに埋め込む画像の src。読み込み済みならデータURL */
+function bgImageSrc() { return bgDataUrl || BG_IMAGE; }
 /**
  * 紙面のロゴ候補。前から順に試す。
  * maintitle_white.png は945×945で透明余白が大きいため、
@@ -550,6 +588,7 @@ function blankMatches() {
     scoreA: 0, scoreB: 0,
     battles: [],         // [{winner:'a'|'b', finish:'XF', pts, scoreA, scoreB, aBey, bBey, ts}]
     aBeyUsed: '', bBeyUsed: '',
+    swapped: false,      // true のとき、score.html の左(P1)がチームB・右(P2)がチームA
     updatedAt: null
   }));
 }
@@ -618,6 +657,7 @@ window.addEventListener('DOMContentLoaded', () => {
   saveState();
   updateUndoButtonState();
   updateBreakButton();
+  loadBgDataUrl();         // 背景画像の先読み（iOSアプリの score.html には同梱されていないためデータで送る）
   loadRosterRelations();   // 先読み（失敗しても何も起きない）。次戦予告・コメントの待ち時間を減らす
   if (entry.open) startPolling();
 });
@@ -1771,6 +1811,24 @@ function connectLink() {
   }
 }
 
+// ==========================================================
+// 左右の入れ替え（SWAP）
+// 得点・ベイ・勝敗はチーム（'a'/'b'）に紐づけたまま持ち、
+// リモコンの左右の表示と score.html へ送る P1/P2 だけを swapped に追従させる。
+// 左 = score.html の P1、右 = P2。
+// ==========================================================
+
+/** 位置 'L'|'R' に今いるチーム側 'a'|'b' */
+function sideAt(m, pos) {
+  const leftIsA = !(m && m.swapped);
+  return (pos === 'L') === leftIsA ? 'a' : 'b';
+}
+
+/** チーム側 'a'|'b' が今 score.html のどちらか（'P1'=左 / 'P2'=右） */
+function scorePlayerOf(m, side) {
+  return sideAt(m, 'L') === side ? 'P1' : 'P2';
+}
+
 function sendToScore(msg) {
   if (!conn || !conn.open) return false;
   conn.send(msg);
@@ -1872,8 +1930,9 @@ function applyRemoteModeUI(mode) {
   document.getElementById('remote-score-area').classList.toggle('hidden', mode !== 'score');
   document.getElementById('remote-replay-area').classList.toggle('hidden', mode !== 'replay');
   if (mode === 'replay') {
-    const pa = currentMatchIdx >= 0 ? playerOf(currentMatchIdx, 'a') : null;
-    const pb = currentMatchIdx >= 0 ? playerOf(currentMatchIdx, 'b') : null;
+    const mm = currentMatchIdx >= 0 ? matches[currentMatchIdx] : null;
+    const pa = mm ? playerOf(currentMatchIdx, sideAt(mm, 'L')) : null;
+    const pb = mm ? playerOf(currentMatchIdx, sideAt(mm, 'R')) : null;
     document.getElementById('remote-replay-lbl-a').textContent = pa ? pa.name : '左 / P1';
     document.getElementById('remote-replay-lbl-b').textContent = pb ? pb.name : '右 / P2';
   }
@@ -2394,6 +2453,8 @@ function undoMatchAction() {
   catch (e) { return showAlert('復元に失敗しました'); }
   if (!Array.isArray(snap) || snap.length !== POSITIONS.length) return showAlert('復元に失敗しました');
   matchUndoStack.pop();
+  // 左右の入れ替えは score.html 側の状態なので、UNDO では巻き戻さず現在の状態を保つ
+  snap.forEach((sm, i) => { sm.swapped = !!(matches[i] && matches[i].swapped); });
   matches = snap;
   saveState();
   renderBoard();
@@ -2420,7 +2481,7 @@ let isBreakMode = false;
 
 /** 次戦予告・休憩で共通のロゴ設定（このアプリは固定背景 BG_IMAGE を使う） */
 function getShowPreviewHudFields() {
-  return { showLogo: true, previewBackground: BG_IMAGE, logoSrc: BG_IMAGE, logoDataUrl: null };
+  return { showLogo: true, previewBackground: BG_IMAGE, logoSrc: BG_IMAGE, logoDataUrl: bgDataUrl };
 }
 
 /** 休憩振り返り用。確定済みの試合を新しい順（updatedAt降順）に。コメントは保存済みのものを使い、新規fetchしない */
@@ -2470,8 +2531,9 @@ function updateBreakButton() {
   }
 }
 
-function sendBreakStart() {
+async function sendBreakStart() {
   if (!conn || !conn.open) return showAlert('⚠️ スコアアプリにリンクされていません。');
+  await loadBgDataUrl();
   // 次に行う試合（最初の未決着）を休憩画面の「次戦」に出す
   const nextIdx = matches.findIndex(m => !m.winner);
   const pa = nextIdx >= 0 ? playerOf(nextIdx, 'a') : null;
@@ -2510,6 +2572,7 @@ function escapeHtml(str) {
 
 /** 個別対戦のアナウンス（従来どおりの SHOW_PREVIEW） */
 async function sendMatchPreview(idx) {
+  await loadBgDataUrl();
   const pa = playerOf(idx, 'a');
   const pb = playerOf(idx, 'b');
   if (!pa || !pb) return showAlert('オーダーが公開されていません');
@@ -2530,7 +2593,7 @@ async function sendMatchPreview(idx) {
     showLogo: true,
     previewBackground: BG_IMAGE,
     logoSrc: BG_IMAGE,
-    logoDataUrl: null,
+    logoDataUrl: bgDataUrl,
     // 写真素材なので画面いっぱいに敷く（score.html の既定はロゴ用の contain）
     previewBgMode: 'cover',
     previewBgOpacity: 0.3
@@ -2626,7 +2689,7 @@ function buildAnnounceHtml() {
       .an-hide { margin-top: 0.5vh; font-family: 'Orbitron', sans-serif; font-size: clamp(8px, 0.95vw, 12px); letter-spacing: 2px; color: #475569; }
     </style>
     <div class="an-outer">
-      <img class="an-bg" src="${BG_IMAGE}" alt="">
+      <img class="an-bg" src="${bgImageSrc()}" alt="">
       <div class="an-inner">
         <div class="an-head">
           <div class="an-event">${escapeHtml(eventName || 'S.I.T BATTLE LEAGUE')}</div>
@@ -2647,8 +2710,9 @@ function buildAnnounceHtml() {
     </div>`;
 }
 
-function sendTeamAnnounce() {
+async function sendTeamAnnounce() {
   if (!entry.revealed) return showAlert('先にオーダーを公開してください');
+  await loadBgDataUrl();
   sendToScore({ type: 'HIDE_PREVIEW' });
   if (!sendToScore({ type: 'SHOW_OVERLAY', html: buildAnnounceHtml() })) {
     showAlert('⚠️ スコアアプリにリンクされていません。');
@@ -2768,7 +2832,7 @@ function buildTeamWinnerHtml() {
       .tw-s { font-family: 'Orbitron', sans-serif; color: #e2e8f0; width: 4em; text-align: center; }
     </style>
     <div class="tw-outer">
-      <img class="tw-bg" src="${BG_IMAGE}" alt="">
+      <img class="tw-bg" src="${bgImageSrc()}" alt="">
       <div class="tw-sweep"></div>
       <div class="tw-in">
         <div class="tw-label">TEAM WINNER</div>
@@ -2779,8 +2843,9 @@ function buildTeamWinnerHtml() {
     </div>`;
 }
 
-function showTeamWinner() {
+async function showTeamWinner() {
   if (!teamWinnerSide()) return showAlert('まだチームの勝敗が決まっていません');
+  await loadBgDataUrl();
   sendToScore({ type: 'HIDE_PREVIEW' });
   if (!sendToScore({ type: 'SHOW_OVERLAY', html: buildTeamWinnerHtml() })) {
     showAlert('⚠️ スコアアプリにリンクされていません。');
@@ -2805,15 +2870,22 @@ function openRemoteModal(idx) {
   sendToScore({ type: 'SHOW_SCORE_VIEW' });
   if (isBreakMode) { isBreakMode = false; updateBreakButton(); }
 
+  // 入れ替え中の試合は、score.html の左(P1)がチームB。名前・戦績・ベイ・ハンデを左右に合わせて渡す
+  const mm = matches[idx];
+  const L = sideAt(mm, 'L'), R = sideAt(mm, 'R');
+  const pl = L === 'a' ? pa : pb, pr = R === 'a' ? pa : pb;
   const sent = sendToScore({
     type: 'SET_MATCH',
-    p1: pa.name, p2: pb.name,
+    p1: pl.name, p2: pr.name,
     tName: eventName || 'S.I.T BATTLE LEAGUE',
-    p1Stats: pa.stats ? { rank: pa.rank, power: pa.stats.power, rate: pa.stats.rate, fin: pa.fin } : null,
-    p2Stats: pb.stats ? { rank: pb.rank, power: pb.stats.power, rate: pb.stats.rate, fin: pb.fin } : null,
+    p1Stats: pl.stats ? { rank: pl.rank, power: pl.stats.power, rate: pl.stats.rate, fin: pl.fin } : null,
+    p2Stats: pr.stats ? { rank: pr.rank, power: pr.stats.power, rate: pr.stats.rate, fin: pr.fin } : null,
+    // すでに選択済みのベイがあれば、開き直しても score.html の個別枠に出す
+    p1BeyText: (L === 'a' ? mm.aBeyUsed : mm.bBeyUsed) || undefined,
+    p2BeyText: (R === 'a' ? mm.aBeyUsed : mm.bBeyUsed) || undefined,
     // 大将戦のハンデはここで score.html に渡す
-    winLimitP1: lim.a,
-    winLimitP2: lim.b
+    winLimitP1: lim[L],
+    winLimitP2: lim[R]
   });
   if (!sent) showAlert('⚠️ スコアアプリにリンクされていません。勝敗の記録は可能です。');
 
@@ -2843,47 +2915,57 @@ function renderRemote() {
   if (currentMatchIdx < 0) return;
   const idx = currentMatchIdx;
   const m = matches[idx];
-  const pa = playerOf(idx, 'a');
-  const pb = playerOf(idx, 'b');
   const lim = limitsOf(idx);
+  // 画面の左 = score.html の P1。入れ替え中はチームB が左に来る
+  const L = sideAt(m, 'L'), R = sideAt(m, 'R');
+  const teamColor = (side) => side === 'a' ? 'text-cyber-blue' : 'text-cyber-pink';
+  const scoreOf = (side) => side === 'a' ? m.scoreA : m.scoreB;
 
   document.getElementById('remote-title').textContent =
     POSITIONS[idx].label + '戦　' + teamNameOf('a') + ' vs ' + teamNameOf('b');
 
-  document.getElementById('remote-a-name').textContent =
-    (pa ? pa.name : '---') + (pa && pa.guest ? '（登録外）' : '');
-  document.getElementById('remote-b-name').textContent =
-    (pb ? pb.name : '---') + (pb && pb.guest ? '（登録外）' : '');
-  const ta = document.getElementById('remote-a-team');
-  ta.textContent = teamNameOf('a') + (isHome('a') ? '（HOME）' : '（AWAY）');
-  ta.className = 'text-[11px] mb-1 text-cyber-blue';
-  const tb = document.getElementById('remote-b-team');
-  tb.textContent = teamNameOf('b') + (isHome('b') ? '（HOME）' : '（AWAY）');
-  tb.className = 'text-[11px] mb-1 text-cyber-pink';
-
-  document.getElementById('remote-a-score').textContent = m.scoreA;
-  document.getElementById('remote-b-score').textContent = m.scoreB;
-  document.getElementById('remote-a-limit').textContent = lim.a + 'P 先取';
-  document.getElementById('remote-b-limit').textContent = lim.b + 'P 先取';
-
-  renderRemoteBeys('a', pa, m);
-  renderRemoteBeys('b', pb, m);
+  [['a', L], ['b', R]].forEach(([slot, side]) => {   // slot は画面上の位置（a=左 / b=右）
+    const p = playerOf(idx, side);
+    document.getElementById('remote-' + slot + '-name').textContent =
+      (p ? p.name : '---') + (p && p.guest ? '（登録外）' : '');
+    const t = document.getElementById('remote-' + slot + '-team');
+    t.textContent = teamNameOf(side) + (isHome(side) ? '（HOME）' : '（AWAY）');
+    t.className = 'text-[11px] mb-1 ' + teamColor(side);
+    const sc = document.getElementById('remote-' + slot + '-score');
+    sc.textContent = scoreOf(side);
+    sc.className = 'font-sf text-4xl ' + teamColor(side);
+    document.getElementById('remote-' + slot + '-limit').textContent = lim[side] + 'P 先取';
+    renderRemoteBeys(slot, side, p, m);
+  });
   renderRemoteLog(m);
 
-  const wa = document.getElementById('btn-win-a');
-  const wb = document.getElementById('btn-win-b');
-  const onA = 'tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green';
-  const offA = 'tap py-4 rounded font-bold text-sm bg-cyber-bg border border-cyber-blue text-cyber-blue';
-  const onB = 'tap py-4 rounded font-bold text-sm bg-cyber-green text-cyber-on-green';
-  const offB = 'tap py-4 rounded font-bold text-sm bg-cyber-bg border border-cyber-pink text-cyber-pink';
-  wa.className = m.winner === 'a' ? onA : offA;
-  wb.className = m.winner === 'b' ? onB : offB;
-  wa.textContent = (m.winner === 'a' ? '✓ ' : '') + (pa ? pa.name : '左') + ' WIN';
-  wb.textContent = (m.winner === 'b' ? '✓ ' : '') + (pb ? pb.name : '右') + ' WIN';
+  // 操作パネルの見出しも、今どの選手が左右にいるかを示す
+  const pl = playerOf(idx, L), pr = playerOf(idx, R);
+  const lblL = document.getElementById('remote-ctl-lbl-L');
+  const lblR = document.getElementById('remote-ctl-lbl-R');
+  lblL.textContent = '左　' + (pl ? pl.name : '');
+  lblR.textContent = '右　' + (pr ? pr.name : '');
+  lblL.className = 'text-[11px] text-center mb-2 font-bold break-all ' + teamColor(L);
+  lblR.className = 'text-[11px] text-center mb-2 font-bold break-all ' + teamColor(R);
+  const st = document.getElementById('remote-swap-state');
+  if (st) st.textContent = m.swapped
+    ? '入れ替え中：左＝' + teamNameOf('b') + ' ／ 右＝' + teamNameOf('a') + '（score.html の左右・得点・ベイ・戦績も入れ替わっています）'
+    : 'score.html の左右・得点・ベイ・戦績も一緒に入れ替わります。';
+
+  // 勝者ボタンは画面の位置（左/右）に合わせる。色はチームごと
+  [['L', L, 'btn-win-a'], ['R', R, 'btn-win-b']].forEach(([pos, side, id]) => {
+    const btn = document.getElementById(id);
+    const p = playerOf(idx, side);
+    const on = m.winner === side;
+    btn.className = 'tap py-4 rounded font-bold text-sm ' + (on
+      ? 'bg-cyber-green text-cyber-on-green'
+      : 'bg-cyber-bg border ' + (side === 'a' ? 'border-cyber-blue text-cyber-blue' : 'border-cyber-pink text-cyber-pink'));
+    btn.textContent = (on ? '✓ ' : '') + (p ? p.name : (pos === 'L' ? '左' : '右')) + ' WIN';
+  });
 }
 
-function renderRemoteBeys(side, p, m) {
-  const wrap = document.getElementById('remote-' + side + '-beys');
+function renderRemoteBeys(slot, side, p, m) {
+  const wrap = document.getElementById('remote-' + slot + '-beys');
   wrap.innerHTML = '';
   if (!p) return;
   const used = side === 'a' ? m.aBeyUsed : m.bBeyUsed;
@@ -2905,13 +2987,21 @@ function selectBey(side, name) {
   if (side === 'a') m.aBeyUsed = (m.aBeyUsed === name) ? '' : name;
   else m.bBeyUsed = (m.bBeyUsed === name) ? '' : name;
 
-  sendToScore({
-    type: 'SET_BEYBLADE',
-    player: side === 'a' ? 1 : 2,
-    beyblade: side === 'a' ? m.aBeyUsed : m.bBeyUsed
-  });
+  sendBeyToScore(side, side === 'a' ? m.aBeyUsed : m.bBeyUsed);
   saveState();
   renderRemote();
+}
+
+/**
+ * 使用ベイを score.html の個別枠に表示させる。
+ * score.html は data.data.player（'P1'/'P2'）を読む形式。空文字は表示のクリア（選択解除）として扱われる。
+ */
+function sendBeyToScore(side, name) {
+  const m = matches[currentMatchIdx];
+  sendToScore({
+    type: 'SET_BEYBLADE',
+    data: { player: scorePlayerOf(m, side), beyblade: name || '', timestamp: Date.now() }
+  });
 }
 
 function renderRemoteLog(m) {
@@ -2928,6 +3018,39 @@ function renderRemoteLog(m) {
 
 const CMD_PTS = { P1_X: 3, P1_B: 2, P1_O: 2, P1_S: 1, P2_X: 3, P2_B: 2, P2_O: 2, P2_S: 1 };
 const CMD_FINISH = { P1_X: 'XF', P1_B: 'BF', P1_O: 'OF', P1_S: 'SF', P2_X: 'XF', P2_B: 'BF', P2_O: 'OF', P2_S: 'SF' };
+
+/** 画面の左(L)/右(R)のボタンから。左は常に score.html の P1、右は P2 に加点する */
+function scoreCmdPos(pos, kind, pts) {
+  if (currentMatchIdx < 0) return;
+  const m = matches[currentMatchIdx];
+  scoreCmd(sideAt(m, pos), (pos === 'L' ? 'P1_' : 'P2_') + kind, pts);
+}
+
+function setMatchWinnerPos(pos) {
+  if (currentMatchIdx < 0) return;
+  setMatchWinner(sideAt(matches[currentMatchIdx], pos));
+}
+
+/**
+ * 左右を入れ替える。score.html は SYS_SWAP で名前・得点・戦績・決まり手・ベイを入れ替えるが、
+ * 勝利ポイントの上限（大将戦のハンデ）は入れ替えないため、ここで SET_WIN_LIMITS を送り直す。
+ */
+function execRemoteSwap() {
+  if (currentMatchIdx < 0) return;
+  const m = matches[currentMatchIdx];
+  const connected = !!(conn && conn.open);
+  m.swapped = !m.swapped;
+  if (connected) {
+    sendToScore({ type: 'REMOTE_CMD', cmd: 'SYS_SWAP' });
+    const lim = limitsOf(currentMatchIdx);
+    sendToScore({ type: 'SET_WIN_LIMITS', p1: lim[sideAt(m, 'L')], p2: lim[sideAt(m, 'R')] });
+  }
+  m.updatedAt = Date.now();
+  saveState();
+  renderRemote();
+  // 未接続でも画面側は入れ替える。次に接続して開き直したとき、入れ替え後の並びで SET_MATCH を送る
+  if (!connected) showAlert('score.html に未接続のため、このアプリ側の左右だけ入れ替えました。\n接続後にリモコンを開き直すと、入れ替え後の並びで score.html に送ります。');
+}
 
 function scoreCmd(side, cmd, pts) {
   if (currentMatchIdx < 0) return;
@@ -2961,7 +3084,7 @@ function undoRemoteBattle() {
   // 直前の1本ぶんを戻す。score.html 側は UNDO ボタンで別途戻す
   if (last.winner === 'a') m.scoreA = Math.max(0, m.scoreA - last.pts);
   else m.scoreB = Math.max(0, m.scoreB - last.pts);
-  sendRemoteCmd(last.winner === 'a' ? 'P1_MINUS' : 'P2_MINUS');
+  sendRemoteCmd(scorePlayerOf(m, last.winner) + '_MINUS');
   saveState();
   renderRemote();
 }
@@ -2973,6 +3096,9 @@ async function execRemoteReset() {
   const m = matches[currentMatchIdx];
   m.scoreA = 0; m.scoreB = 0; m.battles = [];
   sendRemoteCmd('SYS_RESET');
+  // SYS_RESET は score.html のベイ表示もクリアする。アプリ側の選択は残るので、表示を合わせ直す
+  if (m.aBeyUsed) sendBeyToScore('a', m.aBeyUsed);
+  if (m.bBeyUsed) sendBeyToScore('b', m.bBeyUsed);
   saveState();
   renderRemote();
 }
