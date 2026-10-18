@@ -85,6 +85,8 @@
   <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="board" onclick="switchTab('board')">対戦ボード</button>
   <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="members" onclick="switchTab('members')">参加者</button>
   <button class="tab-btn tap flex-1 py-3 text-xs font-bold" data-tab="result" onclick="switchTab('result')">結果</button>
+  <button onclick="openScoreAdjust()" aria-label="スコア画面の表示設定を開く"
+          class="tap shrink-0 px-3 py-3 text-xs font-sf font-bold text-cyber-green border-l border-cyber-table-border">⚙ SCORE</button>
 </nav>
 
 <main class="px-3 py-4 max-w-2xl mx-auto">
@@ -276,6 +278,13 @@
       </div>
     </div>
 
+    <!-- SCORE / REPLAY 切替（リプレイは score.html 側のモード切替と連動） -->
+    <div class="grid grid-cols-2 gap-2 mb-3" role="tablist" aria-label="リモコンの操作モード">
+      <button id="tab-remote-score" role="tab" aria-selected="true" onclick="switchRemoteMode('score')" class="tap py-3 rounded text-xs font-bold font-sf"></button>
+      <button id="tab-remote-replay" role="tab" aria-selected="false" onclick="switchRemoteMode('replay')" class="tap py-3 rounded text-xs font-bold font-sf"></button>
+    </div>
+
+    <div id="remote-score-area">
     <!-- スコア操作 -->
     <div class="grid grid-cols-2 gap-2 mb-3">
       <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2">
@@ -309,6 +318,53 @@
     </div>
     <button id="btn-undo-remote" onclick="undoMatchAction()" style="touch-action: manipulation;" disabled
             class="tap w-full py-3 mb-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue opacity-40">↩ 試合を1手戻す（勝者確定・リセットの取消）</button>
+    </div>
+
+    <!-- リプレイ操作 -->
+    <div id="remote-replay-area" class="hidden mb-3">
+      <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-2 mb-3">
+        <p class="text-[11px] text-center text-gray-400 mb-2">決まり手入力（リプレイを止めたまま加点できます）</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <p id="remote-replay-lbl-a" class="text-[11px] text-center text-cyber-blue font-bold mb-1 break-all">左 / P1</p>
+            <div class="grid grid-cols-4 gap-1">
+              <button onclick="scoreCmd('a','P1_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
+              <button onclick="scoreCmd('a','P1_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
+              <button onclick="scoreCmd('a','P1_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
+              <button onclick="scoreCmd('a','P1_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
+            </div>
+          </div>
+          <div>
+            <p id="remote-replay-lbl-b" class="text-[11px] text-center text-cyber-pink font-bold mb-1 break-all">右 / P2</p>
+            <div class="grid grid-cols-4 gap-1">
+              <button onclick="scoreCmd('b','P2_X',3)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red text-cyber-red">XF</button>
+              <button onclick="scoreCmd('b','P2_B',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-red-orange text-cyber-red-orange">BF</button>
+              <button onclick="scoreCmd('b','P2_O',2)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">OF</button>
+              <button onclick="scoreCmd('b','P2_S',1)" class="tap py-3 rounded text-xs font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">SF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="sendRemoteCmd('REPLAY_LATEST')" class="tap col-span-2 py-5 rounded font-bold text-base bg-cyber-pink text-cyber-on-pink">🔥 最新のハイライトへ</button>
+        <button onclick="sendRemoteCmd('REPLAY_REV')" class="tap py-4 rounded text-sm font-bold bg-cyber-bg border border-cyber-pink text-cyber-pink">⏪ 巻き戻し再生</button>
+        <button onclick="sendRemoteCmd('REPLAY_PLAY')" class="tap py-4 rounded text-sm font-bold bg-cyber-bg border border-cyber-pink text-cyber-pink">▶ / ⏸ 再生・停止</button>
+        <button onclick="sendRemoteCmd('REPLAY_FRAME_REV')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">◀ 1コマ戻す</button>
+        <button onclick="sendRemoteCmd('REPLAY_FRAME_FWD')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-orange text-cyber-orange">1コマ進む ▶</button>
+        <button onclick="sendRemoteCmd('REPLAY_SLOW')" class="tap col-span-2 py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-blue text-cyber-blue">🐢 スロー切替（0.5→0.25→0.1倍）</button>
+        <button onclick="sendRemoteCmd('REPLAY_LOOP')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-pink text-cyber-pink">🔁 ループ ON/OFF</button>
+        <button onclick="sendRemoteCmd('REPLAY_ZOOM')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-green text-cyber-green">🔍 2倍ズーム</button>
+        <button onclick="sendRemoteCmd('REPLAY_SEEK_REV')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-gray-500 text-gray-300">⏪ 1秒戻す</button>
+        <button onclick="sendRemoteCmd('REPLAY_SEEK_FWD')" class="tap py-3 rounded text-sm font-bold bg-cyber-bg border border-gray-500 text-gray-300">1秒進む ⏩</button>
+        <button onclick="sendRemoteCmd('REPLAY_LOOP_LEN')" class="tap col-span-2 py-3 rounded text-sm font-bold bg-cyber-bg border border-cyber-pink text-cyber-pink">📏 ループ長 切替（3→4→5秒）</button>
+      </div>
+    </div>
+
+    <!-- 表示設定（リモコンを開いたまま調整できる） -->
+    <details class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
+      <summary class="tap cursor-pointer font-sf text-cyber-green text-xs flex items-center">SCORE 表示設定（タップで開く）</summary>
+      <div id="score-adjust-remote" class="grid grid-cols-2 gap-2 mt-3"></div>
+    </details>
 
     <div class="bg-cyber-dark border border-cyber-table-border rounded-lg p-3 mb-3">
       <p class="font-sf text-cyber-blue text-xs mb-2">BATTLE LOG</p>
@@ -346,6 +402,23 @@
 <!-- 紙面本体（オフスクリーン） -->
 <div id="report-canvas-1" class="report-canvas"></div>
 <div id="report-canvas-2" class="report-canvas"></div>
+
+<!-- ================= score.html 表示設定 ================= -->
+<div id="scoreAdjustModal" class="hidden fixed inset-0 z-50 bg-black/80 items-start justify-center p-3 overflow-y-auto">
+  <div class="bg-cyber-dark border border-cyber-green rounded-lg p-4 w-full max-w-md my-4">
+    <div class="flex items-center justify-between mb-2">
+      <p class="font-sf text-cyber-green text-xs">SCORE DISPLAY</p>
+      <button onclick="closeScoreAdjust()" aria-label="閉じる" class="tap px-4 py-2 rounded text-xs font-bold border border-cyber-table-border text-gray-300">閉じる</button>
+    </div>
+    <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+      score.html（OBS）の表示を切り替えます。押すたびにON/OFFが切り替わります（現在の状態はここには表示されません）。
+    </p>
+    <div id="score-adjust-main" class="grid grid-cols-2 gap-2"></div>
+    <div class="h-4"></div>
+    <p class="text-xs text-cyber-red font-bold mb-2">⚠ 取り扱い注意</p>
+    <div id="score-adjust-danger" class="grid grid-cols-2 gap-3"></div>
+  </div>
+</div>
 
 <!-- ================= 手動オーダー登録（QRが使えないときの代替） ================= -->
 <div id="manualEntryModal" class="hidden fixed inset-0 z-50 bg-black/80 items-start justify-center p-3 overflow-y-auto">
@@ -1710,6 +1783,113 @@ function sendRemoteCmd(cmd) {
   }
 }
 
+// ==========================================================
+// score.html の表示設定（REMOTE_CMD。他の運営アプリのヘッダーボタンと同じコマンド）
+// ==========================================================
+
+const SCORE_ADJUST_BUTTONS = [
+  { cmd: 'SYS_PRO',            icon: '👁', label: 'PRO MODE',     hint: 'UIボタンを隠す' },
+  { cmd: 'SYS_STATS',          icon: '📊', label: '戦績表示',      hint: '切替' },
+  { cmd: 'SYS_HUD',            icon: '📹', label: 'HUD 表示',      hint: '非表示/表示' },
+  { cmd: 'SYS_CAM',            icon: '🔄', label: 'カメラ反転',     hint: '180°' },
+  { cmd: 'SYS_TOGGLE_WINPOINT', icon: '🎯', label: '勝利ポイント',  hint: '表示ON/OFF' },
+  { cmd: 'SYS_HIDE_WIN',       icon: '🏁', label: '勝利表示を消す', hint: '' }
+];
+
+function buildScoreAdjustButtons(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.innerHTML = '';
+  SCORE_ADJUST_BUTTONS.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'tap py-3 px-2 rounded border border-cyber-green text-cyber-green bg-cyber-bg text-left';
+    const t = document.createElement('span');
+    t.className = 'block text-sm font-bold';
+    t.textContent = b.icon + ' ' + b.label;
+    btn.appendChild(t);
+    if (b.hint) {
+      const h = document.createElement('span');
+      h.className = 'block text-[10px] text-gray-400';
+      h.textContent = b.hint;
+      btn.appendChild(h);
+    }
+    btn.onclick = () => sendRemoteCmd(b.cmd);
+    el.appendChild(btn);
+  });
+}
+
+function openScoreAdjust() {
+  buildScoreAdjustButtons('score-adjust-main');
+
+  // 破壊的な操作は通常ボタンから離して置き、実行前に確認を出す（UI原則1）
+  const danger = document.getElementById('score-adjust-danger');
+  danger.innerHTML = '';
+  const mk = (text, sub, fn) => {
+    const b = document.createElement('button');
+    b.className = 'tap py-3 px-2 rounded border border-cyber-red text-cyber-red bg-cyber-bg text-left';
+    const t = document.createElement('span'); t.className = 'block text-sm font-bold'; t.textContent = text;
+    const h = document.createElement('span'); h.className = 'block text-[10px] text-gray-400'; h.textContent = sub;
+    b.appendChild(t); b.appendChild(h);
+    b.onclick = fn;
+    return b;
+  };
+  danger.appendChild(mk('♻ スコアリセット', 'score.html のスコアのみ', async () => {
+    if (!await showConfirm('score.html のスコアをリセットします。\nこのアプリの試合記録は変わりません。\nよろしいですか？')) return;
+    sendRemoteCmd('SYS_RESET');
+  }));
+  danger.appendChild(mk('⟳ score をリロード', 'PeerJSリンクが切れます', async () => {
+    if (!await showConfirm('score.html をリロードします。\nPeerJSリンクが切れるので、再接続が必要です。\nよろしいですか？')) return;
+    sendRemoteCmd('SYS_RELOAD');
+  }));
+
+  const m = document.getElementById('scoreAdjustModal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+
+function closeScoreAdjust() {
+  const m = document.getElementById('scoreAdjustModal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+}
+
+// ==========================================================
+// リモコンの SCORE / REPLAY 切替
+// score.html は REPLAY_TOGGLE でリプレイモードに入る/出る。モード切替のたびに送る。
+// ==========================================================
+
+let remoteMode = 'score';   // 'score' | 'replay'
+
+function applyRemoteModeUI(mode) {
+  const ts = document.getElementById('tab-remote-score');
+  const tr = document.getElementById('tab-remote-replay');
+  const on = 'tap py-3 rounded text-xs font-bold font-sf ';
+  ts.className = on + (mode === 'score'  ? 'bg-cyber-blue text-cyber-on-blue border border-cyber-blue' : 'bg-cyber-bg text-cyber-blue border border-cyber-blue');
+  tr.className = on + (mode === 'replay' ? 'bg-cyber-pink text-cyber-on-pink border border-cyber-pink' : 'bg-cyber-bg text-cyber-pink border border-cyber-pink');
+  // 選択中は色だけでなく文字・マークでも示す（UI原則3）
+  ts.textContent = (mode === 'score'  ? '● ' : '') + 'SCORE';
+  tr.textContent = (mode === 'replay' ? '● ' : '') + 'REPLAY';
+  ts.setAttribute('aria-selected', String(mode === 'score'));
+  tr.setAttribute('aria-selected', String(mode === 'replay'));
+  document.getElementById('remote-score-area').classList.toggle('hidden', mode !== 'score');
+  document.getElementById('remote-replay-area').classList.toggle('hidden', mode !== 'replay');
+  if (mode === 'replay') {
+    const pa = currentMatchIdx >= 0 ? playerOf(currentMatchIdx, 'a') : null;
+    const pb = currentMatchIdx >= 0 ? playerOf(currentMatchIdx, 'b') : null;
+    document.getElementById('remote-replay-lbl-a').textContent = pa ? pa.name : '左 / P1';
+    document.getElementById('remote-replay-lbl-b').textContent = pb ? pb.name : '右 / P2';
+  }
+}
+
+function switchRemoteMode(mode) {
+  if (mode === remoteMode) return;
+  // 切替はリプレイモードの ON/OFF なので、未接続のときは切り替えない（HUD側とずれるため）
+  if (!sendToScore({ type: 'REMOTE_CMD', cmd: 'REPLAY_TOGGLE' })) {
+    showAlert('⚠️ スコアアプリ（score.html）にリンクされていないため、リプレイは使えません。');
+    return;
+  }
+  remoteMode = mode;
+  applyRemoteModeUI(mode);
+}
+
 function hideOverlay() {
   sendToScore({ type: 'HIDE_OVERLAY' });
   sendToScore({ type: 'HIDE_PREVIEW' });
@@ -2639,10 +2819,20 @@ function openRemoteModal(idx) {
 
   const m = document.getElementById('remoteModal');
   m.classList.remove('hidden');
+  buildScoreAdjustButtons('score-adjust-remote');
+  // 開くたびに SCORE から始める。SET_MATCH 送信でスコア画面に戻っているため REPLAY_TOGGLE は送らない
+  remoteMode = 'score';
+  applyRemoteModeUI('score');
   renderRemote();
 }
 
 function closeRemoteModal() {
+  // リプレイ中に閉じたら、HUD側のリプレイモードも終了する（残したままだと次の試合で映像が止まる）
+  if (remoteMode === 'replay') {
+    sendToScore({ type: 'REMOTE_CMD', cmd: 'REPLAY_TOGGLE' });
+    remoteMode = 'score';
+    applyRemoteModeUI('score');
+  }
   document.getElementById('remoteModal').classList.add('hidden');
   currentMatchIdx = -1;
   renderBoard();
