@@ -137,6 +137,7 @@
       <p class="font-sf text-cyber-blue text-xs">ENTRY STATUS</p>
       <button onclick="refreshTeamEntry()" class="tap text-xs text-cyber-blue border border-cyber-blue rounded px-3 py-2">再取得</button>
     </div>
+    <p class="text-[11px] text-gray-400 mb-2 leading-relaxed">QRが使えないときは、各チームの「✍ 手動登録」からアプリ内で登録できます。</p>
     <div id="entry-status" class="mb-3"></div>
     <button id="btn-reveal" onclick="toggleReveal()" class="tap w-full py-4 rounded font-bold text-sm"></button>
     <p class="text-xs text-gray-400 mt-2 leading-relaxed">
@@ -345,6 +346,40 @@
 <!-- 紙面本体（オフスクリーン） -->
 <div id="report-canvas-1" class="report-canvas"></div>
 <div id="report-canvas-2" class="report-canvas"></div>
+
+<!-- ================= 手動オーダー登録（QRが使えないときの代替） ================= -->
+<div id="manualEntryModal" class="hidden fixed inset-0 z-50 bg-black/80 items-start justify-center p-3 overflow-y-auto">
+  <div class="bg-cyber-dark border border-cyber-orange rounded-lg p-4 w-full max-w-md my-4">
+    <p class="font-sf text-cyber-orange text-xs mb-1">MANUAL ENTRY</p>
+    <p id="manual-title" class="text-sm font-bold text-cyber-text mb-1 break-all"></p>
+    <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+      QRで登録できないときの代わりの入力です。ポジションごとに選手とベイ3本（タップしてパーツを選択）を登録してください。
+      登録した内容は、QR経由のものと同じように扱われます。
+    </p>
+    <div id="manual-rows"></div>
+    <p id="manual-error" class="hidden text-xs text-cyber-red font-bold leading-relaxed mb-3 whitespace-pre-line" role="alert"></p>
+    <div class="flex gap-3">
+      <button onclick="closeManualEntry()" class="tap flex-1 py-3 rounded border border-cyber-table-border text-gray-300 font-bold text-sm">キャンセル</button>
+      <button onclick="submitManualEntry()" class="tap flex-1 py-3 rounded bg-cyber-orange text-cyber-on-orange font-bold text-sm">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= パーツ選択（手動オーダー登録のベイ用。parts.csv を読み込む） ================= -->
+<div id="partsPickModal" class="hidden fixed inset-0 z-[55] bg-black/85 items-center justify-center p-3">
+  <div class="bg-cyber-dark border border-cyber-blue rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between gap-2 p-3 border-b border-cyber-table-border">
+      <p id="pp-title" class="font-sf text-cyber-blue text-sm"></p>
+      <button onclick="closePartsPicker()" aria-label="閉じる" class="tap text-gray-300 border border-cyber-table-border rounded px-3 text-sm">✖</button>
+    </div>
+    <p id="pp-summary" class="px-3 pt-2 text-[11px] text-gray-400 break-all leading-relaxed"></p>
+    <div id="pp-content" class="p-3 overflow-y-auto flex-1"></div>
+    <div class="flex gap-2 p-3 border-t border-cyber-table-border">
+      <button id="pp-back" onclick="ppBack()" class="tap flex-1 py-2 rounded border border-cyber-table-border text-gray-300 text-sm font-bold">← 戻る</button>
+      <button id="pp-direct" onclick="ppShowDirect()" class="tap flex-1 py-2 rounded border border-cyber-orange text-cyber-orange text-xs font-bold">名前を直接入力</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= alert / confirm ================= -->
 <div id="alertModal" class="hidden fixed inset-0 z-[60] bg-black/80 items-center justify-center p-4">
@@ -1020,6 +1055,471 @@ async function execResetTeamEntry(teamKey) {
 }
 
 // ==========================================================
+// 手動オーダー登録（QR・GAS が使えないときの代替）
+// 入力内容は GAS 経由と同じ acceptTeamEntry() に通すので、
+// 公開・対戦ボード・リモコン・レポートは既存のまま動く。
+// ==========================================================
+
+let manualTeamKey = null;
+let manualBeys = {};          // 'senpo-0' → {type,name,parts} | null
+const MANUAL_GUEST = '__guest';
+
+function manualTeamName(teamKey) {
+  return teamKey === 'A' ? teamAName : teamBName;
+}
+
+function openManualEntry(teamKey) {
+  if (entry.revealed) {
+    showAlert('オーダー公開中は変更できません。\n変更するときは、先に「公開中（押すと非公開に戻す）」で非公開に戻してください。');
+    return;
+  }
+  if (!manualTeamName(teamKey)) {
+    showAlert('先に、準備タブでチームを選んでください。');
+    return;
+  }
+  manualTeamKey = teamKey;
+  const tn = manualTeamName(teamKey);
+  document.getElementById('manual-title').textContent = 'TEAM ' + teamKey + '　' + tn;
+  const err = document.getElementById('manual-error');
+  err.classList.add('hidden'); err.textContent = '';
+
+  const existing = entry.received[teamKey];
+  const members = membersOfTeam(tn);
+  const rows = document.getElementById('manual-rows');
+  rows.innerHTML = '';
+  // ベイ3本ずつの入力内容（{type,name,parts}）。既存の登録があれば複製して初期値にする
+  manualBeys = {};
+  POSITIONS.forEach(pos => {
+    const cur = existing ? existing.order.find(o => o.pos === pos.id) : null;
+    for (let i = 0; i < 3; i++) {
+      manualBeys[pos.id + '-' + i] = (cur && cur.beyblades[i]) ? JSON.parse(JSON.stringify(cur.beyblades[i])) : null;
+    }
+  });
+
+  POSITIONS.forEach(pos => {
+    const cur = existing ? existing.order.find(o => o.pos === pos.id) : null;
+    const box = document.createElement('div');
+    box.className = 'bg-cyber-bg border border-cyber-table-border rounded-lg p-2 mb-3';
+
+    const h = document.createElement('p');
+    h.className = 'font-sf text-xs text-cyber-blue mb-2';
+    h.textContent = pos.label;
+    box.appendChild(h);
+
+    const sel = document.createElement('select');
+    sel.id = 'manual-p-' + pos.id;
+    sel.className = 'tap w-full bg-cyber-dark border border-cyber-table-border rounded px-2 py-2 text-sm text-cyber-text mb-2';
+    sel.setAttribute('aria-label', pos.label + 'の選手');
+    const opts = [['', '（選手を選択）']].concat(
+      members.map(m => [String(m.id), m.name]),
+      [[MANUAL_GUEST, '登録外の選手（名前を入力）']]
+    );
+    opts.forEach(([v, t]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = t; sel.appendChild(o);
+    });
+    box.appendChild(sel);
+
+    const guest = document.createElement('input');
+    guest.id = 'manual-g-' + pos.id;
+    guest.type = 'text'; guest.maxLength = 40;
+    guest.placeholder = '登録外の選手の名前';
+    guest.setAttribute('aria-label', pos.label + 'の登録外の選手名');
+    guest.className = 'tap w-full bg-cyber-dark border border-cyber-table-border rounded px-2 py-2 text-sm text-cyber-text mb-2 hidden';
+    box.appendChild(guest);
+
+    sel.onchange = () => guest.classList.toggle('hidden', sel.value !== MANUAL_GUEST);
+
+    for (let i = 0; i < 3; i++) {
+      const line = document.createElement('div');
+      line.className = 'flex gap-2 mb-2';
+      line.id = 'manual-bey-' + pos.id + '-' + i;
+      box.appendChild(line);
+    }
+
+    // 既存の登録内容を初期値にする
+    if (cur) {
+      if (cur.participantId != null && members.some(m => String(m.id) === String(cur.participantId))) {
+        sel.value = String(cur.participantId);
+      } else {
+        sel.value = MANUAL_GUEST;
+        guest.value = cur.name || '';
+        guest.classList.remove('hidden');
+      }
+    }
+    rows.appendChild(box);
+  });
+  POSITIONS.forEach(pos => { for (let i = 0; i < 3; i++) renderManualBey(pos.id, i); });
+
+  const m = document.getElementById('manualEntryModal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+
+// ----------------------------------------------------------
+// ベイ欄の表示とパーツ選択（tournament.html のベイ登録と同じ手順・命名規則・parts.csv）
+// ----------------------------------------------------------
+
+function renderManualBey(posId, i) {
+  const line = document.getElementById('manual-bey-' + posId + '-' + i);
+  if (!line) return;
+  const b = manualBeys[posId + '-' + i];
+  line.innerHTML = '';
+
+  const btn = document.createElement('button');
+  btn.className = 'tap flex-1 min-w-0 text-left px-2 py-2 rounded border text-xs leading-tight break-all ' +
+    (b ? 'bg-cyber-dark border-cyber-green text-cyber-text' : 'bg-cyber-dark border-cyber-blue text-cyber-blue');
+  btn.setAttribute('aria-label', POSITIONS.find(x => x.id === posId).label + ' ベイ' + (i + 1) + 'を選ぶ');
+  const tag = document.createElement('span');
+  tag.className = 'block text-[10px] text-gray-400 mb-0.5';
+  tag.textContent = 'ベイ' + (i + 1) + (b ? '　' + b.type + '　✓ 設定済み' : '　未設定');
+  const nm = document.createElement('span');
+  nm.className = 'block text-sm font-bold';
+  nm.textContent = b ? b.name : 'タップしてパーツを選択';
+  btn.appendChild(tag); btn.appendChild(nm);
+  btn.onclick = () => openPartsPicker(posId, i);
+  line.appendChild(btn);
+
+  if (b) {
+    const clr = document.createElement('button');
+    clr.className = 'tap w-16 shrink-0 text-xs rounded border border-cyber-table-border text-gray-300';
+    clr.textContent = 'クリア';
+    clr.setAttribute('aria-label', 'ベイ' + (i + 1) + 'をクリア');
+    clr.onclick = () => { manualBeys[posId + '-' + i] = null; renderManualBey(posId, i); };
+    line.appendChild(clr);
+  }
+}
+
+let partsData = [];
+let partsLoadTried = false;
+
+/** CSVをパースする。頻出フラグが立つものを先頭に、以降は選択名の50音順（tournament.html と同じ） */
+function parsePartsCSV(csvText) {
+  const parts = [];
+  const lines = String(csvText || '').split('\n');
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const v = line.replace(/\r/g, '').split(',');
+    const part = {
+      id: (v[0] || '').trim(),
+      selectionName: (v[1] || '').trim(),
+      hudName: (v[2] || '').trim(),
+      isFrequent: parseFloat(v[3]) === 1
+    };
+    if (part.id && part.selectionName) parts.push(part);
+  }
+  parts.sort((a, b) => {
+    if (a.isFrequent !== b.isFrequent) return a.isFrequent ? -1 : 1;
+    return a.selectionName.localeCompare(b.selectionName, 'ja');
+  });
+  return parts;
+}
+
+/** 同じフォルダの parts.csv を読む。file:// では fetch できないので、失敗時は手動指定にフォールバックする */
+async function loadPartsCSV() {
+  if (partsData.length || partsLoadTried) return partsData;
+  partsLoadTried = true;
+  if (window.location.protocol === 'file:') return partsData;
+  try {
+    const res = await fetch('parts.csv');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    partsData = parsePartsCSV(await res.text());
+  } catch (e) {
+    console.warn('parts.csv の読み込みに失敗:', e);
+  }
+  return partsData;
+}
+
+function getPartsByCategory(cat) {
+  if (cat === 'RC2') return partsData.filter(p => p.id.startsWith('RA'));
+  if (cat === 'BT') return partsData.filter(p => p.id.startsWith('BT'));
+  return partsData.filter(p => p.id.startsWith(cat));
+}
+
+const PP_TYPES = [
+  { id: 'BX',   label: 'BX',     path: ['BX'] },
+  { id: 'UX',   label: 'UX',     path: ['UX'] },
+  { id: 'CX',   label: 'CX',     path: ['RC', 'CX', 'AB'] },
+  { id: 'CXEX', label: 'CX(EX)', path: ['RC', 'MB', 'OB', 'AB'] }
+];
+const PP_CATEGORY_NAMES = {
+  BX: 'BXブレード', UX: 'UXブレード', RC: 'ロックチップ', CX: 'メインブレード',
+  MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード', RC2: 'ラチェット', BT: 'ビット'
+};
+let ppCtx = null;   // { posId, idx, typeId, path, step, sel }
+
+async function openPartsPicker(posId, idx) {
+  ppCtx = { posId, idx, typeId: null, path: [], step: -1, sel: {} };
+  const m = document.getElementById('partsPickModal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+  await loadPartsCSV();
+  ppRender();
+}
+
+function closePartsPicker() {
+  const m = document.getElementById('partsPickModal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+  ppCtx = null;
+}
+
+function ppRender() {
+  if (!ppCtx) return;
+  const title = document.getElementById('pp-title');
+  const content = document.getElementById('pp-content');
+  const summary = document.getElementById('pp-summary');
+  const back = document.getElementById('pp-back');
+  const posLabel = POSITIONS.find(x => x.id === ppCtx.posId).label;
+  content.innerHTML = '';
+  back.classList.toggle('opacity-40', ppCtx.step < 0);
+  back.disabled = ppCtx.step < 0;
+  summary.textContent = posLabel + ' ベイ' + (ppCtx.idx + 1) +
+    (ppCtx.typeId ? '　' + Object.keys(ppCtx.sel).filter(k => k !== 'type').map(k => ppCtx.sel[k]).join(' / ') : '');
+
+  if (ppCtx.step < 0) {
+    title.textContent = 'ベイのタイプを選択';
+    PP_TYPES.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'tap w-full py-4 mb-3 rounded-lg border border-cyber-blue text-cyber-blue font-sf font-bold text-xl';
+      b.textContent = t.label;
+      b.onclick = () => { ppCtx.typeId = t.id; ppCtx.path = t.path.concat(['RC2', 'BT']); ppCtx.step = 0; ppCtx.sel = { type: t.id }; ppRender(); };
+      content.appendChild(b);
+    });
+    return;
+  }
+
+  const cat = ppCtx.path[ppCtx.step];
+  title.textContent = PP_CATEGORY_NAMES[cat] + 'を選択（' + (ppCtx.step + 1) + '/' + ppCtx.path.length + '）';
+  const list = getPartsByCategory(cat);
+  if (list.length === 0) { ppRenderEmpty(content); return; }
+
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 gap-2';
+  list.forEach(part => {
+    const b = document.createElement('button');
+    b.className = 'tap py-3 px-2 rounded border border-cyber-table-border bg-cyber-bg font-bold text-sm ' +
+      (part.isFrequent ? 'text-cyber-red' : 'text-cyber-text');
+    // 頻出は色だけでなく★でも示す（UI原則3）
+    b.textContent = (part.isFrequent ? '★ ' : '') + part.selectionName;
+    b.onclick = () => ppSelectPart(cat, part);
+    grid.appendChild(b);
+  });
+  content.appendChild(grid);
+}
+
+function ppRenderEmpty(content) {
+  const p = document.createElement('p');
+  p.className = 'text-sm text-cyber-text leading-relaxed mb-3';
+  p.innerHTML = '<strong class="text-cyber-pink">パーツ一覧が空です。</strong><br>' +
+    (window.location.protocol === 'file:' ? 'HTML を直接開く（file://）と parts.csv を自動で読めません。<br>' : '') +
+    '下の「parts.csv を指定」でファイルを選ぶか、「名前を直接入力」で登録してください。';
+  content.appendChild(p);
+  const lab = document.createElement('label');
+  lab.className = 'tap flex items-center gap-2 text-xs font-bold text-cyber-green border border-cyber-green rounded px-3 py-2 cursor-pointer';
+  lab.appendChild(document.createTextNode('parts.csv を指定 '));
+  const fin = document.createElement('input');
+  fin.type = 'file'; fin.accept = '.csv,text/csv'; fin.className = 'text-[11px] max-w-full';
+  fin.onchange = onPartsCsvPick;
+  lab.appendChild(fin);
+  content.appendChild(lab);
+}
+
+function onPartsCsvPick(ev) {
+  const f = ev.target && ev.target.files && ev.target.files[0];
+  if (ev.target) ev.target.value = '';
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const parsed = parsePartsCSV(reader.result);
+    if (!parsed.length) { showAlert('parts.csv を解析しましたが、有効なパーツがありません。'); return; }
+    partsData = parsed;
+    ppRender();
+  };
+  reader.onerror = () => showAlert('ファイルの読み込みに失敗しました。');
+  reader.readAsText(f, 'UTF-8');
+}
+
+function ppSelectPart(cat, part) {
+  ppCtx.sel[cat] = part.hudName;
+  ppCtx.step++;
+  if (ppCtx.step >= ppCtx.path.length) { ppComplete(); return; }
+  ppRender();
+}
+
+function ppBack() {
+  if (!ppCtx || ppCtx.step < 0) return;
+  if (ppCtx.step > 0) {
+    ppCtx.step--;
+    delete ppCtx.sel[ppCtx.path[ppCtx.step]];
+  } else {
+    ppCtx.step = -1; ppCtx.typeId = null; ppCtx.sel = {};
+  }
+  ppRender();
+}
+
+/** 選択結果からベイ名を自動生成する（tournament.html と同じ連結規則） */
+function ppComposeName(typeId, sel) {
+  if (typeId === 'BX') return sel.BX + sel.RC2 + sel.BT;
+  if (typeId === 'UX') return sel.UX + sel.RC2 + sel.BT;
+  if (typeId === 'CX') return sel.RC + sel.CX + sel.AB + sel.RC2 + sel.BT;
+  return sel.RC + sel.MB + sel.OB + sel.AB + sel.RC2 + sel.BT;   // CXEX
+}
+
+/** 同じ選手の他のベイとのパーツ重複を調べる（tournament.html の checkDeckDuplication と同じ基準） */
+const PP_SAME_BLADE_GROUPS = [
+  ['ドランソード', 'ドランソードv2'],
+  ['ティラノビート', 'T-レックス'],
+  ['プテラスイング', 'ケツァルコアトルス'],
+  ['ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（ｱｯﾊﾟｰ型）', 'ﾗｲﾄﾆﾝｸﾞｴﾙﾄﾞﾗｺﾞ（連打型）',
+   'ライトニングエルドラゴ（アッパー型）', 'ライトニングエルドラゴ（連打型）']
+];
+function ppDupKey(key, val) {
+  if (['BX', 'UX', 'CX'].includes(key)) {
+    const g = PP_SAME_BLADE_GROUPS.findIndex(group => group.includes(val));
+    if (g >= 0) return '同一ブレード#' + g;
+  }
+  return val;
+}
+function ppDupWarnings(posId, idx, sel) {
+  const RC_NO_DUP = ['エンペラー', 'ワルキューレ'];
+  const LABELS = { BX: 'ブレード', UX: 'ブレード', CX: 'メインブレード', MB: 'メタルブレード', OB: 'オーバーブレード', AB: 'アシストブレード', RC: 'ロックチップ', RC2: 'ラチェット', BT: 'ビット' };
+  const out = [];
+  for (let j = 0; j < 3; j++) {
+    if (j === idx) continue;
+    const other = manualBeys[posId + '-' + j];
+    if (!other || !other.parts) continue;
+    Object.keys(sel).filter(k => k !== 'type').forEach(key => {
+      const val = sel[key];
+      if (!val || val === 'なし') return;
+      if (key === 'RC' && !RC_NO_DUP.includes(val)) return;
+      const ov = other.parts[key];
+      if (!ov || ppDupKey(key, ov) !== ppDupKey(key, val)) return;
+      out.push((LABELS[key] || key) + '「' + val + '」が ' + other.name + ' と重複');
+    });
+  }
+  return out;
+}
+
+async function ppComplete() {
+  const c = ppCtx;
+  const name = ppComposeName(c.typeId, c.sel);
+  const warn = ppDupWarnings(c.posId, c.idx, c.sel);
+  if (warn.length) {
+    const ok = await showConfirm('⚠ デッキ内にパーツの重複があります:\n・' + warn.join('\n・') +
+      '\n\nレギュレーションによっては問題ありませんが、このまま登録しますか？');
+    if (!ok) { c.step = c.path.length - 1; delete c.sel[c.path[c.step]]; ppRender(); return; }
+  }
+  manualBeys[c.posId + '-' + c.idx] = {
+    type: c.typeId === 'CXEX' ? 'CX(EX)' : c.typeId,
+    name: name,
+    parts: Object.assign({}, c.sel)
+  };
+  renderManualBey(c.posId, c.idx);
+  closePartsPicker();
+}
+
+/** パーツ表を使わず、タイプと名前だけで登録する（parts.csv が使えない緊急用） */
+function ppShowDirect() {
+  if (!ppCtx) return;
+  const title = document.getElementById('pp-title');
+  const content = document.getElementById('pp-content');
+  title.textContent = '名前を直接入力';
+  document.getElementById('pp-summary').textContent = '';
+  content.innerHTML = '';
+
+  const sel = document.createElement('select');
+  sel.id = 'pp-direct-type';
+  sel.className = 'tap w-full bg-cyber-bg border border-cyber-table-border rounded px-2 py-2 text-sm text-cyber-text mb-2';
+  sel.setAttribute('aria-label', 'ベイのタイプ');
+  ENTRY_TYPES.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+  content.appendChild(sel);
+
+  const inp = document.createElement('input');
+  inp.id = 'pp-direct-name'; inp.type = 'text'; inp.maxLength = 200;
+  inp.placeholder = 'ベイの名前';
+  inp.setAttribute('aria-label', 'ベイの名前');
+  inp.className = 'tap w-full bg-cyber-bg border border-cyber-table-border rounded px-2 py-2 text-sm text-cyber-text mb-3';
+  content.appendChild(inp);
+
+  const ok = document.createElement('button');
+  ok.className = 'tap w-full py-3 rounded bg-cyber-orange text-cyber-on-orange font-bold text-sm';
+  ok.textContent = 'この名前で設定する';
+  ok.onclick = () => {
+    const name = cleanText(inp.value, 200);
+    if (!name) { showAlert('ベイの名前を入力してください。'); return; }
+    manualBeys[ppCtx.posId + '-' + ppCtx.idx] = { type: sel.value, name: name, parts: {} };
+    renderManualBey(ppCtx.posId, ppCtx.idx);
+    closePartsPicker();
+  };
+  content.appendChild(ok);
+  // 戻るで種別選択へ
+  ppCtx.step = -1; ppCtx.typeId = null; ppCtx.sel = {};
+  const back = document.getElementById('pp-back');
+  back.classList.remove('opacity-40'); back.disabled = false;
+  back.onclick = () => { back.onclick = ppBack; ppRender(); };
+}
+
+function closeManualEntry() {
+  const m = document.getElementById('manualEntryModal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+  manualTeamKey = null;
+}
+
+function manualEntryError(msg) {
+  const err = document.getElementById('manual-error');
+  err.textContent = '⚠ ' + msg;
+  err.classList.remove('hidden');
+}
+
+async function submitManualEntry() {
+  const teamKey = manualTeamKey;
+  if (!teamKey) return;
+  if (entry.revealed) { closeManualEntry(); return; }
+
+  const order = [];
+  const seenWho = {};
+  for (const pos of POSITIONS) {
+    const sel = document.getElementById('manual-p-' + pos.id).value;
+    const o = { pos: pos.id, beyblades: [] };
+    if (!sel) return manualEntryError(pos.label + ' の選手を選んでください。');
+    if (sel === MANUAL_GUEST) {
+      const g = cleanText(document.getElementById('manual-g-' + pos.id).value, 40);
+      if (!g) return manualEntryError(pos.label + ' の登録外の選手の名前を入力してください。');
+      o.participantId = null; o.name = g;
+    } else {
+      o.participantId = sel;
+    }
+    const who = o.participantId != null ? 'p' + o.participantId : 'g:' + o.name;
+    if (seenWho[who]) return manualEntryError('同じ選手を複数のポジションに入れることはできません。');
+    seenWho[who] = true;
+
+    const seenBey = {};
+    for (let i = 0; i < 3; i++) {
+      const b = manualBeys[pos.id + '-' + i];
+      if (!b || !b.name) return manualEntryError(pos.label + ' のベイ' + (i + 1) + ' を選んでください。');
+      const name = cleanText(b.name, 200);
+      if (!name) return manualEntryError(pos.label + ' のベイ' + (i + 1) + ' の名前を確認してください。');
+      // 使用ベイの判定はベイ名の一致で行うため、同じ選手の中で名前が重なると区別できない
+      if (seenBey[name]) return manualEntryError(pos.label + ' のベイ名が重複しています。違うベイにしてください。');
+      seenBey[name] = true;
+      o.beyblades.push({ type: b.type, name: name, parts: b.parts || {} });
+    }
+    order.push(o);
+  }
+
+  const built = acceptTeamEntry(teamKey, { order: order, submittedAt: Date.now() });
+  if (!built) return manualEntryError('登録内容を確認できませんでした。入力をもう一度確認してください。');
+
+  if (entry.received[teamKey]) {
+    if (!await showConfirm('TEAM ' + teamKey + ' はすでに登録済みです。\n今回の入力で上書きしますか？')) return;
+  }
+  entry.received[teamKey] = built;
+  saveState();
+  renderEntryPanel(); renderBoard(); renderResult();
+  closeManualEntry();
+  showAlert('TEAM ' + teamKey + ' のオーダーを手動で登録しました。');
+}
+
+// ==========================================================
 // 受付パネル / QR
 // ==========================================================
 
@@ -1086,6 +1586,15 @@ function renderEntryPanel() {
     r.className = 'text-xs font-bold shrink-0 ' + (got ? 'text-cyber-green' : 'text-gray-500');
     r.textContent = got ? '✓ 受信済み' : '未着';
     row.appendChild(r);
+
+    // QRが使えない場合の代替。公開後は変更できない（進行中の試合とずれるため）
+    row.classList.add('flex-wrap');
+    const mb = document.createElement('button');
+    mb.className = 'tap w-full text-xs font-bold rounded border border-cyber-orange text-cyber-orange py-2 ' +
+                   (entry.revealed ? 'opacity-40' : '');
+    mb.textContent = got ? '✏ 手動で編集' : '✍ 手動登録';
+    mb.onclick = () => openManualEntry(key);
+    row.appendChild(mb);
 
     st.appendChild(row);
   });
