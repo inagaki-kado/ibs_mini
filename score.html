@@ -642,35 +642,33 @@
             #break-recap-comment { -webkit-line-clamp: 2 !important; }
         }
 
-        /* ベイブレード名の個別表示枠（画面最下部、左右端） */
+        /* ベイブレード名の個別表示枠（画面最下部、左右端）。
+           幅はブレーダー名の枠(.name-input)と同じ。高さはJS(layoutBeyBoxes)が
+           「XF欄の直下〜画面下端」に合わせ、文字サイズは枠に収まる最大値に自動調整する(fitBeyName)。 */
         .beyblade-box {
             position: fixed;
             bottom: 15px;  /* 最下部に配置 */
             z-index: 85;   /* 大会名(z-index:70)より上に表示 */
             background: rgba(0, 0, 0, 0.8);
-            padding: 6px 12px;
+            box-sizing: border-box;
+            width: clamp(200px, 30vw, 340px);   /* .name-input と同じ */
+            height: 52px;                        /* layoutBeyBoxes() が実寸に合わせて上書きする */
+            padding: 2px 10px;
             border-radius: 8px;
             border: 2px solid;
             box-shadow: 0 0 12px;
             font-family: 'Chakra Petch', sans-serif;
-            font-size: clamp(11px, 1.8vw, 18px);
-            /* line-heightを文字数別クラス間で固定し、フォントサイズが縮んでも
-               左右の枠の高さ・bottom:15pxからの文字位置がズレないようにする */
-            line-height: 24px;
             font-weight: 700;
             font-style: italic;
             color: #fff;
             text-shadow: 1px 1px 0px rgba(0,0,0,0.7);
-            max-width: 35vw;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: none; /* デフォルトは非表示 */
+            display: none; /* デフォルトは非表示（表示時は display:flex） */
         }
-        /* 文字数別の縮小段階（.name-inputのname-len-m/l/xlと同じ閾値: 9-12 / 13-16 / 17以上） */
-        .beyblade-box.bey-len-m { font-size: clamp(9px, 1.4vw, 14px); }
-        .beyblade-box.bey-len-l { font-size: clamp(8px, 1.1vw, 11px); }
-        .beyblade-box.bey-len-xl { font-size: clamp(7px, 0.9vw, 9px); }
+        .beyblade-box .bey-text { display: block; max-width: 100%; white-space: nowrap; line-height: 1.2; }
         .beyblade-box.p1 {
             left: max(11px, calc(var(--safe-left) + 11px));
             border-color: #0ea5e9;
@@ -1471,7 +1469,7 @@
             if (replayObjectUrl) { try { URL.revokeObjectURL(replayObjectUrl); } catch(e){} replayObjectUrl = ''; }
             // リプレイ終了後、ベイ名があれば再表示（戦績表示状態に関わらず）
             document.querySelectorAll('.beyblade-box').forEach(b => {
-                if (b.textContent.trim()) b.style.display = 'block';
+                if (b.textContent.trim()) b.style.display = 'flex';
             });
             // 修正1で recorder を停止しているため、録画バッファを再開する
             if (currentStream) startBuffering(currentStream);
@@ -1577,8 +1575,9 @@
             // 👁️ボタンと状態を同期（ベイブレード名ボックスの表示判定に使われるため）
             isStatsVisible = anyVisible;
             document.querySelectorAll('.beyblade-box').forEach(b => {
-                b.style.display = b.textContent.trim() ? 'block' : 'none';
+                b.style.display = b.textContent.trim() ? 'flex' : 'none';
             });
+            refitBeyBoxes();   // 戦績の表示/非表示でXF欄の位置が変わるため、枠の高さと文字サイズを合わせ直す
             const sbtn = document.getElementById('btn-stats');
             if (sbtn) sbtn.classList.toggle('active', anyVisible);
         }
@@ -2702,17 +2701,59 @@
          * @param {number} playerNum - 1 or 2
          * @param {string} beybladeName - ベイブレード名
          */
-        // .name-inputのadjustNameFontSizeと同じ閾値（9-12 / 13-16 / 17以上）でベイ名も段階的に縮小する
-        function adjustBeyFontSize(el, text) {
-            if (!el) return;
-            const len = (text || '').length;
-            el.classList.remove('bey-len-m', 'bey-len-l', 'bey-len-xl');
-            if (len <= 12) {
-                if (len > 8) el.classList.add('bey-len-m');
-            } else if (len <= 16) {
-                el.classList.add('bey-len-l');
-            } else {
-                el.classList.add('bey-len-xl');
+        /**
+         * ベイ名の枠の高さを「XF欄の直下〜画面下端」に合わせる（XF欄は隠さない）。
+         * XF欄が見つからない/非表示のときは既定の高さのまま。
+         */
+        const BEY_BOX_BOTTOM = 15;      // CSSの bottom と同じ
+        const BEY_BOX_MIN_H = 28;   // XF欄の下に十分な空きがない端末でも、XF欄に重ならない範囲で文字を縮めて収める
+        const BEY_BOX_MAX_H = 64;
+        function layoutBeyBoxes() {
+            [1, 2].forEach(n => {
+                const box = document.getElementById(`beyblade-box-p${n}`);
+                if (!box) return;
+                let h = 52;
+                const xf = document.querySelector(`#p${n}-fin-group .fin-item`);
+                if (xf) {
+                    const r = xf.getBoundingClientRect();
+                    if (r.height > 0 && r.bottom > 0) h = window.innerHeight - BEY_BOX_BOTTOM - (r.bottom + 3);
+                }
+                h = Math.max(BEY_BOX_MIN_H, Math.min(BEY_BOX_MAX_H, Math.round(h)));
+                box.style.height = h + 'px';
+            });
+        }
+
+        /**
+         * ベイ名の文字サイズを、枠に収まる最大値にする。
+         * 上限はブレーダー名と同じ24px。まず1行で収まる最大サイズを探し、
+         * 14px未満になるなら折り返し(最大2〜3行)を許可して、収まる最大サイズを探す。
+         * ※ 枠が表示状態(display:flex)でないと寸法が測れないため、表示後に呼ぶこと。
+         */
+        const BEY_FONT_MAX = 24, BEY_FONT_ONE_LINE_MIN = 14, BEY_FONT_MIN = 8;
+        function fitBeyName(box) {
+            const t = box && box.querySelector('.bey-text');
+            if (!t) return;
+            const cs = getComputedStyle(box);
+            const availW = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            const availH = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+            if (availW <= 0 || availH <= 0) return;
+
+            t.style.whiteSpace = 'nowrap';
+            t.style.lineHeight = '1.2';
+            t.style.overflowWrap = 'normal';
+            const maxByH = Math.floor(availH / 1.2);
+            const top = Math.min(BEY_FONT_MAX, maxByH);
+            for (let size = top; size >= BEY_FONT_ONE_LINE_MIN; size--) {
+                t.style.fontSize = size + 'px';
+                if (t.scrollWidth <= availW + 0.5) return;
+            }
+            // 1行では小さくなりすぎる → 折り返しを許可して、枠(幅×高さ)に収まる最大サイズにする
+            t.style.whiteSpace = 'normal';
+            t.style.overflowWrap = 'anywhere';
+            t.style.lineHeight = '1.12';
+            for (let size = Math.min(BEY_FONT_MAX, Math.floor(availH / 1.12)); size >= BEY_FONT_MIN; size--) {
+                t.style.fontSize = size + 'px';
+                if (t.scrollHeight <= availH + 0.5 && t.scrollWidth <= availW + 0.5) return;
             }
         }
 
@@ -2722,9 +2763,14 @@
             // 個別枠の更新
             if (boxEl) {
                 if (beybladeName) {
-                    boxEl.textContent = beybladeName;
-                    adjustBeyFontSize(boxEl, beybladeName);
-                    boxEl.style.display = 'block';
+                    boxEl.textContent = '';
+                    const span = document.createElement('span');
+                    span.className = 'bey-text';
+                    span.textContent = beybladeName;
+                    boxEl.appendChild(span);
+                    boxEl.style.display = 'flex';
+                    layoutBeyBoxes();     // 高さをXF欄の直下に合わせる
+                    fitBeyName(boxEl);    // 表示後に文字サイズを合わせる
                 } else {
                     boxEl.textContent = '';
                     boxEl.style.display = 'none';
@@ -2734,6 +2780,18 @@
 
             console.log(`✅ P${playerNum}のベイ名更新: ${beybladeName}`);
         }
+
+        // 画面サイズ・向きが変わったら、枠の高さと文字サイズを合わせ直す
+        function refitBeyBoxes() {
+            layoutBeyBoxes();
+            document.querySelectorAll('.beyblade-box').forEach(b => {
+                if (b.style.display === 'flex') fitBeyName(b);
+            });
+        }
+        window.addEventListener('resize', refitBeyBoxes);
+        window.addEventListener('orientationchange', refitBeyBoxes);
+        // Chakra Petch の読み込み後に文字幅が変わるので、読み込み完了時にも合わせ直す
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(refitBeyBoxes);
 
         // 決まり手データ(fin-group)とベイ名表示枠の重なり対策フォールバック。
         // CSSでの縮小だけでは狭幅端末で重なりが残る場合に、ベイ名表示中のfin-groupを排他的に隠す。
