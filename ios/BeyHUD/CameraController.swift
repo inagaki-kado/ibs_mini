@@ -26,7 +26,8 @@ struct CameraState {
 /// 音声は扱わない（iOS 標準の画面収録のマイク録音と競合させないため）。
 final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     static let fpsSteps = [60, 120, 240]
-    private static let fpsDefaultsKey = "cameraFPS"
+    /// 起動時の fps。前回の選択は引き継がず、毎回これで始める（大会中に 240 にしても、再起動で 120 に戻る）
+    static let launchFPS = 120
 
     let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "beyhud.camera.session")
@@ -42,8 +43,12 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     private var captureRotationObservation: NSKeyValueObservation?
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     /// HDMI 側のプレビュー（同じ撮影セッションをもう1枚のレイヤーに映す）。メインスレッドでのみ触る
-    private var extraPreviewLayers: [AVCaptureVideoPreviewLayer] = []
     private var currentPreviewAngle: CGFloat?
+    // HDMI 側のカメラ映像。プレビューレイヤーをもう1枚つなぐと、スマホ側の映像が奪われて真っ黒になるため、
+    // 録画用に受け取っているフレームを約60fpsに間引いて渡す（videoQueue で読むので lock で守る）
+    private let externalLock = NSLock()
+    private var externalVideo: ExternalCameraView?
+    private var lastExternalPTS = CMTime.invalid
 
     // 実測 fps（videoQueue 上でのみ触る）
     private var frameCount = 0
@@ -71,8 +76,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     var onMeasuredFPS: ((Double) -> Void)?
 
     override init() {
-        let saved = UserDefaults.standard.integer(forKey: Self.fpsDefaultsKey)
-        let preferred = Self.fpsSteps.contains(saved) ? saved : 60
+        let preferred = Self.launchFPS
         preferredFPS = preferred
         state = CameraState(requestedFPS: preferred)
         let videoQueue = DispatchQueue(label: "beyhud.camera.video")
@@ -97,28 +101,23 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         previewLayer.videoGravity = .resizeAspectFill // score.html の object-fit: cover と同じ
     }
 
-    /// HDMI 側のレイヤーを追加する（スマホ側と同じ向き・同じ cover 表示）。
-    /// レイヤーは使い回す前提（ExternalHUDViewController.sharedPreviewView）。同じセッションに付け直さない。
-    func addPreviewLayer(_ layer: AVCaptureVideoPreviewLayer) {
-        if layer.session !== session { layer.session = session }
-        layer.videoGravity = .resizeAspectFill
-        layer.connection?.isEnabled = true
-        if !extraPreviewLayers.contains(where: { $0 === layer }) { extraPreviewLayers.append(layer) }
-        if let angle = currentPreviewAngle { layer.connection?.videoRotationAngle = angle }
-    }
-
-    /// HDMI を抜いたとき。`layer.session = nil` は AVFoundation 内部の KVO 解除で例外になり、アプリが落ちる
-    /// ことがあるため呼ばない。映像の流れだけ止めて、レイヤーは付けたまま残す（次の接続で再利用する）。
-    func removePreviewLayer(_ layer: AVCaptureVideoPreviewLayer) {
-        extraPreviewLayers.removeAll { $0 === layer }
-        layer.connection?.isEnabled = false
+    /// HDMI 側の映像の出し先をつなぐ／外す（nil）。メインスレッドで呼ぶ
+    func setExternalVideo(_ view: ExternalCameraView?) {
+        if let angle = currentPreviewAngle { view?.setRotation(angle) }
+        externalLock.lock()
+        let old = externalVideo
+        externalVideo = view
+        lastExternalPTS = .invalid
+        externalLock.unlock()
+        if old !== view { old?.clear() }
     }
 
     /// スマホ側と HDMI 側のレイヤーに、同じ向きをかける
     private func applyPreviewAngle(_ angle: CGFloat) {
         currentPreviewAngle = angle
         previewLayer?.connection?.videoRotationAngle = angle
-        extraPreviewLayers.forEach { $0.connection?.videoRotationAngle = angle }
+        externalLock.lock(); let ext = externalVideo; externalLock.unlock()
+        ext?.setRotation(angle)
     }
 
     // MARK: - 起動
@@ -152,7 +151,6 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     }
 
     private func setPreferredFPS(_ fps: Int) {
-        UserDefaults.standard.set(fps, forKey: Self.fpsDefaultsKey)
         preferredFPS = fps
         applyEffectiveFPS()
     }
@@ -282,6 +280,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         recorder.append(sampleBuffer)
+        forwardToExternal(sampleBuffer)
         frameLock.lock(); lastFrameTime = CACurrentMediaTime(); frameLock.unlock()
         frameCount += 1
         let now = CACurrentMediaTime()
@@ -292,6 +291,19 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             frameWindowStart = now
             DispatchQueue.main.async { self.onMeasuredFPS?(fps) }
         }
+    }
+
+    /// HDMI は実質60Hzのため、それ以上の fps でも約60fpsに間引いて渡す（負荷を抑える）
+    private func forwardToExternal(_ sampleBuffer: CMSampleBuffer) {
+        externalLock.lock()
+        guard let ext = externalVideo else { externalLock.unlock(); return }
+        let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        if lastExternalPTS.isValid, (pts - lastExternalPTS).seconds < 1.0 / 62 {
+            externalLock.unlock(); return
+        }
+        lastExternalPTS = pts
+        externalLock.unlock()
+        ext.enqueue(sampleBuffer)
     }
 
     // MARK: - 異常系・負荷への対応
@@ -316,7 +328,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             case .videoDeviceInUseByAnotherClient: reason = "カメラを他のアプリが使用"
             case .videoDeviceNotAvailableWithMultipleForegroundApps: reason = "マルチタスク"
             case .videoDeviceNotAvailableDueToSystemPressure: reason = "⚠️ 端末の負荷（発熱など）"
-            @unknown default: reason = "その他(\(raw))"
+            default: reason = "その他(\(raw))"
             }
         }
         Diagnostics.shared.log("カメラが OS に中断されました: \(reason)。\(Diagnostics.shared.statusLine())")

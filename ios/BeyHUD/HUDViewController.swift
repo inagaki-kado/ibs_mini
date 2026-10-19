@@ -164,7 +164,7 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
     func attachExternal(_ ext: ExternalHUDViewController) {
         externalConnected = true
         ext.loadViewIfNeeded()
-        camera.addPreviewLayer(ext.previewView.previewLayer)
+        camera.setExternalVideo(ext.previewView)
         replay.addExtraView(ext.replayView)
         view.setNeedsLayout()
         view.layoutIfNeeded()
@@ -174,7 +174,7 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
 
     func detachExternal(_ ext: ExternalHUDViewController) {
         externalConnected = false
-        camera.removePreviewLayer(ext.previewView.previewLayer)
+        camera.setExternalVideo(nil)
         replay.removeExtraView(ext.replayView)
         webView.evaluateJavaScript("window.__beyMirrorEnable && window.__beyMirrorEnable(false);", completionHandler: nil)
         view.setNeedsLayout()

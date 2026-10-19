@@ -117,10 +117,8 @@ final class DisplayCoordinator {
 /// カメラ/リプレイは同じ撮影セッション/プレーヤーのレイヤーをもう1枚持ち、スマホと同じ変形をかける。
 /// HUD は mirror.html に、スマホ側 score.html の画面の変化を複製して表示する。
 final class ExternalHUDViewController: UIViewController, WKNavigationDelegate {
-    /// HDMI 側のカメラ映像。画面（VC）を作り直しても使い回す。
-    /// AVCaptureVideoPreviewLayer は session = nil で外すと例外で落ちることがあるため、破棄せず付けたままにする。
-    private static let sharedPreviewView = CameraPreviewView()
-    var previewView: CameraPreviewView { Self.sharedPreviewView }
+    /// HDMI 側のカメラ映像（カメラのフレームを受け取って表示する。プレビューレイヤーは使わない）
+    let previewView = ExternalCameraView()
     let replayView = ReplayPlayerView()
     private let stageView = UIView()
     private var webView: WKWebView!
@@ -140,7 +138,7 @@ final class ExternalHUDViewController: UIViewController, WKNavigationDelegate {
         view.addSubview(stageView)
         stageView.addSubview(previewView)
         #if DEBUG
-        if previewView.subviews.isEmpty { DebugGridView.attach(to: previewView) }
+        DebugGridView.attach(to: previewView)
         #endif
 
         replayView.isHidden = true
@@ -238,6 +236,68 @@ final class ExternalHUDViewController: UIViewController, WKNavigationDelegate {
         isReady = true
         relayout() // 読み込み前に敷いた pageZoom は無効になることがあるため、読み込み後に改めて合わせる
         DisplayCoordinator.shared.externalReady()
+    }
+}
+
+// MARK: - HDMI 側のカメラ映像
+
+/// カメラのフレーム（CMSampleBuffer）をそのまま表示するビュー。
+/// 通常の AVCaptureSession はプレビューレイヤーを1つしか持てず、2枚目をつなぐとスマホ側が真っ黒になるため、
+/// HDMI 側はこちらで表示する。フレームはセンサーの向きのままなので、スマホ側のプレビューと同じ角度で回す。
+final class ExternalCameraView: UIView {
+    private let displayLayer = AVSampleBufferDisplayLayer()
+    private var angle: CGFloat = 0
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .black
+        layer.masksToBounds = true
+        displayLayer.videoGravity = .resizeAspectFill // スマホ側と同じ cover 表示
+        layer.addSublayer(displayLayer)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// スマホ側プレビューの videoRotationAngle と同じ角度（度）。メインスレッドで呼ぶ
+    func setRotation(_ degrees: CGFloat) {
+        guard degrees != angle else { return }
+        angle = degrees
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let b = bounds
+        let sideways = abs(sin(angle * .pi / 180)) > 0.5
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        displayLayer.setAffineTransform(.identity)
+        displayLayer.bounds = CGRect(origin: .zero, size: sideways ? CGSize(width: b.height, height: b.width) : b.size)
+        displayLayer.position = CGPoint(x: b.midX, y: b.midY)
+        displayLayer.setAffineTransform(CGAffineTransform(rotationAngle: angle * .pi / 180))
+        CATransaction.commit()
+    }
+
+    /// カメラのキュー（videoQueue）から呼ばれる。届いた瞬間に表示させる
+    func enqueue(_ sampleBuffer: CMSampleBuffer) {
+        var copy: CMSampleBuffer?
+        guard CMSampleBufferCreateCopy(allocator: nil, sampleBuffer: sampleBuffer, sampleBufferOut: &copy) == noErr,
+              let copy else { return }
+        if let attachments = CMSampleBufferGetSampleAttachmentsArray(copy, createIfNecessary: true),
+           CFArrayGetCount(attachments) > 0 {
+            let dict = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)
+            CFDictionarySetValue(dict,
+                                 Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque(),
+                                 Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
+        }
+        let renderer = displayLayer.sampleBufferRenderer
+        if renderer.status == .failed { renderer.flush() }
+        if renderer.isReadyForMoreMediaData { renderer.enqueue(copy) }
+    }
+
+    /// HDMI を抜いたとき。最後のコマを残さない
+    func clear() {
+        displayLayer.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
     }
 }
 
