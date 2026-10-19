@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" data-mirror-base>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" data-mirror-base>
+<!-- HDMI 側の HUD 表示用。score.html そのものは動かさず、スマホ側 score.html の画面の変化（DOM）を
+     そのまま複製して表示する（アプリ側 Swift 経由で __mirrorApply にメッセージが届く）。
+     ここには PeerJS などのロジックは一切ない。同じ web/ フォルダに置かれ、フォントや画像を同じ相対パスで読む。 -->
+<style data-mirror-base>html,body{margin:0;padding:0;background:transparent;}</style>
+</head>
+<body>
+<script>
+(function () {
+  'use strict';
+  var nodes = new Map();          // id -> Node
+  var ids = new WeakMap();        // Node -> id（取り除いたノードを後で掃除するため）
+
+  function setAttrs(el, a) {
+    for (var k in a) { try { el.setAttribute(k, a[k]); } catch (e) {} }
+  }
+  function clearAttrs(el) {
+    while (el.attributes.length) el.removeAttribute(el.attributes[0].name);
+  }
+  function reg(n, id) { nodes.set(id, n); ids.set(n, id); }
+
+  function mk(s) {
+    if (s.t === 3) { var tn = document.createTextNode(s.v); reg(tn, s.i); return tn; }
+    var el = s.ns ? document.createElementNS(s.ns, s.n) : document.createElement(s.n);
+    setAttrs(el, s.a);
+    reg(el, s.i);
+    for (var i = 0; i < s.c.length; i++) el.appendChild(mk(s.c[i]));
+    // select は option を作ってから値を入れる
+    if (s.val != null) { try { el.value = s.val; } catch (e) {} }
+    if (s.chk != null) { try { el.checked = s.chk; } catch (e) {} }
+    return el;
+  }
+
+  function drop(n) {
+    var id = ids.get(n);
+    if (id != null) nodes.delete(id);
+    for (var c = n.firstChild; c; c = c.nextSibling) drop(c);
+  }
+
+  // 親の子リストを、仕様（{r:id}=既存ノードを再利用 / それ以外=新規作成）の並びに揃える。
+  // 既存ノードは作り直さないので、CSSアニメーションが途中で巻き戻らない。
+  function reconcile(parent, specs) {
+    var keep = new Set(), list = [];
+    for (var i = 0; i < specs.length; i++) {
+      var c = specs[i], n;
+      if (c.r != null) { n = nodes.get(c.r); if (!n) continue; }
+      else n = mk(c);
+      list.push(n); keep.add(n);
+    }
+    var cur = Array.prototype.slice.call(parent.childNodes);
+    for (var j = 0; j < cur.length; j++) {
+      if (!keep.has(cur[j])) { parent.removeChild(cur[j]); drop(cur[j]); }
+    }
+    var ref = parent.firstChild;
+    for (var k = 0; k < list.length; k++) {
+      var node = list[k];
+      if (node === ref) ref = ref.nextSibling; else parent.insertBefore(node, ref);
+    }
+  }
+
+  function init(m) {
+    nodes = new Map(); ids = new WeakMap();
+    var de = document.documentElement;
+    clearAttrs(de); setAttrs(de, m.html.a); reg(de, m.html.i);
+    // head: 自分の基本スタイルは残して、スマホ側の head（style / link / meta）を複製する
+    reg(document.head, m.head.i);
+    // このページ自身の設定（charset / viewport / 基本スタイル。data-mirror-base）は残す。
+    // viewport を消したり二重に入れると、表示幅が 980px の既定値になりレイアウトが縮む。
+    Array.prototype.slice.call(document.head.childNodes).forEach(function (n) {
+      if (!(n.nodeType === 1 && n.hasAttribute('data-mirror-base'))) document.head.removeChild(n);
+    });
+    m.head.c.forEach(function (s) {
+      if (s.t === 1 && s.n === 'meta' && s.a && (s.a.charset || String(s.a.name).toLowerCase() === 'viewport')) return;
+      document.head.appendChild(mk(s));
+    });
+    clearAttrs(document.body); setAttrs(document.body, m.body.a); reg(document.body, m.body.i);
+    reconcile(document.body, m.body.c);
+  }
+
+  function op(o) {
+    if (o.k === 'c') { var p = nodes.get(o.p); if (p) reconcile(p, o.c); }
+    else if (o.k === 'a') {
+      var el = nodes.get(o.i); if (!el) return;
+      try { if (o.v === null) el.removeAttribute(o.n); else el.setAttribute(o.n, o.v); } catch (e) {}
+    }
+    else if (o.k === 't') { var t = nodes.get(o.i); if (t) t.data = o.v; }
+    else if (o.k === 'v') {
+      var f = nodes.get(o.i); if (!f) return;
+      try { if (typeof o.v === 'boolean') f.checked = o.v; else f.value = o.v; } catch (e) {}
+    }
+    else if (o.k === 's') { var sc = nodes.get(o.i); if (sc) { sc.scrollLeft = o.x; sc.scrollTop = o.y; } }
+  }
+
+  // レイアウトの基準をスマホ側のステージ幅（CSS px）に固定し、HDMI の画面幅に合わせて倍率をかける。
+  // pageZoom だと position:fixed の基準が更新されず右寄せの要素がずれる。viewport 指定なら基準も倍率も一貫し、拡大しても文字がぼやけない。
+  window.__mirrorViewport = function (cssWidth, scale) {
+    var m = document.querySelector('meta[name="viewport"]');
+    if (!m) { m = document.createElement('meta'); m.name = 'viewport'; m.setAttribute('data-mirror-base', ''); document.head.appendChild(m); }
+    var sc = scale.toFixed(4);
+    m.setAttribute('content', 'width=' + cssWidth + ', initial-scale=' + sc + ', minimum-scale=' + sc + ', maximum-scale=' + sc + ', user-scalable=no');
+  };
+
+  window.__mirrorApply = function (msg) {
+    if (!msg) return;
+    if (msg.k === 'init') init(msg);
+    else if (msg.k === 'm') { for (var i = 0; i < msg.ops.length; i++) op(msg.ops[i]); }
+  };
+})();
+</script>
+</body>
+</html>

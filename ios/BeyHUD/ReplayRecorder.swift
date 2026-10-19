@@ -156,6 +156,21 @@ final class ReplayRecorder {
         }
     }
 
+    /// メモリ警告のとき、保持する時間を一時的に縮めて、古い区間を捨てる（再生中のファイルは残す）
+    func trim(keepSeconds: Double) {
+        queue.async {
+            guard let newestEnd = self.segments.last?.end else { return }
+            self.segments.removeAll { seg in
+                let expired = (newestEnd - seg.end).seconds > keepSeconds
+                if expired && !self.retainedURLs.contains(seg.url) {
+                    try? FileManager.default.removeItem(at: seg.url)
+                    return true
+                }
+                return false
+            }
+        }
+    }
+
     /// 新しい試合開始時（score.html の flushRecorderBuffer 相当）。書き込み中の区間は残して過去分を捨てる
     func flush() {
         queue.async {
