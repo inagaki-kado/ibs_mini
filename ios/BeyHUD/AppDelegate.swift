@@ -3,10 +3,20 @@ import UIKit
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        Diagnostics.shared.start() // 「止まった」原因をあとから調べられるよう、端末内に記録を残す
+        return true
+    }
+
+    func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
-        config.delegateClass = SceneDelegate.self
+        // HDMI 等の外部ディスプレイには専用のシーン（ExternalSceneDelegate）を使う。
+        // これを宣言しないと iOS 標準のミラーリングになり、黒帯が出て、ズームなどのアプリ側の変形も一致しない
+        let isExternal = connectingSceneSession.role == .windowExternalDisplayNonInteractive
+        let config = UISceneConfiguration(name: isExternal ? "External Display" : "Default Configuration",
+                                          sessionRole: connectingSceneSession.role)
+        config.delegateClass = isExternal ? ExternalSceneDelegate.self : SceneDelegate.self
         return config
     }
 }

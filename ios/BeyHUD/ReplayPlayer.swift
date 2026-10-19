@@ -11,6 +11,8 @@ final class ReplayPlayerView: UIView {
 /// score.html 側は <video> と同じ感覚で操作できるよう、状態（t / dur / paused / rate）を onStateChange で通知する。
 final class ReplayPlayer {
     let view = ReplayPlayerView()
+    /// HDMI 側のビュー（同じ AVPlayer を映す）。メインスレッドでのみ触る
+    private var extraViews: [ReplayPlayerView] = []
     private let recorder: ReplayRecorder
     private var player: AVPlayer?
     private var timeObserver: Any?
@@ -33,6 +35,20 @@ final class ReplayPlayer {
         view.playerLayer.videoGravity = .resizeAspectFill // score.html の object-fit: cover と同じ
     }
 
+    func addExtraView(_ extra: ReplayPlayerView) {
+        extraViews.append(extra)
+        extra.playerLayer.player = player
+        extra.isHidden = view.isHidden
+    }
+
+    func removeExtraView(_ extra: ReplayPlayerView) {
+        extraViews.removeAll { $0 === extra }
+        extra.playerLayer.player = nil
+        extra.isHidden = true
+    }
+
+    private var allViews: [ReplayPlayerView] { [view] + extraViews }
+
     // MARK: - 開始・終了
 
     /// 直近の映像を読み込み、末尾15秒前から等速再生する（ブラウザ版と同じ開始位置）
@@ -52,8 +68,7 @@ final class ReplayPlayer {
             player.automaticallyWaitsToMinimizeStalling = false
             player.actionAtItemEnd = .pause
             self.player = player
-            self.view.playerLayer.player = player
-            self.view.isHidden = false
+            self.allViews.forEach { $0.playerLayer.player = player; $0.isHidden = false }
             self.rate = 1
             self.timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 30), queue: .main) { [weak self] _ in
                 self?.publish()
@@ -81,8 +96,7 @@ final class ReplayPlayer {
         endObserver = nil
         seekTarget = nil
         isSeeking = false
-        view.playerLayer.player = nil
-        view.isHidden = true
+        allViews.forEach { $0.playerLayer.player = nil; $0.isHidden = true }
         player = nil
         recorder.releaseReplay()
     }

@@ -133,7 +133,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# リポジトリ直下の score.html と素材をアプリに同梱する（score.html の原本は1つだけに保つ）\nset -e\nSRC=\"${SRCROOT}/..\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/web\"\nmkdir -p \"${DST}/font\"\ncp \"${SRC}/score.html\" \"${DST}/score.html\"\ncp \"${SRC}/maintitle_white.png\" \"${SRC}/torabo_logo.png\" \"${DST}/\"\ncp \"${SRC}/font/DSEG7Classic-BoldItalic.ttf\" \"${DST}/font/\"\n";
+			shellScript = "# リポジトリ直下の score.html と素材をアプリに同梱する（score.html の原本は1つだけに保つ）\nset -e\nSRC=\"${SRCROOT}/..\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/web\"\nmkdir -p \"${DST}/font\"\ncp \"${SRC}/score.html\" \"${DST}/score.html\"\ncp \"${SRC}/maintitle_white.png\" \"${SRC}/torabo_logo.png\" \"${DST}/\"\ncp \"${SRCROOT}/mirror.html\" \"${DST}/mirror.html\"\ncp \"${SRC}/font/DSEG7Classic-BoldItalic.ttf\" \"${DST}/font/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
