@@ -129,7 +129,8 @@
       各チームの代表者に、自チームのQRコードだけを読ませてください。
       QRにはチーム識別子が入っているため、相手チームの画面は開けません。
     </p>
-    <div id="qr-wrap" class="grid grid-cols-2 gap-3 mb-3"></div>
+    <div id="qr-wrap" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3"></div>
+    <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">読み取れないときは、この画面の明るさを最大にして、参加者のスマホのカメラを QR に近づけてゆっくり合わせてください。</p>
     <button id="btn-entry-toggle" onclick="toggleEntryOpen()" class="tap w-full py-3 rounded font-bold text-xs"></button>
   </div>
 
@@ -1636,6 +1637,33 @@ async function submitManualEntry() {
 // 受付パネル / QR
 // ==========================================================
 
+/**
+ * スマホのカメラで読み取りやすい QR を作る。
+ *  - 周囲に QR 規格どおり 4 マス分の「白い」余白（クワイエットゾーン）を付ける。
+ *    暗いUIの上にそのまま置くと、余白がなく背景も暗いためカメラが QR と認識できない。
+ *  - 1マスの大きさを整数ピクセルにそろえる（小数だと輪郭がにじむ）。
+ *  - 誤り訂正は L（画面表示なので十分）。M より約1段階マス数が少なくなり、1マスを大きくできる。
+ */
+const QR_TARGET_PX = 220;      // QR 本体の目標サイズ（余白は別）
+const QR_MIN_CELL_PX = 5;      // 1マスの最小サイズ
+function makeEntryQr(container, text) {
+  // 先にマス数だけ調べる（描画はせず、ここで作った一時要素は捨てる）
+  const probe = document.createElement('div');
+  const probeQr = new QRCode(probe, { text: text, width: 64, height: 64, correctLevel: QRCode.CorrectLevel.L });
+  const modules = probeQr._oQRCode.getModuleCount();
+  const cell = Math.max(QR_MIN_CELL_PX, Math.floor(QR_TARGET_PX / modules));
+  const size = modules * cell;
+  const quiet = cell * 4;
+
+  const holder = document.createElement('div');
+  holder.style.cssText = 'background:#ffffff;padding:' + quiet + 'px;border-radius:6px;display:inline-block;line-height:0;';
+  container.appendChild(holder);
+  new QRCode(holder, { text: text, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
+  // 拡大縮小でにじまないように、描画された要素はそのままの大きさで表示する
+  holder.querySelectorAll('canvas,img').forEach(el => { el.style.imageRendering = 'pixelated'; });
+  return { modules: modules, cell: cell, size: size, quiet: quiet };
+}
+
 function entryUrl(teamKey) {
   return ENTRY_PAGE_URL + '?s=' + encodeURIComponent(entry.code) + '&team=' + teamKey;
 }
@@ -1665,7 +1693,7 @@ function renderEntryPanel() {
     box.appendChild(qr);
 
     if (name) {
-      new QRCode(qr, { text: entryUrl(key), width: 130, height: 130, correctLevel: QRCode.CorrectLevel.M });
+      makeEntryQr(qr, entryUrl(key));
     } else {
       qr.innerHTML = '<p class="text-[11px] text-gray-600 py-10">チーム未選択</p>';
     }
@@ -3127,7 +3155,9 @@ function setMatchWinner(side) {
   m.updatedAt = Date.now();
   saveState();
 
-  sendRemoteCmd(side === 'a' ? 'P1_WIN' : 'P2_WIN');
+  // score.html の P1 は画面の左。入れ替え中はチームB が左にいるので、チーム側ではなく現在の左右に合わせて送る
+  // （合わせないと、WINNER 表示が勝っていない側の選手名になる）
+  sendRemoteCmd(scorePlayerOf(m, side) + '_WIN');
   sendMatchComment(idx);   // 関係性の枕詞つき。名簿取得は非同期（失敗時は枕詞なし）
 
   renderRemote(); renderBoard(); renderResult();
