@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>S.I.T BattleLeague ｜ 新宿 × 板橋 × トラボCUP 合同リーグ戦</title>
-<meta name="description" content="新宿・板橋・トラボCUP。3つの会が激突する合同リーグ戦「S.I.T BattleLeague」。2026年9月開幕。">
+<meta name="description" content="新宿・板橋・トラボCUP。3つの会が激突する合同リーグ戦「S.I.T BattleLeague」。2026年10月開幕。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -349,6 +349,21 @@ body::after{
 .venue{font-size:13px;color:var(--dim);line-height:1.75;}
 @media (min-width:1000px){ .venue{text-align:right;} }
 .row.final{background:rgba(255,31,61,.10);}
+.result{grid-column:1/-1;margin-top:6px;padding:14px 14px 12px;background:var(--ink);border:1px solid var(--line);}
+.result-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;font-weight:700;}
+.result-head .done{font-family:var(--lat);font-size:11px;letter-spacing:.14em;color:var(--ink);background:var(--steel);padding:3px 7px 2px;}
+.result-head b{font-size:15px;}
+.team-score{font-family:var(--lat);font-size:24px;color:#fff;letter-spacing:.06em;}
+.win-tag{font-family:var(--lat);font-size:11px;letter-spacing:.12em;color:var(--shinjuku);border:1px solid var(--shinjuku);padding:3px 7px 2px;}
+.bouts{list-style:none;margin:0;padding:0;}
+.bouts li{display:grid;grid-template-columns:40px 1fr 56px 1fr;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;}
+.bouts .pos{font-size:11px;color:var(--dim);letter-spacing:.08em;}
+.bouts .p{color:var(--dim);}
+.bouts .p:last-child{text-align:right;}
+.bouts .p.win{color:#fff;font-weight:700;}
+.bouts .p.win::after{content:" WIN";font-family:var(--lat);font-size:10px;letter-spacing:.1em;color:var(--blood);}
+.bouts .sc{font-family:var(--lat);font-weight:700;font-size:16px;color:#fff;text-align:center;letter-spacing:.04em;}
+@media (min-width:1000px){ .result{padding:16px 20px 14px;} .bouts li{grid-template-columns:56px 1fr 72px 1fr;font-size:15px;} }
 .row.final .match{font-size:17px;}
 
 /* ============================================================
@@ -424,7 +439,7 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
       <a class="btn ghost" href="#schedule">抗争の日程を見る</a>
     </div>
   </div>
-  <p class="hero-next"><b>NEXT</b><span>9月21日（月・祝）新宿ホーム ／ 迎撃：新宿ベイ会 vs 襲撃：トラボCUP ＠歌舞伎町 CURE</span></p>
+  <p class="hero-next"><b>NEXT</b><span>10月24日（土）板橋ホーム ／ 迎撃：板橋ベイブレード会 vs 襲撃：新宿ベイ会 ＠ハイライフいたばし</span></p>
 </header>
 <div class="cut"></div>
 
@@ -464,7 +479,7 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <p class="team-mark">S</p>
         <h3><a href="https://x.com/toi_bey" target="_blank" rel="noopener">新宿ベイ会</a></h3>
         <p class="team-home">HOME ／ 歌舞伎町 CURE</p>
-        <p class="team-desc">ネオンの真下、ホストクラブの一室が闘技場。開幕戦でトラボCUPを迎え撃ち、リーグの口火を切る。</p>
+        <p class="team-desc">ネオンの真下、ホストクラブの一室が闘技場。開幕戦でトラボCUPを3-0で返り討ちにし、リーグの口火を切った。</p>
         <ul class="members">
           <li>
             <span class="bn"><img class="avatar" src="avatars/shainii.webp" alt="しゃい兄ぃ" width="34" height="34" loading="lazy"><a href="https://x.com/Shiny_ny_15" target="_blank" rel="noopener">しゃい兄ぃ</a></span>
@@ -651,10 +666,18 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
 
     <div class="rail rv">
       <div class="row" style="--c:var(--shinjuku)">
-        <div class="date">09.21<small>月・祝</small></div>
+        <div class="date">10.18<small>日</small></div>
         <div class="badge">新宿 HOME</div>
         <div class="match">迎撃：新宿ベイ会 <em>vs 襲撃：トラボCUP</em></div>
         <div class="venue">CURE（新宿区歌舞伎町2-20-9 三経75ビル7F）<br>受付 13:00〜 ／ 参加費 500円</div>
+        <div class="result">
+          <p class="result-head"><span class="done">RESULT</span><b class="s-shinjuku">新宿ベイ会</b><span class="team-score">3 - 0</span><b class="s-torabo">トラボCUP</b><span class="win-tag">新宿 WIN</span></p>
+          <ol class="bouts">
+            <li><span class="pos">先鋒</span><span class="p win">ジンちゃん</span><span class="sc">4 - 2</span><span class="p">じゃわ</span></li>
+            <li><span class="pos">次鋒</span><span class="p win">まぼちゃん</span><span class="sc">4 - 2</span><span class="p">ながた</span></li>
+            <li><span class="pos">大将</span><span class="p win">しゃい兄ぃ</span><span class="sc">4 - 0</span><span class="p">アヤヲ</span></li>
+          </ol>
+        </div>
       </div>
       <div class="row" style="--c:var(--itabashi)">
         <div class="date">10.24<small>土</small></div>
@@ -669,7 +692,7 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <div class="venue">CURE（新宿区歌舞伎町2-20-9 三経75ビル7F）※予定</div>
       </div>
       <div class="row" style="--c:var(--itabashi)">
-        <div class="date">12月<small>日程調整中</small></div>
+        <div class="date">12.05<small>土</small></div>
         <div class="badge">板橋 HOME</div>
         <div class="match">迎撃：板橋ベイブレード会 <em>vs 襲撃：トラボCUP</em></div>
         <div class="venue">ハイライフいたばし 2F Aホール（板橋駅 徒歩1分）※予定</div>
@@ -693,7 +716,7 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <div class="venue">会場未定</div>
       </div>
     </div>
-    <p class="note rv">※ 11月以降の日程・会場は調整中。決まり次第、各団体のSNSで告知する。<br>※ リーグ戦は各イベント内の1コーナーとして開催される。当日は通常のプログラムにも参加できる。</p>
+    <p class="note rv">※ 日程調整中・会場未定の回は、決まり次第、各団体のSNSで告知する。<br>※ リーグ戦は各イベント内の1コーナーとして開催される。当日は通常のプログラムにも参加できる。</p>
   </div>
 </section>
 <div class="cut"></div>
