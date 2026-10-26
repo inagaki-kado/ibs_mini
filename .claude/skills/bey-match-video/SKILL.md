@@ -68,7 +68,7 @@ ffmpeg は入っていない。macOS の Swift / AVFoundation で作った `tool
 ```bash
 K="/Users/yamiz/Documents/ベイ会アプリ/.claude/skills/bey-match-video/tools"
 B="<スクラッチパッド>/bin"; mkdir -p "$B"
-for t in bey_edit frames sheet analyze phone; do swiftc -O "$K/$t.swift" -o "$B/$t"; done
+for t in bey_edit frames sheet analyze phone youtube; do swiftc -O "$K/$t.swift" -o "$B/$t"; done
 ```
 
 1. **動画の場所を確かめる**。ユーザーが添付したパスから移動されていることがある（例: `~/Downloads` → `~/Documents/ベイブレード会/`）。見つからなければ `mdfind -name <ファイル名>`
@@ -104,6 +104,12 @@ for t in bey_edit frames sheet analyze phone; do swiftc -O "$K/$t.swift" -o "$B/
 - **ユーザーは出先からスマホで確認することが多い。** 本番と一緒に、スマホ確認用を必ず作って `SendUserFile` で送る
   - 送信上限は **30MiB**。`phone` のビットレートは長さに合わせて決める（`phone.swift` 冒頭の目安）
   - 10分程度なら 854×480 1本。約18分なら 640×360（width 640）。それ以上は約15分ごとに分割して送る
+- **YouTube 公開用**：ユーザーが確認して OK を出したら、完成した 1080p を `youtube` で書き出し直す（編集内容は変えない）
+  ```bash
+  "$B/youtube" "<完成した_1080p.mp4>" "/Users/yamiz/Documents/Adobe/Premiere Pro/26.0/YouTube/SIT_BattleLeague_第2戦_板橋vs新宿_20261024.mp4"
+  ```
+  - `bey_edit` の出力は freeze やリプレイで可変fpsになるので、固定 59.94fps・H.264 12Mbps・AAC 48kHz 256kbps に揃える（AAC 384kbps はエンコードに失敗する）
+  - 保存先は `26.0/YouTube/`。ファイル名は `<大会名>_第N戦_<ホーム>vs<アウェイ>_<YYYYMMDD>.mp4`
 - 元の動画は消さない・上書きしない。古い版を消すときはユーザーに確認し、ゴミ箱へ移す（`osascript` で Finder の delete）
 - 書き出し後に残る `*.sb-*` という一時ファイルはゴミ箱へ移す
 
