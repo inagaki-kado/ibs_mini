@@ -1,0 +1,120 @@
+{
+ "source": "/Users/yamiz/Documents/ベイブレード会/RPReplay_Final1792845567.MP4",
+ "output": "/Users/yamiz/Documents/Adobe/Premiere Pro/26.0/SIT2_highlight_v2_1080p.mp4",
+ "zoom": 0.8515,
+ "replayRate": 0.4,
+ "replayVolume": 0.3,
+ "bgm": {
+  "path": "../assets/BEYBLADEX_BATTLE_MUSIC.mp3",
+  "volume": 0.025,
+  "replayVolume": 0.08
+ },
+ "endCard": {
+  "image": "sit2_result.png",
+  "seconds": 42
+ },
+ "segments": [
+  {
+   "type": "live",
+   "from": 233.0,
+   "to": 239.25,
+   "note": "NEXT BATTLE しゃい兄ぃ vs スタク（2回目・全部残す）"
+  },
+  {
+   "type": "live",
+   "from": 272.0,
+   "to": 328.6,
+   "note": "先鋒 1st XTREME〜2nd SPIN（ベイ見せ1秒前から）"
+  },
+  {
+   "type": "replay",
+   "from": 319.0,
+   "to": 323.5,
+   "note": "▶ 決着リプレイ"
+  },
+  {
+   "type": "live",
+   "from": 328.6,
+   "to": 337.0,
+   "note": "WINNER スタク"
+  },
+  {
+   "type": "live",
+   "from": 344.55,
+   "to": 359.35,
+   "note": "NEXT BATTLE ジンちゃん vs カイヌマ（全部残す）"
+  },
+  {
+   "type": "live",
+   "from": 376.0,
+   "to": 477.5,
+   "note": "次鋒 1st〜3rd ベイ見せ"
+  },
+  {
+   "type": "live",
+   "from": 507.5,
+   "to": 562.8,
+   "note": "次鋒 3rd シュート準備〜SPIN"
+  },
+  {
+   "type": "live",
+   "from": 577.5,
+   "to": 646.3,
+   "note": "次鋒 4th〜FINAL OVER"
+  },
+  {
+   "type": "replay",
+   "from": 633.8,
+   "to": 636.2,
+   "note": "▶ 決着リプレイ"
+  },
+  {
+   "type": "live",
+   "from": 646.3,
+   "to": 653.5,
+   "note": "WINNER ジンちゃん"
+  },
+  {
+   "type": "live",
+   "from": 662.65,
+   "to": 663.55,
+   "note": "NEXT BATTLE まぼちゃん vs すが（アプリ再起動前）"
+  },
+  {
+   "type": "live",
+   "from": 697.0,
+   "to": 698.95,
+   "note": "NEXT BATTLE まぼちゃん vs すが（再起動後）"
+  },
+  {
+   "type": "live",
+   "from": 720.0,
+   "to": 819.5,
+   "note": "大将 1st SPIN〜2nd（再試合の理由説明も残す）〜2nd OVER"
+  },
+  {
+   "type": "live",
+   "from": 835.6,
+   "to": 860.6,
+   "note": "大将 3rd OVER（スコア誤表示の準備中はカット）"
+  },
+  {
+   "type": "replay",
+   "from": 848.6,
+   "to": 851.0,
+   "note": "▶ 決着リプレイ"
+  },
+  {
+   "type": "live",
+   "from": 860.6,
+   "to": 869.5,
+   "note": "WINNER まぼちゃん"
+  },
+  {
+   "type": "live",
+   "from": 874.0,
+   "to": 916.0,
+   "note": "結果（アプリの結果表は誤表示のため結果画像に差し替え）"
+  }
+ ]
+}
