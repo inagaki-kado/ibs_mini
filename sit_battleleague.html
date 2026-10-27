@@ -356,14 +356,40 @@ body::after{
 .team-score{font-family:var(--lat);font-size:24px;color:#fff;letter-spacing:.06em;}
 .win-tag{font-family:var(--lat);font-size:11px;letter-spacing:.12em;color:var(--shinjuku);border:1px solid var(--shinjuku);padding:3px 7px 2px;}
 .bouts{list-style:none;margin:0;padding:0;}
-.bouts li{display:grid;grid-template-columns:40px 1fr 56px 1fr;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;}
+.bouts li{display:grid;grid-template-columns:30px 1fr 88px 1fr;align-items:center;gap:6px 6px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;}
 .bouts .pos{font-size:11px;color:var(--dim);letter-spacing:.08em;}
-.bouts .p{color:var(--dim);}
-.bouts .p:last-child{text-align:right;}
+.bouts .p{display:flex;align-items:center;gap:6px;min-width:0;color:var(--dim);}
+.bouts .p2{justify-content:flex-end;text-align:right;}
+.bouts .nm{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px;min-width:0;line-height:1.35;overflow-wrap:anywhere;}
+.bouts .p2 .nm{justify-content:flex-end;}
+.bouts .nm .tag{order:2;flex-basis:100%;font-size:10px;font-weight:400;color:var(--dim);letter-spacing:0;}
 .bouts .p.win{color:#fff;font-weight:700;}
-.bouts .p.win::after{content:" WIN";font-family:var(--lat);font-size:10px;letter-spacing:.1em;color:var(--blood);}
-.bouts .sc{font-family:var(--lat);font-weight:700;font-size:16px;color:#fff;text-align:center;letter-spacing:.04em;}
-@media (min-width:1000px){ .result{padding:16px 20px 14px;} .bouts li{grid-template-columns:56px 1fr 72px 1fr;font-size:15px;} }
+.bouts .p.win .nm::after{content:"WIN";order:1;font-family:var(--lat);font-size:10px;letter-spacing:.1em;color:var(--blood);}
+.bouts .av-sm{width:26px;height:26px;flex:0 0 26px;}
+.bouts .p2 .av-sm{transform-origin:right center;}
+.bouts li:has(.avatar:hover),
+.bouts li:has(.avatar.is-zoom){position:relative;z-index:20;}
+.bouts .sc{display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--lat);font-weight:700;font-size:16px;color:#fff;letter-spacing:.04em;white-space:nowrap;}
+.cmt-btn{
+  width:34px;height:34px;flex:0 0 34px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:1px solid var(--line);border-radius:50%;
+  font-size:15px;line-height:1;cursor:pointer;touch-action:manipulation;
+  transition:border-color .15s,background .15s;
+}
+.cmt-btn:hover{border-color:var(--steel);}
+.cmt-btn[aria-expanded="true"]{border-color:var(--blood);background:rgba(255,31,61,.15);}
+.cmt{grid-column:1/-1;margin:2px 0 2px;padding:10px 12px;background:var(--panel-2);border-left:3px solid var(--blood);font-size:13px;line-height:1.85;color:var(--steel);}
+.cmt-label{display:block;font-family:var(--lat);font-size:10px;letter-spacing:.14em;color:var(--blood);margin-bottom:4px;}
+/* スマホ幅：アイコンの下に名前を置き、名前の途中で改行させない */
+@media (max-width:599px){
+  .bouts li{grid-template-columns:28px 1fr 84px 1fr;gap:6px 4px;}
+  .bouts .p,.bouts .p2{flex-direction:column;justify-content:flex-start;gap:3px;text-align:center;}
+  .bouts .p2 .av-sm{order:-1;}
+  .bouts .av-sm,.bouts .p2 .av-sm{transform-origin:center top;}
+  .bouts .nm,.bouts .p2 .nm{justify-content:center;word-break:keep-all;overflow-wrap:normal;}
+}
+@media (min-width:1000px){ .result{padding:16px 20px 14px;} .bouts li{grid-template-columns:56px 1fr 104px 1fr;gap:6px 10px;font-size:15px;} .bouts .av-sm{width:30px;height:30px;flex-basis:30px;} }
 /* 試合動画（サムネをタップしてから iframe を読み込む＝ページを重くしない） */
 .video{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;}
 .video-label{font-family:var(--lat);font-size:11px;letter-spacing:.14em;color:var(--dim);margin:0 0 8px;}
@@ -686,9 +712,9 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <div class="result">
           <p class="result-head"><span class="done">RESULT</span><b class="s-shinjuku">新宿ベイ会</b><span class="team-score">3 - 0</span><b class="s-torabo">トラボCUP</b><span class="win-tag">新宿 WIN</span></p>
           <ol class="bouts">
-            <li><span class="pos">先鋒</span><span class="p win">ジンちゃん</span><span class="sc">4 - 2</span><span class="p">じゃわ</span></li>
-            <li><span class="pos">次鋒</span><span class="p win">まぼちゃん</span><span class="sc">4 - 2</span><span class="p">ながた</span></li>
-            <li><span class="pos">大将</span><span class="p win">しゃい兄ぃ</span><span class="sc">4 - 0</span><span class="p">アヤヲ</span></li>
+            <li><span class="pos">先鋒</span><span class="p p1 win"><img class="avatar av-sm" src="avatars/jin.webp" alt="ジンちゃん" width="26" height="26" loading="lazy"><span class="nm">ジンちゃん</span></span><span class="sc">4 - 2<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c1-1" aria-label="先鋒戦の試合後コメントを見る">💬</button></span><span class="p p2"><span class="nm">じゃわ</span><img class="avatar av-sm" src="avatars/jawa.webp" alt="じゃわ" width="26" height="26" loading="lazy"></span><p class="cmt" id="c1-1" hidden><span class="cmt-label">試合後コメント</span>ヘブンズリングM-85Lのオーバーフィニッシュで先制したジンが、シャークスケイル1-60Nrの豪快なXFで4－2と突き放した。敗れたじゃわもワイバーンホバー1-60Bでバーストを奪って意地を見せた。新宿ベイ会が先鋒戦を制した。</p></li>
+            <li><span class="pos">次鋒</span><span class="p p1 win"><img class="avatar av-sm" src="avatars/mabo.webp" alt="まぼちゃん" width="26" height="26" loading="lazy"><span class="nm">まぼちゃん</span></span><span class="sc">4 - 2<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c1-2" aria-label="次鋒戦の試合後コメントを見る">💬</button></span><span class="p p2"><span class="nm">ながた</span><img class="avatar av-sm" src="avatars/nagata.webp" alt="ながた" width="26" height="26" loading="lazy"></span><p class="cmt" id="c1-2" hidden><span class="cmt-label">試合後コメント</span>グローリーワルキューレDのバーストで先手を取ったまぼが、最後も同じグローリーワルキューレDの豪快なXFで4－2と締めくくった。敗れたながたマサキもコバルトドラグーン1-60Eでオーバーを奪い、一時は同点に追いついた。新宿ベイ会が次鋒戦も制し、チームの勝利を決めた。</p></li>
+            <li><span class="pos">大将</span><span class="p p1 win"><img class="avatar av-sm" src="avatars/shainii.webp" alt="しゃい兄ぃ" width="26" height="26" loading="lazy"><span class="nm">しゃい兄ぃ</span></span><span class="sc">4 - 0<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c1-3" aria-label="大将戦の試合後コメントを見る">💬</button></span><span class="p p2"><span class="nm">アヤヲ</span><img class="avatar av-sm" src="avatars/ayawo.webp" alt="アヤヲ" width="26" height="26" loading="lazy"></span><p class="cmt" id="c1-3" hidden><span class="cmt-label">試合後コメント</span>ウィザードロッド1-60Hとシャークスケイル7-60Rでスピンフィニッシュを重ねたしゃい兄ぃが、最後はグローリーワルキューレKのオーバーフィニッシュで4－0の完封勝利。敗れたアヤヲもメテオドラグーン9-65Eで最後まで攻めの姿勢を崩さなかった。新宿ベイ会が3－0の完全勝利で開幕戦を飾った。</p></li>
           </ol>
           <div class="video" data-yt="https://youtu.be/BLONabRJqcA"></div>
         </div>
@@ -701,9 +727,9 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
         <div class="result">
           <p class="result-head"><span class="done">RESULT</span><b class="s-itabashi">板橋ベイブレード会</b><span class="team-score">1 - 2</span><b class="s-shinjuku">新宿ベイ会</b><span class="win-tag">新宿 WIN</span></p>
           <ol class="bouts">
-            <li><span class="pos">先鋒</span><span class="p win">スタク</span><span class="sc">4 - 0</span><span class="p">しゃい兄ぃ</span></li>
-            <li><span class="pos">次鋒</span><span class="p">カイヌマ</span><span class="sc">3 - 4</span><span class="p win">ジンちゃん</span></li>
-            <li><span class="pos">大将</span><span class="p">すが</span><span class="sc">0 - 5</span><span class="p win">まぼちゃん</span></li>
+            <li><span class="pos">先鋒</span><span class="p p1 win"><img class="avatar av-sm" src="https://pbs.twimg.com/profile_images/2051835787998846976/GgLrCyb9_400x400.jpg" alt="スタク" width="26" height="26" loading="lazy"><span class="nm">スタク<small class="tag">（特別援軍枠）</small></span></span><span class="sc">4 - 0<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c2-1" aria-label="先鋒戦の試合後コメントを見る">💬</button></span><span class="p p2"><span class="nm">しゃい兄ぃ</span><img class="avatar av-sm" src="avatars/shainii.webp" alt="しゃい兄ぃ" width="26" height="26" loading="lazy"></span><p class="cmt" id="c2-1" hidden><span class="cmt-label">試合後コメント</span>シャークスケイル1-60Rの豪快なXFで先制したスタクが、グローリーワルキューレKのスピンフィニッシュで4－0と押し切った。敗れたしゃい兄ぃもウィザードロッド1-60Nrで臆することなく真っ向勝負を挑んだ。ホームの板橋ベイブレード会が先鋒戦を制した。</p></li>
+            <li><span class="pos">次鋒</span><span class="p p1"><img class="avatar av-sm" src="avatars/kainuma.webp" alt="カイヌマ" width="26" height="26" loading="lazy"><span class="nm">カイヌマ</span></span><span class="sc">3 - 4<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c2-2" aria-label="次鋒戦の試合後コメントを見る">💬</button></span><span class="p p2 win"><span class="nm">ジンちゃん</span><img class="avatar av-sm" src="avatars/jin.webp" alt="ジンちゃん" width="26" height="26" loading="lazy"></span><p class="cmt" id="c2-2" hidden><span class="cmt-label">試合後コメント</span>カイヌマに3点先行を許しながらも、シャークスケイル1-60Nrを駆るジンがオーバーフィニッシュを連取し3－4で大逆転。敗れたカイヌマもバレットグリフォンHとメテオドラグーン9-60Eで試合序盤は主導権を握った。新宿ベイ会が1勝1敗のタイに戻した。</p></li>
+            <li><span class="pos">大将</span><span class="p p1"><img class="avatar av-sm" src="avatars/suga.webp" alt="すが" width="26" height="26" loading="lazy"><span class="nm">すが</span></span><span class="sc">0 - 5<button type="button" class="cmt-btn" aria-expanded="false" aria-controls="c2-3" aria-label="大将戦の試合後コメントを見る">💬</button></span><span class="p p2 win"><span class="nm">まぼちゃん</span><img class="avatar av-sm" src="avatars/mabo.webp" alt="まぼちゃん" width="26" height="26" loading="lazy"></span><p class="cmt" id="c2-3" hidden><span class="cmt-label">試合後コメント</span>アウェイの大将戦で5ポイントが必要な中、ウィザードロッド1-60Hのスピンフィニッシュで先制したまぼが、シャークスケイル7-60Rのオーバーフィニッシュで0－5の完封勝利。敗れたすがもエアロペガサス7-60Rで最後まで果敢に食らいついた。新宿ベイ会が2勝1敗で板橋のシマを制した。</p></li>
           </ol>
           <div class="video" data-yt="https://youtu.be/BtO0oiyG994"></div>
         </div>
@@ -793,6 +819,16 @@ footer{border-top:1px solid var(--line);padding-block:32px;background:var(--ink)
     });
   });
 })();
+
+/* 試合後コメントの開閉（💬） */
+document.querySelectorAll('.cmt-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    var c = document.getElementById(b.getAttribute('aria-controls'));
+    var open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    c.hidden = !open;
+  });
+});
 
 /* アイコンのタップ拡大（スマホ）。もう一度タップ、または他所をタップで戻る */
 (function(){
