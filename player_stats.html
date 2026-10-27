@@ -703,6 +703,13 @@ nav {
 .beys-badges-row {
   display: flex; gap: 0.75rem; flex-wrap: wrap;
 }
+
+/* ─── BLADE STATS（選手個別・折り畳み） ─── */
+.pbs-head { cursor: pointer; touch-action: manipulation; user-select: none; display: flex; align-items: center; gap: 6px; }
+.pbs-chev { margin-left: 8px; color: #475569; transition: transform .15s; }
+.pbs-head.is-open .pbs-chev { transform: rotate(180deg); }
+.pbs-name { margin-right: 1.5em; white-space: nowrap; font-weight: 700; }
+.pbs-rec  { font-family: 'Orbitron', monospace; font-size: 12px; color: #64748b; }
 .bey-badge {
   display: flex; align-items: center; gap: 6px;
   padding: 0.5rem 0.9rem;
@@ -1696,6 +1703,11 @@ select:focus-visible,
         </div>
 
         <div class="about-item">
+          <div class="about-item-title">📊 BLADE STATS</div>
+          <div class="about-item-body">そのブレーダーが個別対戦で使ったブレードごとの成績です（対戦数の多い順）。タップで開くと、勝率・平均得点／失点・取った／取られた決まり手・定番構成・対ブレード成績が見られます。集計の方法は「BLADE META SCORE」の詳細データと同じです。</div>
+        </div>
+
+        <div class="about-item">
           <div class="about-item-title">📅 参加履歴</div>
           <div class="about-item-body">今までに参加した大会・練習会の一覧です（新しい順）。</div>
         </div>
@@ -1783,6 +1795,7 @@ let matchDetailsByPlayer = null; // { 選手名: [{ date, tName, round, opp, isW
 let tStadiumMap = null; // { 大会名: 'extreme'|'infinity' } チーム戦スタジアム参照用
 let bladeMetaCache  = null; // fetchBladeMetaScore() の結果キャッシュ
 let bladeBattleCache = null; // fetchBladeBattleStats() の結果キャッシュ
+let playerBladeCache = null; // Map<選手名, Map<ブレードキー, entry>> fetchBladeBattleStats() が同時に生成
 let validBladesCache = null; // Map<正規化キー, 表示名> parts.csv から動的生成
 let activeBpCharts = []; // 検索結果カードごとのBP推移Chart.jsインスタンス（再描画前に必ずdestroy()する）
 // ─── TOWER SETUP ──────────────────────────────────────────
@@ -2453,7 +2466,8 @@ function bdFinishBlock(label, obj, avgLabel, avgVal) {
 }
 
 // 個別対戦データ 1ブレード分のパネルHTMLを生成する。
-function buildBladeDetailHtml(stat) {
+// perPlayer=true は BLADE STATS（選手個別）用：使用人数を出さず、定番構成は使用回数で数える。
+function buildBladeDetailHtml(stat, perPlayer) {
   let html = '<div class="bd-inner">';
 
   // ① 勝率カード
@@ -2470,7 +2484,7 @@ function buildBladeDetailHtml(stat) {
     +     '<div class="bd-wr-label">勝率</div>'
     +     '<div class="bd-wr-num">' + (stat.winRate * 100).toFixed(1) + '%</div>'
     +     '<div class="bd-wr-sub">' + stat.total + '戦' + stat.wins + '勝</div>'
-    +     '<div class="bd-wr-sub">' + stat.players.size + '人が使用</div>'
+    +     (perPlayer ? '' : '<div class="bd-wr-sub">' + stat.players.size + '人が使用</div>')
     +   '</div>'
     +   '<div class="bd-wr-right">'
     +     '<div class="bd-pt-row">'
@@ -2497,16 +2511,19 @@ function buildBladeDetailHtml(stat) {
 
   // ④ 定番構成（採用人数の多い順・最大3件）
   const builds = Array.from(stat.builds.entries())
-    .sort(function(a, b) { return b[1].players.size - a[1].players.size; })
+    .sort(function(a, b) {
+      return perPlayer ? b[1].total - a[1].total : b[1].players.size - a[1].players.size;
+    })
     .slice(0, 3);
   if (builds.length) {
     html += '<div class="bd-sec-label">定番構成</div>';
     html += builds.map(function(entry) {
       const b   = entry[1];
       const bwr = b.total > 0 ? (b.wins / b.total * 100).toFixed(1) : '0.0';
+      const use = perPlayer ? b.total + '戦使用' : b.players.size + '人採用';
       return '<div class="bd-build-row">'
         + '<span class="bd-build-name">' + escHtml(entry[0]) + '</span>'
-        + '<span class="bd-build-meta">（' + b.players.size + '人採用 ・ 勝率 ' + bwr + '%）</span>'
+        + '<span class="bd-build-meta">（' + use + ' ・ 勝率 ' + bwr + '%）</span>'
         + '</div>';
     }).join('');
   }
@@ -2564,6 +2581,48 @@ function toggleBladeDetail(rowEl, bladeKey) {
     panel.dataset.loaded = '1';
   }).catch(function() {
     panel.innerHTML = '<div class="stat-empty">個別対戦データがまだありません</div>';
+  });
+}
+
+// BLADE STATS（選手個別）の見出しタップ → ブレード一覧を開閉。初回展開時のみ取得＋生成。
+function togglePlayerBladeStats(headEl) {
+  const body = headEl.nextElementSibling;
+  if (!body) return;
+  const opening = body.classList.contains('hidden');
+  body.classList.toggle('hidden');
+  headEl.classList.toggle('is-open', opening);
+  if (!opening || body.dataset.loaded === '1') return;
+  const playerName = headEl.dataset.player || '';
+  body.innerHTML = '<div class="stat-empty">読み込み中...</div>';
+  fetchBladeBattleStats().then(function() {
+    const pm = playerBladeCache && playerBladeCache.get(playerName);
+    const list = pm ? Array.from(pm.entries()).filter(function(en) { return en[1].total > 0; }) : [];
+    if (!list.length) {
+      body.innerHTML = '<div class="stat-empty">個別対戦データがまだありません</div>';
+      body.dataset.loaded = '1';
+      return;
+    }
+    list.sort(function(a, b) { return b[1].total - a[1].total; });
+    body.innerHTML = list.map(function(en) {
+      const s      = en[1];
+      const losses = s.total - s.wins;
+      const aFor   = s.wins > 0 ? s.ptsFor     / s.wins : null;
+      const aAgst  = losses > 0 ? s.ptsAgainst / losses : null;
+      const ratio  = (aFor !== null && aAgst !== null && aAgst > 0) ? aFor / aAgst : null;
+      const rCls   = ratio === null ? '' : (ratio >= 1 ? ' is-good' : ' is-bad');
+      return '<div class="bd-vs-row" onclick="this.classList.toggle(\'is-open\');this.nextElementSibling.classList.toggle(\'hidden\')">'
+        + '<span class="pbs-name">' + escHtml(en[0]) + '</span>'
+        + '<span class="bd-vs-wr">' + (s.winRate * 100).toFixed(1) + '%</span>'
+        + '<span class="pbs-rec">' + s.total + '戦' + s.wins + '勝</span>'
+        + '<span class="bd-vs-ratio-label">RATIO</span>'
+        + '<span class="bd-vs-ratio' + rCls + '">' + (ratio === null ? '—' : ratio.toFixed(2)) + '</span>'
+        + '<span class="bd-vs-chev">▾</span>'
+        + '</div>'
+        + '<div class="hidden">' + buildBladeDetailHtml(s, true) + '</div>';
+    }).join('');
+    body.dataset.loaded = '1';
+  }).catch(function() {
+    body.innerHTML = '<div class="stat-empty">個別対戦データがまだありません</div>';
   });
 }
 
@@ -2724,15 +2783,16 @@ async function fetchBladeBattleStats() {
 
   const FIN_SET = new Set(['XF', 'BF', 'OF', 'SF']);
   const map = new Map();
+  const byPlayer = new Map();
   const blankFin = function() { return { XF: 0, BF: 0, OF: 0, SF: 0 }; };
 
-  function getEntry(key) {
-    let e = map.get(key);
+  function getEntry(target, key) {
+    let e = target.get(key);
     if (!e) {
       e = { wins: 0, total: 0, winRate: 0, ptsFor: 0, ptsAgainst: 0, players: new Set(),
             taken: blankFin(), received: blankFin(),
             builds: new Map(), vs: new Map() };
-      map.set(key, e);
+      target.set(key, e);
     }
     return e;
   }
@@ -2753,7 +2813,16 @@ async function fetchBladeBattleStats() {
   function register(self, opp, selfTook, oppTook, fin, pts) {
     const key = normalizeBladeKey(self.blade);
     if (!key) return;
-    const e = getEntry(key);
+    accumulate(getEntry(map, key), self, opp, selfTook, oppTook, fin, pts);
+    // BLADE STATS（選手個別）用に、同じ集計を選手ごとにも持つ
+    if (self.name) {
+      let pm = byPlayer.get(self.name);
+      if (!pm) { pm = new Map(); byPlayer.set(self.name, pm); }
+      accumulate(getEntry(pm, key), self, opp, selfTook, oppTook, fin, pts);
+    }
+  }
+
+  function accumulate(e, self, opp, selfTook, oppTook, fin, pts) {
     e.total++;
     if (self.name) e.players.add(self.name);
     if (selfTook) { e.wins++; e.taken[fin]++; e.ptsFor     += pts; }
@@ -2784,6 +2853,7 @@ async function fetchBladeBattleStats() {
     rows = json.values || [];
   } catch (e) {
     bladeBattleCache = map;
+    playerBladeCache = byPlayer;
     return bladeBattleCache;
   }
 
@@ -2811,8 +2881,12 @@ async function fetchBladeBattleStats() {
   map.forEach(function(e) {
     e.winRate = e.total > 0 ? e.wins / e.total : 0;
   });
+  byPlayer.forEach(function(pm) {
+    pm.forEach(function(e) { e.winRate = e.total > 0 ? e.wins / e.total : 0; });
+  });
 
   bladeBattleCache = map;
+  playerBladeCache = byPlayer;
   return bladeBattleCache;
 }
 
@@ -3491,6 +3565,11 @@ function renderResults(players) {
         </div>
 
         ${topBeysHtml}
+
+        <div class="beys-block pbs-block">
+          <div class="beys-header pbs-head" data-player="${escHtml(name)}" onclick="togglePlayerBladeStats(this)"><i class="fa fa-chart-bar"></i> BLADE STATS<span class="pbs-chev">▾</span></div>
+          <div class="pbs-body hidden"></div>
+        </div>
 
         ${finishTypeHtml}
 
