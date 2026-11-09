@@ -287,6 +287,7 @@
 | `tbh_de_report_note` | 編集後記のテキスト |
 | `bayPhoto_{encodeURIComponent(参加者名)}` | ベイ確認写真（`tournament.html` / `tournament_de.html`）。**長辺1280px・JPEG品質0.85に圧縮して保存**（`tournament_de.html` のみ。`tournament.html` は非圧縮） |
 | `tbh_score_match_state` | `score.html` の試合進行スナップショット（**保存から3時間で無効**） |
+| `tbh_cam_scale` / `tbh_cam_tx` / `tbh_cam_ty` / `tbh_cam_rot` | `score.html` のカメラ映像の拡大・位置・回転（期限なし。再起動後も引き継ぐ） |
 | `tbh_score_sub_state` | `score_sub.html` の試合進行スナップショット（**保存から3時間で無効**。`tbh_score_match_state` とは別系統） |
 | `tbh_de_sub_score_links` | `tournament_de_sub.html` が保持する score.html/score_sub.html 接続コード（`{score, sub}`）。次回起動時に自動再接続 |
 
@@ -406,6 +407,14 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
   iOS Safari の MediaRecorder は `stop()` 完了（`onstop`）後でないと Blob が生成できず、
   周期的な停止・再開はフレーム落ちと取りこぼしの原因になる
 - 上記はブラウザ版の仕組み。**iOSアプリ（BeyHUD）内ではリプレイをネイティブが担当する**（下記「iOSアプリ連携」参照）
+
+### カメラ映像の拡大・位置（`applyTransforms()`）
+
+- 2本指ピンチで拡大（1〜5倍）、1本指ドラッグで移動、「180」ボタンで180°回転。値は `tbh_cam_*` に保存され、再起動後も引き継ぐ。リプレイ映像も同じ値を使う（iOS アプリではネイティブのカメラ・リプレイ層にも `transform` で反映）
+- **移動は「拡大している分」だけに制限する**（等倍なら動かない）。起動時・`resize` 時にも補正し、保存済みのずれた値を画面内へ戻す
+  - 理由: 制限がなかったため、2026-11 に実機で映像が下方向に約408pxずれて丸ごと画面外に出て、カメラが動いていないように見えた（ずれは保存されるので再起動しても直らなかった）
+- **画面上の RL ボタン**（`reloadWithCameraReset()`）: 拡大を等倍・位置を中央に戻して保存してから再読み込みする。180°回転は設置の向きなので残す
+- リモートの `SYS_RELOAD` とテンキー「*」は**再読み込みのみ**（試合中の遠隔リロードで、合わせた画角が戻らないようにするため）
 
 ### 表示モード
 
