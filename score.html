@@ -171,7 +171,9 @@
           100% { text-shadow: 0 0 10px #fff, 0 0 20px #FCD34D, 0 0 40px #F59E0B, 0 0 70px #D97706, 0 0 100px rgba(217,119,6,0.6), 2px 2px 0px #000; }
         }
 
-        #win-display { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(0.2); width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; will-change: transform, opacity; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* 勝敗表示は左右の点数の間（同じ段）に収める。下は試合後コメントの場所として空ける。
+           位置と縮小率は表示時に finishGame → positionWinDisplay が --win-top / --win-left / --win-scale で決める */
+        #win-display { position: fixed; top: var(--win-top, 38%); left: var(--win-left, 50%); transform: translate(-50%, 0) scale(calc(0.2 * var(--win-scale, 1))); transform-origin: 50% 0; width: 100%; text-align: center; font-family: 'Orbitron', sans-serif !important; font-weight: 900; font-style: italic; color: #fff000; opacity: 0; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; z-index: 70; pointer-events: none; white-space: nowrap; will-change: transform, opacity; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .match-comment-box {
           position: fixed;
           bottom: 8vh;
@@ -196,7 +198,7 @@
           0%   { opacity: 1; }
           100% { opacity: 0.94; }
         }
-        .show-win { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.0) !important; }
+        .show-win { opacity: 1 !important; transform: translate(-50%, 0) scale(var(--win-scale, 1)) !important; }
         .win-bg-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40vmin; font-weight: 900; color: transparent; -webkit-text-stroke: 2px rgba(255, 215, 0, 0.08); white-space: nowrap; pointer-events: none; z-index: 1; line-height: 1; }
         .win-fg-box { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 15px 80px; background: rgba(0, 0, 0, 0.85); clip-path: polygon(30px 0, 100% 0, calc(100% - 30px) 100%, 0 100%); border: none; }
         .win-name { display: block; line-height: 1; white-space: nowrap; margin-top: 0.25em; background: linear-gradient(to bottom, #FFF7B0 0%, #FCA000 45%, #FF8C00 50%, #FFD700 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(4px 4px 0px rgba(0,0,0,1)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.3)); animation: win-gold-pulse 2.4s infinite alternate ease-in-out; }
@@ -1852,8 +1854,43 @@
             else if (len <= 10) sizeClass = 'win-name-lg';
             else if (len <= 14) sizeClass = 'win-name-md';
             nameEl.classList.add(sizeClass);
+            positionWinDisplay();
             winLabel.classList.add('show-win');
         }
+        // 勝敗表示を、左右の点数（score1/score2）の間・同じ段に収まる大きさで置く。
+        // 点数と重ならず「2 WINNER ○○ 4」と一目で読めるようにし、点数の下は試合後コメント（画面下）用に空けておく。
+        // 間が狭すぎて小さくなりすぎる場合だけ、点数の下に出す
+        function positionWinDisplay() {
+            const el = document.getElementById('win-display');
+            const fg = el.querySelector('.win-fg-box');
+            if (!fg) return;
+            const w = fg.offsetWidth, h = fg.offsetHeight; // transform の影響を受けない本来の大きさ
+            if (!w || !h) return;
+            const r1 = document.getElementById('score1').getBoundingClientRect();
+            const r2 = document.getElementById('score2').getBoundingClientRect();
+            const n1 = document.getElementById('name1').getBoundingClientRect();
+            const n2 = document.getElementById('name2').getBoundingClientRect();
+            const bc = document.getElementById('battle-counter-area').getBoundingClientRect();
+            const gap = 12;
+            let scale = Math.min(1, (r2.left - r1.right - gap * 2) / w);
+            let left = (r1.right + r2.left) / 2;
+            let top;
+            if (scale >= 0.6) {
+                const mid = (Math.min(r1.top, r2.top) + Math.max(r1.bottom, r2.bottom)) / 2;
+                // 上端は選手名欄・「1st BATTLE」表示より下（pro-mode では全体が上に詰まるため）
+                top = Math.max(Math.max(n1.bottom, n2.bottom, bc.bottom) + 4, mid - h * scale / 2);
+            } else {
+                top = Math.max(r1.bottom, r2.bottom) + 8;
+                left = window.innerWidth / 2;
+                scale = Math.max(0.3, Math.min(1, window.innerWidth * 0.9 / w, (window.innerHeight - top - 4) / h));
+            }
+            el.style.setProperty('--win-top', top + 'px');
+            el.style.setProperty('--win-left', left + 'px');
+            el.style.setProperty('--win-scale', String(scale));
+        }
+        window.addEventListener('resize', () => {
+            if (document.getElementById('win-display').classList.contains('show-win')) positionWinDisplay();
+        });
         function toggleWinPoint() { 
             blurFocus(); 
             if (winPointMode === '4') {
