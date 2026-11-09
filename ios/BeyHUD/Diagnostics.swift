@@ -31,6 +31,7 @@ final class Diagnostics: NSObject, MXMetricManagerSubscriber {
     private let beatLock = NSLock()
     private var lastMainBeat = CACurrentMediaTime()
     private var hangStart: CFTimeInterval?
+    private var lastWatchTick = CACurrentMediaTime() // 監視スレッド側の前回の確認時刻
     private var watchTimer: DispatchSourceTimer?
     private var statusTimer: DispatchSourceTimer?
     private var started = false
@@ -185,6 +186,14 @@ final class Diagnostics: NSObject, MXMetricManagerSubscriber {
             DispatchQueue.main.async {
                 self.beatLock.lock(); self.lastMainBeat = CACurrentMediaTime(); self.beatLock.unlock()
             }
+            // 監視自体が長く止まっていた ＝ アプリごと一時停止（バックグラウンド）していた。
+            // 復帰直後はメインの記録が古いだけなので、止まりとは数えない（以前は「103秒止まった」と誤記録していた）
+            let now = CACurrentMediaTime()
+            if now - self.lastWatchTick > 2.5 {
+                self.beatLock.lock(); self.lastMainBeat = now; self.beatLock.unlock()
+                self.hangStart = nil
+            }
+            self.lastWatchTick = now
             self.beatLock.lock(); let silent = CACurrentMediaTime() - self.lastMainBeat; self.beatLock.unlock()
             // アプリが非アクティブ（バックグラウンド）の間は、メインが止まるのが普通なので見ない
             guard UIApplication.shared.applicationState != .background || self.hangStart != nil else { return }

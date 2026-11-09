@@ -42,6 +42,11 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
         contentController.add(WeakScriptMessageHandler(self), name: "beyMirror")
         contentController.addUserScript(WKUserScript(
             source: MirrorScripts.leader, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        // 本文の読み込みが終わった（DOMContentLoaded 相当）ことを知らせる。Web フォントなど外部の読み込みが
+        // 終わらなくても HUD は使えるので、固まり監視・HDMI 複製はここから始める（didFinish は外部待ちで来ないことがある）
+        contentController.addUserScript(WKUserScript(
+            source: "window.webkit.messageHandlers.beyNative.postMessage({cmd:'domReady'});",
+            injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         // 描画前に透過用クラスを付け、起動時に背景色が一瞬映るのを防ぐ
         contentController.addUserScript(WKUserScript(
             source: "document.documentElement.classList.add('native-cam');",
@@ -86,6 +91,7 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
             }
             #endif
             webView.loadFileURL(url, allowingReadAccessTo: base)
+            startLoadWatch()
         }
         DisplayCoordinator.shared.register(main: self)
     }
@@ -204,7 +210,7 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
         guard heartbeatTimer == nil else { return }
         lastHeartbeatReply = Date()
         heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            guard let self, UIApplication.shared.applicationState == .active, !self.webView.isLoading else {
+            guard let self, UIApplication.shared.applicationState == .active, self.pageReady else {
                 self?.lastHeartbeatReply = Date(); return
             }
             self.webView.evaluateJavaScript("1") { [weak self] _, error in
@@ -224,9 +230,52 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
         camera.recorder.trim(keepSeconds: 20)
     }
 
+    // MARK: - 読み込みの監視（読み込みが終わらないと HUD が出ず、上の固まり監視も始まらない）
+
+    private var loadStartedAt: Date?
+    private var loadWatchTimer: Timer?
+    private var pageReady = false
+
+    private func startLoadWatch() {
+        loadStartedAt = Date()
+        pageReady = false
+        loadWatchTimer?.invalidate()
+        loadWatchTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in
+            guard let self, let started = self.loadStartedAt else { return }
+            self.webView.evaluateJavaScript("document.readyState") { result, _ in
+                Diagnostics.shared.log(String(format: "🛑 score.html の本文の読み込みが %.0f 秒たっても終わりません（HUD が出ない原因）。readyState: %@。%@",
+                                              Date().timeIntervalSince(started), (result as? String) ?? "応答なし", Diagnostics.shared.statusLine()))
+            }
+        }
+    }
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        if loadStartedAt == nil { startLoadWatch() } // SYS_RELOAD などの再読み込み
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        Diagnostics.shared.log("🛑 score.html の読み込みに失敗しました: \(error.localizedDescription)")
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        Diagnostics.shared.log("🛑 score.html を開けませんでした: \(error.localizedDescription)")
+    }
+
     /// score.html の読み込みが終わったら（起動時・SYS_RELOAD のリロード後）、HDMI 側への複製を始め直す。
     /// ページが読み込み中に「開始」を指示しても、差し込んだスクリプトがまだ無く取りこぼすため。
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pageDidBecomeReady()
+    }
+
+    /// 本文の読み込み完了（domReady）またはページ全体の読み込み完了（didFinish）の早い方で一度だけ動く
+    private func pageDidBecomeReady() {
+        guard !pageReady else { return }
+        pageReady = true
+        if let started = loadStartedAt {
+            Diagnostics.shared.log(String(format: "score.html の表示準備完了（%.1f 秒）", Date().timeIntervalSince(started)))
+        }
+        loadStartedAt = nil
+        loadWatchTimer?.invalidate()
         lastHeartbeatReply = Date()
         startHeartbeat()
         startMirror()
@@ -248,6 +297,8 @@ final class HUDViewController: UIViewController, WKScriptMessageHandler, WKNavig
         }
         guard let body = message.body as? [String: Any], let cmd = body["cmd"] as? String else { return }
         switch cmd {
+        case "domReady":
+            pageDidBecomeReady()
         case "cameraStart":
             camera.start()
         case "cameraCycle":
