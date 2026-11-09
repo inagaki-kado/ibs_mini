@@ -848,7 +848,7 @@
 
     <!-- 使用ベイブレード表示欄 -->
     <div class="system-btn btn-reset" onclick="executeCommand('SYS_RESET')">R</div>
-    <div class="system-btn btn-reload" onclick="location.reload()">RL</div>
+    <div class="system-btn btn-reload" onclick="reloadWithCameraReset()" title="カメラ位置をリセットして再読み込み">RL</div>
     <div class="system-btn btn-timer-toggle" onclick="toggleTimerDuration()" id="btn-timer-toggle">10</div>
     <div class="system-btn btn-timer" onclick="executeCommand('TIMER')">T</div>
     <div class="system-btn btn-bg" onclick="toggleBackground()">B</div>
@@ -1165,6 +1165,16 @@
         applyTransforms();
         // 起動直後は画面サイズが 0 のことがあり、上の補正が効かない。サイズが決まった（変わった）時点でかけ直す
         window.addEventListener('resize', applyTransforms);
+
+        // 画面上の RL ボタン: カメラの拡大・位置を初期状態（等倍・中央）に戻してから再読み込みする。
+        // 180°回転は設置の向きなので残す。リモートの SYS_RELOAD とテンキー「*」は試合中の画角を崩さないよう再読み込みのみ
+        function reloadWithCameraReset() {
+            currentScale = 1;
+            currentTranslateX = 0;
+            currentTranslateY = 0;
+            applyTransforms();
+            location.reload();
+        }
 
         function formatReplayTime(t) {
             if (!isFinite(t) || t < 0) return '0:00';
