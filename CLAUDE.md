@@ -352,6 +352,16 @@
 
 ---
 
+## ベイ名の組み立て（パーツ登録・全アプリ共通）
+
+- パーツの表示名（`parts.csv` の HUD表示用名称）をつなげてベイ名を作る。対象: `tournament.html` / `tournament_de.html` / `tournament_evo.html` / `tournament_main.html` / `freebattle.html` / `tag.html` / `sit_battle.html` / `deck_entry.html` / `team_entry.html`
+- **連結は各ファイルの `joinBeyParts()` を使う。** 基本は間を詰めるが、数字で終わるパーツの直後に数字で始まるパーツが続くときだけ半角スペースを挟む
+  - 例: ウィザードアローV2 ＋ 1-60 ＋ F →「ウィザードアローV2 1-60F」（詰めると「V21-60」と読めてしまう）／ドランソード3-60F は従来どおり
+- `parts.csv` の表示名に空白を入れて区切ろうとしないこと。読み込み時に `trim()` で消える
+- 2026-11 以前に「〜V21-60」形式で登録・記録されたベイ名は、新しい表記と別のベイとして集計される
+
+---
+
 ## PeerJS REMOTE_CMD コマンド一覧
 
 詳細コマンドリスト・score.html HUD仕様・ベイブレードパーツ登録仕様 → [`REFERENCE.md`](REFERENCE.md)
@@ -418,18 +428,29 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 
 | 層（下→上） | 担当 |
 |---|---|
-| `CameraPreviewView` | 背面広角カメラ。60/120/240fps（1080p優先）。実機 iPhone で 240fps 安定を確認済 |
+| `CameraPreviewView` | 背面広角カメラ。60/120/240fps（1080p優先）。**起動時は毎回 120fps**（前回の選択は引き継がない）。実機 iPhone で 240fps 安定を確認済 |
 | `ReplayPlayerView` | リプレイ再生（AVPlayer）。リプレイ中のみ表示 |
 | WKWebView | score.html（HUD・PeerJS・スコア処理は従来通り） |
 
-- **score.html の原本はリポジトリ直下の1つだけ。** ビルド時の Run Script が `score.html`・`maintitle_white.png`・`torabo_logo.png`・`font/DSEG7Classic-BoldItalic.ttf` をアプリに同梱する。score.html を直したらアプリを再ビルドするだけで反映される
+- **score.html の原本はリポジトリ直下の1つだけ。** ビルド時の Run Script（本体は `ios/bundle_web.sh`）が `score.html`・`maintitle_white.png`・`torabo_logo.png`・`font/DSEG7Classic-BoldItalic.ttf`・`ios/mirror.html` をアプリに同梱する。score.html を直したらアプリを再ビルドするだけで反映される
+- **アプリに入る score.html のコピーだけ、CDN 読み込みを書き換える**（`bundle_web.sh`）。PeerJS / qrcodejs は同梱ファイル（`ios/vendor/`）から読み、Google Fonts は描画を止めない読み込み（`media="print" onload`）にする。ブラウザ版の score.html は CDN のまま
+  - 理由: `<head>` の CDN 読み込みは描画を止めるため、会場 Wi-Fi が「つながっているがネットに出られない」状態だと **HUD が出ないまま固まり、タスクキルしても回線が戻るまで直らない**（2026-10-18・10-24 に実機で発生）
+  - **score.html の CDN の URL・バージョンを変えたら、`ios/vendor/` のファイルと `bundle_web.sh` も合わせて更新すること。** 置換できないとビルドがエラーで止まる（気づかずに CDN 読み込みへ戻るのを防ぐ）
+  - PeerJS の接続（シグナリング）自体はネット必須。回線が不安定な会場ではテザリングを使う
 - score.html 側は `window.webkit.messageHandlers.beyNative` の有無で判定（`const NATIVE`）。**ブラウザでは `NATIVE = null` で全分岐が無効になり、従来動作のまま**
 - アプリ内では `<html class="native-cam">` が付き、背景と `#camera-bg` を透過・非表示にする
 - リプレイ: `ReplayRecorder` が約2秒ごとの完結した HEVC mp4 を書き続け、直近60秒を保持（録画を止めずにリプレイを生成）。score.html の `replayVideo` はアプリ内だけ `createNativeReplayVideo()` の代役オブジェクトに差し替わり、`<video>` と同じプロパティ/メソッドでネイティブ再生を操作する。**既存の REPLAY_* 処理は代役経由でそのまま動くため、`replayVideo` の使い方を変える場合は代役側も合わせること**
 - コマ送りはアプリ内では撮影fpsの1コマ単位（240fpsなら1/240秒）。ブラウザ版は1/60秒
 - 音声は扱わない（iOS 標準の画面収録のマイク録音と競合させないため）。**動画撮影はアプリに搭載せず、iOS 標準の画面収録を使う方針**
-- 映像出力は USB-C → HDMI のミラーリング（外部出力は実質60Hz上限。高fpsの効果は主にリプレイのスロー）
-- 端末が危険温度（`thermalState == .critical`）になると自動で 60fps に落とす
+- **HDMI（外部ディスプレイ）は専用画面**（`ExternalDisplay.swift`・`ios/mirror.html`）。iOS 標準のミラーリングではなく、16:9 のステージにカメラ・リプレイ・HUD を重ねて出す
+  - 接続中はスマホ側も 16:9 に収め（左右に黒帯）、レイアウトを HDMI と一致させる。iOS 標準の画面収録で録れるのはスマホ側なので、録画にも同じ HUD が入る
+  - HDMI 側の HUD は score.html を動かさず、スマホ側 score.html の DOM の変化を複製して表示する（`MirrorScripts.swift` の送信側 → `mirror.html`）。PeerJS などのロジックはスマホ側にだけある
+  - HDMI 側のカメラ映像はカメラのフレームを直接表示する（プレビューレイヤーを2枚つなぐとスマホ側が真っ黒になるため）
+  - 外部出力は実質 60Hz 上限。高 fps の効果は主にリプレイのスロー
+- 発熱・カメラのシステム圧力が高いと自動で fps を制限する（serious で 120fps まで。下がれば解除）
+- **固まり対策**（`HUDViewController.swift`）: score.html の描画プロセスが落ちたら再読み込み／JS が12秒応答しなければ再読み込み／本文の準備完了（`domReady`）が15秒来なければ診断ログに記録。固まり監視と HDMI 複製は、ページ全体の読み込み完了（Web フォント待ちで来ないことがある）ではなく `domReady` で始める
+- **診断ログ**（`Diagnostics.swift`）: アプリの Documents/`diagnostics.log`（約400KB）。起動・切替・メモリ・発熱・カメラ中断・固まり・前回の突然終了・MetricKit 診断を記録する。取り出し方は iPhone の「ファイル」→ このiPhone内 → BeyHUD、または Mac から次で取得:
+  `xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.yamizaki.beyhud --source Documents/diagnostics.log --destination ./diagnostics.log`（iPhone のロック解除が必要）
 - JS ↔ Swift ブリッジ（PeerJS の `type` とは別系統）:
 
 | 方向 | 名前 | 用途 |
@@ -439,9 +460,11 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | JS→Swift | `replayStart` / `replayStop` / `replayPlay` / `replayPause` / `replayRate` / `replaySeek` / `replayStep` / `replayFlush` | リプレイ操作 |
 | Swift→JS | `onNativeCamera` / `onNativeCameraFps` | カメラ状態・実測fps（FPSデバッグ表示） |
 | Swift→JS | `onNativeReplay` | リプレイ状態（`t`/`dur`/`paused`/`rate`、失敗時 `error`） |
+| アプリ側 | `domReady` | 本文の準備完了の通知（アプリが差し込むスクリプトから送る。score.html 側のコードではない） |
+| アプリ側 | `beyMirror` | HDMI 複製用の DOM 変化（`MirrorScripts.swift` の差し込みスクリプトから送る） |
 
 - ビルド: Xcode で `ios/BeyHUD.xcodeproj` を開き、Signing の Team に Apple ID を設定して実機へ ▶（Simulator にはカメラがないためカメラ・リプレイは実機で確認する）
-- 📋 未着手: 外部モニター専用 16:9 画面（ミラーリングの黒帯・操作ボタン映り込みの解消）
+- 無料の Apple ID で署名したアプリは **7日で起動できなくなる**。大会の直前に Xcode から ▶ で入れ直しておく（コマンドラインの xcodebuild ではプロファイルを更新できないことがある）
 
 ---
 
@@ -718,4 +741,4 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | `cx_parts_chart.html` の内容を正とする統合 | `cx_parts_chart.html` | 📋 検討中 |
 | UI原則の既存箇所への段階適用（44px / focus-visible / on-color） | 操作系全ファイル | 📋 検討中 |
 | score.html の iOS アプリ化（ネイティブカメラ・リプレイ） | `ios/BeyHUD`, `score.html` | ✅ 実装済（実機確認済） |
-| iOS アプリ: 外部モニター専用 16:9 画面 | `ios/BeyHUD` | 📋 検討中 |
+| iOS アプリ: 外部モニター専用 16:9 画面 | `ios/BeyHUD` | ✅ 実装済（HDMI 専用画面・HUD 複製・ズーム同期） |
