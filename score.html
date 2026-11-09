@@ -1137,6 +1137,15 @@
         restoreMatchState();
 
         function applyTransforms() {
+            // 映像が画面の外へずれて真っ黒になるのを防ぐ。拡大している分だけ動かせる（等倍なら動かない）。
+            // 保存済みのずれた値も、起動時にここで画面内へ戻る（2026-11 に実機で映像が丸ごと画面外へ出ていた）
+            const vw = window.innerWidth, vh = window.innerHeight;
+            if (vw > 0 && vh > 0) {
+                const maxTX = vw * (currentScale - 1) / (2 * currentScale);
+                const maxTY = vh * (currentScale - 1) / (2 * currentScale);
+                currentTranslateX = Math.max(-maxTX, Math.min(maxTX, currentTranslateX));
+                currentTranslateY = Math.max(-maxTY, Math.min(maxTY, currentTranslateY));
+            }
             const camStr = `rotate(${currentRotation}deg) scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
             const replayScale = currentScale * (isReplayMode ? replayZoomMult : 1);
             const replayStr = `rotate(${currentRotation}deg) scale(${replayScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
@@ -1154,6 +1163,8 @@
                 rscale: replayScale, ox: zoomed ? replayZoomOriginX : 50, oy: zoomed ? replayZoomOriginY : 50 });
         }
         applyTransforms();
+        // 起動直後は画面サイズが 0 のことがあり、上の補正が効かない。サイズが決まった（変わった）時点でかけ直す
+        window.addEventListener('resize', applyTransforms);
 
         function formatReplayTime(t) {
             if (!isFinite(t) || t < 0) return '0:00';
