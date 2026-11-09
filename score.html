@@ -1166,8 +1166,8 @@
         // 起動直後は画面サイズが 0 のことがあり、上の補正が効かない。サイズが決まった（変わった）時点でかけ直す
         window.addEventListener('resize', applyTransforms);
 
-        // 画面上の RL ボタン: カメラの拡大・位置を初期状態（等倍・中央）に戻してから再読み込みする。
-        // 180°回転は設置の向きなので残す。リモートの SYS_RELOAD とテンキー「*」は試合中の画角を崩さないよう再読み込みのみ
+        // RL（画面上のボタン・リモートの SYS_RELOAD）: カメラの拡大・位置を初期状態（等倍・中央）に戻してから再読み込みする。
+        // 180°回転は設置の向きなので残す。テンキー「*」は再読み込みのみ
         function reloadWithCameraReset() {
             currentScale = 1;
             currentTranslateX = 0;
@@ -1985,7 +1985,7 @@
         function executeCommand(cmd) {
             // ★修正：タッグ戦アプリからの "reset" コマンドも許容するように変更
             if (cmd === 'SYS_RESET' || cmd === 'reset') { resetGame(); return; }
-            if (cmd === 'SYS_RELOAD') { location.reload(); return; }
+            if (cmd === 'SYS_RELOAD') { reloadWithCameraReset(); return; }
             if (cmd === 'P1_WIN') {
               // 決まり手エフェクト表示中（2秒）は遅延してWIN表示する
               const winEl = document.getElementById('win-display');
