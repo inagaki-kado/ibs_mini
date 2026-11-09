@@ -5715,6 +5715,15 @@
       return warnings;
     }
 
+    // パーツ名をつなげてベイ名にする。数字で終わるパーツ（例: ウィザードアローV2）の直後に
+    // 数字で始まるパーツ（例: 1-60）が続くときだけ半角スペースを挟む（「V21-60」と読めてしまうのを防ぐ）
+    function joinBeyParts(parts) {
+      return parts.reduce((acc, p) => {
+        if (!p) return acc;
+        return acc + (/\d$/.test(acc) && /^\d/.test(p) ? ' ' : '') + p;
+      }, '');
+    }
+
     /**
      * ベイブレード選択を完了
      */
@@ -5734,18 +5743,15 @@
       const type = currentBeybladeSelection.type;
       
       if (type === 'BX') {
-        name = currentBeybladeSelection.BX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+        name = joinBeyParts([currentBeybladeSelection.BX, currentBeybladeSelection.RC2, currentBeybladeSelection.BT]);
       } else if (type === 'UX') {
-        name = currentBeybladeSelection.UX + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+        name = joinBeyParts([currentBeybladeSelection.UX, currentBeybladeSelection.RC2, currentBeybladeSelection.BT]);
       } else if (type === 'CX') {
         // CX: ロックチップ + メインブレード(CX) + アシストブレード + ラチェット + ビット
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.CX + 
-               currentBeybladeSelection.AB + currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+        name = joinBeyParts([currentBeybladeSelection.RC, currentBeybladeSelection.CX, currentBeybladeSelection.AB, currentBeybladeSelection.RC2, currentBeybladeSelection.BT]);
       } else if (type === 'CXEX') {
         // CXEX: ロックチップ + メタルブレード(MB) + オーバーブレード + アシストブレード + ラチェット + ビット
-        name = currentBeybladeSelection.RC + currentBeybladeSelection.MB + 
-               currentBeybladeSelection.OB + currentBeybladeSelection.AB + 
-               currentBeybladeSelection.RC2 + currentBeybladeSelection.BT;
+        name = joinBeyParts([currentBeybladeSelection.RC, currentBeybladeSelection.MB, currentBeybladeSelection.OB, currentBeybladeSelection.AB, currentBeybladeSelection.RC2, currentBeybladeSelection.BT]);
       }
       
       const beyblade = {

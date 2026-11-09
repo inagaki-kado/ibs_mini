@@ -8185,6 +8185,15 @@
       return warnings;
     }
 
+    // パーツ名をつなげてベイ名にする。数字で終わるパーツ（例: ウィザードアローV2）の直後に
+    // 数字で始まるパーツ（例: 1-60）が続くときだけ半角スペースを挟む（「V21-60」と読めてしまうのを防ぐ）
+    function joinBeyParts(parts) {
+      return parts.reduce((acc, p) => {
+        if (!p) return acc;
+        return acc + (/\d$/.test(acc) && /^\d/.test(p) ? ' ' : '') + p;
+      }, '');
+    }
+
     /**
      * ベイブレード選択を完了
      */
@@ -8201,10 +8210,9 @@
         if (!(c in currentBeybladeSelection)) currentBeybladeSelection[c] = 'なし';
       });
 
-      const name = fullPath
+      const name = joinBeyParts(fullPath
         .map(c => currentBeybladeSelection[c])
-        .filter(v => v && v !== 'なし')
-        .join('');
+        .filter(v => v && v !== 'なし'));
       
       const beyblade = {
         type: type === 'CXEX' ? 'CX(EX)' : type,

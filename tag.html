@@ -1795,6 +1795,15 @@
       tagQualPath = [];
     }
 
+    // パーツ名をつなげてベイ名にする。数字で終わるパーツ（例: ウィザードアローV2）の直後に
+    // 数字で始まるパーツ（例: 1-60）が続くときだけ半角スペースを挟む（「V21-60」と読めてしまうのを防ぐ）
+    function joinBeyParts(parts) {
+      return parts.reduce((acc, p) => {
+        if (!p) return acc;
+        return acc + (/\d$/.test(acc) && /^\d/.test(p) ? ' ' : '') + p;
+      }, '');
+    }
+
     function tagCompleteQualPartsSelection() {
       if (!tagQualPartsTarget) return;
       const t = teams.find(x => x.id === tagQualPartsTarget.teamId);
@@ -1807,10 +1816,10 @@
       const sel = tagQualSelection;
       const type = sel.type;
       let name = '';
-      if (type === 'BX') name = sel.BX + sel.RC2 + sel.BT;
-      else if (type === 'UX') name = sel.UX + sel.RC2 + sel.BT;
-      else if (type === 'CX') name = sel.RC + sel.CX + sel.AB + sel.RC2 + sel.BT;
-      else if (type === 'CXEX') name = sel.RC + sel.MB + sel.OB + sel.AB + sel.RC2 + sel.BT;
+      if (type === 'BX') name = joinBeyParts([sel.BX, sel.RC2, sel.BT]);
+      else if (type === 'UX') name = joinBeyParts([sel.UX, sel.RC2, sel.BT]);
+      else if (type === 'CX') name = joinBeyParts([sel.RC, sel.CX, sel.AB, sel.RC2, sel.BT]);
+      else if (type === 'CXEX') name = joinBeyParts([sel.RC, sel.MB, sel.OB, sel.AB, sel.RC2, sel.BT]);
       if (phase === 'final') {
         pl.finalBeyText = name;
         pl.finalBey = null;

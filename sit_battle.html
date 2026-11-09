@@ -1470,12 +1470,21 @@ function ppBack() {
   ppRender();
 }
 
+// パーツ名をつなげてベイ名にする。数字で終わるパーツ（例: ウィザードアローV2）の直後に
+// 数字で始まるパーツ（例: 1-60）が続くときだけ半角スペースを挟む（「V21-60」と読めてしまうのを防ぐ）
+function joinBeyParts(parts) {
+  return parts.reduce((acc, p) => {
+    if (!p) return acc;
+    return acc + (/\d$/.test(acc) && /^\d/.test(p) ? ' ' : '') + p;
+  }, '');
+}
+
 /** 選択結果からベイ名を自動生成する（tournament.html と同じ連結規則） */
 function ppComposeName(typeId, sel) {
-  if (typeId === 'BX') return sel.BX + sel.RC2 + sel.BT;
-  if (typeId === 'UX') return sel.UX + sel.RC2 + sel.BT;
-  if (typeId === 'CX') return sel.RC + sel.CX + sel.AB + sel.RC2 + sel.BT;
-  return sel.RC + sel.MB + sel.OB + sel.AB + sel.RC2 + sel.BT;   // CXEX
+  if (typeId === 'BX') return joinBeyParts([sel.BX, sel.RC2, sel.BT]);
+  if (typeId === 'UX') return joinBeyParts([sel.UX, sel.RC2, sel.BT]);
+  if (typeId === 'CX') return joinBeyParts([sel.RC, sel.CX, sel.AB, sel.RC2, sel.BT]);
+  return joinBeyParts([sel.RC, sel.MB, sel.OB, sel.AB, sel.RC2, sel.BT]);   // CXEX
 }
 
 /** 同じ選手の他のベイとのパーツ重複を調べる（tournament.html の checkDeckDuplication と同じ基準） */

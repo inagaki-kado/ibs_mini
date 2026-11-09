@@ -802,6 +802,15 @@ function partBack() {
   renderPart();
 }
 
+// パーツ名をつなげてベイ名にする。数字で終わるパーツ（例: ウィザードアローV2）の直後に
+// 数字で始まるパーツ（例: 1-60）が続くときだけ半角スペースを挟む（「V21-60」と読めてしまうのを防ぐ）
+function joinBeyParts(parts) {
+  return parts.reduce((acc, p) => {
+    if (!p) return acc;
+    return acc + (/\d$/.test(acc) && /^\d/.test(p) ? ' ' : '') + p;
+  }, '');
+}
+
 /** 工程をすべて終えた。ベイ名を組み立ててデッキに加える */
 function finishBey() {
   const full = baseSelectionPath(sel.type);
@@ -809,10 +818,9 @@ function finishBey() {
   // 飛ばした工程は「なし」で埋める。未定義のまま持ち回すと親機側で undefined になるため
   full.forEach(c => { if (!(c in sel)) sel[c] = 'なし'; });
 
-  const name = full
+  const name = joinBeyParts(full
     .map(c => sel[c])
-    .filter(v => v && v !== 'なし')
-    .join('');
+    .filter(v => v && v !== 'なし'));
 
   myBeys.push({
     type: sel.type === 'CXEX' ? 'CX(EX)' : sel.type,
