@@ -82,7 +82,7 @@
     background: rgba(0,0,0,0.55); border-radius: 8px; padding: 4px 20px;
     box-shadow: 0 0 0 1px rgba(255,170,0,0.25) inset;
   }
-  #battle-ordinal { font-size: clamp(16px, 3vw, 48px); color: #facc15; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-right: 5px; }
+  #battle-ordinal { font-size: clamp(16px, 3vw, 48px); color: #facc15; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-left: 8px; }
   .battle-label { font-size: clamp(11px, 1.9vw, 30px); color: #fff; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); }
   .vs-sep {
     font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic;
@@ -225,7 +225,7 @@
     <span id="link-text">CONNECTING...</span>
   </div>
 
-  <div id="battle-counter-area"><span id="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
+  <div id="battle-counter-area"><span class="battle-label">BATTLE</span><span id="battle-ordinal">1</span></div>
 
   <div id="main-view">
     <div class="player-col p1-col">
@@ -314,9 +314,8 @@
 
     // score.htmlのupdateBattleCounterDisplayと同じ判定（両者が上限-1でFINAL）
     function updateBattleCounter() {
-      const suffix = ['st', 'nd', 'rd'][battleCount - 1] || 'th';
       const isFinal = (s1 === winScoreLimit - 1 && s2 === winScoreLimit - 1);
-      $('battle-ordinal').textContent = isFinal ? 'FINAL' : battleCount + suffix;
+      $('battle-ordinal').textContent = isFinal ? 'FINAL' : String(battleCount);
     }
 
     function render() {

@@ -95,7 +95,7 @@
 
         #battle-counter-area { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 80; text-align: center; font-family: 'Orbitron', sans-serif !important; pointer-events: none; transition: 0.3s; background: var(--hud-plate); border-radius: 8px; padding: 4px 16px; box-shadow: 0 0 0 1px rgba(255,170,0,0.25) inset; }
         body.pro-mode #battle-counter-area { top: 15px; }
-        .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-right: 5px; }
+        .battle-ordinal { font-size: 32px; font-weight: 900; color: var(--bx-yellow); text-shadow: 1px 2px 0 rgba(0,0,0,0.7); margin-left: 8px; }
         .battle-label { font-size: 20px; font-weight: 900; color: white; text-shadow: 1px 2px 0 rgba(0,0,0,0.7); }
 
         #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 60%; transition: 0.3s; pointer-events: none; }
@@ -785,7 +785,7 @@
     </div>
 
     <div id="main-hud">
-        <div id="battle-counter-area"><span id="battle-ordinal" class="battle-ordinal">1st</span><span class="battle-label">BATTLE</span></div>
+        <div id="battle-counter-area"><span class="battle-label">BATTLE</span><span id="battle-ordinal" class="battle-ordinal">1</span></div>
         <div id="tournament-title-area"><img id="tournament-logo-img" src="" alt=""><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
 
         <div id="p1-wrapper" class="player-wrapper">
@@ -1777,9 +1777,9 @@
                     pendingAdvanceTimeout = null;
                     battleCount++;
                     updateBattleCounterDisplay();
-                    let suffix = ["st","nd","rd"][battleCount-1] || "th";
-                    let nextText = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}${suffix}`;
-                    showOverlayText(`NEXT to<br><span class="next-ordinal">${nextText}</span>BATTLE`, 'interstitial-style', 2500);
+                    // バトル数は「BATTLE 1」「BATTLE FINAL」の形で数える（「1st BATTLE」ではない）
+                    let nextText = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}`;
+                    showOverlayText(`NEXT to<br>BATTLE<span class="next-ordinal">${nextText}</span>`, 'interstitial-style', 2500);
                 }, 2500);
             }
             saveMatchState();
@@ -1808,8 +1808,8 @@
         }
 
         function updateBattleCounterDisplay() {
-            let suffix = ["st","nd","rd"][battleCount-1] || "th";
-            let text = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}${suffix}`;
+            // 「BATTLE 1」「BATTLE 2」…両者が上限-1なら「BATTLE FINAL」
+            let text = (s1 === limitFor(1) - 1 && s2 === limitFor(2) - 1) ? "FINAL" : `${battleCount}`;
             document.getElementById('battle-ordinal').innerText = text;
         }
         function escapeHtmlForComment(str) {
@@ -1877,7 +1877,7 @@
             let top;
             if (scale >= 0.6) {
                 const mid = (Math.min(r1.top, r2.top) + Math.max(r1.bottom, r2.bottom)) / 2;
-                // 上端は選手名欄・「1st BATTLE」表示より下（pro-mode では全体が上に詰まるため）
+                // 上端は選手名欄・「BATTLE 1」表示より下（pro-mode では全体が上に詰まるため）
                 top = Math.max(Math.max(n1.bottom, n2.bottom, bc.bottom) + 4, mid - h * scale / 2);
             } else {
                 top = Math.max(r1.bottom, r2.bottom) + 8;
