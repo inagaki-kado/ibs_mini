@@ -324,6 +324,8 @@
 
         /* リプレイ中：スコアのみ半透明表示（審判用） */
         body.replay-mode #main-hud { display: block !important; pointer-events: none; z-index: 90; }
+        /* リプレイ中は勝敗表示（〇〇 WIN）を隠す。show-win は残すので、リプレイ終了で元に戻る */
+        body.replay-mode #win-display { display: none !important; }
         body.replay-mode .name-input,
         body.replay-mode .hud-btn,
         body.replay-mode .player-stats-block,
@@ -1518,6 +1520,8 @@
             try { replayVideo.load(); } catch(e) {}
             replayVideo.style.display = 'none'; replayLabel.style.display = 'none'; replayStatus.style.display = 'none';
             document.body.classList.remove('replay-mode');
+            // リプレイ中に画面サイズが変わった場合に備え、勝敗表示の位置を通常レイアウトで測り直す
+            if (document.getElementById('win-display').classList.contains('show-win')) positionWinDisplay();
             replaySpeedIdx = -1;
             resetReplayExtras();
             if (replaySeekbar) { replaySeekbar.value = 0; replaySeekbar.max = 0; }
