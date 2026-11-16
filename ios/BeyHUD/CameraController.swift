@@ -40,7 +40,6 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
 
     private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var rotationObservation: NSKeyValueObservation?
-    private var captureRotationObservation: NSKeyValueObservation?
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     /// HDMI 側のプレビュー（同じ撮影セッションをもう1枚のレイヤーに映す）。メインスレッドでのみ触る
     private var currentPreviewAngle: CGFloat?
@@ -116,6 +115,9 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     private func applyPreviewAngle(_ angle: CGFloat) {
         currentPreviewAngle = angle
         previewLayer?.connection?.videoRotationAngle = angle
+        // リプレイ録画もカメラ表示と同じ角度にそろえる（撮影用の角度を別に使うと、真上から見下ろす設置で
+        // 2つの角度が食い違い、リプレイだけ90°回転していた）
+        recorder.updateRotation(degrees: angle)
         externalLock.lock(); let ext = externalVideo; externalLock.unlock()
         ext?.setRotation(angle)
     }
@@ -269,11 +271,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
                 self?.applyPreviewAngle(c.videoRotationAngleForHorizonLevelPreview)
             }
         }
-        // 録画は画素を回転させず、ファイルの向き情報（transform）だけ合わせる（240fps での負荷を避ける）
-        recorder.updateRotation(degrees: coordinator.videoRotationAngleForHorizonLevelCapture)
-        captureRotationObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.new]) { [weak self] c, _ in
-            self?.recorder.updateRotation(degrees: c.videoRotationAngleForHorizonLevelCapture)
-        }
+        // 録画の向きは applyPreviewAngle でプレビューと同じ角度を渡す（画素は回転させず、ファイルの向き情報だけ合わせる）
     }
 
     // MARK: - 映像フレーム（リプレイ録画・実測 fps）
@@ -378,8 +376,8 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             guard cap < (throttleCap ?? Int.max) else { return }
             throttleCap = cap
             applyEffectiveFPS()
+            // 画面にはメッセージを出さない（fps ボタンの数字だけ変わる）。原因は診断ログで追える
             Diagnostics.shared.log("負荷が高いため fps を \(state.requestedFPS) に制限しました")
-            publishError("端末の負荷が高いため \(state.requestedFPS)fps に制限")
         } else if throttleCap != nil, restoreWork == nil {
             let work = DispatchWorkItem { [weak self] in
                 guard let self else { return }

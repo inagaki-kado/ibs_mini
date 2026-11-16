@@ -139,9 +139,10 @@ final class ReplayRecorder {
             self.finishCurrentSegment()
             self.finishing.notify(queue: self.queue) {
                 let segs = self.segments
+                let angle = self.rotationDegrees // 今のカメラ表示の角度
                 segs.forEach { self.retainedURLs.insert($0.url) }
                 Task {
-                    let asset = await Self.compose(segs)
+                    let asset = await Self.compose(segs, rotationDegrees: angle)
                     await MainActor.run { completion(asset) }
                 }
             }
@@ -182,7 +183,9 @@ final class ReplayRecorder {
         }
     }
 
-    private static func compose(_ segments: [Segment]) async -> AVMutableComposition? {
+    /// 区間をつないで1本にする。向きは各区間の記録ではなく、再生時点のカメラ表示の角度で統一する
+    /// （途中で角度が変わった区間が混ざっても、リプレイは常に今のカメラ表示と同じ向きになる）
+    private static func compose(_ segments: [Segment], rotationDegrees: CGFloat) async -> AVMutableComposition? {
         let composition = AVMutableComposition()
         guard !segments.isEmpty,
               let track = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -193,11 +196,11 @@ final class ReplayRecorder {
                   let range = try? await src.load(.timeRange) else { continue }
             do {
                 try track.insertTimeRange(range, of: src, at: composition.duration)
-                track.preferredTransform = (try? await src.load(.preferredTransform)) ?? .identity
             } catch {
                 continue
             }
         }
+        track.preferredTransform = CGAffineTransform(rotationAngle: rotationDegrees * .pi / 180)
         return composition.duration.seconds > 0 ? composition : nil
     }
 }
