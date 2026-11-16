@@ -854,15 +854,19 @@
       </div>
 
       <!-- 使用ベイ選択ボタン -->
-      <div id="beyblade-select-area" class="flex justify-between gap-4 mb-4 shrink-0">
-        <div class="flex-1 flex flex-col gap-1">
-          <div class="text-xs text-cyber-blue font-sf mb-1 text-center">LEFT 使用ベイ</div>
-          <div class="flex flex-col gap-1" id="remote-left-beyblades"></div>
+      <div id="beyblade-select-area" class="flex flex-col gap-2 mb-4 shrink-0">
+        <div class="flex justify-between gap-4">
+          <div class="flex-1 flex flex-col gap-1">
+            <div class="text-xs text-cyber-blue font-sf mb-1 text-center">LEFT 使用ベイ</div>
+            <div class="flex flex-col gap-1" id="remote-left-beyblades"></div>
+          </div>
+          <div class="flex-1 flex flex-col gap-1">
+            <div class="text-xs text-cyber-pink font-sf mb-1 text-center">RIGHT 使用ベイ</div>
+            <div class="flex flex-col gap-1" id="remote-right-beyblades"></div>
+          </div>
         </div>
-        <div class="flex-1 flex flex-col gap-1">
-          <div class="text-xs text-cyber-pink font-sf mb-1 text-center">RIGHT 使用ベイ</div>
-          <div class="flex flex-col gap-1" id="remote-right-beyblades"></div>
-        </div>
+        <!-- 両者のデッキ全体を score.html に表示（SHOW_ALL_BEYS / HIDE_ALL_BEYS）。もう一度押すと選択中のベイ表示に戻る -->
+        <button id="remote-all-beys-btn" type="button" onclick="toggleRemoteAllBeys()" aria-pressed="false" style="touch-action: manipulation;" class="w-full min-h-[44px] py-2 px-3 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf text-sm font-bold rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">ALL 全ベイを表示</button>
       </div>
 
       <div class="flex gap-2 mb-4 shrink-0">
@@ -1775,6 +1779,8 @@
         remoteKimariteList = parseKimariteStored(match && match.kimarite != null ? match.kimarite : '');
         remoteKimariteP1 = parseKimariteStored(match && match.kimarite_p1 != null ? match.kimarite_p1 : '');
         remoteKimariteP2 = parseKimariteStored(match && match.kimarite_p2 != null ? match.kimarite_p2 : '');
+        remoteAllBeysShown = false; // score.html 側も SET_MATCH 受信で ALL 表示を終了する
+        updateRemoteAllBeysButton();
         updateRemoteNamesUI(); 
         updateRemoteScoreUI();
         updateRemoteBeybladeButtons(); // ベイ選択ボタンを更新
@@ -1876,10 +1882,46 @@
         }
     }
 
+    // ALL（両者のデッキ全体を score.html に表示）の状態。個別のベイを選ぶと score 側で自動的に解除される
+    let remoteAllBeysShown = false;
+
+    function updateRemoteAllBeysButton() {
+        const btn = document.getElementById('remote-all-beys-btn');
+        if (!btn) return;
+        btn.setAttribute('aria-pressed', remoteAllBeysShown ? 'true' : 'false');
+        if (remoteAllBeysShown) {
+            btn.textContent = '✓ ALL 表示中（タップで戻す）';
+            btn.className = 'w-full min-h-[44px] py-2 px-3 bg-cyber-green border border-cyber-green text-cyber-on-green font-sf text-sm font-bold rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white';
+        } else {
+            btn.textContent = 'ALL 全ベイを表示';
+            btn.className = 'w-full min-h-[44px] py-2 px-3 bg-[#0a0e17] border border-cyber-green text-cyber-green font-sf text-sm font-bold rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white';
+        }
+    }
+
+    // 画面左右（スワップ考慮）のデッキを score.html へ送る。p1=画面左 / p2=画面右（selectBeyblade と同じ規約）
+    function sendRemoteAllBeys() {
+        if (!currentRemoteMatch || !conn || !conn.open) return;
+        const m = currentRemoteMatch.match;
+        const leftPlayer = isRemoteSwapped ? m.p2 : m.p1;
+        const rightPlayer = isRemoteSwapped ? m.p1 : m.p2;
+        const names = p => (p && Array.isArray(p.beyblades)) ? p.beyblades.map(b => b && b.name).filter(Boolean) : [];
+        conn.send({ type: 'SHOW_ALL_BEYS', p1: names(leftPlayer), p2: names(rightPlayer) });
+    }
+
+    function toggleRemoteAllBeys() {
+        if (!currentRemoteMatch) return;
+        if (!conn || !conn.open) { showAlert('⚠️ スコアシステムとリンクされていません！'); return; }
+        remoteAllBeysShown = !remoteAllBeysShown;
+        if (remoteAllBeysShown) sendRemoteAllBeys();
+        else conn.send({ type: 'HIDE_ALL_BEYS' });
+        updateRemoteAllBeysButton();
+    }
+
     function selectBeyblade(side, beybladeName) {
         if (!currentRemoteMatch) return;
         const m = currentRemoteMatch.match;
         if (!m) return;
+        if (remoteAllBeysShown) { remoteAllBeysShown = false; updateRemoteAllBeysButton(); }
         const playerName = (side === 'left') ? 'P1' : 'P2';
         sendBeybladeSelection(playerName, beybladeName);
         // beyP1/beyP2 は P7 で追加されたサブ機共有用フィールド。p1BeyUsed/p2BeyUsed（既存・レポート等で使用）とは別に併記する。

@@ -671,6 +671,21 @@
             display: none; /* デフォルトは非表示（表示時は display:flex） */
         }
         .beyblade-box .bey-text { display: block; max-width: 100%; white-space: nowrap; line-height: 1.2; }
+        /* SHOW_ALL_BEYS: デッキ全体を縦に並べる（高さは中身に合わせる） */
+        .beyblade-box.all-mode {
+            flex-direction: column;
+            align-items: stretch;
+            height: auto !important;
+            padding: 4px 10px;
+            gap: 2px;
+        }
+        .beyblade-box.all-mode .bey-text {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            font-size: clamp(13px, 1.9vw, 22px);
+            line-height: 1.15;
+        }
+        .beyblade-box.all-mode .bey-text + .bey-text { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 2px; }
         .beyblade-box.p1 {
             left: max(11px, calc(var(--safe-left) + 11px));
             border-color: #0ea5e9;
@@ -946,6 +961,8 @@
         const MATCH_STATE_KEY = 'tbh_score_match_state';
         let beybladeP1 = '';
         let beybladeP2 = '';
+        // SHOW_ALL_BEYS 受信中は {1:[...], 2:[...]}（両者のデッキ全体をベイ名枠に並べる）。通常時は null
+        let allBeysList = null;
 
         // ===== iOSアプリ(BeyHUD)連携 =====
         // アプリ内で開かれた場合のみ、カメラをネイティブ層(AVFoundation)に任せる。ブラウザでは NATIVE=null で従来通り。
@@ -2126,6 +2143,7 @@
                     renderFinishRates(1); renderFinishRates(2);
                     // ベイブレード名も入れ替え
                     const tempBey = beybladeP1; beybladeP1 = beybladeP2; beybladeP2 = tempBey;
+                    if (allBeysList) allBeysList = { 1: allBeysList[2], 2: allBeysList[1] };
                     updateBeybladeBar(1, beybladeP1);
                     updateBeybladeBar(2, beybladeP2);
                     // ★ 名前入れ替え後にフォントサイズを再計算する
@@ -2279,6 +2297,13 @@
                         // ★NEW: ベイブレード名受信処理
                         handleBeybladeSelection(data.data);
                     }
+                    else if (data.type === 'SHOW_ALL_BEYS') {
+                        // 両者のデッキ全体をベイ名枠に表示
+                        showAllBeys(data);
+                    }
+                    else if (data.type === 'HIDE_ALL_BEYS') {
+                        hideAllBeys();
+                    }
                     else if (data.type === 'BREAK_START') {
                         showBreakOverlay(data);
                     }
@@ -2289,6 +2314,8 @@
                         startBreakRecap(data.items, data.intervalMs);
                     }
                     else if (data.type === 'SET_MATCH') {
+                        // 新しい試合のセットでデッキ全体表示は終了する
+                        hideAllBeys();
                         document.getElementById('name1').value = data.p1;
                         document.getElementById('name2').value = data.p2;
                         adjustNameFontSize('name1');
@@ -2757,6 +2784,8 @@
 
             const player = data.player.toUpperCase();
             const beybladeName = data.beyblade;
+            // 個別のベイが選ばれたら、デッキ全体表示（SHOW_ALL_BEYS）は終了する（相手側の枠も選択中のベイ表示に戻す）
+            hideAllBeys();
 
             // プレイヤーごとに保存して個別枠に表示
             if (player === 'P1') {
@@ -2783,7 +2812,7 @@
         function layoutBeyBoxes() {
             [1, 2].forEach(n => {
                 const box = document.getElementById(`beyblade-box-p${n}`);
-                if (!box) return;
+                if (!box || box.classList.contains('all-mode')) return;
                 let h = 52;
                 const xf = document.querySelector(`#p${n}-fin-group .fin-item`);
                 if (xf) {
@@ -2831,6 +2860,26 @@
         function updateBeybladeBar(playerNum, beybladeName) {
             const boxEl = document.getElementById(`beyblade-box-p${playerNum}`);
 
+            // SHOW_ALL_BEYS 中は、その選手のデッキ全体を並べる
+            if (allBeysList) {
+                if (boxEl) {
+                    const list = allBeysList[playerNum] || [];
+                    boxEl.textContent = '';
+                    boxEl.classList.add('all-mode');
+                    boxEl.style.height = '';
+                    list.forEach(name => {
+                        const span = document.createElement('span');
+                        span.className = 'bey-text';
+                        span.textContent = name;
+                        boxEl.appendChild(span);
+                    });
+                    boxEl.style.display = (list.length && !isReplayMode) ? 'flex' : 'none';
+                }
+                updateFinGroupOverlapState();
+                return;
+            }
+            if (boxEl) boxEl.classList.remove('all-mode');
+
             // 個別枠の更新
             if (boxEl) {
                 if (beybladeName) {
@@ -2856,7 +2905,7 @@
         function refitBeyBoxes() {
             layoutBeyBoxes();
             document.querySelectorAll('.beyblade-box').forEach(b => {
-                if (b.style.display === 'flex') fitBeyName(b);
+                if (b.style.display === 'flex' && !b.classList.contains('all-mode')) fitBeyName(b);
             });
         }
         window.addEventListener('resize', refitBeyBoxes);
@@ -2872,8 +2921,10 @@
             const narrow = window.innerWidth <= KIMARITE_BEY_OVERLAP_MAX_WIDTH;
             const p1Fin = document.getElementById('p1-fin-group');
             const p2Fin = document.getElementById('p2-fin-group');
-            if (p1Fin) p1Fin.classList.toggle('fin-hidden-for-bey', narrow && !!beybladeP1);
-            if (p2Fin) p2Fin.classList.toggle('fin-hidden-for-bey', narrow && !!beybladeP2);
+            const has1 = allBeysList ? !!(allBeysList[1] && allBeysList[1].length) : !!beybladeP1;
+            const has2 = allBeysList ? !!(allBeysList[2] && allBeysList[2].length) : !!beybladeP2;
+            if (p1Fin) p1Fin.classList.toggle('fin-hidden-for-bey', narrow && has1);
+            if (p2Fin) p2Fin.classList.toggle('fin-hidden-for-bey', narrow && has2);
         }
         window.addEventListener('resize', updateFinGroupOverlapState);
         window.addEventListener('orientationchange', updateFinGroupOverlapState);
@@ -2884,10 +2935,30 @@
         function clearBeybladeDisplay() {
             beybladeP1 = '';
             beybladeP2 = '';
+            allBeysList = null;
             
             // 個別枠をクリア
             updateBeybladeBar(1, '');
             updateBeybladeBar(2, '');
+        }
+
+        /**
+         * SHOW_ALL_BEYS: 両者のデッキ全体をベイ名枠に表示する
+         * @param {Object} data - { p1: string[], p2: string[] }（p1=画面左, p2=画面右）
+         */
+        function showAllBeys(data) {
+            const norm = a => Array.isArray(a) ? a.filter(v => typeof v === 'string' && v.trim()).map(v => v.trim()) : [];
+            allBeysList = { 1: norm(data && data.p1), 2: norm(data && data.p2) };
+            updateBeybladeBar(1, beybladeP1);
+            updateBeybladeBar(2, beybladeP2);
+        }
+
+        /** HIDE_ALL_BEYS: デッキ全体表示をやめ、選択中のベイ名表示に戻す */
+        function hideAllBeys() {
+            if (!allBeysList) return;
+            allBeysList = null;
+            updateBeybladeBar(1, beybladeP1);
+            updateBeybladeBar(2, beybladeP2);
         }
 
     </script>

@@ -236,6 +236,8 @@
 | `DE_BEY_SELECT` | サブ機(`tournament_de_sub.html`)→親機。ベイ選択を `match.beyP1`/`beyP2` に保存させる |
 | `DE_PREVIEW_REQUEST` | サブ機→親機。📢タップによる次戦予告リクエスト。フロー詳細は REFERENCE.md 7章 |
 | `DE_PREVIEW_PAYLOAD` | 親機→サブ機。`DE_PREVIEW_REQUEST` への応答。サブ機はこれをそのまま `SHOW_PREVIEW` として自分のscore/score_sub接続へ転送する |
+| `SHOW_ALL_BEYS` | `tournament_de.html`→score.html。対戦画面の「ALL」ボタン。両者のデッキ全体（`p1`=画面左 / `p2`=画面右、ベイ名の配列）をベイ名枠に並べる。`SET_BEYBLADE`・`SET_MATCH`・リセットで自動解除 |
+| `HIDE_ALL_BEYS` | `SHOW_ALL_BEYS` の表示をやめ、選択中のベイ名表示に戻す |
 
 - `SHOW_OVERLAY` を送信した場合、モーダルを閉じる時に必ず `HIDE_OVERLAY` も送信すること
 
