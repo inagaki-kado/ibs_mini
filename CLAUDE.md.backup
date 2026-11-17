@@ -30,7 +30,7 @@
 
 ### 実装時に守ること
 
-- PeerJS: 既存 `type` の変更・削除は禁止。新機能は新しい `type` を追加する（[`peerjs-protection.md`](.claude/rules/peerjs-protection.md) 参照）
+- PeerJS: 既存 `type` の変更・削除は禁止。新機能は新しい `type` を追加する（下記「絶対に守るルール」2章の type 一覧が正。`.claude/rules/` は存在しない）
 - デザインテーマ（サイバーダーク）・`localStorage` キー/スキーマは無断で変更しない
 - 同じバグを2回直した、または「なぜそうなっているか」説明できない場合は、いったん手を止めて仮説を再検討してから修正する
 - ユーザーが「調査だけ」と指定した場合は実装せず調査結果のみ報告する
@@ -44,7 +44,7 @@
 - 内容: [1〜2文]
 
 ## 確認手順
-[Live Server でのテスト方法]
+[ローカルサーバー（localhost:5500）でのテスト方法]
 ```
 
 ### 例外
@@ -128,6 +128,8 @@
 | `player_stats.html` | ブレーダー統計ポータル（Google Sheets連携） | 緑 `#00ff88` |
 | `lottery.html` | 抽選アプリ | — |
 | `spectator.html` | 観客向け表示 | — |
+| `score_sub.html` | `tournament_de_sub.html` 連携用の軽量スコアHUD（1920×1000ディスプレイ想定。Tailwind・DSEG7・カメラ機能不使用） | — |
+| `ios/BeyHUD.xcodeproj` | `score.html` を包む iOS アプリ（ネイティブカメラ 60/120/240fps＋ネイティブリプレイ）。詳細は score.html 固有仕様「iOSアプリ連携」 | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
 | `parts.csv` | ベイブレードパーツマスターデータ | — |
@@ -199,6 +201,8 @@
 | `cyber-text` | `#e2e8f0` | 通常テキスト |
 | `cyber-table-border` | `#1f2937` | 罫線・区切り |
 
+> 塗りの上に文字を載せる場合の文字色は「UI 原則」章の on-color トークンを参照すること。
+
 - `tournament.html` を**UIマスター**とし、他アプリのボタン配置・ヘッダー構成をそれに準拠させる
 - 英数字フォント: **Orbitron** / 日本語フォント: **Noto Sans JP**
 
@@ -228,6 +232,10 @@
 | `SHOW_SCORE_VIEW` | 次戦予告・休憩・オーバーレイを全て非表示にしてスコア画面へ戻す |
 | `BREAK_START` | 休憩中オーバーレイ表示（`p1`/`p2`/`logoDataUrl`/`previewBackground`/`logoSrc`/`showLogo` を含む） |
 | `BREAK_END` | 休憩中オーバーレイ非表示 |
+| `BREAK_RECAP` | 休憩中の振り返り演出データ送信（`BREAK_START` 直後）。フィールド仕様は REFERENCE.md 6章 |
+| `DE_BEY_SELECT` | サブ機(`tournament_de_sub.html`)→親機。ベイ選択を `match.beyP1`/`beyP2` に保存させる |
+| `DE_PREVIEW_REQUEST` | サブ機→親機。📢タップによる次戦予告リクエスト。フロー詳細は REFERENCE.md 7章 |
+| `DE_PREVIEW_PAYLOAD` | 親機→サブ機。`DE_PREVIEW_REQUEST` への応答。サブ機はこれをそのまま `SHOW_PREVIEW` として自分のscore/score_sub接続へ転送する |
 
 - `SHOW_OVERLAY` を送信した場合、モーダルを閉じる時に必ず `HIDE_OVERLAY` も送信すること
 
@@ -261,7 +269,12 @@
 
 ### 5. file:// 制限
 - `fetch('parts.csv')` はローカルの `file://` では動作しない
-- 開発時は **Live Server**（VS Code 拡張等）でサーバー経由アクセスすること
+- 開発時はローカルサーバー経由でアクセスすること（macOS 環境）:
+  ```bash
+  cd "/Users/yamiz/Documents/ベイ会アプリ" && python3 -m http.server 5500
+  ```
+  → `http://localhost:5500/tournament_de.html` 等で開く。VS Code の Live Server 拡張でも可
+- 実機 iPhone で確認する場合は Mac と同一 Wi-Fi で `http://<MacのIP>:5500/` にアクセス（IP は `ipconfig getifaddr en0`）。iOS Simulator でも確認可
 
 ### 6. localStorage キーの分離
 
@@ -274,6 +287,9 @@
 | `tbh_de_report_note` | 編集後記のテキスト |
 | `bayPhoto_{encodeURIComponent(参加者名)}` | ベイ確認写真（`tournament.html` / `tournament_de.html`）。**長辺1280px・JPEG品質0.85に圧縮して保存**（`tournament_de.html` のみ。`tournament.html` は非圧縮） |
 | `tbh_score_match_state` | `score.html` の試合進行スナップショット（**保存から3時間で無効**） |
+| `tbh_cam_scale` / `tbh_cam_tx` / `tbh_cam_ty` / `tbh_cam_rot` | `score.html` のカメラ映像の拡大・位置・回転（期限なし。再起動後も引き継ぐ） |
+| `tbh_score_sub_state` | `score_sub.html` の試合進行スナップショット（**保存から3時間で無効**。`tbh_score_match_state` とは別系統） |
+| `tbh_de_sub_score_links` | `tournament_de_sub.html` が保持する score.html/score_sub.html 接続コード（`{score, sub}`）。次回起動時に自動再接続 |
 
 - **写真・編集後記を `tbh_tournament_de` に混ぜてはならない。** 写真は圧縮後でも300KB前後あり、
   混ぜると localStorage の容量上限に達したとき**大会データごと保存に失敗する**
@@ -285,6 +301,65 @@
 - 写真の保存は必ず try/catch で囲み、QuotaExceededError を握りつぶさないこと
 - 旧仕様キー（`bayPhoto_` + 生の参加者名）が残っている可能性があるため、
   読み取り・削除では両形式を対象にすること
+
+---
+
+## UI 原則（デジタル庁デザインシステムの姿勢を参照）
+
+> 参照元: https://design.digital.go.jp/dads/
+> **準拠ではなく判断基準として参照する。** サイバーダークのデザインテーマは
+> ブランドの核であり、本原則より常に優先する。
+
+### 適用範囲
+
+| 区分 | ファイル | 適用 |
+|---|---|---|
+| 操作系 | `tournament.html` / `tournament_de.html` / `tournament_evo.html` / `tournament_de_sub.html` / `block.html` / `tag.html` / `souatari.html` / `freebattle.html` | ✅ 全原則 |
+| 表示系 | `score.html` / `spectator.html` | ❌ 演出優先（原則6の視認距離のみ考慮） |
+| 公開系 | `index.html` / `showcase.html` / `player_stats.html` / `sit_battleleague.html` | △ 原則2・3・4のみ |
+
+### 6原則
+
+1. **押し間違えさせない** — 操作系のタップ対象は最小 44×44px（`min-height` / `min-width`）。破壊的操作（削除・リセット・確定）は隣接ボタンと 8px 以上離す
+2. **状態を必ず見せる** — `:focus-visible` に明示リングを付与。押下・無効・処理中の状態を色以外（形・文字・アイコン）でも判別可能にする
+3. **色だけに頼らない** — 勝敗・ブロック・チームの区別は色＋文字/アイコンを併用する
+4. **コントラストを確保する** — 本文テキストは背景に対し 4.5:1 以上。**塗り（ボタン背景）の上に載せる文字は下表の on-color トークンを使う**
+5. **初見の人が使える** — `block.html` 等、常設スタッフ以外が触る画面は説明なしで操作できること
+6. **迷ったら情報量より明快さ** — 1画面に詰め込まず、当日の判断速度を優先する
+
+### on-color トークン（原則4）
+
+塗りの上に白文字を載せるとコントラスト不足になるため、以下を使う。
+**既存の塗り色（背景側）は一切変更しない。文字色のみ差し替える。**
+
+| Tailwindキー | 塗り色 | on-color（文字色） | コントラスト |
+|---|---|---|---|
+| `cyber-on-orange` | `#ffaa00` | `#1a1200` | 9.9:1 |
+| `cyber-on-green` | `#22c55e` | `#04220f` | 8.9:1 |
+| `cyber-on-blue` | `#0ea5e9` | `#04263a` | 7.4:1 |
+| `cyber-on-pink` | `#ec4899` | `#2b0c1a` | 8.2:1 |
+
+- `cyber-red` `#ff0055` は白文字・黒文字とも 4.5:1 に届かない。
+  **塗りボタンには使わず**、アウトライン形式（背景 `#0a0e17` ＋ 文字 `#ff0055` ＋ 同色枠線）にする
+- 暗背景 `#0a0e17` / `#111827` の上に置く**文字色**としては、
+  既存の `cyber-blue` / `cyber-green` / `cyber-pink` / `cyber-orange` / `cyber-red` は
+  すべて 4.5:1 を満たしているため変更不要
+
+### 適用タイミング
+
+- **新規実装・UI変更時のみ適用**。既存箇所の一括改修は行わない
+- 該当ファイルを触ったついでに、その画面内だけ整えるのは可
+- 新規実装・UI変更の際は、6原則に照らした確認結果を1行で報告すること
+
+---
+
+## ベイ名の組み立て（パーツ登録・全アプリ共通）
+
+- パーツの表示名（`parts.csv` の HUD表示用名称）をつなげてベイ名を作る。対象: `tournament.html` / `tournament_de.html` / `tournament_evo.html` / `tournament_main.html` / `freebattle.html` / `tag.html` / `sit_battle.html` / `deck_entry.html` / `team_entry.html`
+- **連結は各ファイルの `joinBeyParts()` を使う。** 基本は間を詰めるが、数字で終わるパーツの直後に数字で始まるパーツが続くときだけ半角スペースを挟む
+  - 例: ウィザードアローV2 ＋ 1-60 ＋ F →「ウィザードアローV2 1-60F」（詰めると「V21-60」と読めてしまう）／ドランソード3-60F は従来どおり
+- `parts.csv` の表示名に空白を入れて区切ろうとしないこと。読み込み時に `trim()` で消える
+- 2026-11 以前に「〜V21-60」形式で登録・記録されたベイ名は、新しい表記と別のベイとして集計される
 
 ---
 
@@ -331,12 +406,84 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 - 旧実装（`stop()` / `start()` を定期的に繰り返す方式）には戻さないこと。
   iOS Safari の MediaRecorder は `stop()` 完了（`onstop`）後でないと Blob が生成できず、
   周期的な停止・再開はフレーム落ちと取りこぼしの原因になる
+- 上記はブラウザ版の仕組み。**iOSアプリ（BeyHUD）内ではリプレイをネイティブが担当する**（下記「iOSアプリ連携」参照）
+
+### カメラ映像の拡大・位置（`applyTransforms()`）
+
+- 2本指ピンチで拡大（1〜5倍）、1本指ドラッグで移動、「180」ボタンで180°回転。値は `tbh_cam_*` に保存され、再起動後も引き継ぐ。リプレイ映像も同じ値を使う（iOS アプリではネイティブのカメラ・リプレイ層にも `transform` で反映）
+- **移動は「拡大している分」だけに制限する**（等倍なら動かない）。起動時・`resize` 時にも補正し、保存済みのずれた値を画面内へ戻す
+  - 理由: 制限がなかったため、2026-11 に実機で映像が下方向に約408pxずれて丸ごと画面外に出て、カメラが動いていないように見えた（ずれは保存されるので再起動しても直らなかった）
+- **RL（画面上の RL ボタン・リモートの `SYS_RELOAD`）**（`reloadWithCameraReset()`）: 拡大を等倍・位置を中央に戻して保存してから再読み込みする。180°回転は設置の向きなので残す
+  - 遠隔の RL でも画角が初期状態に戻るので、試合中に使うと合わせておいた拡大・位置はリセットされる
+- テンキー「*」は**再読み込みのみ**（画角は戻さない）
+
+### 勝敗表示（WINNER）の配置（`finishGame()` → `positionWinDisplay()`）
+
+- **WINNER の帯は、左右の点数の間・点数と同じ段に収める**（「2 WINNER ○○ 4」の1段）。表示のたびに点数・選手名欄・「BATTLE 1」表示の位置を測り、帯の位置（`--win-top` / `--win-left`）と縮小率（`--win-scale`）を決める
+  - 帯の上端は選手名欄・BATTLE 表示より下。点数の間に収めると 0.6 倍未満になる場合だけ、点数の下に出す
+  - **点数の下（画面下）は試合後コメント（`MATCH_COMMENT` → `#match-comment-box`、帯より手前に重なる）の場所として空けておくこと。** 帯を点数の下へ動かすと、コメントで勝者名が隠れる
+  - 理由: 以前は画面上から38%の固定位置で、横画面では点数の数字に重なり勝敗が読み取りにくかった（2026-11）
+- 文字サイズ・金色のグラデーション・`win-gold-pulse`・出現アニメーションは変えていない（縮小は帯全体にかける）
+- 確認時は実機の左右の安全領域（iPhone 横向きで約62px。点数が内側に寄る）と、プロモード・長い選手名・複数行コメントを再現すること
 
 ### 表示モード
 
 - `body.pro-mode`: システムボタン全非表示（配信用クリーンモード・`SYS_PRO` でリモート切替）
 - `body.green-mode`: クロマキー背景
 - `body.hud-hidden`: HUD全体を非表示
+
+### 複数接続
+
+- `peer.on('connection')` は単一接続ではなく `activeConns` 配列で複数のPeerJS接続を同時に保持する（上限4本、5本目で最古を切断）
+- 新しい接続が来ても既存接続は切断しない（親機とサブ機を同時接続するため）
+- 接続ステータス（`#link-dot` の `connected` クラス）は「1本以上openなら点灯」
+- `broadcastToConns(msg)` は将来の全接続一斉送信用ヘルパー（現状未使用）
+- 既存の `data.type` ハンドラ群は無変更
+
+### iOSアプリ連携（BeyHUD）
+
+`ios/BeyHUD.xcodeproj` は score.html を包む iOS アプリ。**カメラ表示の滑らかさ向上とリプレイ安定化**が目的。
+ネイティブ（Swift/AVFoundation）のカメラ層の上に、透過させた WKWebView で score.html を重ねる構成。
+
+| 層（下→上） | 担当 |
+|---|---|
+| `CameraPreviewView` | 背面広角カメラ。60/120/240fps（1080p優先）。**起動時は毎回 120fps**（前回の選択は引き継がない）。実機 iPhone で 240fps 安定を確認済 |
+| `ReplayPlayerView` | リプレイ再生（AVPlayer）。リプレイ中のみ表示 |
+| WKWebView | score.html（HUD・PeerJS・スコア処理は従来通り） |
+
+- **score.html の原本はリポジトリ直下の1つだけ。** ビルド時の Run Script（本体は `ios/bundle_web.sh`）が `score.html`・`maintitle_white.png`・`torabo_logo.png`・`font/DSEG7Classic-BoldItalic.ttf`・`ios/mirror.html` をアプリに同梱する。score.html を直したらアプリを再ビルドするだけで反映される
+- **アプリに入る score.html のコピーだけ、CDN 読み込みを書き換える**（`bundle_web.sh`）。PeerJS / qrcodejs は同梱ファイル（`ios/vendor/`）から読み、Google Fonts は描画を止めない読み込み（`media="print" onload`）にする。ブラウザ版の score.html は CDN のまま
+  - 理由: `<head>` の CDN 読み込みは描画を止めるため、会場 Wi-Fi が「つながっているがネットに出られない」状態だと **HUD が出ないまま固まり、タスクキルしても回線が戻るまで直らない**（2026-10-18・10-24 に実機で発生）
+  - **score.html の CDN の URL・バージョンを変えたら、`ios/vendor/` のファイルと `bundle_web.sh` も合わせて更新すること。** 置換できないとビルドがエラーで止まる（気づかずに CDN 読み込みへ戻るのを防ぐ）
+  - PeerJS の接続（シグナリング）自体はネット必須。回線が不安定な会場ではテザリングを使う
+- score.html 側は `window.webkit.messageHandlers.beyNative` の有無で判定（`const NATIVE`）。**ブラウザでは `NATIVE = null` で全分岐が無効になり、従来動作のまま**
+- アプリ内では `<html class="native-cam">` が付き、背景と `#camera-bg` を透過・非表示にする
+- リプレイ: `ReplayRecorder` が約2秒ごとの完結した HEVC mp4 を書き続け、直近60秒を保持（録画を止めずにリプレイを生成）。score.html の `replayVideo` はアプリ内だけ `createNativeReplayVideo()` の代役オブジェクトに差し替わり、`<video>` と同じプロパティ/メソッドでネイティブ再生を操作する。**既存の REPLAY_* 処理は代役経由でそのまま動くため、`replayVideo` の使い方を変える場合は代役側も合わせること**
+- コマ送りはアプリ内では撮影fpsの1コマ単位（240fpsなら1/240秒）。ブラウザ版は1/60秒
+- 音声は扱わない（iOS 標準の画面収録のマイク録音と競合させないため）。**動画撮影はアプリに搭載せず、iOS 標準の画面収録を使う方針**
+- **HDMI（外部ディスプレイ）は専用画面**（`ExternalDisplay.swift`・`ios/mirror.html`）。iOS 標準のミラーリングではなく、16:9 のステージにカメラ・リプレイ・HUD を重ねて出す
+  - 接続中はスマホ側も 16:9 に収め（左右に黒帯）、レイアウトを HDMI と一致させる。iOS 標準の画面収録で録れるのはスマホ側なので、録画にも同じ HUD が入る
+  - HDMI 側の HUD は score.html を動かさず、スマホ側 score.html の DOM の変化を複製して表示する（`MirrorScripts.swift` の送信側 → `mirror.html`）。PeerJS などのロジックはスマホ側にだけある
+  - HDMI 側のカメラ映像はカメラのフレームを直接表示する（プレビューレイヤーを2枚つなぐとスマホ側が真っ黒になるため）
+  - 外部出力は実質 60Hz 上限。高 fps の効果は主にリプレイのスロー
+- 発熱・カメラのシステム圧力が高いと自動で fps を制限する（serious で 120fps まで。下がれば解除）
+- **固まり対策**（`HUDViewController.swift`）: score.html の描画プロセスが落ちたら再読み込み／JS が12秒応答しなければ再読み込み／本文の準備完了（`domReady`）が15秒来なければ診断ログに記録。固まり監視と HDMI 複製は、ページ全体の読み込み完了（Web フォント待ちで来ないことがある）ではなく `domReady` で始める
+- **診断ログ**（`Diagnostics.swift`）: アプリの Documents/`diagnostics.log`（約400KB）。起動・切替・メモリ・発熱・カメラ中断・固まり・前回の突然終了・MetricKit 診断を記録する。取り出し方は iPhone の「ファイル」→ このiPhone内 → BeyHUD、または Mac から次で取得:
+  `xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.yamizaki.beyhud --source Documents/diagnostics.log --destination ./diagnostics.log`（iPhone のロック解除が必要）
+- JS ↔ Swift ブリッジ（PeerJS の `type` とは別系統）:
+
+| 方向 | 名前 | 用途 |
+|---|---|---|
+| JS→Swift | `cameraStart` / `cameraCycle` | カメラ起動 / 60→120→240fps 切替（「60」ボタン） |
+| JS→Swift | `transform` | 180°回転・ピンチ拡大・移動・リプレイ2xズーム（`rot`/`scale`/`tx`/`ty`/`rscale`/`ox`/`oy`） |
+| JS→Swift | `replayStart` / `replayStop` / `replayPlay` / `replayPause` / `replayRate` / `replaySeek` / `replayStep` / `replayFlush` | リプレイ操作 |
+| Swift→JS | `onNativeCamera` / `onNativeCameraFps` | カメラ状態・実測fps（FPSデバッグ表示） |
+| Swift→JS | `onNativeReplay` | リプレイ状態（`t`/`dur`/`paused`/`rate`、失敗時 `error`） |
+| アプリ側 | `domReady` | 本文の準備完了の通知（アプリが差し込むスクリプトから送る。score.html 側のコードではない） |
+| アプリ側 | `beyMirror` | HDMI 複製用の DOM 変化（`MirrorScripts.swift` の差し込みスクリプトから送る） |
+
+- ビルド: Xcode で `ios/BeyHUD.xcodeproj` を開き、Signing の Team に Apple ID を設定して実機へ ▶（Simulator にはカメラがないためカメラ・リプレイは実機で確認する）
+- 無料の Apple ID で署名したアプリは **7日で起動できなくなる**。大会の直前に Xcode から ▶ で入れ直しておく（コマンドラインの xcodebuild ではプロファイルを更新できないことがある）
 
 ---
 
@@ -530,7 +677,7 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | **OBS** | 配信。score.htmlをブラウザソースとして使用 |
 | **Tonamel** | 事前参加登録・公開イベントページのみ（API連携なし） |
 | **allorigins.win** | CORSプロキシ（OGP画像取得用） |
-| **Live Server（VS Code 等）** | ローカル開発（CSV fetch対応） |
+| **ローカルサーバー（`python3 -m http.server` / Live Server 等）** | ローカル開発（CSV fetch対応） |
 | **X (Twitter) @yamizaki** | クラブ公式アカウント |
 
 ---
@@ -576,8 +723,19 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 ### 作業手順
 
 1. タスク発生 → **Claude Code** に依頼
-2. Claude Code が調査 → そのまま直接実装 → Live Server で確認
+2. Claude Code が調査 → そのまま直接実装 → ローカルサーバー（ルール5参照）で確認
 3. 確認NGなら結果を Claude に返す → 前回の仮説を破棄して再調査・再修正
+
+### 開発環境（macOS）
+
+- 2026-10 に Windows から macOS へ移行済み。作業ディレクトリ: `/Users/yamiz/Documents/ベイ会アプリ`
+- 改行は LF（CRLF の混入なし）。シェルは zsh（日本語パスは必ず引用符で囲む）
+- `node` / `pwsh`（PowerShell）は未インストール。DE ブラケット検証は Python 版を使う:
+  `python3 _verify_de_bracket.py`（20人DEのルーティング全出力）/
+  `python3 _verify_lb_map.py`（参考画像との LB 対応表）。共通ロジックは `_de_topology.py`。
+  `python3 _verify_cp.py`（キャッチコピー生成ロジックのセルフチェック。旧 `_verify_cp.js` の移植）。
+- 大きな動画・PDF（`movie.mov` 等）は作業ディレクトリ直下にあるが、アプリの動作には不要
+- Xcode 27 導入済（iOS アプリ `ios/BeyHUD.xcodeproj` のビルド用）。署名は Xcode の自動署名（Apple ID）
 
 ### バックアップ
 
@@ -594,9 +752,12 @@ OBS用HUDディスプレイ（**受信専用**・Ver.34）。管理アプリか�
 | 決まり手統計（フィニッシュタイプ別） | `tournament_de.html` | ✅ 実装済（イベントレポート内。`player_stats.html` 側は未着手のため別行） |
 | 決まり手統計（ベイブレード別勝率） | `player_stats.html` | 🔍 調査中 |
 | PeerJS URL parameter自動接続（`score.html?peer=1234`） | `score.html` | ✅ 実装済 |
-| PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中 |
+| PeerJS 自動再接続ロジック | 全管理アプリ | 📋 検討中（`tournament_de_sub.html`→score.html/score_sub.htmlの SCORE LINK 接続のみ ✅ 実装済。`tbh_de_sub_score_links` に保存したコードで次回起動時に自動再接続。他アプリ・他接続経路は未着手） |
 | BX-09 Battle Pass Bluetooth連携 | — | 🔍 Bluefy経由で調査中 |
 | クラブ間リーグ提案 | `showcase.html` | 📋 企画中 |
 | レポート機能の他アプリ展開（`tournament.html` / `souatari.html`） | 各管理アプリ | 📋 検討中 |
 | CXチャートの Base64 → iframe 分離（約552KB削減） | `tournament.html`, `tournament_de.html` | 📋 検討中 |
 | `cx_parts_chart.html` の内容を正とする統合 | `cx_parts_chart.html` | 📋 検討中 |
+| UI原則の既存箇所への段階適用（44px / focus-visible / on-color） | 操作系全ファイル | 📋 検討中 |
+| score.html の iOS アプリ化（ネイティブカメラ・リプレイ） | `ios/BeyHUD`, `score.html` | ✅ 実装済（実機確認済） |
+| iOS アプリ: 外部モニター専用 16:9 画面 | `ios/BeyHUD` | ✅ 実装済（HDMI 専用画面・HUD 複製・ズーム同期） |
