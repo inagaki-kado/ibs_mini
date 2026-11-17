@@ -1951,16 +1951,16 @@
             updateBattleCounterDisplay();
             saveMatchState();
         }
-        function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; }
+        function toggleTimerDuration() { blurFocus(); timerDuration = (timerDuration === 10 ? 3 : timerDuration === 3 ? 30 : 10); document.getElementById('btn-timer-toggle').innerText = timerDuration; } // 10 → 3 → 30 → 10
         function toggleBackground() { blurFocus(); document.body.classList.toggle('green-mode'); }
         
-        function toggleTimer() { 
+        function toggleTimer(sec) { 
             blurFocus(); if (isCalling) return; 
             if (isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } 
-            else startTimer(); 
+            else startTimer(sec); 
         }
 
-        function startTimer() { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; effectTimeout = setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
+        function startTimer(sec) { isCountingDown = true; showOverlayText("", 'timer-style', 0); let count = sec || timerDuration; document.getElementById('effect-text').innerText = count; timerInterval = setInterval(() => { count--; if (count > 0) document.getElementById('effect-text').innerText = count; else { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-text').innerText = "0"; effectTimeout = setTimeout(() => document.getElementById('effect-overlay').style.display = 'none', 2000); } }, 1000); }
         function blurFocus() { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); }
 
         function formatRate(rateStr) {
@@ -2132,6 +2132,8 @@
                 if (cmd === 'SYS_STATS') toggleStatsDisplay();
                 if (cmd === 'CALL') { if (isCalling) cancelCall(); else startCall(); }
                 if (cmd === 'TIMER') toggleTimer();
+                if (cmd === 'TIMER_30') toggleTimer(30); // 切替ボタンの秒数に関係なく30秒（作動中なら停止）
+                if (cmd === 'TIMER_STOP' && isCountingDown) { clearInterval(timerInterval); isCountingDown = false; document.getElementById('effect-overlay').style.display = 'none'; } // 作動中のときだけ止める
                 if (cmd === 'SYS_SWAP') {
                     const n1 = document.getElementById('name1'), n2 = document.getElementById('name2');
                     const tempName = n1.value; n1.value = n2.value; n2.value = tempName;

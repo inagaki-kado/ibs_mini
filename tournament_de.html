@@ -900,7 +900,8 @@
 
         <div class="flex flex-col md:flex-row gap-2 mt-2">
           <button onclick="sendRemoteCmd('CALL')" class="flex-[2] py-4 bg-cyber-blue hover:bg-cyber-blue/80 text-cyber-bg font-sf font-bold rounded text-xl transition-transform active:scale-95 shadow-[0_0_10px_#0ea5e9]">📢 MATCH CALL (3,2,1..)</button>
-          <button onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">⏱ TIMER</button>
+          <button data-timer-btn onclick="sendRemoteCmd('TIMER')" class="flex-1 py-4 bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 transition-colors text-lg">⏱ TIMER</button>
+          <button data-timer-btn onclick="sendRemoteCmd('TIMER_30')" style="touch-action: manipulation;" class="flex-1 py-4 min-h-[44px] bg-[#0a0e17] border border-cyber-blue text-cyber-blue font-sf font-bold rounded hover:bg-cyber-blue/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyber-blue transition-colors text-lg">⏱ 30s</button>
         </div>
       </div>
 
@@ -1634,7 +1635,21 @@
             return;
         }
         conn.send({ type: 'REMOTE_CMD', cmd: cmd });
+        // カウントダウン中かどうかの目安（score.html の TIMER はトグル。最長30秒＋余裕）
+        if (cmd === 'TIMER') deTimerUntil = (Date.now() < deTimerUntil) ? 0 : Date.now() + 32000;
+        if (cmd === 'TIMER_30') deTimerUntil = (Date.now() < deTimerUntil) ? 0 : Date.now() + 32000;
     }
+
+    // カウントダウン中に（タイマーボタン以外の）どこかのボタンを押したら、カウントダウンを終了する。
+    // 想定はベイ選択で終了。score.html 側は TIMER_STOP を「作動中なら止める」だけの冪等コマンドとして扱う
+    let deTimerUntil = 0;
+    document.addEventListener('click', (e) => {
+      if (Date.now() >= deTimerUntil) return;
+      const t = e.target.closest && e.target.closest('button, [onclick], select, a, label, input');
+      if (!t || t.closest('[data-timer-btn]')) return;
+      deTimerUntil = 0;
+      if (conn && conn.open) conn.send({ type: 'REMOTE_CMD', cmd: 'TIMER_STOP' });
+    }, true);
 
     // ==========================================
     // リモコンモーダル ＆ スコア連動
