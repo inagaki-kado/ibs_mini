@@ -7589,6 +7589,16 @@
       }
     }
 
+    // parts.csv 5列目「発売状況」：空欄＝国内発売済み。「発売前（YYYY-MM-DD）」は発売日から表示。
+    // それ以外（海外限定・未確認など）は選択肢に出さない
+    function isPartAvailable(status) {
+      const s = (status || '').trim();
+      if (!s) return true;
+      const m = s.match(/^発売前（(\d{4})-(\d{2})-(\d{2})）$/);
+      if (m) return new Date() >= new Date(+m[1], +m[2] - 1, +m[3]);
+      return false;
+    }
+
     /**
      * CSVテキストをパースしてソートする
      * 頻出フラグが立っているものを先頭に、以降は選択名の50音順（日本語ロケール）。頻出パーツはUIでも赤表示。
@@ -7604,6 +7614,7 @@
         
         // CSVを分割（カンマ区切り、\r対応）
         const values = line.replace(/\r/g, '').split(',');
+        if (!isPartAvailable(values[4])) continue; // 海外限定・未確認・発売前は選択肢に出さない
         
         const part = {
           id: values[0]?.trim() || '',

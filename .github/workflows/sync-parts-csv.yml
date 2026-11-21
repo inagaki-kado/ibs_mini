@@ -39,7 +39,7 @@ jobs:
             *) echo "::error::見出し行が想定と違う: $first"; exit 1 ;;
           esac
           cols=$(echo "$first" | awk -F',' '{print NF}')
-          rows=$(($(wc -l < /tmp/parts.csv) - 1))
+          rows=$(awk 'NR>1 && NF' /tmp/parts.csv | wc -l | tr -d ' ')   # 末尾改行なしでも正しく数える
           if [ "$rows" -lt 200 ]; then
             echo "::error::行数が少なすぎる（$rows 行）"; exit 1
           fi
