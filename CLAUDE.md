@@ -132,7 +132,7 @@
 | `ios/BeyHUD.xcodeproj` | `score.html` を包む iOS アプリ（ネイティブカメラ 60/120/240fps＋ネイティブリプレイ）。詳細は score.html 固有仕様「iOSアプリ連携」 | — |
 | `index.html` | 公開用クラブサイト | — |
 | `showcase.html` | 他クラブへのシステム紹介用プレゼンポータル | — |
-| `parts.csv` | ベイブレードパーツマスターデータ | — |
+| `parts.csv` | ベイブレードパーツマスターデータ。**写しなので直接編集しない**。正本は `kamenacebeyblade/kamen-a-rules` の `refs/parts.csv`。`.github/workflows/sync-parts-csv.yml` が毎時取り込む（急ぐときは Actions から手動実行） | — |
 | `cx_parts_chart.html` | CXパーツ参照チャート（`souatari.html`/`freebattle.html` からiframe参照。`tournament.html`/`tournament_de.html` からは未参照） | — |
 | `maintitle_white.png` | クラブロゴ（白抜き・945×945、透明余白あり） | — |
 | `maintitle_white_trim.png` | 同ロゴの透明余白除去版（773×481）。**イベントレポート専用**。削除禁止 | — |

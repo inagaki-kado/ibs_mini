@@ -1,0 +1,63 @@
+# parts.csv を正本（kamenacebeyblade/kamen-a-rules の refs/parts.csv）から取り込む。
+# このリポジトリの parts.csv は写し。直接編集せず、kamen-a-rules 側を直すこと。
+# 大会直前など急ぐときは、GitHub の Actions タブ →「parts.csv を正本と同期」→「Run workflow」で即実行できる。
+name: parts.csv を正本と同期
+
+on:
+  schedule:
+    - cron: '17 * * * *'   # 毎時17分（UTC）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-parts-csv
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 正本を取得
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/kamenacebeyblade/kamen-a-rules/main/refs/parts.csv \
+            -o /tmp/parts.csv
+
+      - name: 中身を検査（壊れたファイルで上書きしない）
+        run: |
+          set -euo pipefail
+          header='パーツID,選択画面用名称,HUD表示用名称,頻出フラグ'
+          first=$(head -1 /tmp/parts.csv | tr -d '\r' | sed 's/^\xEF\xBB\xBF//')
+          if [ "$first" != "$header" ]; then
+            echo "::error::見出し行が想定と違う: $first"; exit 1
+          fi
+          rows=$(($(wc -l < /tmp/parts.csv) - 1))
+          if [ "$rows" -lt 200 ]; then
+            echo "::error::行数が少なすぎる（$rows 行）"; exit 1
+          fi
+          bad=$(awk -F',' 'NR>1 && NF!=4' /tmp/parts.csv | head -5)
+          if [ -n "$bad" ]; then
+            echo "::error::列数が4でない行がある: $bad"; exit 1
+          fi
+          echo "OK: $rows 件"
+
+      - name: 変わっていればコミット
+        run: |
+          set -euo pipefail
+          if cmp -s /tmp/parts.csv parts.csv; then
+            echo "変更なし"; exit 0
+          fi
+          cp /tmp/parts.csv parts.csv
+          git diff --stat parts.csv
+          src=$(curl -fsSL https://api.github.com/repos/kamenacebeyblade/kamen-a-rules/commits?path=refs/parts.csv\&per_page=1 \
+                | python3 -c 'import sys,json; c=json.load(sys.stdin)[0]; print(c["sha"][:7], c["commit"]["message"].splitlines()[0])' || echo "")
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add parts.csv
+          git commit -m "parts.csv: 正本（kamen-a-rules）と同期 ${src}"
+          git push
