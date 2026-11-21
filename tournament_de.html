@@ -285,6 +285,34 @@
       </div>
     </div>
 
+    <!-- X 投稿用ポスト文モーダル（本文＋スレッド） -->
+    <div id="postTextModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-[60] p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-lg border border-cyber-orange flex flex-col max-h-[90vh]">
+        <h2 class="text-2xl font-sf text-cyber-orange mb-2">📣 POST TEXT</h2>
+        <p class="mb-3 text-cyber-text text-sm opacity-80 leading-relaxed">X 投稿用の文面です（<span class="text-cyber-orange font-bold">書き換え可</span>）。①を投稿したら、②以降はその投稿への<span class="text-cyber-orange font-bold">返信（スレッド）</span>として順に投稿してください。</p>
+        <div id="postTextList" class="flex flex-col gap-4 overflow-y-auto mb-4 pr-1"></div>
+        <button onclick="closePostTextModal()" style="touch-action:manipulation" class="min-h-[44px] bg-cyber-bg text-cyber-text px-4 py-3 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">CLOSE</button>
+      </div>
+    </div>
+
+    <!-- DB反映用データ一括出力モーダル（Claude Code に渡してスプレッドシートへ反映させる） -->
+    <div id="dbExportModal" class="hidden fixed inset-0 bg-cyber-bg bg-opacity-90 flex-col items-center justify-center z-[60] p-4">
+      <div class="bg-cyber-dark p-6 rounded-lg shadow-xl w-full max-w-2xl border border-cyber-green flex flex-col h-[80vh]">
+        <h2 class="text-2xl font-sf text-cyber-green mb-2">🗄️ DB DATA EXPORT</h2>
+        <p class="mb-3 text-cyber-text text-sm opacity-80 leading-relaxed">
+          大会の全データ（対戦・決まり手・スコア・コメント・順位・使用ベイ）を1つにまとめています。<br>
+          <span class="text-cyber-green font-bold">コピーして Claude Code に貼り付ける</span>か、ファイルに保存して渡すと、データベース（スプレッドシート）へ反映できます。
+        </p>
+        <p id="dbExportSummary" class="mb-3 text-cyber-text text-xs opacity-70"></p>
+        <textarea id="dbExportArea" class="flex-1 w-full p-4 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-green focus:outline-none resize-none font-mono text-xs mb-4" readonly></textarea>
+        <div class="flex gap-3 flex-wrap">
+          <button onclick="copyDbExportData(this)" style="touch-action:manipulation" class="flex-[2] min-h-[44px] bg-cyber-green text-cyber-on-green px-4 py-3 rounded-full font-bold font-sf active:scale-95 transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">📋 COPY</button>
+          <button onclick="downloadDbExportData()" style="touch-action:manipulation" class="flex-1 min-h-[44px] bg-cyber-bg text-cyber-green border-2 border-cyber-green px-4 py-3 rounded-full font-bold font-sf focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">💾 SAVE</button>
+          <button onclick="closeDbExportModal()" style="touch-action:manipulation" class="flex-1 min-h-[44px] bg-cyber-bg text-cyber-text px-4 py-3 rounded-full border border-cyber-table-border font-sf hover:bg-gray-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">CLOSE</button>
+        </div>
+      </div>
+    </div>
+
     <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex-col items-center justify-center z-50 p-4">
       <div class="bg-cyber-dark text-center p-6 md:p-8 rounded-lg border-2 border-yellow-400 neon-yellow w-full max-w-2xl relative max-h-[95vh] overflow-y-auto">
         <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-200 to-yellow-600"></div>
@@ -306,6 +334,8 @@
         </div>
         <div class="flex justify-center gap-4 mt-4 md:mt-6 flex-wrap">
           <button id="results-export-csv-btn" onclick="openExportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-cyber-bg px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📋 EXPORT CSV</button>
+          <button id="results-post-btn" onclick="openPostTextModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-orange text-cyber-orange hover:bg-cyber-orange hover:text-cyber-on-orange min-h-[44px] px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyber-orange">📣 POST</button>
+          <button id="results-db-export-btn" onclick="openDbExportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-on-green min-h-[44px] px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyber-green">🗄️ DB DATA</button>
           <button id="results-report-btn" onclick="openReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold font-sf transition-colors">📰 EVENT REPORT</button>
           <button onclick="closeResults()" style="touch-action:manipulation" class="bg-cyber-blue text-cyber-bg px-8 md:px-10 py-2 md:py-3 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9]">CLOSE</button>
         </div>
@@ -338,28 +368,41 @@
                 <input type="range" id="reportZoomSlider" min="1" max="3" step="0.01" value="1" oninput="onReportZoomChange()" onchange="onReportZoomCommit()" style="touch-action:manipulation" class="flex-1 accent-cyber-blue">
                 <button type="button" onclick="resetReportCrop()" style="touch-action:manipulation" class="text-xs text-cyber-text border border-cyber-table-border px-2 py-1 rounded font-sf hover:bg-gray-800 transition-colors whitespace-nowrap">位置リセット</button>
               </div>
+              <!-- 顔スタンプ（写真の人の顔を自動で隠す） -->
+              <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-cyber-table-border">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs text-cyber-text font-sf" style="font-family:'Noto Sans JP',sans-serif">🙂 顔スタンプ</span>
+                  <span id="reportStampStatus" class="text-[11px] text-cyber-text opacity-70" style="font-family:'Noto Sans JP',sans-serif" aria-live="polite"></span>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                  <button type="button" id="reportStampModeBtn" onclick="toggleReportStampMode()" aria-pressed="false" style="touch-action:manipulation" class="flex-1 min-h-[44px] bg-cyber-bg border border-cyber-orange text-cyber-orange px-3 py-2 rounded text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyber-orange">✋ タップで追加・削除: OFF</button>
+                  <button type="button" id="reportStampDetectBtn" onclick="runReportFaceDetect()" style="touch-action:manipulation" class="min-h-[44px] bg-cyber-bg border border-cyber-blue text-cyber-blue px-3 py-2 rounded text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyber-blue">🔍 自動で隠す</button>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <label for="reportStampEmojiSelect" class="text-xs text-cyber-text font-sf">柄</label>
+                  <select id="reportStampEmojiSelect" onchange="onReportStampStyleChange()" style="touch-action:manipulation" class="min-h-[44px] bg-cyber-bg border border-cyber-table-border rounded text-cyber-text px-2 text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyber-orange">
+                    <option value="😊">😊</option><option value="😎">😎</option><option value="🌀">🌀</option><option value="⭐">⭐</option><option value="🙈">🙈</option><option value="🐯">🐯</option>
+                  </select>
+                  <label for="reportStampSizeSlider" class="text-xs text-cyber-text font-sf">大きさ</label>
+                  <input type="range" id="reportStampSizeSlider" min="0.6" max="2" step="0.05" value="1" oninput="onReportStampStyleChange()" onchange="reportPersistPhoto()" style="touch-action:manipulation" class="flex-1 min-w-[80px] accent-cyber-orange">
+                  <button type="button" onclick="clearReportStamps()" style="touch-action:manipulation" class="min-h-[44px] ml-2 text-xs text-cyber-pink border border-cyber-pink px-2 py-1 rounded font-sf hover:bg-gray-800 transition-colors whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyber-pink">全部消す</button>
+                </div>
+                <div class="text-[11px] text-cyber-text opacity-60" style="font-family:'Noto Sans JP',sans-serif">写真を選ぶと顔を自動で隠します。隠れていない顔・余計なスタンプは「タップで追加・削除」をONにしてプレビューの写真をタップ。</div>
+              </div>
             </div>
           </div>
           <div>
-            <label class="block text-xs text-cyber-text opacity-70 font-sf mb-1">編集後記</label>
-            <textarea id="reportNoteInput" onblur="onReportNoteChange()" rows="4" placeholder="今回の大会の振り返りを書いてください" style="touch-action:manipulation" class="w-full p-2 bg-cyber-bg border border-cyber-blue rounded text-cyber-text font-sf text-sm outline-none focus:border-cyber-green resize-none"></textarea>
             <div id="reportNextEventStatus" class="text-[11px] text-cyber-text opacity-60 font-sf mt-1">次回大会の予定を取得中…</div>
           </div>
           <div style="width:100%; max-width:500px; margin:0 auto; display:flex; flex-direction:column; gap:12px;">
             <div>
-              <div class="text-[11px] text-cyber-text opacity-60 font-sf mb-1">1 / 2</div>
               <div id="reportPreviewBox1" style="position:relative; width:100%; aspect-ratio:1200/1350; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
-            </div>
-            <div>
-              <div class="text-[11px] text-cyber-text opacity-60 font-sf mb-1">2 / 2</div>
-              <div id="reportPreviewBox2" style="position:relative; width:100%; aspect-ratio:1200/1350; overflow:hidden; background:#0a0e17; border:1px solid #1f2937; border-radius:6px;"></div>
             </div>
           </div>
           <div id="reportGenStatus" class="hidden text-center text-cyber-orange font-sf text-sm">⏳ 生成中…</div>
           <div class="flex flex-wrap gap-3 justify-center pt-2 pb-1">
             <button type="button" onclick="downloadReportPng()" id="reportSaveBtn" style="touch-action:manipulation" class="bg-cyber-blue text-cyber-bg px-5 py-2 rounded-full font-bold font-sf transition-colors shadow-[0_0_10px_#0ea5e9] disabled:opacity-40">💾 PNGを保存</button>
-            <button type="button" onclick="openReportPngInNewTab(1)" id="reportOpenTabBtn1" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 1枚目を開く</button>
-            <button type="button" onclick="openReportPngInNewTab(2)" id="reportOpenTabBtn2" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 2枚目を開く</button>
+            <button type="button" onclick="openReportPngInNewTab(1)" id="reportOpenTabBtn1" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-blue text-cyber-blue px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-cyber-blue hover:text-cyber-bg disabled:opacity-40">🔗 画像を開く</button>
             <button type="button" onclick="closeReportModal()" style="touch-action:manipulation" class="bg-cyber-bg border-2 border-cyber-table-border text-cyber-text px-5 py-2 rounded-full font-bold font-sf transition-colors hover:bg-gray-800">閉じる</button>
           </div>
         </div>
@@ -5136,6 +5179,297 @@
     }
 
     // ==========================================
+    // X 投稿用ポスト文（📣 POST）
+    // 書式は @yamizaki の大会終了ポスト（2026-09-23）に合わせる
+    // ==========================================
+    const POST_HASHTAG = '#板橋ベイブレード会';
+
+    function buildPostText() {
+      const top = getReportStandings();
+      const nameOf = (rank) => { const s = top.find(x => x.rank === rank); return s ? s.name : '---'; };
+      return [
+        `${POST_HASHTAG} 終了しました🙌`,
+        '',
+        '⭕今日の結果(敬称略)',
+        `優勝🏆　${nameOf(1)}`,
+        `準優勝🥈　${nameOf(2)}`,
+        `３位🥉　${nameOf(3)}`,
+        `4位🎖  ${nameOf(4)}`,
+        '',
+        'おめでとうございます！',
+        '',
+        '本日のデータなどはスレッドで⬇'
+      ].join('\n');
+    }
+
+    /** スレッド（返信）用の投稿。① 数字で見る大会（画像=EVENT REPORT 1枚目）② 本日の記録（画像=2枚目） */
+    function buildPostThreadTexts() {
+      const posts = [];
+      let matchCount = 0;
+      _deExportForEachMatch((m) => { if (_deExportIsValidMatch(m)) matchCount++; });
+      const entrantCount = getReportEntrants().length || participants.length;
+
+      // ② 数字で見る大会：決まり手の割合・よく使われたブレード
+      const lines = ['📊本日のデータ', `参加 ${entrantCount}名／全${matchCount}試合`];
+      const dist = getReportKimariteDist();
+      if (dist && dist.total > 0) {
+        const pct = (k) => Math.round(dist[k] / dist.total * 100);
+        lines.push('', `決まり手（全${dist.total}本）`,
+          `スピン ${dist.SF}本(${pct('SF')}%)／オーバー ${dist.OF}本(${pct('OF')}%)`,
+          `バースト ${dist.BF}本(${pct('BF')}%)／エクストリーム ${dist.XF}本(${pct('XF')}%)`);
+      }
+      const ranking = getReportPartsRanking();
+      if (ranking && ranking.blade && ranking.blade.length) {
+        lines.push('', '🌀よく使われたブレード');
+        ranking.blade.forEach((b, i) => lines.push(`${i + 1}. ${b.name}（${b.count}機）`));
+      }
+      lines.push('', '📰詳しくはイベントレポートで（画像を添付）');
+      posts.push({ title: '② データ', imageHint: 'EVENT REPORT の画像を添付', text: lines.join('\n') });
+
+      // ③ 本日の記録：決まり手ごとの最多・完封・最長試合
+      const rec = getReportRecords();
+      const recLines = ['🏅本日の記録'];
+      const addRec = (label, e) => { if (e && e.name) recLines.push(`${label}　${e.name}（${e.value}${e.unit}）`); };
+      if (rec) {
+        addRec('XF最多', rec.xf); addRec('BF最多', rec.bf); addRec('OF最多', rec.of); addRec('SF最多', rec.sf);
+        addRec('完封勝ち最多', rec.shutout); addRec('最長試合', rec.longest);
+      }
+      if (recLines.length > 1) {
+        recLines.push('', `参加してくださった皆さん、ありがとうございました！ ${POST_HASHTAG}`);
+        posts.push({ title: '③ 記録', imageHint: '画像なしでOK', text: recLines.join('\n') });
+      }
+      return posts;
+    }
+
+    /** X の文字数（全角=2 / 半角=1 の概算。上限280） */
+    function postTextWeight(text) {
+      let w = 0;
+      for (const ch of text) w += (ch.codePointAt(0) <= 0x10FF || (ch >= '｡' && ch <= 'ﾟ')) ? 1 : 2;
+      return w;
+    }
+
+    function updatePostTextCount(idx) {
+      const area = document.getElementById(`postTextArea${idx}`);
+      const el = document.getElementById(`postTextCount${idx}`);
+      if (!area || !el) return;
+      const w = postTextWeight(area.value);
+      el.textContent = `${w} / 280${w > 280 ? ' ⚠️ 文字数オーバー' : ''}`;
+      el.classList.toggle('text-cyber-red', w > 280);
+    }
+
+    function openPostTextModal() {
+      const posts = [{ title: '① 結果（最初の投稿）', imageHint: '記念撮影写真などを添付', text: buildPostText() }].concat(buildPostThreadTexts());
+      const list = document.getElementById('postTextList');
+      list.innerHTML = posts.map((p, i) => `
+        <div class="flex flex-col gap-1">
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-cyber-orange font-bold text-sm" style="font-family:'Noto Sans JP',sans-serif">${reportEscapeHtml(p.title)}</span>
+            <span class="text-cyber-text text-[11px] opacity-70">🖼 ${reportEscapeHtml(p.imageHint)}</span>
+          </div>
+          <textarea id="postTextArea${i}" rows="${Math.min(14, p.text.split('\n').length + 1)}" class="w-full p-3 bg-[#0a0e17] border border-cyber-table-border rounded text-cyber-text focus:outline-none focus-visible:ring-2 focus-visible:ring-cyber-orange resize-none text-sm" style="font-family:'Noto Sans JP',sans-serif" oninput="updatePostTextCount(${i})"></textarea>
+          <div class="flex items-center gap-2">
+            <span id="postTextCount${i}" class="flex-1 text-cyber-text text-xs opacity-70"></span>
+            <button onclick="copyPostText(${i}, this)" style="touch-action:manipulation" class="min-h-[44px] min-w-[88px] bg-cyber-orange text-cyber-on-orange px-4 py-2 rounded-full font-bold font-sf text-sm active:scale-95 transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">📋 COPY</button>
+            ${i === 0 ? `<button onclick="openPostIntent(0)" style="touch-action:manipulation" class="min-h-[44px] bg-cyber-bg text-cyber-orange border-2 border-cyber-orange px-4 py-2 rounded-full font-bold font-sf text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">𝕏 投稿画面</button>` : ''}
+          </div>
+        </div>`).join('');
+      posts.forEach((p, i) => { document.getElementById(`postTextArea${i}`).value = p.text; updatePostTextCount(i); });
+      document.getElementById('postTextModal').classList.remove('hidden');
+      document.getElementById('postTextModal').classList.add('flex');
+    }
+
+    function closePostTextModal() {
+      document.getElementById('postTextModal').classList.add('hidden');
+      document.getElementById('postTextModal').classList.remove('flex');
+    }
+
+    async function copyPostText(idx, btn) {
+      const area = document.getElementById(`postTextArea${idx}`);
+      if (!area) return;
+      let ok = false;
+      try { await navigator.clipboard.writeText(area.value); ok = true; } catch (e) {
+        area.select(); try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      }
+      if (!btn) return;
+      const original = btn.innerText;
+      btn.innerText = ok ? '✅ COPIED!' : '⚠️ 手動で';
+      setTimeout(() => { btn.innerText = original; }, 2000);
+    }
+
+    function openPostIntent(idx) {
+      const area = document.getElementById(`postTextArea${idx}`);
+      if (!area) return;
+      window.open('https://x.com/intent/post?text=' + encodeURIComponent(area.value), '_blank', 'noopener');
+    }
+
+    // ==========================================
+    // DB反映用データ一括出力（🗄️ DB DATA）
+    // 大会終了後に Claude Code へ渡し、Google Sheets（SHEET_ID_H2H）へ結果を反映してもらうための JSON。
+    // 書き込み自体はアプリからは行わない（読み取り専用 API キーのため）。写真データは含めない。
+    // ==========================================
+    let _dbExportText = '';
+
+    function _dbFmtDate(ts) {
+      const d = (typeof ts === 'number' && isFinite(ts)) ? new Date(ts) : new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
+    }
+
+    /** 大会日: 記録の残っている最も早いバトル／試合の時刻。無ければ出力時の日付 */
+    function _dbTournamentTs() {
+      let min = Infinity;
+      _deExportForEachMatch((m) => {
+        if (!m) return;
+        (Array.isArray(m.battles) ? m.battles : []).forEach(b => { if (typeof b.ts === 'number' && b.ts < min) min = b.ts; });
+        if (typeof m.updatedAt === 'number' && m.updatedAt < min) min = m.updatedAt;
+      });
+      return isFinite(min) ? min : Date.now();
+    }
+
+    /** match.score（p1-p2）を数値に。未記録ならバトル記録の最終累計から補う */
+    function _dbMatchScore(m) {
+      if (m.score) {
+        const sp = String(m.score).split('-').map(n => parseInt(n, 10));
+        if (sp.length === 2 && sp.every(Number.isFinite)) return { p1: sp[0], p2: sp[1] };
+      }
+      if (Array.isArray(m.battles) && m.battles.length) {
+        const last = m.battles[m.battles.length - 1];
+        if (Number.isFinite(last.scoreP1) && Number.isFinite(last.scoreP2)) return { p1: last.scoreP1, p2: last.scoreP2 };
+      }
+      return { p1: null, p2: null };
+    }
+
+    /** ベイ使用履歴シートの「ベイ1〜3」用の短い名前（CX はロックチップ＋メインブレード、他はブレード名） */
+    function _dbShortBeyName(bey) {
+      if (!bey) return '';
+      const p = bey.parts || {};
+      const blade = p.CX || p.MB || p.BX || p.UX || '';
+      if (p.CX && p.RC) return p.RC + p.CX;
+      return blade || bey.name || '';
+    }
+
+    function buildDbExportData() {
+      let entrants = getReportEntrants().filter(p => p && p.id !== 'BYE');
+      // 抽選を経ずに開始した大会（DEBUG開始等）は color が無いため、ブラケットに出た選手から拾う
+      if (!entrants.length) {
+        const ids = new Set();
+        _deExportForEachMatch((m) => { [m && m.p1, m && m.p2].forEach(p => { if (p && p.id !== 'BYE' && p.name !== 'TBD') ids.add(p.id); }); });
+        entrants = participants.filter(p => ids.has(p.id));
+      }
+      const tsDate = _dbFmtDate(_dbTournamentTs());
+
+      const matches = [];
+      _deExportForEachMatch((m, block, roundIdx) => {
+        if (!_deExportIsValidMatch(m)) return;
+        const sc = _dbMatchScore(m);
+        const kp1 = parseKimariteStored(m.kimarite_p1 != null ? m.kimarite_p1 : '').join(',');
+        const kp2 = parseKimariteStored(m.kimarite_p2 != null ? m.kimarite_p2 : '').join(',');
+        const battles = (Array.isArray(m.battles) ? m.battles : []).map(b => ({
+          no: b.no, winner: b.winner === 'p1' ? 'P1' : (b.winner === 'p2' ? 'P2' : ''),
+          finish: b.finish || '', pts: b.pts, scoreP1: b.scoreP1, scoreP2: b.scoreP2,
+          p1Bey: b.p1Bey || m.p1BeyUsed || '', p2Bey: b.p2Bey || m.p2BeyUsed || '',
+          time: _deExportTs(b.ts)
+        }));
+        matches.push({
+          round: _deExportRoundLabel(block, roundIdx),
+          bracket: block,
+          p1: m.p1.name,
+          p2: m.p2.name,
+          winner: m.winner === 1 ? m.p1.name : m.p2.name,
+          kimariteP1: kp1,
+          kimariteP2: kp2,
+          scoreP1: sc.p1,
+          scoreP2: sc.p2,
+          comment: m.comment || '',
+          p1Bey: m.p1BeyUsed || m.beyP1 || '',
+          p2Bey: m.p2BeyUsed || m.beyP2 || '',
+          battles
+        });
+      });
+
+      const top = getReportStandings();
+      const topLabel = { 1: '優勝', 2: '準優勝', 3: '3位', 4: '4位' };
+      const placements = top.map(s => ({ result: topLabel[s.rank], name: s.name }));
+      const otherStandings = getReportAllStandings().map(g => ({ rank: g.label, names: g.names }));
+
+      const beyUsage = entrants.map(p => {
+        const list = (p.beyblades || []).filter(b => b && b.name).slice(0, 3);
+        return {
+          name: p.name,
+          beys: list.map(_dbShortBeyName),
+          fullNames: list.map(b => b.name),
+          parts: list.map(b => resolveBeyParts(p, b.name))
+        };
+      });
+
+      return {
+        _format: 'tbh_de_db_export',
+        _version: 1,
+        exportedAt: _deExportTs(Date.now()),
+        spreadsheetId: SHEET_ID_H2H,
+        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${SHEET_ID_H2H}/edit`,
+        howToApply: [
+          'このデータを上記スプレッドシートへ反映してください。既存の行の書式・数式は壊さず、各シートの最終行の次に追記すること。',
+          '①「📅 大会マスター」: 同じ大会名が無ければ1行追加（大会ID=既存の最終IDの次の連番 / 大会名 / 開催日 / 種別 / 参加人数 / ボーナス対象 / スタジアム）。スタジアムが空なら直近の大会に合わせるかユーザーに確認。',
+          '②「⚔️ 対戦入力」: matches を順に1試合1行。A=p1, C=p2, E=winner, I=round, J=大会名, K=開催日, N=kimariteP1, O=kimariteP2, P=scoreP1, Q=scoreP2, R=comment。B/D/F/G/H/L/M 列は数式（自動）なので書き込まない（下の行からコピーが必要なら既存行に倣う）。',
+          '③ 続けてボーナス行: placements を1人1行（A=name, C=空, E=result（優勝/準優勝/3位/4位）, J=大会名, K=開催日）。その後 entrants 全員を E=「参加」で1人1行。',
+          '④「🌀 ベイ使用履歴」: beyUsage を1人1行（A=大会名, B=name, C〜E=beys, F〜H=fullNames）。',
+          '選手名は「📋 名簿」の表記に合わせる（別名・表記ゆれがあれば名簿側の名前に寄せ、迷うものはユーザーに確認）。同じ大会名の行が既にある場合は二重登録せずユーザーに確認すること。'
+        ],
+        tournament: {
+          name: tournamentName || '',
+          date: tsDate,
+          type: 'トーナメント',
+          format: 'double_elimination',
+          playerCount: entrants.length,
+          bonusTarget: '✅ 対象',
+          stadium: ''
+        },
+        entrants: entrants.map(p => p.name),
+        placements,
+        otherStandings,
+        matches,
+        beyUsage
+      };
+    }
+
+    function openDbExportModal() {
+      const data = buildDbExportData();
+      _dbExportText = JSON.stringify(data, null, 2);
+      document.getElementById('dbExportArea').value = _dbExportText;
+      const finished = isTournamentFinished();
+      document.getElementById('dbExportSummary').textContent =
+        `${data.tournament.name || '(大会名なし)'} ／ ${data.tournament.date} ／ 参加 ${data.entrants.length}名 ／ 対戦 ${data.matches.length}試合`
+        + (finished ? '' : ' ／ ⚠️ 大会が未終了です（途中までのデータ）');
+      document.getElementById('dbExportModal').classList.remove('hidden');
+      document.getElementById('dbExportModal').classList.add('flex');
+    }
+
+    function closeDbExportModal() {
+      document.getElementById('dbExportModal').classList.add('hidden');
+      document.getElementById('dbExportModal').classList.remove('flex');
+    }
+
+    async function copyDbExportData(btn) {
+      let ok = false;
+      try { await navigator.clipboard.writeText(_dbExportText); ok = true; } catch (e) {
+        const area = document.getElementById('dbExportArea'); area.select();
+        try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      }
+      if (!btn) return;
+      const original = btn.innerText;
+      btn.innerText = ok ? '✅ COPIED!' : '⚠️ 手動でコピーしてください';
+      setTimeout(() => { btn.innerText = original; }, 2000);
+    }
+
+    function downloadDbExportData() {
+      const d = new Date();
+      const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const safeName = String(tournamentName || 'tournament').replace(/[\\/:*?"<>|\s]+/g, '_');
+      reportDownloadBlob(new Blob([_dbExportText], { type: 'application/json' }), `${safeName}_db_${ymd}.json`);
+    }
+
+    // ==========================================
     // イベントレポート（PNG新聞）— データ集計層
     // ==========================================
     const KIMARITE_POINTS = { XF: 3, BF: 2, OF: 2, SF: 1 };
@@ -6334,7 +6668,8 @@
       return comment.replace(reversed, `${win}$1${lose}`);
     }
 
-    function reportBuildHeadline(data) {
+    // compact=true: 写真の横の列（幅約520px）に置くときの小さめの見出し
+    function reportBuildHeadline(data, compact) {
       if (!data.headline) return '';
       const h = data.headline;
       const label = h.isReset ? 'GRAND FINAL RESET' : 'GRAND FINAL';
@@ -6344,22 +6679,34 @@
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:8px;">${label}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:32px; line-height:1.35; color:#14161a; margin-bottom:10px;">${reportEscapeHtml(title)}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:17px; line-height:1.7; color:#3f3f46;">${reportEscapeHtml(comment)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:${compact ? 28 : 32}px; line-height:1.35; color:#14161a; margin-bottom:10px;">${reportEscapeHtml(title)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 16 : 17}px; line-height:1.7; color:#3f3f46; word-break:break-all;">${reportEscapeHtml(comment)}</div>
         </div>`;
     }
 
-    function reportBuildStandings(data) {
+    // stacked=true: 写真の横の狭い列用。使用ベイを名前の下の行に回す
+    function reportBuildStandings(data, stacked) {
       if (!data.standings || !data.standings.length) return '';
       const rows = data.standings.map((s, idx) => {
         const isLast = idx === data.standings.length - 1;
         const rankColor = s.rank === 1 ? '#a8321e' : '#a8a29e';
-        const beysText = (s.beys || []).join('　／　');
+        // html2canvas は単語の途中で折り返した文字を重ねて描くことがあるため、ベイ名ごとに折り返し不可の塊にする
+        const beysText = (s.beys || []).map(b => `<span style="display:inline-block; white-space:nowrap;">${reportEscapeHtml(b)}</span>`).join('<span style="color:#a8a29e;">　／　</span>');
+        if (stacked) {
+          return `
+          <div style="padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #d6d1c4;'}">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:${rankColor};">${s.rank}</div>
+              <div id="report-stand-name-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:#14161a; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
+            </div>
+            <div id="report-stand-bey-${idx}" data-max-lines="1" style="margin-left:36px; font-family:'Noto Sans JP', sans-serif; font-size:14px; color:#3f3f46; white-space:normal; line-height:1.5;">${beysText}</div>
+          </div>`;
+        }
         return `
           <div style="display:flex; align-items:center; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #d6d1c4;'}">
             <div style="width:24px; flex:none; font-family:'Orbitron', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:${rankColor};">${s.rank}</div>
             <div id="report-stand-name-${idx}" style="width:130px; flex:none; font-family:'Noto Sans JP', sans-serif; font-size:19px; line-height:1.6; font-weight:700; color:#14161a; white-space:nowrap;">${reportEscapeHtml(s.name)}</div>
-            <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#3f3f46; white-space:normal; line-height:1.5;">${reportEscapeHtml(beysText)}</div>
+            <div id="report-stand-bey-${idx}" style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#3f3f46; white-space:normal; line-height:1.5;">${beysText}</div>
           </div>`;
       }).join('');
       return `
@@ -6388,12 +6735,13 @@
       data.standings.forEach((s, idx) => {
         const el = document.getElementById(`report-stand-bey-${idx}`);
         if (!el) return;
-        const sizes = [15, 13, 12];
+        const maxLines = parseInt(el.dataset.maxLines || '2', 10);
+        const sizes = maxLines === 1 ? [14, 13, 12] : [15, 13, 12];
         for (const size of sizes) {
           el.style.fontSize = size + 'px';
           const lineHeight = size * 1.5;
-          // 2行分 + 誤差1px の余裕を見て判定
-          if (el.scrollHeight <= lineHeight * 2 + 1) return;
+          // maxLines 行分 + 誤差1px の余裕を見て判定（収まらなければ最小サイズで折り返す）
+          if (el.scrollHeight <= lineHeight * maxLines + 1) return;
         }
         console.warn(`[イベントレポート] ${idx + 1}位のベイ名が12pxでも2行に収まりません（3行以上になります）`);
       });
@@ -6401,10 +6749,12 @@
 
     // html2canvas は <img> の object-fit を正しく再現できないことがあるため、
     // 写真は <canvas> に事前描画したピクセルとして埋め込む（ズーム・位置調整もここで反映）
+    // 写真は正方形（見出しの下・左。右の列に最終順位と本日の記録を置く）
+    const REPORT_PHOTO_SIZE = 460;
     function reportBuildPhoto(photoDataUrl) {
       if (!photoDataUrl) return '';
       return `
-        <div id="report-photo-box" style="position:relative; flex:1 1 auto; min-height:180px; background:#ffffff; border:1px solid #b9b4a8; border-radius:10px; overflow:hidden;">
+        <div id="report-photo-box" style="position:relative; flex:none; width:${REPORT_PHOTO_SIZE}px; height:${REPORT_PHOTO_SIZE}px; background:#ffffff; border:1px solid #b9b4a8; border-radius:10px; overflow:hidden;">
           <canvas id="report-photo-canvas" style="width:100%; height:100%; display:block; touch-action:none;"></canvas>
           <div style="position:absolute; left:0; right:0; bottom:0; background:rgba(20,22,26,0.82); padding:9px 18px;">
             <span style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#ffffff;">入賞者一同</span>
@@ -6455,6 +6805,7 @@
         const ctx = canvasEl.getContext('2d');
         ctx.clearRect(0, 0, w, h);
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+        reportDrawPhotoStamps(ctx, img.naturalWidth, img.naturalHeight, sx, sy, w / sw);
       };
       if (reportPhotoImgCache.url === photoDataUrl && reportPhotoImgCache.img) {
         draw(reportPhotoImgCache.img);
@@ -6467,21 +6818,30 @@
       }).catch(e => console.warn('[イベントレポート] 写真の描画に失敗:', e));
     }
 
-    function reportBuildHighlights(data) {
-      if (!data.highlights || !data.highlights.length) return '';
-      const cards = data.highlights.map(h => {
+    // cols: 横に並べる枚数（写真の横の列に置くときは1）
+    // withComeback=true: 「本日の大逆転」（getReportComeback）を同じ列に並べる。激闘側に「大逆転」が既にあれば重複するので出さない
+    function reportBuildHighlights(data, cols, withComeback) {
+      const list = (data.highlights || []).slice();
+      const c = data.comeback;
+      if (withComeback && c && !list.some(h => h.tag === '大逆転')) {
+        const streakText = c.streak > 0 ? `${c.streak}連取` : '逆転';
+        list.push({ tag: '大逆転', p1: c.winnerName, score: '', p2: '', note: `${c.behindLabel}から${streakText}。${c.roundLabel}で${c.loserName}を撃破` });
+      }
+      if (!list.length) return '';
+      if (withComeback) cols = Math.max(cols || 3, list.length);
+      const cards = list.map(h => {
         const color = REPORT_HIGHLIGHT_COLORS[h.tag] || '#a8321e';
         return `
           <div style="background:#ffffff; border:1px solid #d6d1c4; border-left:4px solid ${color}; border-radius:0; padding:12px 14px;">
             <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:14px; color:${color}; margin-bottom:6px;">${reportEscapeHtml(h.tag)}</div>
             <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:18px; color:#14161a; margin-bottom:6px;">${reportEscapeHtml(h.p1)} ${reportEscapeHtml(h.score)} ${reportEscapeHtml(h.p2)}</div>
-            <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; line-height:1.6; color:#57534e;">${reportEscapeHtml(h.note)}</div>
+            <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; line-height:1.6; color:#57534e; word-break:break-all;">${reportEscapeHtml(h.note)}</div>
           </div>`;
       }).join('');
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の激闘</div>
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
+          <div style="display:grid; grid-template-columns:repeat(${cols || 3}, 1fr); gap:${cols === 1 ? 10 : 14}px;">${cards}</div>
         </div>`;
     }
 
@@ -6652,7 +7012,7 @@
     }
 
     // B: 決まり手×パーツの相関。getReportFinishByParts() が0件ならセクションごと非表示
-    function reportBuildFinishByParts(data) {
+    function reportBuildFinishByParts(data, cols) {
       const fp = data.finishByParts || {};
       const order = ['XF', 'BF', 'OF', 'SF'];
       const cards = order
@@ -6673,7 +7033,7 @@
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">決まり手を呼ぶパーツ</div>
-          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">${cards}</div>
+          <div style="display:grid; grid-template-columns:repeat(${cols || 4}, 1fr); gap:10px;">${cards}</div>
         </div>`;
     }
 
@@ -6723,7 +7083,7 @@
 
     // page: 1（右に "1 / 2"）/ 2（右に "2 / 2　@yamizaki"）。ロゴは明るい背景に置けないため外し、テキストのみにする
     function reportBuildFooter(page) {
-      const rightText = page === 1 ? '1 / 2' : '2 / 2　@yamizaki';
+      const rightText = '@yamizaki';
       return `
         <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; border-top:3px solid #14161a; padding-top:10px;">
           <span style="font-family:'Orbitron', sans-serif; font-size:14px; color:#57534e;">ITABASHI BEYBLADE CLUB</span>
@@ -6740,26 +7100,29 @@
       ['longest', '最長試合']
     ];
 
-    function reportBuildRecordCard(label, entry) {
+    const REPORT_RECORD_SHORT_LABELS = { xf: 'XF最多', bf: 'BF最多', of: 'OF最多', sf: 'SF最多', shutout: '完封勝ち', longest: '最長試合' };
+
+    function reportBuildRecordCard(label, entry, compact) {
       return `
-        <div style="background:#ffffff; border:1px solid #d6d1c4; padding:10px 13px;">
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:14px; color:#57534e; margin-bottom:4px;">${reportEscapeHtml(label)}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:19px; font-weight:700; color:#14161a;">${reportEscapeHtml(entry.name)}<span style="font-family:'Orbitron', sans-serif; font-size:15px; color:#a8321e; margin-left:7px;">${entry.value}${reportEscapeHtml(entry.unit)}</span></div>
+        <div style="background:#ffffff; border:1px solid #d6d1c4; padding:${compact ? '8px 11px' : '10px 13px'};">
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 13 : 14}px; color:#57534e; margin-bottom:${compact ? 2 : 4}px;">${reportEscapeHtml(label)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 17 : 19}px; font-weight:700; color:#14161a; word-break:break-all;">${reportEscapeHtml(entry.name)}<span style="font-family:'Orbitron', sans-serif; font-size:15px; color:#a8321e; margin-left:7px;">${entry.value}${reportEscapeHtml(entry.unit)}</span></div>
         </div>`;
     }
 
     // getReportRecords() の6項目を3カラム×2行で並べる。null の項目は枠ごと省いて詰めて配置する
-    function reportBuildRecords(data) {
+    // compact=true: 短いラベル（XF最多 など）で小さめに並べる
+    function reportBuildRecords(data, cols, compact) {
       const records = data.records || {};
       const cards = REPORT_RECORD_LABELS
         .filter(([key]) => records[key])
-        .map(([key, label]) => reportBuildRecordCard(label, records[key]))
+        .map(([key, label]) => reportBuildRecordCard(compact ? REPORT_RECORD_SHORT_LABELS[key] : label, records[key], compact))
         .join('');
       if (!cards) return '';
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日の記録</div>
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); column-gap:14px; row-gap:12px;">${cards}</div>
+          <div style="display:grid; grid-template-columns:repeat(${cols || 3}, 1fr); column-gap:12px; row-gap:10px;">${cards}</div>
         </div>`;
     }
 
@@ -6792,15 +7155,25 @@
       const rows = groups.map((g, idx) => {
         const isLast = idx === groups.length - 1;
         return `
-          <div style="display:flex; align-items:flex-start; gap:12px; padding:8px 0; ${isLast ? '' : 'border-bottom:1px solid #ded9cd;'}">
-            <div style="width:96px; flex:none; font-family:'Orbitron', sans-serif; font-size:15px; font-weight:700; color:#57534e;">${reportEscapeHtml(g.label)}</div>
-            <div style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:17px; color:#14161a; line-height:1.5;">${reportEscapeHtml((g.names || []).join('　'))}</div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:5px 0; ${isLast ? '' : 'border-bottom:1px solid #ded9cd;'}">
+            <div style="width:84px; flex:none; font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:#57534e;">${reportEscapeHtml(g.label)}</div>
+            <div style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:16px; color:#14161a; line-height:1.6;">${(g.names || []).map(n => `<span style="display:inline-block; white-space:nowrap; margin-right:14px;">${reportEscapeHtml(n)}</span>`).join('')}</div>
           </div>`;
       }).join('');
       return `
         <div style="flex:0 0 auto;">
-          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">全参加者 最終順位</div>
-          ${rows}
+          <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:6px;">全参加者 最終順位</div>
+          <div style="background:#ffffff; border:1px solid #d6d1c4; padding:4px 14px;">${rows}</div>
+        </div>`;
+    }
+
+    // 次回大会の予告（1行）。取得できなかった場合は出さない
+    function reportBuildNextEvent(nextEventText) {
+      if (!nextEventText || !nextEventText.trim()) return '';
+      return `
+        <div style="flex:0 0 auto; display:flex; align-items:baseline; gap:14px; background:#14161a; padding:10px 16px;">
+          <span style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#f2c94c; flex:none;">NEXT</span>
+          <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#ffffff; word-break:break-all;">${reportEscapeHtml(nextEventText.trim())}</span>
         </div>`;
     }
 
@@ -6831,6 +7204,7 @@
     // photoCrop: { zoom, x, y }（省略時は等倍中央）。x/yは0〜1の焦点位置（object-position相当）
     // noteText: 編集後記の自由入力 / nextEventText: fetchNextEvent() の生成文（いずれも省略可）
     // 戻り値: [canvas1, canvas2]（1200×1350の2ページ）。#report-canvas（1枚構成）は廃止
+    const REPORT_MAX_HEIGHT = 2000; // 1枚構成の高さ上限（幅1200。縦横比 3:5 まで）
     async function buildReportHtml(data, photoDataUrl, photoCrop, noteText, nextEventText) {
       if (!data || !data.headline) {
         await showAlert('大会が終了していません。グランドファイナルの結果が確定してからレポートを生成してください。');
@@ -6844,79 +7218,71 @@
 
       const logo = await reportGetLogo();
 
+      // 1枚構成（幅1200・高さは中身に合わせて可変、上限 REPORT_MAX_HEIGHT）。
+      // 見出し → [正方形の写真 | 最終順位＋本日の激闘] → [パーツ事情 | 記録＋大逆転] → [勝てたパーツ | 名勝負カード]
+      // → 決まり手を呼ぶパーツ → 全参加者順位 → 次回予告 の順に詰めて並べる。
       const photoHtml = reportBuildPhoto(photoDataUrl);
-      const spacerHtml = photoHtml ? '' : `<div style="flex:1 1 auto;"></div>`;
-
-      // 紙面が1350pxを超えた場合に、優先度の低い項目から段階的に減らして収める。
-      // page1: 0=全項目 / 1=逆転劇カードを除外
-      // page2: 0=全項目 / 1=名勝負カード2件 / 2=名勝負カード1件 / 3=名勝負カード除外 / 4=+決まり手を呼ぶパーツ除外 / 5=+勝てたパーツ除外
-      const buildPage1 = (level) => [
-        reportBuildMasthead(logo, 1),
-        reportBuildNameBand(data, 1),
-        reportBuildHeadline(data),
-        reportBuildStandings(data),
-        reportBuildHighlights(data),
-        level >= 1 ? '' : reportBuildComeback(data),
-        photoHtml,
-        spacerHtml,
-        reportBuildFooter(1)
-      ].filter(Boolean).join('');
-
-      const makePageData = (level) => {
-        const full = data.bladeMatchups || [];
-        const n = level === 1 ? 2 : level === 2 ? 1 : level >= 3 ? 0 : full.length;
-        return Object.assign({}, data, { bladeMatchups: full.slice(0, n) });
+      const twoCol = (left, right) => {
+        if (!left && !right) return '';
+        if (!left || !right) return left || right;
+        const col = 'flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:14px;';
+        return `<div style="flex:0 0 auto; display:flex; gap:20px; align-items:flex-start;"><div style="${col}">${left}</div><div style="${col}">${right}</div></div>`;
       };
-      const buildPage2 = (level) => {
-        const d = makePageData(level);
+      const rightOfPhoto = reportBuildStandings(data, true) + reportBuildRecords(data, 3, true);
+      const topBlockHtml = photoHtml
+        ? `<div style="flex:0 0 auto; display:flex; gap:20px; align-items:flex-start;">
+             ${photoHtml}
+             <div style="flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:14px;">${rightOfPhoto}</div>
+           </div>`
+        : twoCol(reportBuildStandings(data, true), reportBuildRecords(data, 2, true));
+
+      // 上限を超えたら優先度の低い項目から減らす:
+      // 1=決まり手を呼ぶパーツ除外 / 2=名勝負カード1件 / 3=名勝負カード除外 / 4=大逆転カード除外 / 5=勝てたパーツ除外
+      const buildPage = (level) => {
+        const full = data.bladeMatchups || [];
+        const d = Object.assign({}, data, { bladeMatchups: level >= 3 ? [] : level >= 2 ? full.slice(0, 1) : full.slice(0, 2) });
         return [
           reportBuildMasthead(logo, 2),
-          reportBuildNameBand(data, 2),
+          reportBuildNameBand(data, 1),
+          reportBuildHeadline(data),
+          topBlockHtml,
+          reportBuildHighlights(data, 3, level < 4),
           reportBuildParts(data),
           level >= 5 ? '' : reportBuildPartsWinRate(data),
-          level >= 4 ? '' : reportBuildFinishByParts(data),
-          d.bladeMatchups.length ? reportBuildBladeMatchups(d) : '',
-          reportBuildRecords(data),
-          // 編集後記のスペース確保のため「本日のオンリーワン」は紙面から除外（関数は残置）
+          twoCol(d.bladeMatchups.length ? reportBuildBladeMatchups(d) : '', level >= 1 ? '' : reportBuildFinishByParts(data, 2)),
           reportBuildAllStandings(data),
-          reportBuildEditorial(noteText, nextEventText),
-          reportBuildFooter(2)
+          reportBuildNextEvent(nextEventText),
+          reportBuildFooter(1)
         ].filter(Boolean).join('');
       };
 
       const makePage = (id, sectionsHtml) => {
         const el = document.createElement('div');
         el.id = id;
-        el.style.cssText = 'position:absolute; left:-9999px; top:0; width:1200px; height:1350px; box-sizing:border-box; padding:36px; background:#f2f0ea; display:flex; flex-direction:column; gap:16px; font-family:"Noto Sans JP", sans-serif;';
+        el.style.cssText = 'position:absolute; left:-9999px; top:0; width:1200px; box-sizing:border-box; padding:30px 32px; background:#f2f0ea; display:flex; flex-direction:column; gap:14px; font-family:"Noto Sans JP", sans-serif;';
         el.innerHTML = sectionsHtml;
         document.body.appendChild(el);
         return el;
       };
 
-      // フォント確定後でないと高さを正しく測れないため、最初のページを作る前に待つ
+      // フォント確定後でないと高さを正しく測れないため、ページを作る前に待つ
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
 
-      let page1Level = 0, page2Level = 0;
-      let canvas1 = makePage('report-canvas-1', buildPage1(page1Level));
-      while (canvas1.scrollHeight > 1350 && page1Level < 1) {
-        canvas1.remove(); page1Level++;
-        canvas1 = makePage('report-canvas-1', buildPage1(page1Level));
+      let level = 0;
+      let canvas1 = makePage('report-canvas-1', buildPage(level));
+      while (canvas1.scrollHeight > REPORT_MAX_HEIGHT && level < 5) {
+        canvas1.remove(); level++;
+        canvas1 = makePage('report-canvas-1', buildPage(level));
       }
-      let canvas2 = makePage('report-canvas-2', buildPage2(page2Level));
-      while (canvas2.scrollHeight > 1350 && page2Level < 5) {
-        canvas2.remove(); page2Level++;
-        canvas2 = makePage('report-canvas-2', buildPage2(page2Level));
-      }
-      if (page1Level || page2Level) {
-        console.info(`[イベントレポート] 紙面超過のため項目を削減しました（1枚目 level=${page1Level} / 2枚目 level=${page2Level}）`);
-      }
-      const dataForFit = Object.assign({}, data, { bladeMatchups: makePageData(page2Level).bladeMatchups });
+      if (level) console.info(`[イベントレポート] 紙面超過のため項目を削減しました（level=${level}）`);
+      const fullMatchups = data.bladeMatchups || [];
+      const dataForFit = Object.assign({}, data, { bladeMatchups: level >= 3 ? [] : level >= 2 ? fullMatchups.slice(0, 1) : fullMatchups.slice(0, 2) });
 
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
 
       // dataURLの<img>はこの時点でまだデコード完了していないことがあり、reportFitMastheadTitle()が
       // 幅0のロゴで計測してタイトルが右に溢れることがあるため、ロゴの読み込み完了を待つ
-      await Promise.all(['report-masthead-logo-1', 'report-masthead-logo-2'].map(id => {
+      await Promise.all(['report-masthead-logo-2'].map(id => {
         const el = document.getElementById(id);
         if (!el || el.complete) return Promise.resolve();
         return new Promise(r => { el.onload = r; el.onerror = r; });
@@ -6926,29 +7292,25 @@
         await reportRenderPhotoCanvas(photoDataUrl, photoCrop || { zoom: 1, x: 0.5, y: 0.5 });
       }
 
-      reportFitMastheadTitle(1);
       reportFitMastheadTitle(2);
       reportFitNameBand(1);
-      reportFitNameBand(2);
       reportFitStandingsNames(data);
       reportFitStandingsRows(data);
       reportFitPartsNames(data);
       reportFitPartsWinRateNames(data);
       reportFitBladeMatchupNames(dataForFit);
 
-      [canvas1, canvas2].forEach((canvas, idx) => {
-        const overflow = canvas.scrollHeight - 1350;
-        if (overflow > 0) {
-          console.warn(`[イベントレポート] ${idx + 1}枚目の紙面が ${overflow}px 超過しています（scrollHeight=${canvas.scrollHeight}）`);
-        }
-      });
+      // 高さを中身に合わせて確定（html2canvas の撮影サイズとプレビューの縦横比に使う）
+      canvas1.style.height = Math.min(REPORT_MAX_HEIGHT, canvas1.scrollHeight) + 'px';
+      const overflow = canvas1.scrollHeight - REPORT_MAX_HEIGHT;
+      if (overflow > 0) console.warn(`[イベントレポート] 紙面が ${overflow}px 超過しています（scrollHeight=${canvas1.scrollHeight}）`);
 
-      return [canvas1, canvas2];
+      return [canvas1];
     }
 
     // デバッグ用: #report-canvas-1/2 を画面内に一時表示/非表示
     function showReportDebug() {
-      ['report-canvas-1', 'report-canvas-2'].forEach((id, idx) => {
+      ['report-canvas-1'].forEach((id, idx) => {
         const el = document.getElementById(id);
         if (!el) { console.warn(`[イベントレポート] ${id} が未生成です。先に buildReportHtml() を実行してください。`); return; }
         el.style.left = (idx * 1220) + 'px';
@@ -6958,7 +7320,7 @@
       });
     }
     function hideReportDebug() {
-      ['report-canvas-1', 'report-canvas-2'].forEach(id => {
+      ['report-canvas-1'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.style.left = '-9999px';
@@ -6978,6 +7340,10 @@
     const REPORT_NOTE_KEY = 'tbh_de_report_note'; // tbh_tournament_de(SAVE_KEY)とは別キー。絶対に混在させない
     let reportPhotoDataUrl = null; // メモリ上のリサイズ済み写真dataURL（JPEG, 長辺1200px以内）
     let reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // ズーム倍率・焦点位置（0〜1、object-position相当）
+    // 顔スタンプ。座標は写真（リサイズ後）に対する割合: x,y=中心(0〜1)、s=直径（写真の幅に対する割合）
+    let reportPhotoStamps = [];
+    let reportStampStyle = { emoji: '😊', scale: 1 };
+    let reportStampEditMode = false;
     let reportPhotoSaveWarned = false; // localStorage保存失敗の警告を1セッション1回に抑える
     let reportPngGenerating = false;
     let reportNextEventInfo = null; // fetchNextEvent() の結果（未取得/失敗時はnull）
@@ -7038,9 +7404,12 @@
               x: (parsed.crop && parsed.crop.x != null) ? parsed.crop.x : 0.5,
               y: (parsed.crop && parsed.crop.y != null) ? parsed.crop.y : 0.5
             };
+            reportPhotoStamps = Array.isArray(parsed.stamps) ? parsed.stamps : [];
+            if (parsed.stampStyle && parsed.stampStyle.emoji) reportStampStyle = { emoji: parsed.stampStyle.emoji, scale: parsed.stampStyle.scale || 1 };
           } else if (raw.startsWith('data:')) {
             reportPhotoDataUrl = raw; // 旧形式（クロップ情報なし）
             reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+            reportPhotoStamps = [];
           }
         }
       } catch (e) {
@@ -7095,13 +7464,18 @@
       removeBtn.classList.toggle('hidden', !reportPhotoDataUrl);
       if (cropControls) cropControls.classList.toggle('hidden', !reportPhotoDataUrl);
       if (slider) slider.value = String(reportPhotoCrop.zoom || 1);
+      const emojiSel = document.getElementById('reportStampEmojiSelect');
+      if (emojiSel) emojiSel.value = reportStampStyle.emoji;
+      const sizeSl = document.getElementById('reportStampSizeSlider');
+      if (sizeSl) sizeSl.value = String(reportStampStyle.scale || 1);
+      updateReportStampUi();
     }
 
     // 写真dataURL＋クロップ状態をまとめて保存。失敗時の警告はモーダル1セッションにつき1回のみ
     function reportPersistPhoto() {
       if (!reportPhotoDataUrl) return;
       try {
-        localStorage.setItem(REPORT_PHOTO_KEY, JSON.stringify({ dataUrl: reportPhotoDataUrl, crop: reportPhotoCrop }));
+        localStorage.setItem(REPORT_PHOTO_KEY, JSON.stringify({ dataUrl: reportPhotoDataUrl, crop: reportPhotoCrop, stamps: reportPhotoStamps, stampStyle: reportStampStyle }));
       } catch (e) {
         console.warn('[イベントレポート] 写真のlocalStorage保存に失敗:', e);
         if (!reportPhotoSaveWarned) {
@@ -7144,6 +7518,242 @@
       void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
     }
 
+    // ==========================================
+    // イベントレポート — 顔スタンプ（写真の人の顔を自動で隠す）
+    // 顔検出は MediaPipe Face Detector（CDN の ES モジュール＋ Google のモデルファイル）。初回はネット接続が必要。
+    // 集合写真の小さい顔を拾うため、写真を重なりのある正方形タイルに切って複数の大きさで検出し、重複をまとめる。
+    // スタンプは canvas に直接描くので、html2canvas の PNG にもそのまま入る。
+    // ==========================================
+    const REPORT_FACE_LIB_URL  = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+    const REPORT_FACE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+    const REPORT_FACE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
+    const REPORT_FACE_STAMP_RATIO = 1.7; // 検出枠に対するスタンプの直径（髪・輪郭まで覆う）
+    let reportFaceDetectorPromise = null;
+    let reportFaceDetecting = false;
+
+    function reportGetFaceDetector() {
+      if (!reportFaceDetectorPromise) {
+        reportFaceDetectorPromise = (async () => {
+          const vision = await import(REPORT_FACE_LIB_URL);
+          const fileset = await vision.FilesetResolver.forVisionTasks(REPORT_FACE_WASM_URL);
+          return vision.FaceDetector.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: REPORT_FACE_MODEL_URL, delegate: 'CPU' },
+            runningMode: 'IMAGE',
+            minDetectionConfidence: 0.5
+          });
+        })();
+        reportFaceDetectorPromise.catch(() => { reportFaceDetectorPromise = null; }); // 失敗したら次回やり直す
+      }
+      return reportFaceDetectorPromise;
+    }
+
+    /** File または dataURL から、長辺 maxSide 以内の canvas を作る（検出用） */
+    async function reportLoadDetectCanvas(src, maxSide) {
+      let img;
+      if (src instanceof Blob) {
+        const url = URL.createObjectURL(src);
+        try { img = await reportLoadImageElement(url); } finally { setTimeout(() => URL.revokeObjectURL(url), 0); }
+      } else {
+        img = await reportLoadImageElement(src);
+      }
+      const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k);
+      c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    function reportBoxIou(a, b) {
+      const x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
+      const x2 = Math.min(a.x + a.w, b.x + b.w), y2 = Math.min(a.y + a.h, b.y + b.h);
+      const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+      return inter / (a.w * a.h + b.w * b.h - inter || 1);
+    }
+
+    /** 写真全体＋タイル分割で顔を検出し、写真に対する割合の枠 {x,y,w,h,score} の配列を返す */
+    async function reportDetectFaces(srcCanvas) {
+      const detector = await reportGetFaceDetector();
+      const W = srcCanvas.width, H = srcCanvas.height;
+      const TILE_PX = 256;
+      const tile = document.createElement('canvas');
+      tile.width = TILE_PX; tile.height = TILE_PX;
+      const tctx = tile.getContext('2d');
+      const found = [];
+      let srcW = W, srcH = H; // 直前に detect() へ渡した画像の大きさ
+      const collect = (dets, ox, oy, k) => {
+        (dets && dets.detections || []).forEach(d => {
+          const bb = d.boundingBox; if (!bb) return;
+          const score = (d.categories && d.categories[0] && d.categories[0].score) || 0;
+          // 目・鼻・口の位置を枠に対する割合で持つ（顔らしさの判定用）。keypoints は入力画像に対する 0〜1
+          const iw = srcW, ih = srcH;
+          const kp = (d.keypoints || []).map(p => [((p.x * iw) - bb.originX) / bb.width, ((p.y * ih) - bb.originY) / bb.height]);
+          found.push({ x: (ox + bb.originX * k) / W, y: (oy + bb.originY * k) / H, w: bb.width * k / W, h: bb.height * k / H, score, kp });
+        });
+      };
+      // 写真全体（大きく写った顔用）
+      srcW = W; srcH = H;
+      collect(detector.detect(srcCanvas), 0, 0, 1);
+      srcW = TILE_PX; srcH = TILE_PX;
+      // 正方形タイル（小さい顔用）。短辺の 1/1, 1/2, … と細かくし、長辺の 1/7 程度まで
+      const minSide = Math.min(W, H);
+      for (let div = 1; div <= 8; div++) {
+        const T = minSide / div;
+        if (T < Math.max(W, H) / 7 || T < 120) break;
+        const step = T * 0.7;
+        for (let ty = 0; ty < H; ty += step) {
+          const y0 = Math.min(ty, H - T);
+          for (let tx = 0; tx < W; tx += step) {
+            const x0 = Math.min(tx, W - T);
+            tctx.clearRect(0, 0, TILE_PX, TILE_PX);
+            tctx.drawImage(srcCanvas, x0, y0, T, T, 0, 0, TILE_PX, TILE_PX);
+            collect(detector.detect(tile), x0, y0, T / TILE_PX);
+            if (tx + T >= W) break;
+          }
+          if (ty + T >= H) break;
+          await new Promise(r => setTimeout(r, 0)); // 画面を固めない
+        }
+      }
+      // 重複をまとめる（スコアの高い順に残す。重なりが大きい／中心が既存の枠の中にあるものは捨てる）
+      found.sort((a, b) => b.score - a.score);
+      const kept = [];
+      found.forEach(f => {
+        const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+        const owner = kept.find(k => reportBoxIou(f, k) > 0.25 || (cx > k.x && cx < k.x + k.w && cy > k.y && cy < k.y + k.h));
+        if (owner) owner.votes++;
+        else kept.push(Object.assign({}, f, { votes: 1 }));
+      });
+      // 誤検出（手・服・壁の絵など）を減らす:
+      //  ① 本物の顔は大きさの違うタイルで何度も見つかる。1回しか見つからず確信度も低いものは捨てる
+      //  ② 集合写真の顔の大きさはそろうので、中央値から大きく外れる枠は確信度が高くない限り捨てる
+      //  ③ 確信度が低いものは目・鼻・口の並びが顔らしいかを見る（両目の間隔が狭い＝手、目が枠の端に寄る＝模様 など）
+      const faceLike = (k) => {
+        const kp = k.kp || [];
+        if (kp.length < 4) return true;
+        const [eR, eL, nose, mouth] = kp;
+        const eyeDist = Math.abs(eL[0] - eR[0]);
+        const eyeCx = (eL[0] + eR[0]) / 2, eyeY = (eL[1] + eR[1]) / 2;
+        return eyeDist >= 0.3 && eyeCx >= 0.3 && eyeCx <= 0.7 && eyeY < nose[1] && nose[1] < mouth[1];
+      };
+      const voted = kept.filter(k => k.score >= 0.85 || (k.votes >= 2 && faceLike(k)));
+      if (voted.length < 3) return voted;
+      const sizes = voted.map(k => Math.sqrt(k.w * W * k.h * H)).sort((a, b) => a - b);
+      const median = sizes[Math.floor(sizes.length / 2)];
+      return voted.filter(k => {
+        const sz = Math.sqrt(k.w * W * k.h * H);
+        return k.score >= 0.85 || (sz >= median * 0.45 && sz <= median * 2.2);
+      });
+    }
+
+    /** 自動検出してスタンプを置き直す。file を渡すと縮小前の元画像で検出する */
+    async function runReportFaceDetect(file) {
+      if (!reportPhotoDataUrl || reportFaceDetecting) return;
+      reportFaceDetecting = true;
+      updateReportStampUi('🔍 顔を探しています…');
+      try {
+        const srcCanvas = await reportLoadDetectCanvas(file instanceof Blob ? file : reportPhotoDataUrl, 2400);
+        const faces = await reportDetectFaces(srcCanvas);
+        const aspect = srcCanvas.height / srcCanvas.width;
+        reportPhotoStamps = faces.map(f => ({
+          x: f.x + f.w / 2,
+          y: f.y + f.h * 0.45,
+          s: Math.max(f.w, f.h * aspect) * REPORT_FACE_STAMP_RATIO
+        }));
+        reportPersistPhoto();
+        await reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+        updateReportStampUi(faces.length ? `${faces.length}人の顔を隠しました` : '顔が見つかりませんでした（タップで追加できます）');
+      } catch (e) {
+        console.warn('[イベントレポート] 顔検出に失敗:', e);
+        updateReportStampUi('⚠️ 自動検出できませんでした（ネット接続を確認。タップで手動追加は可能）');
+      } finally {
+        reportFaceDetecting = false;
+        const btn = document.getElementById('reportStampDetectBtn');
+        if (btn) { btn.disabled = false; btn.textContent = '🔍 自動で隠す'; }
+      }
+    }
+
+    function reportDrawPhotoStamps(ctx, natW, natH, sx, sy, k) {
+      if (!reportPhotoStamps.length) return;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      reportPhotoStamps.forEach(st => {
+        const size = st.s * natW * k * (reportStampStyle.scale || 1);
+        const cx = (st.x * natW - sx) * k;
+        const cy = (st.y * natH - sy) * k;
+        ctx.font = `${Math.max(8, size)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+        ctx.fillText(reportStampStyle.emoji || '😊', cx, cy + size * 0.06);
+      });
+      ctx.restore();
+    }
+
+    /** プレビュー上のタップ位置にスタンプがあれば消し、なければ置く */
+    function reportToggleStampAt(canvasEl, clientX, clientY) {
+      if (!reportPhotoNaturalSize || !reportPhotoDataUrl) return;
+      const rect = canvasEl.getBoundingClientRect();
+      const w = canvasEl.width, h = canvasEl.height;
+      const px = (clientX - rect.left) * (w / rect.width);
+      const py = (clientY - rect.top) * (h / rect.height);
+      const { w: natW, h: natH } = reportPhotoNaturalSize;
+      const { sx, sy, sw } = reportComputeCoverCrop(natW, natH, w, h, reportPhotoCrop.zoom, reportPhotoCrop.x, reportPhotoCrop.y);
+      const ix = (sx + px * (sw / w)) / natW;
+      const iy = (sy + py * (sw / w)) / natH;
+      const scale = reportStampStyle.scale || 1;
+      const hit = reportPhotoStamps.findIndex(st => {
+        const r = st.s * scale / 2;
+        return Math.hypot(ix - st.x, (iy - st.y) * natH / natW) <= r;
+      });
+      if (hit >= 0) {
+        reportPhotoStamps.splice(hit, 1);
+      } else {
+        const sizes = reportPhotoStamps.map(st => st.s).sort((a, b) => a - b);
+        const s = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0.08;
+        reportPhotoStamps.push({ x: ix, y: iy, s });
+      }
+      reportPersistPhoto();
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+      updateReportStampUi();
+    }
+
+    function toggleReportStampMode() {
+      reportStampEditMode = !reportStampEditMode;
+      updateReportStampUi();
+    }
+
+    function onReportStampStyleChange() {
+      const sel = document.getElementById('reportStampEmojiSelect');
+      const sl = document.getElementById('reportStampSizeSlider');
+      reportStampStyle = { emoji: (sel && sel.value) || '😊', scale: parseFloat(sl && sl.value) || 1 };
+      if (sel && document.activeElement === sel) reportPersistPhoto();
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+    }
+
+    function clearReportStamps() {
+      reportPhotoStamps = [];
+      reportPersistPhoto();
+      void reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
+      updateReportStampUi('スタンプを全部消しました');
+    }
+
+    function updateReportStampUi(statusText) {
+      const modeBtn = document.getElementById('reportStampModeBtn');
+      if (modeBtn) {
+        modeBtn.textContent = reportStampEditMode ? '✋ タップで追加・削除: ON' : '✋ タップで追加・削除: OFF';
+        modeBtn.setAttribute('aria-pressed', reportStampEditMode ? 'true' : 'false');
+        modeBtn.classList.toggle('bg-cyber-orange', reportStampEditMode);
+        modeBtn.classList.toggle('text-cyber-on-orange', reportStampEditMode);
+        modeBtn.classList.toggle('bg-cyber-bg', !reportStampEditMode);
+        modeBtn.classList.toggle('text-cyber-orange', !reportStampEditMode);
+      }
+      const detectBtn = document.getElementById('reportStampDetectBtn');
+      if (detectBtn) {
+        detectBtn.disabled = reportFaceDetecting;
+        detectBtn.textContent = reportFaceDetecting ? '⏳ 検出中…' : '🔍 自動で隠す';
+      }
+      const status = document.getElementById('reportStampStatus');
+      if (status) status.textContent = statusText != null ? statusText : (reportPhotoStamps.length ? `スタンプ ${reportPhotoStamps.length}個` : '');
+    }
+
     // 写真は1枚目にのみ存在するため、ドラッグ操作は #reportPreviewBox1 にのみ登録する
     function setupReportPhotoDrag() {
       const box = document.getElementById('reportPreviewBox1');
@@ -7155,6 +7765,11 @@
       box.addEventListener('pointerdown', (ev) => {
         const canvasEl = ev.target && ev.target.closest && ev.target.closest('#report-photo-canvas');
         if (!canvasEl) return;
+        if (reportStampEditMode) {
+          reportToggleStampAt(canvasEl, ev.clientX, ev.clientY);
+          ev.preventDefault();
+          return;
+        }
         dragging = true;
         lastX = ev.clientX; lastY = ev.clientY;
         try { canvasEl.setPointerCapture(ev.pointerId); } catch (e) { /* 非対応環境は無視 */ }
@@ -7211,6 +7826,7 @@
       const box = document.getElementById(`reportPreviewBox${pageNum}`);
       if (!box || !canvas) return;
       const scale = reportComputePreviewScale(box);
+      box.style.aspectRatio = `1200 / ${canvas.offsetHeight || 1350}`; // 高さは中身に合わせて可変
       box.innerHTML = '';
       canvas.style.position = 'absolute';
       canvas.style.left = '0';
@@ -7233,7 +7849,6 @@
       const canvases = await buildReportHtml(data, reportPhotoDataUrl, reportPhotoCrop, noteText, nextEventText);
       if (!canvases) return; // 大会未終了などでbuildReportHtml側が中止した場合
       reportMountPreview(canvases[0], 1);
-      reportMountPreview(canvases[1], 2);
     }
 
     // File → dataURL → Image → canvas(長辺1200px) → JPEG dataURL。
@@ -7286,10 +7901,13 @@
         const resized = await reportResizePhotoFile(file);
         reportPhotoDataUrl = resized;
         reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 }; // 新しい写真なのでクロップは初期化
+        reportPhotoStamps = [];
         reportPhotoSaveWarned = false;
         reportPersistPhoto();
         updateReportPhotoButtons();
         await regenerateReportPreview();
+        // 顔の自動検出は縮小前の元画像で行う（集合写真の小さい顔を拾うため）
+        void runReportFaceDetect(file);
       } catch (e) {
         console.warn('[イベントレポート] 写真の読み込みに失敗:', e);
         await showAlert('画像を読み込めませんでした。HEIC形式の可能性があります。iPhoneの写真アプリから選び直すか、JPEG／PNGに変換してからお試しください。');
@@ -7300,6 +7918,7 @@
     function removeReportPhoto() {
       reportPhotoDataUrl = null;
       reportPhotoCrop = { zoom: 1, x: 0.5, y: 0.5 };
+      reportPhotoStamps = [];
       try { localStorage.removeItem(REPORT_PHOTO_KEY); } catch (e) { console.warn('[イベントレポート] 写真の削除に失敗:', e); }
       updateReportPhotoButtons();
       void regenerateReportPreview();
@@ -7335,8 +7954,9 @@
       try { await document.fonts.ready; } catch (e) { /* 非対応環境は無視 */ }
 
       try {
+        const pageHeight = canvas.offsetHeight || 1350;
         const rendered = await html2canvas(canvas, {
-          width: 1200, height: 1350, scale: 1,
+          width: 1200, height: pageHeight, scale: 1,
           backgroundColor: '#f2f0ea', useCORS: true, logging: false
         });
         return await new Promise((resolve, reject) => {
@@ -7365,7 +7985,7 @@
       URL.revokeObjectURL(url);
     }
 
-    // 2枚を順にダウンロードする。連続ダウンロードはブラウザにブロックされることがあるため2枚目は300ms待つ
+    // 1枚のPNGをダウンロードする
     async function downloadReportPng() {
       if (reportPngGenerating) return;
       setReportGenerating(true);
@@ -7374,12 +7994,7 @@
         const dateStr = reportFilenameDateStr();
 
         const blob1 = await reportCapturePng(1);
-        reportDownloadBlob(blob1, `${name}_report_${dateStr}_p1.png`);
-
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        const blob2 = await reportCapturePng(2);
-        reportDownloadBlob(blob2, `${name}_report_${dateStr}_p2.png`);
+        reportDownloadBlob(blob1, `${name}_report_${dateStr}.png`);
       } catch (e) {
         console.warn('[イベントレポート] PNG保存に失敗:', e);
         await showAlert('PNGの生成に失敗しました。時間をおいて再度お試しください。');
