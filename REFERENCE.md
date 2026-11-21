@@ -50,6 +50,8 @@
 
 ### parts.csv
 - マスターデータ。`window.addEventListener('DOMContentLoaded')` でロード
+- 列：`パーツID,選択画面用名称,HUD表示用名称,頻出フラグ,発売状況`。アプリが使うのは先頭4列。5列目 `発売状況` は空欄＝国内発売済み／`海外限定`／`発売前（日付）`／`未確認（…）`
+- 写しなので直接編集しない。正本は `kamenacebeyblade/kamen-a-rules` の `refs/parts.csv`（`.github/workflows/sync-parts-csv.yml` が毎時取り込む）
 - `fetch('parts.csv')` はローカル `file://` では動作しないため、ローカルサーバー（`python3 -m http.server 5500` / Live Server 等）経由でアクセスすること
 
 ### パーツIDプリフィックス

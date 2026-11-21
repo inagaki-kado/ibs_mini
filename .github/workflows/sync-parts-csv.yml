@@ -31,18 +31,21 @@ jobs:
       - name: 中身を検査（壊れたファイルで上書きしない）
         run: |
           set -euo pipefail
+          # アプリが読むのは先頭4列。5列目以降（発売状況など）は追加してよい
           header='パーツID,選択画面用名称,HUD表示用名称,頻出フラグ'
           first=$(head -1 /tmp/parts.csv | tr -d '\r' | sed 's/^\xEF\xBB\xBF//')
-          if [ "$first" != "$header" ]; then
-            echo "::error::見出し行が想定と違う: $first"; exit 1
-          fi
+          case "$first" in
+            "$header"|"$header",*) ;;
+            *) echo "::error::見出し行が想定と違う: $first"; exit 1 ;;
+          esac
+          cols=$(echo "$first" | awk -F',' '{print NF}')
           rows=$(($(wc -l < /tmp/parts.csv) - 1))
           if [ "$rows" -lt 200 ]; then
             echo "::error::行数が少なすぎる（$rows 行）"; exit 1
           fi
-          bad=$(awk -F',' 'NR>1 && NF!=4' /tmp/parts.csv | head -5)
+          bad=$(awk -F',' -v n="$cols" 'NR>1 && NF!=n' /tmp/parts.csv | head -5)
           if [ -n "$bad" ]; then
-            echo "::error::列数が4でない行がある: $bad"; exit 1
+            echo "::error::列数が見出し（$cols 列）と違う行がある: $bad"; exit 1
           fi
           echo "OK: $rows 件"
 
