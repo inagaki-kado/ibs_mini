@@ -100,6 +100,9 @@
 
         #tournament-title-area { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; align-items: center; width: 60%; transition: 0.3s; pointer-events: none; }
         #tournament-title-area img { display: block; margin: 0 auto; }
+        /* 大会名の上の「WINNERS 2回戦」（SET_MATCH の roundJa）。大会名と同じフォント・サイズ */
+        #match-round-label { pointer-events: none; white-space: nowrap; }
+        #match-round-label:empty { display: none; }
         .tournament-input { font-family: 'Chakra Petch', sans-serif !important; font-size: 18px; font-weight: 700; font-style: italic; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 2px 2px rgba(0,0,0,0.7); background: transparent; border: none; text-align: center; width: 100%; outline: none; line-height: 1.2; pointer-events: auto; }
 
         .player-wrapper { position: fixed; top: 75px; z-index: 50; display: flex; flex-direction: column; gap: 2px; transition: top 0.4s; }
@@ -840,7 +843,7 @@
 
     <div id="main-hud">
         <div id="battle-counter-area"><span class="battle-label">BATTLE</span><span id="battle-ordinal" class="battle-ordinal">1</span></div>
-        <div id="tournament-title-area"><img id="tournament-logo-img" src="" alt=""><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
+        <div id="tournament-title-area"><div id="match-round-label" class="tournament-input"></div><img id="tournament-logo-img" src="" alt=""><input type="text" id="tournament-name-1" class="tournament-input" value="ITABASHI BEY-ROULETTE"></div>
 
         <div id="p1-wrapper" class="player-wrapper">
             <input type="text" id="name1" class="name-input" value="BLADER 1" oninput="adjustNameFontSize('name1'); saveMatchState();">
@@ -1086,6 +1089,7 @@
                 name1: document.getElementById('name1').value,
                 name2: document.getElementById('name2').value,
                 tournamentName: tName1.value,
+                roundLabel: document.getElementById('match-round-label').textContent,
                 beybladeP1, beybladeP2,
                 activeHistory: Array.from(document.querySelectorAll('.hud-btn.active-history')).map(el => el.id),
                 finLive: JSON.parse(JSON.stringify(finLive)),
@@ -1130,6 +1134,7 @@
             if (typeof st.name1 === 'string' && st.name1) document.getElementById('name1').value = st.name1;
             if (typeof st.name2 === 'string' && st.name2) document.getElementById('name2').value = st.name2;
             if (typeof st.tournamentName === 'string' && st.tournamentName) tName1.value = st.tournamentName;
+            if (typeof st.roundLabel === 'string') document.getElementById('match-round-label').textContent = st.roundLabel;
             document.getElementById('score1').innerText = s1;
             document.getElementById('score2').innerText = s2;
             updateWinPointButtons();
@@ -2366,6 +2371,8 @@
                         adjustNameFontSize('name1');
                         adjustNameFontSize('name2');
                         
+                        // ラウンド名（DE のみ送信）。送らない管理アプリの試合では消す
+                        document.getElementById('match-round-label').textContent = String(data.roundJa || '').trim();
                         if (data.tName) {
                             document.getElementById('tournament-name-1').value = data.tName;
                             localStorage.setItem('tbh_t1_v2', data.tName);

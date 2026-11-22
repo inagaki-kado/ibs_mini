@@ -294,6 +294,22 @@
     return 'L' + rIdx;
   }
 
+  // score.html の大会名の上に出す日本語ラウンド名（親機 getDePreviewProgress の roundJa と同じ表記）
+  function subRoundJa(bracket, rIdx) {
+    const r = Number(rIdx) || 0;
+    const wbTotal = appState?.winnersBracket?.length || 0;
+    const lbTotal = appState?.losersBracket?.length || 0;
+    if (bracket === 'wb') return r === wbTotal - 1 ? 'WINNERS 決勝' : `WINNERS ${r + 1}回戦`;
+    if (bracket === 'lb') {
+      if (r === lbTotal - 1) return 'LOSERS 決勝';
+      if (subIsTonamel24()) return r === 0 ? 'LOSERS 合流前' : `LOSERS ${r}回戦`;
+      return `LOSERS ${r + 1}回戦`;
+    }
+    if (bracket === 'gf') return 'グランドファイナル';
+    if (bracket === 'gf_reset') return 'グランドファイナル リセット戦';
+    return '';
+  }
+
   // 画面上の 'left'/'right' → 論理 'p1'/'p2'（親機への結果送信・beyP1/beyP2の保存に使う）
   function dispToLogical(side) {
     if (!isSwapped) return side === 'left' ? 'p1' : 'p2';
@@ -831,7 +847,8 @@
     sendToScoreLinks({
       type: 'SET_MATCH', p1: m.p1.name, p2: m.p2.name,
       p1Stats: statsPayloadFor(m.p1), p2Stats: statsPayloadFor(m.p2),
-      p1BeyText: beyP1, p2BeyText: beyP2
+      p1BeyText: beyP1, p2BeyText: beyP2,
+      roundJa: subRoundJa(currentMatch.bracket, currentMatch.roundIdx)
     });
 
     // MATCHタブ表示切り替え
