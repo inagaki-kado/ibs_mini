@@ -5575,7 +5575,7 @@
         '劣勢を跳ね返した驚異の粘り'
       ],
       '番狂わせ': [
-        '上位シードを撃破する大金星',
+        'BP上位を撃破する大金星',
         '格上相手に堂々の勝利',
         '下馬評を覆す番狂わせ'
       ],
@@ -5705,7 +5705,6 @@
         .concat(lbThirdPlace && lbThirdPlace.winner !== null && lbThirdPlace.p1 && lbThirdPlace.p2
           ? [{ match: lbThirdPlace, bracket: 'lb3rd', roundIdx: 0 }] : [])
         .filter(e => !excluded.has(e.match));
-      const seedMap = getReportSeedMap();
       const picks = [];
       const usedCategories = new Set();
 
@@ -5748,14 +5747,16 @@
           if (tryAdd('大逆転', entry)) break;
         }
       }
-      // 優先3: 番狂わせ（初戦シード差8以上）
-      for (const entry of matches) {
-        const w = getW(entry.match), l = getL(entry.match);
-        if (!w || !l) continue;
-        const wSeed = seedMap[w.id], lSeed = seedMap[l.id];
-        if (wSeed != null && lSeed != null && (wSeed - lSeed) >= 8) {
-          if (tryAdd('番狂わせ', entry)) break;
-        }
+      // 優先3: 番狂わせ（大会前のBPが8,000以上低い選手の勝利。差が最も大きい試合）
+      // ※以前は初戦の枠順を「シード」とみなしていたが、枠順は色抽選で決まり実力差を表さないため BP で判定する
+      {
+        const bpOf = (p) => (p && p.initialStats && typeof p.initialStats.power === 'number') ? p.initialStats.power : null;
+        const upsets = matches.map(entry => {
+          const w = getW(entry.match), l = getL(entry.match);
+          const wp = bpOf(w), lp = bpOf(l);
+          return { entry, gap: (wp != null && lp != null) ? lp - wp : -Infinity };
+        }).filter(u => u.gap >= 8000).sort((a, b) => b.gap - a.gap);
+        for (const u of upsets) { if (tryAdd('番狂わせ', u.entry)) break; }
       }
       // 優先4: 完封（敗者0点）
       for (const entry of matches) {
@@ -5797,7 +5798,7 @@
           else if (bey.type === 'BX' || bey.type === 'UX' || bey.type === 'CX') {
             console.warn('[イベントレポート] BLADEパーツ名が取得できないベイをスキップ:', bey.name);
           }
-          if (bey.parts.RC2) ratchetCounts[bey.parts.RC2] = (ratchetCounts[bey.parts.RC2] || 0) + 1;
+          if (bey.parts.RC2 && !reportIsNoPart(bey.parts.RC2)) ratchetCounts[bey.parts.RC2] = (ratchetCounts[bey.parts.RC2] || 0) + 1;
           if (bey.parts.BT) bitCounts[bey.parts.BT] = (bitCounts[bey.parts.BT] || 0) + 1;
         });
       });
@@ -5805,12 +5806,82 @@
       return { blade: top3(bladeCounts), ratchet: top3(ratchetCounts), bit: top3(bitCounts) };
     }
 
-    function getReportCxRatio() {
+    // 「なし」等の空パーツ（ラチェット一体型のブレード等）はランキングに載せない
+    function reportIsNoPart(name) {
+      const n = String(name || '').trim();
+      return !n || n === 'なし' || n === '－' || n === '-';
+    }
+
+    // ブレードの国内初発売日（再販・別カラーは含めない）。載っていないブレードはこれより前の発売として扱う。
+    // 新ブレードが出たら追記する。出典: タカラトミー発表／商品情報（2026年分）
+    const REPORT_BLADE_RELEASE_DATES = {
+      'ジークスペリオン': '2026-11-21',      // BX-54
+      'ヘルズサイズV2': '2026-11-21',        // CX-20 カスタマイズセットC
+      'フォース': '2026-11-21',              // CX-20 カスタマイズセットC（メタルブレード）
+      'ラスタードラグーン': '2026-10-10',    // BX-52
+      'ウィザードアローV2': '2026-10-10',    // BX-53 オールインワンセット
+      'ナイトシールドV2': '2026-10-10',      // BX-53 オールインワンセット
+      'ヘルズネザー': '2026-08-08',          // UX-21
+      'グローリーワルキューレ': '2026-07-11', // UX-20
+      'ドランストライク': '2026-05-16',      // BX-49
+      'バレットグリフォン': '2026-04-25',    // UX-19
+      'ストームスプリガン': '2026-03-28'
+    };
+    function reportBladeReleaseDate(name) {
+      const key = String(name || '').normalize('NFKC').replace(/v2$/i, 'V2').replace(/\s+/g, '');
+      return REPORT_BLADE_RELEASE_DATES[key] || null;
+    }
+
+    // ベイのブレード名（BX/UX/CXメイン/メタルブレード）。発売日の照合用
+    function reportBladeNameForRelease(bey) {
+      const p = (bey && bey.parts) || {};
+      return p.BX || p.UX || p.CX || p.MB || null;
+    }
+
+    // 当日使われたブレードのうち発売日が最も新しいものと、その使用率（登録した人数／参加人数）。
+    // 同じ発売日が複数あるときは使用人数 → バトル勝率の高い順。発売日の分かるブレードが無ければ null
+    function getReportNewestBlade() {
       const entrants = getReportEntrants();
       const total = entrants.length;
-      const count = entrants.filter(p => (p.beyblades || []).some(b => b && (b.type === 'CX' || b.type === 'CX(EX)'))).length;
-      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-      return { count, total, percent };
+      const users = {};
+      entrants.forEach(p => {
+        const names = new Set((p.beyblades || []).map(reportBladeNameForRelease).filter(Boolean));
+        names.forEach(n => { (users[n] = users[n] || new Set()).add(p.id); });
+      });
+      const candidates = Object.keys(users).filter(n => reportBladeReleaseDate(n));
+      if (!candidates.length || !total) return null;
+      const latest = candidates.map(reportBladeReleaseDate).sort().pop();
+      const winRate = {};
+      const wr = (getReportPartsWinRateRaw && getReportPartsWinRateRaw()) || {};
+      Object.keys(wr).forEach(n => { winRate[n] = wr[n]; });
+      const pick = candidates
+        .filter(n => reportBladeReleaseDate(n) === latest)
+        .sort((a, b) => (users[b].size - users[a].size) || ((winRate[b] || 0) - (winRate[a] || 0)))[0];
+      const count = users[pick].size;
+      return { name: pick, date: latest, count, total, percent: Math.round(count / total * 100) };
+    }
+
+    // ブレードごとのバトル勝率（%）。バトル記録が無ければ空
+    function getReportPartsWinRateRaw() {
+      try {
+        const out = {};
+        const all = getReportAllMatches().concat(getReportFinalMatches());
+        all.forEach(({ match: m }) => {
+          (m.battles || []).forEach(b => {
+            const p1 = (m.p1.beyblades || []).find(x => x && x.name === (b.p1Bey || m.p1BeyUsed));
+            const p2 = (m.p2.beyblades || []).find(x => x && x.name === (b.p2Bey || m.p2BeyUsed));
+            [[p1, b.winner === 'p1'], [p2, b.winner === 'p2']].forEach(([bey, won]) => {
+              const n = reportBladeNameForRelease(bey);
+              if (!n) return;
+              const t = out[n] = out[n] || { w: 0, n: 0 };
+              t.n++; if (won) t.w++;
+            });
+          });
+        });
+        const rate = {};
+        Object.keys(out).forEach(n => { rate[n] = out[n].w / out[n].n * 100; });
+        return rate;
+      } catch (e) { return {}; }
     }
 
     // LB敗退ラウンド（＋GF/GFリセット/LB3rd）から「どこまで勝ち上がったか」の深さを算出する。
@@ -6069,8 +6140,8 @@
     function reportTallyPartCategory(battles, field) {
       const tally = {};
       battles.forEach(bt => {
-        const winName = bt.winnerParts[field];
-        const loseName = bt.loserParts[field];
+        const winName = reportIsNoPart(bt.winnerParts[field]) ? '' : bt.winnerParts[field];
+        const loseName = reportIsNoPart(bt.loserParts[field]) ? '' : bt.loserParts[field];
         if (winName) {
           if (!tally[winName]) tally[winName] = { name: winName, wins: 0, losses: 0 };
           tally[winName].wins++;
@@ -6242,7 +6313,7 @@
       const headline = getReportHeadline();
       const highlights = getReportHighlights();
       const partsRanking = getReportPartsRanking();
-      const cxRatio = getReportCxRatio();
+      const newestBlade = getReportNewestBlade();
       const bestEightNote = getReportBestEightNote();
       const kimariteDist = getReportKimariteDist();
       const kimariteNote = getReportKimariteNote(kimariteDist);
@@ -6263,7 +6334,7 @@
         headline,
         highlights,
         partsRanking,
-        cxRatio,
+        newestBlade,
         bestEightNote,
         kimariteDist,
         kimariteNote,
@@ -6440,6 +6511,12 @@
     };
 
     let reportLogoDataUrlCache = null; // 成功時のみキャッシュ（404を試す度に固定化しない）
+
+    // 折り返す日本語の文章用。html2canvas は折り返しをまたぐ語を前の行の先頭に重ねて描くことがあるため、
+    // 1文字ずつ別の要素にして、どこで折り返しても位置がずれないようにする（2026-11-21 の見出しで発生）
+    function reportCharSpans(str) {
+      return Array.from(String(str == null ? '' : str)).map(ch => `<span>${reportEscapeHtml(ch)}</span>`).join('');
+    }
 
     function reportEscapeHtml(str) {
       return String(str == null ? '' : str)
@@ -6680,7 +6757,7 @@
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:8px;">${label}</div>
           <div style="font-family:'Noto Sans JP', sans-serif; font-weight:700; font-size:${compact ? 28 : 32}px; line-height:1.35; color:#14161a; margin-bottom:10px;">${reportEscapeHtml(title)}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 16 : 17}px; line-height:1.7; color:#3f3f46; word-break:break-all;">${reportEscapeHtml(comment)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 16 : 17}px; line-height:1.7; color:#3f3f46;">${reportCharSpans(comment)}</div>
         </div>`;
     }
 
@@ -6903,14 +6980,18 @@
         reportBuildPartsCard('RATCHET', pr.ratchet, 'ratchet'),
         reportBuildPartsCard('BIT', pr.bit, 'bit')
       ].join('');
-      const cx = data.cxRatio || { count: 0, total: 0, percent: 0 };
-      let noteText = `CXライン採用率 ${cx.percent}%（${cx.total}名中${cx.count}名）。`;
+      const nb = data.newestBlade;
+      let noteText = '';
+      if (nb) {
+        const [, mm, dd] = nb.date.split('-').map(Number);
+        noteText = `最新ブレード${nb.name}（${mm}/${dd}発売）の使用率 ${nb.percent}%（${nb.total}名中${nb.count}名）。`;
+      }
       if (data.bestEightNote) noteText += data.bestEightNote;
       return `
         <div style="flex:0 0 auto;">
           <div style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#a8321e; margin-bottom:10px;">本日のパーツ事情</div>
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;">${cards}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:10px;">${reportEscapeHtml(noteText)}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:10px;">${reportCharSpans(noteText)}</div>
           ${reportBuildKimariteBar(data)}
         </div>`;
     }
@@ -6949,7 +7030,7 @@
       return `
         <div style="flex:0 0 auto; margin-top:12px;">
           <div style="height:34px; border-radius:5px; overflow:hidden; display:flex; border:1px solid #14161a;">${segs}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:8px;">${reportEscapeHtml(data.kimariteNote || '')}</div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:15px; color:#57534e; margin-top:8px;">${reportCharSpans(data.kimariteNote || '')}</div>
         </div>`;
     }
 
@@ -7106,7 +7187,7 @@
       return `
         <div style="background:#ffffff; border:1px solid #d6d1c4; padding:${compact ? '8px 11px' : '10px 13px'};">
           <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 13 : 14}px; color:#57534e; margin-bottom:${compact ? 2 : 4}px;">${reportEscapeHtml(label)}</div>
-          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 17 : 19}px; font-weight:700; color:#14161a; word-break:break-all;">${reportEscapeHtml(entry.name)}<span style="font-family:'Orbitron', sans-serif; font-size:15px; color:#a8321e; margin-left:7px;">${entry.value}${reportEscapeHtml(entry.unit)}</span></div>
+          <div style="font-family:'Noto Sans JP', sans-serif; font-size:${compact ? 17 : 19}px; font-weight:700; color:#14161a; word-break:break-all;">${reportEscapeHtml(entry.name)}<span style="font-family:'Orbitron', sans-serif; font-size:15px; color:#a8321e; margin-left:7px; display:inline-block; white-space:nowrap;">${entry.value}${reportEscapeHtml(entry.unit)}</span></div>
         </div>`;
     }
 
@@ -7173,7 +7254,7 @@
       return `
         <div style="flex:0 0 auto; display:flex; align-items:baseline; gap:14px; background:#14161a; padding:10px 16px;">
           <span style="font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:3px; color:#f2c94c; flex:none;">NEXT</span>
-          <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#ffffff; word-break:break-all;">${reportEscapeHtml(nextEventText.trim())}</span>
+          <span style="font-family:'Noto Sans JP', sans-serif; font-size:16px; font-weight:700; color:#ffffff;">${reportCharSpans(nextEventText.trim())}</span>
         </div>`;
     }
 
