@@ -1634,6 +1634,7 @@
         p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate },
         h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
         catchphrase,
+        ...getDePreviewProgressFields(msg.bracket, msg.roundIdx),
         ...getShowPreviewHudFields()
       };
       if (conn && conn.open) conn.send({ type: 'SHOW_PREVIEW', ...payload });
@@ -4127,6 +4128,88 @@
       return '';
     }
 
+    // ===== 📢次戦予告：進行状況（日本語のラウンド名・勝者の最低保証順位） =====
+    // 各LBラウンドで実際に脱落する人数を、ブラケットの配線（_meta）とBYEから数える。
+    // BYE相手の試合は不戦勝なので脱落者0として扱う。
+    function getDeRealElimCounts() {
+      const elim = new Array(losersBracket.length).fill(0);
+      const realIn = new Map();
+      let ok = true;
+      const add = (to) => {
+        if (!to) return;
+        const m = getMatchByCoords(to.bracket, to.round, to.index);
+        if (m) realIn.set(m, (realIn.get(m) || 0) + 1);
+      };
+      let total = 0;
+      winnersBracket.forEach((round, r) => round.forEach(m => {
+        if (!m || !m._meta) { ok = false; return; }
+        let n;
+        if (r === 0) { n = [m.p1, m.p2].filter(p => p && p.id !== 'BYE').length; total += n; }
+        else n = realIn.get(m) || 0;
+        if (n >= 1) add(m._meta.winnerTo);
+        if (n >= 2) add(m._meta.loserTo);
+      }));
+      losersBracket.forEach((round, r) => round.forEach(m => {
+        if (!m || !m._meta) { ok = false; return; }
+        const n = realIn.get(m) || 0;
+        if (n >= 1) add(m._meta.winnerTo);
+        if (n >= 2) elim[r]++;
+      }));
+      return ok ? { total, elim } : null;
+    }
+
+    // SHOW_PREVIEW に足す項目（既存の label 等はそのまま。受信側は無ければ従来表示）
+    function getDePreviewProgressFields(bracket, roundIdx) {
+      try {
+        const p = getDePreviewProgress(bracket, roundIdx);
+        return { stageSide: p.side, roundJa: p.roundJa, guarantee: p.guarantee };
+      } catch (e) {
+        console.warn('getDePreviewProgress failed', e);
+        return {};
+      }
+    }
+
+    // 戻り値: { side:'wb'|'lb'|'final', roundJa:'WINNERS 1回戦', guarantee:'勝者はベスト8進出！' }
+    function getDePreviewProgress(bracket, roundIdx) {
+      const r = Number(roundIdx) || 0;
+      const wbN = winnersBracket.length, lbN = losersBracket.length;
+      const counts = getDeRealElimCounts();
+      // LBラウンドLで脱落した場合の最も低い順位（= そのラウンド開始時点で残っている人数）
+      const worstAt = (L) => {
+        if (!counts) return null;
+        let alive = counts.total;
+        for (let i = 0; i < L; i++) alive -= counts.elim[i];
+        return alive;
+      };
+      const text = (w) => {
+        if (w == null || w < 2) return '';
+        if (w === 2) return '勝者は準優勝以上確定！';
+        if (w === 3) return '勝者は3位以上確定！';
+        return `勝者はベスト${w}進出！`;
+      };
+      if (bracket === 'wb') {
+        const isFinal = r === wbN - 1;
+        const roundJa = isFinal ? 'WINNERS 決勝' : `WINNERS ${r + 1}回戦`;
+        if (bracketSize === 2 || lbN === 0) return { side: 'wb', roundJa, guarantee: '勝者が優勝！' };
+        if (isFinal) return { side: 'wb', roundJa, guarantee: text(2) };
+        // 次のWB戦で負けた場合の落下先LBラウンドで即敗退するのが最低ライン
+        const next = r + 1;
+        const L = (next === wbN - 1) ? lbN - 1 : next * 2 - 1;
+        return { side: 'wb', roundJa, guarantee: text(worstAt(L)) };
+      }
+      if (bracket === 'lb') {
+        const isFinal = r === lbN - 1;
+        let roundJa;
+        if (isFinal) roundJa = 'LOSERS 決勝';
+        else if (isTonamel24()) roundJa = r === 0 ? 'LOSERS 合流前' : `LOSERS ${r}回戦`;
+        else roundJa = `LOSERS ${r + 1}回戦`;
+        return { side: 'lb', roundJa, guarantee: isFinal ? text(2) : text(worstAt(r + 1)) };
+      }
+      if (bracket === 'gf') return { side: 'final', roundJa: 'グランドファイナル', guarantee: 'WINNERS側が勝てば優勝決定！' };
+      if (bracket === 'gf_reset') return { side: 'final', roundJa: 'グランドファイナル リセット戦', guarantee: '勝者が優勝！' };
+      return { side: 'final', roundJa: '', guarantee: '' };
+    }
+
     // ==========================================
     // トーナメント進行
     // ==========================================
@@ -4625,6 +4708,7 @@
         p2Stats: { rank: p2.rank, power: p2.currentStats.power, rate: p2.currentStats.rate },
         h2hP1Wins: p1Wins, h2hP2Wins: p2Wins,
         catchphrase,
+        ...getDePreviewProgressFields(block, roundIdx),
         ...getShowPreviewHudFields()
       });
       activeNextBattleId = matchKey;

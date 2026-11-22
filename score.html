@@ -627,6 +627,34 @@
         .nb-stats-num { color: #facc15; }
         .nb-vs { font-family: 'Orbitron', sans-serif; font-size: clamp(40px, 8vw, 120px); font-weight: 900; font-style: italic; color: #facc15; text-shadow: 0 0 30px #facc15, 0 0 60px #facc15; flex-shrink: 0; }
         .nb-catchphrase { display: none; font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-size: clamp(16px, 3vw, 42px); font-weight: 900; font-style: italic; color: #facc15; letter-spacing: 0.04em; text-align: center; margin: 0 0 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 10px rgba(250,204,21,0.95), 0 0 28px rgba(250,204,21,0.6), 0 2px 4px rgba(0,0,0,0.8); animation: nb-cp-glow 1.8s ease-in-out infinite alternate; }
+        /* 次戦予告：進行状況（日本語ラウンド名・勝者の最低保証） */
+        #nb-round-ja { display: none; font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-size: clamp(28px, 5.2vw, 76px); font-weight: 900; letter-spacing: 0.06em; text-align: center; line-height: 1.15; color: #fff; margin-bottom: 0.4rem; white-space: nowrap; }
+        #nb-guarantee { display: none; width: fit-content; max-width: 94%; margin: 0 auto 1.2rem; padding: 0.15em 0.9em; border-radius: 999px; font-family: 'Noto Sans JP', sans-serif; font-size: clamp(20px, 3.4vw, 50px); font-weight: 900; letter-spacing: 0.04em; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #facc15; color: #1a1200; }
+        #nb-progress { display: flex; flex-direction: column; align-items: center; }
+        /* 高さが足りない画面（iPhone 横向き・720p）ではラウンド名と保証を1行に並べる */
+        @media (max-height: 820px) {
+            #nb-progress { flex-direction: row; justify-content: center; gap: 0.6em; margin-bottom: 0.8rem; }
+            #nb-progress #nb-round-ja, #nb-progress #nb-guarantee { margin: 0; }
+        }
+        /* WINNERS：白背景 */
+        #next-battle-overlay.nb-side-wb { background: #f8fafc; }
+        .nb-side-wb .next-battle-blink { color: #0a0e17; animation: none; text-shadow: none; }
+        .nb-side-wb #nb-round-ja { color: #0369a1; }
+        .nb-side-wb #nb-guarantee { background: #0ea5e9; color: #04263a; }
+        .nb-side-wb .nb-catchphrase { color: #b45309; text-shadow: none; animation: none; }
+        .nb-side-wb .nb-player { color: #0a0e17; }
+        .nb-side-wb .nb-p1 { text-shadow: 0 0 14px rgba(14,165,233,0.45); }
+        .nb-side-wb .nb-p2 { text-shadow: 0 0 14px rgba(236,72,153,0.45); }
+        .nb-side-wb .nb-stats-line { color: #0369a1; }
+        .nb-side-wb .nb-stats-num { color: #b45309; }
+        .nb-side-wb .nb-vs { color: #ca8a04; text-shadow: none; }
+        #next-battle-overlay.nb-logo-dark #next-battle-logo { filter: brightness(0); opacity: 0.07; }
+        /* LOSERS：黒背景 */
+        #next-battle-overlay.nb-side-lb { background: #000; }
+        .nb-side-lb #nb-round-ja { color: #ec4899; text-shadow: 0 0 18px rgba(236,72,153,0.6); }
+        .nb-side-lb #nb-guarantee { background: #ec4899; color: #2b0c1a; }
+        /* グランドファイナル：従来の紺背景に金 */
+        .nb-side-final #nb-round-ja { color: #facc15; text-shadow: 0 0 18px rgba(250,204,21,0.6); }
         @keyframes nb-cp-glow {
             from { text-shadow: 0 0 10px rgba(250,204,21,0.95), 0 0 28px rgba(250,204,21,0.6), 0 2px 4px rgba(0,0,0,0.8); }
             to   { text-shadow: 0 0 18px rgba(250,204,21,1), 0 0 48px rgba(250,204,21,0.85), 0 2px 4px rgba(0,0,0,0.8); }
@@ -636,6 +664,11 @@
         @media (max-height: 500px) {
             #next-battle-overlay .next-battle-blink { font-size: clamp(18px,3.8vw,40px) !important; margin-bottom:0.1rem !important; }
             #nb-stage-round { font-size: clamp(9px,1.2vw,13px) !important; margin-bottom:0.5rem !important; }
+            #nb-round-ja { font-size: clamp(20px,4.2vw,40px) !important; margin-bottom:0.2rem !important; }
+            #nb-guarantee { font-size: clamp(14px,2.8vw,26px) !important; margin-bottom:0.4rem !important; }
+            /* 進行状況を出すときは NEXT BATTLE を一段小さくして縦に収める */
+            #next-battle-overlay.nb-has-progress .next-battle-blink { font-size: clamp(14px,2.6vw,26px) !important; margin-bottom:0 !important; }
+            #next-battle-overlay.nb-has-progress #nb-progress { margin-bottom: 0.4rem; }
             .nb-catchphrase { font-size: clamp(12px,2.6vw,22px) !important; margin-bottom:0.6rem !important; }
             .nb-vs-container { gap:clamp(6px,1.2vw,12px) !important; margin:0.3rem 0 !important; }
             .nb-player { font-size:clamp(16px,3.6vw,44px) !important; }
@@ -769,6 +802,10 @@
         <div id="next-battle-content">
             <div class="next-battle-blink">NEXT BATTLE</div>
             <div id="nb-stage-round"></div>
+            <div id="nb-progress">
+                <div id="nb-round-ja"></div>
+                <div id="nb-guarantee"></div>
+            </div>
             <div id="nb-catchphrase" class="nb-catchphrase"></div>
             <div class="nb-vs-container">
                 <div id="nb-p1" class="nb-player nb-p1"></div>
@@ -2260,6 +2297,7 @@
                         // 新しい次戦予告表示（logoDataUrl 優先・previewBackground / logoSrc で背景画像）
                         showNextBattle(data.p1, data.p2, data.label || '', '', data.showLogo, data.logoDataUrl, data.logoSrc, data.previewBackground, data.p1members || [], data.p2members || [], data.p1Stats, data.p2Stats, data.h2hP1Wins, data.h2hP2Wins, data.catchphrase || '');
                         applyPreviewBgStyle(data.previewBgMode, data.previewBgOpacity);
+                        applyNbProgress(data);
                     }
                     else if (data.type === 'HIDE_PREVIEW') {
                         // 次戦予告非表示
@@ -2282,6 +2320,7 @@
                     else if (data.type === 'NEXT_BATTLE_CALL') {
                         // 旧形式との互換性維持
                         showNextBattle(data.p1, data.p2, data.stage, data.round, data.showLogo);
+                        applyNbProgress({});
                     }
                     else if (data.type === 'SCROLL_OVERLAY') {
                         const overlayScroll = document.getElementById('remote-content-overlay');
@@ -2607,6 +2646,31 @@
         }
         function hideNextBattle() {
             document.getElementById('next-battle-overlay').classList.add('hidden');
+        }
+
+        /**
+         * 次戦予告の進行状況表示（tournament_de.html が送る roundJa / guarantee / stageSide）。
+         * WINNERS は白背景、LOSERS は黒背景で一目で区別できるようにする。
+         * 項目が無い送信元（他の管理アプリ）では従来どおり英字ラベルだけを出す。
+         */
+        function applyNbProgress(data) {
+            const overlay = document.getElementById('next-battle-overlay');
+            const roundEl = document.getElementById('nb-round-ja');
+            const guarEl = document.getElementById('nb-guarantee');
+            const labelEl = document.getElementById('nb-stage-round');
+            overlay.classList.remove('nb-side-wb', 'nb-side-lb', 'nb-side-final', 'nb-logo-dark', 'nb-has-progress');
+            const roundJa = String((data && data.roundJa) || '').trim();
+            const guarantee = String((data && data.guarantee) || '').trim();
+            roundEl.textContent = roundJa;
+            roundEl.style.display = roundJa ? 'block' : 'none';
+            guarEl.textContent = guarantee;
+            guarEl.style.display = guarantee ? 'block' : 'none';
+            labelEl.style.display = roundJa ? 'none' : '';
+            if (roundJa || guarantee) overlay.classList.add('nb-has-progress');
+            const side = data && data.stageSide;
+            if (side === 'wb' || side === 'lb' || side === 'final') overlay.classList.add('nb-side-' + side);
+            // 白背景では白抜きロゴが見えないので、写真(cover)以外は黒いシルエットにして薄く敷く
+            if (side === 'wb' && data.previewBgMode !== 'cover') overlay.classList.add('nb-logo-dark');
         }
 
         function showBreakOverlay(data) {

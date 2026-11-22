@@ -133,6 +133,27 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     text-shadow: 0 0 14px rgba(250,204,21,0.85), 0 2px 4px rgba(0,0,0,0.8);
   }
+  /* 進行状況（日本語ラウンド名・勝者の最低保証）。WINNERS は白背景、LOSERS は黒背景 */
+  #preview-round-ja {
+    display: none; font-family: 'Noto Sans JP', 'Orbitron', sans-serif; font-weight: 900;
+    font-size: clamp(22px, 5vw, 90px); color: #fff; letter-spacing: 0.06em; white-space: nowrap;
+  }
+  #preview-guarantee {
+    display: none; padding: 0.15em 0.9em; border-radius: 999px; max-width: 94vw;
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 900; font-size: clamp(16px, 3.4vw, 60px);
+    background: #facc15; color: #1a1200; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #preview-overlay.side-wb { background: #f8fafc; }
+  #preview-overlay.side-wb #preview-round-ja { color: #0369a1; }
+  #preview-overlay.side-wb #preview-guarantee { background: #0ea5e9; color: #04263a; }
+  #preview-overlay.side-wb #preview-catchphrase { color: #b45309; text-shadow: none; }
+  #preview-overlay.side-wb #preview-p1, #preview-overlay.side-wb #preview-p2 { color: #0a0e17; }
+  #preview-overlay.side-wb .preview-stats { color: #0369a1; }
+  #preview-overlay.side-wb .preview-vs-mark { color: #ca8a04; }
+  #preview-overlay.side-lb { background: #000; }
+  #preview-overlay.side-lb #preview-round-ja { color: #ec4899; }
+  #preview-overlay.side-lb #preview-guarantee { background: #ec4899; color: #2b0c1a; }
+  #preview-overlay.side-final #preview-round-ja { color: #facc15; }
   #preview-vs { display: flex; align-items: center; gap: clamp(10px, 3vw, 50px); }
   .preview-player-col { display: flex; flex-direction: column; align-items: center; max-width: 38vw; }
   #preview-p1, #preview-p2 {
@@ -248,6 +269,8 @@
 
   <div id="preview-overlay" class="hidden">
     <div id="preview-label"></div>
+    <div id="preview-round-ja"></div>
+    <div id="preview-guarantee"></div>
     <div id="preview-catchphrase"></div>
     <div id="preview-vs">
       <div class="preview-player-col">
@@ -424,7 +447,17 @@
       return 'Rank ' + (stats.rank || '-') + ' / BP ' + power + ' / VS ' + winText;
     }
     function showPreview(data) {
+      const roundJa = String(data.roundJa || '').trim();
+      const guarantee = String(data.guarantee || '').trim();
       $('preview-label').textContent = data.label || '';
+      $('preview-label').style.display = roundJa ? 'none' : '';
+      $('preview-round-ja').textContent = roundJa;
+      $('preview-round-ja').style.display = roundJa ? 'block' : 'none';
+      $('preview-guarantee').textContent = guarantee;
+      $('preview-guarantee').style.display = guarantee ? 'block' : 'none';
+      const ov = $('preview-overlay');
+      ov.classList.remove('side-wb', 'side-lb', 'side-final');
+      if (['wb', 'lb', 'final'].includes(data.stageSide)) ov.classList.add('side-' + data.stageSide);
       $('preview-catchphrase').textContent = data.catchphrase || '';
       $('preview-p1').textContent = data.p1 || '';
       $('preview-p2').textContent = data.p2 || '';
