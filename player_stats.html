@@ -2894,7 +2894,8 @@ async function fetchBladeMetaScore() {
   if (bladeMetaCache) return bladeMetaCache;
 
   const RANK_COEF    = { '優勝': 6, '準優勝': 4, '3位': 2, '4位': 1 };
-  const TARGET_TYPES = new Set(['BX', 'UX', 'UXE', 'CX', 'MB']);
+  // ブレード種別すべて（RC/AB/OB/RA/BT 等のブレード以外のパーツは除外）
+  const TARGET_TYPES = new Set(['BX', 'BXB', 'BXC', 'UX', 'UXE', 'CX', 'MB']);
 
   // ── parts.csv を動的取得してブレードセットを構築（キャッシュ）──
   if (!validBladesCache) {
