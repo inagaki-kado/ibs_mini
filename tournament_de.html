@@ -6900,7 +6900,9 @@
     function reportBuildHighlights(data, cols, withComeback) {
       const list = (data.highlights || []).slice();
       const c = data.comeback;
-      if (withComeback && c && !list.some(h => h.tag === '大逆転')) {
+      // 激闘側に「大逆転」がある、または同じ試合が既に載っているときは重複になるので出さない
+      const samePair = (h) => [h.p1, h.p2].includes(c.winnerName) && [h.p1, h.p2].includes(c.loserName);
+      if (withComeback && c && !list.some(h => h.tag === '大逆転' || samePair(h))) {
         const streakText = c.streak > 0 ? `${c.streak}連取` : '逆転';
         list.push({ tag: '大逆転', p1: c.winnerName, score: '', p2: '', note: `${c.behindLabel}から${streakText}。${c.roundLabel}で${c.loserName}を撃破` });
       }
@@ -7044,9 +7046,8 @@
               <span style="font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:${rankColor}; flex:none;">${idx + 1}</span>
               <span id="report-partwr-${category}-${idx}" style="font-family:'Noto Sans JP', sans-serif; font-size:16px; line-height:1.6; color:#14161a; white-space:nowrap; flex:1 1 auto; min-width:0;">${reportEscapeHtml(item.name)}</span>
             </div>
-            <div style="text-align:right; flex:none; margin-left:8px;">
-              <div style="font-family:'Orbitron', sans-serif; font-size:16px; line-height:1.3; font-weight:700; color:#a8321e;">${item.winRate}%</div>
-              <div style="font-family:'Noto Sans JP', sans-serif; font-size:11px; color:#57534e;">(${item.wins}勝${item.losses}敗)</div>
+            <div style="text-align:right; flex:none; margin-left:8px; white-space:nowrap;">
+              <span style="font-family:'Orbitron', sans-serif; font-size:16px; line-height:1.6; font-weight:700; color:#a8321e;">${item.winRate}%</span><span style="font-family:'Noto Sans JP', sans-serif; font-size:11px; color:#57534e; margin-left:4px;">${item.wins}勝${item.losses}敗</span>
             </div>
           </div>`;
       }).join('');
@@ -7236,7 +7237,7 @@
       const rows = groups.map((g, idx) => {
         const isLast = idx === groups.length - 1;
         return `
-          <div style="display:flex; align-items:flex-start; gap:10px; padding:5px 0; ${isLast ? '' : 'border-bottom:1px solid #ded9cd;'}">
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:3px 0; ${isLast ? '' : 'border-bottom:1px solid #ded9cd;'}">
             <div style="width:84px; flex:none; font-family:'Orbitron', sans-serif; font-size:14px; line-height:1.6; font-weight:700; color:#57534e;">${reportEscapeHtml(g.label)}</div>
             <div style="flex:1 1 auto; min-width:0; font-family:'Noto Sans JP', sans-serif; font-size:16px; color:#14161a; line-height:1.6;">${(g.names || []).map(n => `<span style="display:inline-block; white-space:nowrap; margin-right:14px;">${reportEscapeHtml(n)}</span>`).join('')}</div>
           </div>`;
@@ -7740,6 +7741,19 @@
           y: f.y + f.h * 0.45,
           s: Math.max(f.w, f.h * aspect) * REPORT_FACE_STAMP_RATIO
         }));
+        // 正方形に切り抜くと端の人が外れやすいので、位置を手で動かしていなければ顔の並びの中央に合わせる
+        const c0 = reportPhotoCrop || {};
+        if (faces.length && (c0.zoom || 1) === 1 && c0.x === 0.5 && c0.y === 0.5) {
+          const xs = faces.map(f => f.x).concat(faces.map(f => f.x + f.w));
+          const ys = faces.map(f => f.y).concat(faces.map(f => f.y + f.h));
+          const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+          const vw = Math.min(1, srcCanvas.height / srcCanvas.width), vh = Math.min(1, srcCanvas.width / srcCanvas.height); // 見える範囲の割合
+          reportPhotoCrop = {
+            zoom: 1,
+            x: vw < 1 ? reportClamp01((cx - vw / 2) / (1 - vw)) : 0.5,
+            y: vh < 1 ? reportClamp01((cy - vh / 2) / (1 - vh)) : 0.5
+          };
+        }
         reportPersistPhoto();
         await reportRenderPhotoCanvas(reportPhotoDataUrl, reportPhotoCrop);
         updateReportStampUi(faces.length ? `${faces.length}人の顔を隠しました` : '顔が見つかりませんでした（タップで追加できます）');
