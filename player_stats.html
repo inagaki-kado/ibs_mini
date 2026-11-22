@@ -1359,6 +1359,33 @@ nav {
 .bm-color-2 { color: #c0c0c0; }
 .bm-color-3 { color: #cd7f32; }
 .bm-color-default { color: #0ea5e9; }
+.bm-period { margin-bottom: 12px; }
+.bm-period-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.bm-period-btn {
+  background: #0a0e17;
+  border: 1px solid #1f2937;
+  border-radius: 999px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  padding: 4px 12px;
+  touch-action: manipulation;
+}
+.bm-period-btn.is-active { color: #e2e8f0; border-color: var(--neon-blue); }
+.bm-period-custom { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bm-period-custom.hidden { display: none; }
+.bm-date {
+  background: #0a0e17;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  color: #e2e8f0;
+  color-scheme: dark;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.bm-period-sep { color: #64748b; font-size: 13px; }
+.bm-period-note { margin-top: 6px; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: #64748b; }
 
 /* ─── BLADE META SCORE: 個別対戦データ展開パネル ─── */
 .bd-row-clickable { cursor: pointer; touch-action: manipulation; }
@@ -2627,6 +2654,7 @@ function togglePlayerBladeStats(headEl) {
 }
 
 function switchBladeMetaTab(tab) {
+  bmActiveTab = tab;
   ['all', 'ex', 'inf'].forEach(function(t) {
     var el = document.getElementById('bladeMeta_' + t);
     if (el) el.classList.toggle('hidden', t !== tab);
@@ -2939,8 +2967,9 @@ async function fetchBladeMetaScore() {
     const count   = parseInt((r[4] || '').replace(/,/g, '')) || 0;
     const bonus   = (r[5] || '').trim();
     const stadium = normalizeStadium((r[7] || '').trim());
+    const date    = normalizeMetaDate(r[2]);
     if (name && count > 0 && bonus.includes('対象') && !bonus.includes('対象外')) {
-      tourneyMap.set(name, { count, stadium });
+      tourneyMap.set(name, { count, stadium, date });
     }
   });
 
@@ -2958,10 +2987,9 @@ async function fetchBladeMetaScore() {
     ]);
   });
 
-  // ── ③ 対戦入力のボーナス行から入賞レコードを集計（スタジアム別）──
+  // ── ③ 対戦入力のボーナス行から入賞レコードを抽出（期間フィルタは集計時に適用）──
   // 列: A=選手1(0), E=順位テキスト(4), J=大会名(9), L=行種別(11)
-  const scoreMaps   = { all: new Map(), ex: new Map(), inf: new Map() };
-  const awardCounts = { all: 0, ex: 0, inf: 0 };
+  const records = [];
   (rH.values || []).forEach(r => {
     if ((r[11] || '').trim() !== 'ボーナス') return;
     const rankText = (r[4] || '').trim();
@@ -2971,30 +2999,63 @@ async function fetchBladeMetaScore() {
     const info   = tourneyMap.get(tName);
     if (!info) return;
     const rawBeys  = beyHistMap.get(`${tName}|${player}`) || [];
-    const points   = info.count * RANK_COEF[rankText];
-    const seenBlade = new Set();
-    let awarded = false;
+    const blades   = [];
     rawBeys.forEach(function(rawBey) {
       const blade = normalizeBladeForMeta(rawBey);
-      if (!blade || seenBlade.has(blade)) return;
-      seenBlade.add(blade);
-      awarded = true;
-      scoreMaps.all.set(blade, (scoreMaps.all.get(blade) || 0) + points);
-      if (info.stadium === 'extreme') {
-        scoreMaps.ex.set(blade, (scoreMaps.ex.get(blade) || 0) + points);
-      }
-      if (info.stadium === 'infinity') {
-        scoreMaps.inf.set(blade, (scoreMaps.inf.get(blade) || 0) + points);
-      }
+      if (blade && !blades.includes(blade)) blades.push(blade);
     });
-    if (awarded) {
-      awardCounts.all++;
-      if (info.stadium === 'extreme') awardCounts.ex++;
-      if (info.stadium === 'infinity') awardCounts.inf++;
-    }
+    if (blades.length === 0) return;
+    records.push({
+      date: info.date,
+      stadium: info.stadium,
+      points: info.count * RANK_COEF[rankText],
+      blades,
+    });
   });
 
-  // ── ④ 降順ソート・max=100 正規化（タブ別）──
+  const dates = records.map(r => r.date).filter(Boolean).sort();
+  bladeMetaCache = {
+    records,
+    minDate: dates[0] || '',
+    maxDate: dates[dates.length - 1] || '',
+  };
+  return bladeMetaCache;
+}
+
+// 大会マスターの開催日（"2026/11/21" 等）→ "2026-11-21"。解釈できなければ ''
+function normalizeMetaDate(raw) {
+  const m = String(raw || '').trim().match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  if (!m) return '';
+  return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+}
+
+/**
+ * 入賞レコードを期間で絞り込んでスタジアム別に集計する。
+ * from / to は "YYYY-MM-DD"（空なら制限なし・両端を含む）。
+ * 期間指定時、開催日が不明な大会は除外する。
+ */
+function aggregateBladeMeta(records, from, to) {
+  const scoreMaps   = { all: new Map(), ex: new Map(), inf: new Map() };
+  const awardCounts = { all: 0, ex: 0, inf: 0 };
+  const limited = !!(from || to);
+  records.forEach(function(rec) {
+    if (limited) {
+      if (!rec.date) return;
+      if (from && rec.date < from) return;
+      if (to && rec.date > to) return;
+    }
+    const keys = ['all'];
+    if (rec.stadium === 'extreme') keys.push('ex');
+    if (rec.stadium === 'infinity') keys.push('inf');
+    keys.forEach(function(k) {
+      awardCounts[k]++;
+      rec.blades.forEach(function(blade) {
+        scoreMaps[k].set(blade, (scoreMaps[k].get(blade) || 0) + rec.points);
+      });
+    });
+  });
+
+  // 降順ソート・max=100 正規化（タブ別）
   function toSortedRows(scoreMap) {
     const sorted = Array.from(scoreMap.entries())
       .filter(([, s]) => s > 0)
@@ -3006,13 +3067,12 @@ async function fetchBladeMetaScore() {
       normScore: Math.round((score / maxScore) * 1000) / 10,
     }));
   }
-  bladeMetaCache = {
+  return {
     all: toSortedRows(scoreMaps.all),
     ex:  toSortedRows(scoreMaps.ex),
     inf: toSortedRows(scoreMaps.inf),
     counts: awardCounts,
   };
-  return bladeMetaCache;
 }
 
 // ─── TOP PAGE STATS ──────────────────────────────────────
@@ -3149,32 +3209,113 @@ function renderTopStats(players) {
   `;
 
   // BLADE META を非同期で描画（キャッシュ済みなら即時）
-  fetchBladeMetaScore().then(function(data) {
+  fetchBladeMetaScore().then(function(base) {
     const contentEl = document.getElementById('bladeMetaContent');
     if (!contentEl) return;
-    const counts = data.counts || {};
-    const tabs = [
-      { val: 'ex',  label: 'Extreme',  rows: data.ex  || [], count: counts.ex  || 0 },
-      { val: 'inf', label: 'Infinity', rows: data.inf || [], count: counts.inf || 0 },
-      { val: 'all', label: '総合',     rows: data.all || [], count: counts.all || 0 },
-    ];
-    const tabsHtml = tabs.map(function(tab, i) {
-      return '<button class="stat-tab-btn' + (i === 0 ? ' is-active' : '') + '" data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')">'
-        + tab.label
-        + (tab.count > 0 ? '<span class="stat-tab-count">' + tab.count + '</span>' : '')
-        + '</button>';
-    }).join('');
-    const panelsHtml = tabs.map(function(tab, i) {
-      return '<div id="bladeMeta_' + tab.val + '"' + (i === 0 ? '' : ' class="hidden"') + '>'
-        + buildBladeMetaRowsHtml(tab.rows)
-        + '</div>';
+    const presetsHtml = BM_PERIOD_PRESETS.map(function(p) {
+      return '<button type="button" class="bm-period-btn' + (p.val === bmPeriod.preset ? ' is-active' : '') + '" data-bmperiod="' + p.val + '" onclick="setBladeMetaPeriod(\'' + p.val + '\')">' + p.label + '</button>';
     }).join('');
     contentEl.className = '';
-    contentEl.innerHTML = '<div class="stat-tabs">' + tabsHtml + '</div>' + panelsHtml;
+    contentEl.innerHTML =
+        '<div class="bm-period">'
+      +   '<div class="bm-period-presets">' + presetsHtml + '</div>'
+      +   '<div id="bmPeriodCustom" class="bm-period-custom' + (bmPeriod.preset === 'custom' ? '' : ' hidden') + '">'
+      +     '<input type="date" id="bmFrom" class="bm-date" min="' + base.minDate + '" max="' + base.maxDate + '" value="' + bmPeriod.from + '" onchange="onBladeMetaDateChange()">'
+      +     '<span class="bm-period-sep">〜</span>'
+      +     '<input type="date" id="bmTo" class="bm-date" min="' + base.minDate + '" max="' + base.maxDate + '" value="' + bmPeriod.to + '" onchange="onBladeMetaDateChange()">'
+      +   '</div>'
+      +   '<div id="bmPeriodNote" class="bm-period-note"></div>'
+      + '</div>'
+      + '<div id="bladeMetaBody"></div>';
+    renderBladeMetaBody();
   }).catch(function() {
     const contentEl = document.getElementById('bladeMetaContent');
     if (contentEl) contentEl.textContent = '取得失敗';
   });
+}
+
+// ─── BLADE META SCORE: 期間指定 ─────────────────────────
+const BM_PERIOD_PRESETS = [
+  { val: 'all',    label: '全期間' },
+  { val: '1m',     label: '1ヶ月' },
+  { val: '3m',     label: '3ヶ月' },
+  { val: '6m',     label: '6ヶ月' },
+  { val: 'year',   label: '今年' },
+  { val: 'custom', label: '期間指定' },
+];
+let bmPeriod = { preset: 'all', from: '', to: '' };
+let bmActiveTab = 'ex';
+
+function bmYmd(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// 現在の期間設定 → { from, to }（"YYYY-MM-DD" または ''）
+function bladeMetaRange() {
+  const p = bmPeriod.preset;
+  if (p === 'custom') return { from: bmPeriod.from, to: bmPeriod.to };
+  if (p === 'all') return { from: '', to: '' };
+  const now = new Date();
+  if (p === 'year') return { from: now.getFullYear() + '-01-01', to: '' };
+  const months = { '1m': 1, '3m': 3, '6m': 6 }[p] || 0;
+  const start = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+  return { from: bmYmd(start), to: '' };
+}
+
+function setBladeMetaPeriod(preset) {
+  bmPeriod.preset = preset;
+  if (preset === 'custom' && !bmPeriod.from && !bmPeriod.to && bladeMetaCache) {
+    bmPeriod.from = bladeMetaCache.minDate;
+    bmPeriod.to   = bladeMetaCache.maxDate;
+    const f = document.getElementById('bmFrom'); if (f) f.value = bmPeriod.from;
+    const t = document.getElementById('bmTo');   if (t) t.value = bmPeriod.to;
+  }
+  document.querySelectorAll('[data-bmperiod]').forEach(function(b) {
+    b.classList.toggle('is-active', b.dataset.bmperiod === preset);
+  });
+  const custom = document.getElementById('bmPeriodCustom');
+  if (custom) custom.classList.toggle('hidden', preset !== 'custom');
+  renderBladeMetaBody();
+}
+
+function onBladeMetaDateChange() {
+  bmPeriod.from = (document.getElementById('bmFrom') || {}).value || '';
+  bmPeriod.to   = (document.getElementById('bmTo')   || {}).value || '';
+  renderBladeMetaBody();
+}
+
+function renderBladeMetaBody() {
+  const bodyEl = document.getElementById('bladeMetaBody');
+  if (!bodyEl || !bladeMetaCache) return;
+  const range = bladeMetaRange();
+  const data  = aggregateBladeMeta(bladeMetaCache.records, range.from, range.to);
+
+  const noteEl = document.getElementById('bmPeriodNote');
+  if (noteEl) {
+    const fmt = function(s) { return s ? s.replace(/-/g, '/') : ''; };
+    noteEl.textContent = (range.from || range.to)
+      ? '集計期間：' + (fmt(range.from) || '最初') + ' 〜 ' + (fmt(range.to) || '現在')
+      : '集計期間：全期間';
+  }
+
+  const counts = data.counts || {};
+  const tabs = [
+    { val: 'ex',  label: 'Extreme',  rows: data.ex  || [], count: counts.ex  || 0 },
+    { val: 'inf', label: 'Infinity', rows: data.inf || [], count: counts.inf || 0 },
+    { val: 'all', label: '総合',     rows: data.all || [], count: counts.all || 0 },
+  ];
+  const tabsHtml = tabs.map(function(tab) {
+    return '<button class="stat-tab-btn' + (tab.val === bmActiveTab ? ' is-active' : '') + '" data-bmtab data-bmval="' + tab.val + '" onclick="switchBladeMetaTab(\'' + tab.val + '\')">'
+      + tab.label
+      + (tab.count > 0 ? '<span class="stat-tab-count">' + tab.count + '</span>' : '')
+      + '</button>';
+  }).join('');
+  const panelsHtml = tabs.map(function(tab) {
+    return '<div id="bladeMeta_' + tab.val + '"' + (tab.val === bmActiveTab ? '' : ' class="hidden"') + '>'
+      + buildBladeMetaRowsHtml(tab.rows)
+      + '</div>';
+  }).join('');
+  bodyEl.innerHTML = '<div class="stat-tabs">' + tabsHtml + '</div>' + panelsHtml;
 }
 
 // ─── RIVAL JUMP ──────────────────────────────────────────
