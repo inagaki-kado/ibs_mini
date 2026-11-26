@@ -1585,19 +1585,267 @@ select:focus-visible,
 .share-btn-white.is-copied { border-color: rgba(0,255,136,0.5); }
 
 .clipboard-helper { position: fixed; opacity: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   POLISH LAYER（2026-11 デザイン改善）
+   配色・ブランドはそのまま。余白・文字組み・数字の読みやすさ・スマホ幅を整える。
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --gutter: clamp(1rem, 3.2vw, 2.5rem);
+  --nav-h: 64px;
+  --text-dim: #a3b1c6;
+  --line: rgba(148,163,184,0.14);
+  --card: #0e1524;
+  --card-line: rgba(148,163,184,0.12);
+  --num: 'Rajdhani', 'Noto Sans JP', sans-serif;   /* データの数字はこれで組む */
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+html { scroll-padding-top: calc(var(--nav-h) + 12px); -webkit-text-size-adjust: 100%; }
+body { line-height: 1.75; letter-spacing: 0.02em; -webkit-font-smoothing: antialiased; }
+::selection { background: rgba(0,255,136,0.85); color: #04070f; }
+p, li, .about-item-body, .blader-bio-text { text-wrap: pretty; line-break: strict; }
+
+/* ── NAV ── */
+nav {
+  height: var(--nav-h); padding: 0 var(--gutter);
+  background: rgba(4,7,15,0.8);
+  backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+}
+nav .nav-logo img { height: 40px !important; }
+.nav-links { gap: clamp(1rem, 2vw, 2rem); align-items: center; }
+.nav-links a { position: relative; font-size: 0.86rem; letter-spacing: 0.14em; padding: 0.5rem 0; color: #c3cede; }
+.nav-links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0.15rem; height: 2px; background: var(--neon-green); transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease-out); }
+.nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+.nav-links a:hover, .nav-links a.active { text-shadow: none; }
+.nav-links a.active { color: #fff; }
+.nav-toggle { display: none; }
+@media (max-width: 640px) {
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    min-width: 44px; min-height: 44px; padding: 0 0.9rem; cursor: pointer;
+    background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.18);
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.18em;
+  }
+  .nav-toggle-bars { position: relative; width: 18px; height: 12px; }
+  .nav-toggle-bars::before, .nav-toggle-bars::after, .nav-toggle-bars span {
+    content: ''; position: absolute; left: 0; width: 100%; height: 2px; background: currentColor;
+    transition: transform .3s var(--ease-out), opacity .2s, top .3s var(--ease-out);
+  }
+  .nav-toggle-bars::before { top: 0; } .nav-toggle-bars span { top: 5px; } .nav-toggle-bars::after { top: 10px; }
+  nav.menu-open { background: #04070f; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  nav.menu-open .nav-toggle-bars::before { top: 5px; transform: rotate(45deg); }
+  nav.menu-open .nav-toggle-bars span { opacity: 0; }
+  nav.menu-open .nav-toggle-bars::after { top: 5px; transform: rotate(-45deg); }
+  nav.menu-open .nav-links {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0;
+    position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0;
+    padding: 1rem var(--gutter) 2rem; background: #04070f; overflow-y: auto;
+    animation: menuIn .35s var(--ease-out) both;
+  }
+  nav.menu-open .nav-links li { border-bottom: 1px solid var(--line); }
+  nav.menu-open .nav-links a { display: flex; align-items: center; justify-content: space-between; min-height: 60px; font-size: 1.15rem; letter-spacing: 0.16em; }
+  nav.menu-open .nav-links a::after { display: none; }
+  nav.menu-open .nav-links a::before { content: attr(data-ja); order: 2; font-family: 'Noto Sans JP', sans-serif; font-size: 0.78rem; letter-spacing: 0.08em; color: var(--text-dim); font-weight: 500; }
+  body.no-scroll { overflow: hidden; }
+}
+@keyframes menuIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ── ページ見出し ── */
+.page-wrap { padding-top: var(--nav-h); }
+.page-header { padding: clamp(2.5rem, 6vw, 4.5rem) var(--gutter) clamp(1.75rem, 3.5vw, 2.5rem); border-bottom-color: var(--line); }
+.page-header-label { font-size: 0.76rem; letter-spacing: 0.34em; margin-bottom: 0.75rem; }
+.page-header-title { font-size: clamp(2rem, 5.6vw, 3.6rem); line-height: 1.05; letter-spacing: 0.01em; }
+.page-header-lead { word-break: auto-phrase; margin-top: 0.9rem; max-width: 40em; font-size: clamp(0.92rem, 1.3vw, 1.02rem); line-height: 1.85; color: var(--text-dim); }
+.sit-banner-inner { padding: 1.15rem var(--gutter); flex-wrap: nowrap; }
+.sit-banner-inner > div { min-width: 0; }
+.sit-banner-text { line-height: 1.55; }
+.sit-banner-cta { min-height: 44px; }
+@media (max-width: 640px) { .sit-banner-inner { flex-wrap: wrap; } .sit-banner-cta { width: 100%; } }
+
+/* ── 左：タワー ── */
+.tower-panel { padding: 2.25rem 1.5rem 1.75rem; gap: 1.25rem; border-right-color: var(--line); }
+.tower-title { font-size: 0.86rem; letter-spacing: 0.2em; }
+.tower-subtitle { margin-top: 0.35rem; font-size: 0.74rem; letter-spacing: 0.28em; }
+.tower-container { padding: 30px 0 12px; }
+.zone-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; padding-top: 1rem; border-top: 1px solid var(--line); }
+.zone-legend-item { font-size: 0.82rem; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+
+/* ── 右：検索 ── */
+.stats-panel { padding: clamp(1.5rem, 3vw, 2.5rem) var(--gutter) 4rem; gap: 1.75rem; min-width: 0; }
+.search-label { font-size: 0.8rem; letter-spacing: 0.3em; margin-bottom: 0.9rem; }
+.search-wrap { align-items: stretch; }
+.search-input { min-height: 56px; font-size: 1.02rem; padding-left: 3rem; border-color: rgba(0,255,136,0.32); }
+.search-icon { top: 28px; font-size: 1rem; }
+.search-btn { min-height: 56px; padding: 0 2rem; font-size: 0.86rem; }
+@media (max-width: 540px) { .search-btn { min-height: 52px; } }
+
+/* ── このページについて ── */
+.about-header { min-height: 56px; padding: 0 1.4rem; font-size: 0.82rem; letter-spacing: 0.26em; }
+.about-body { padding: 0.25rem 1.4rem 1.6rem; }
+.about-intro, .about-item-body { font-size: 0.95rem; line-height: 1.95; }
+.about-item { margin-top: 1.4rem; }
+.about-item-title { margin-bottom: 0.4rem; }
+
+/* ── トップの集計 ── */
+#stateIdle > .state-msg { display: none; }       /* 「検索してください」は検索欄の文言と重複するため出さない */
+.ts-summary { gap: 12px; margin-bottom: 12px; }
+.ts-stat-card, .ts-card, .stat-panel { background: var(--card); border-color: var(--card-line); border-radius: 12px; }
+.ts-stat-card { padding: 16px 18px 14px; min-width: 0; }
+.ts-stat-label, .ts-card-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.22em; color: #8291a8; }
+.ts-stat-val { font-family: var(--num); font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.ts-stat-unit { font-family: 'Noto Sans JP', sans-serif; font-size: 0.85rem; font-weight: 500; color: #8291a8; margin-left: 4px; }
+.ts-grid3 { gap: 12px; }
+.ts-card { padding: 16px 18px 8px; min-width: 0; }
+.ts-rank-row { gap: 10px; padding: 9px 0; border-bottom-color: var(--card-line); }
+.ts-rank-num { font-family: var(--num); font-weight: 600; font-size: 0.95rem; width: 22px; color: #64748b; font-variant-numeric: tabular-nums; }
+.ts-rank-name { font-size: 0.98rem; font-weight: 500; }
+.ts-rank-badge { font-family: var(--num); font-size: 0.8rem; letter-spacing: 0.04em; padding: 2px 8px; }
+.ts-rank-bp { font-family: var(--num); font-weight: 700; font-size: 1rem; min-width: 4.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.stat-panel { padding: 20px 22px !important; }
+.stat-panel-title { letter-spacing: 0.16em; }
+.stat-tab-btn { white-space: nowrap; min-height: 44px; padding: 0 14px; }
+.stat-tab-count { font-family: var(--num); font-size: 0.82rem; font-weight: 600; color: #64748b; }
+.gfr-count, .gfr-pct, .bm-score-cell, .bm-rank-num, .bd-pt-val, .bd-wr-num, .bd-vs-wr, .bd-vs-ratio, .bd-fin-avg-val, .pbs-rec, .stat-sub-row,
+.pft-count, .pft-pct, .pft-rcv-total, .pft-total-label, .winrate-pct {
+  font-family: var(--num) !important; font-variant-numeric: tabular-nums;
+}
+.gfr-count, .gfr-pct, .pft-count, .pft-pct { font-size: 1rem; }
+.winrate-pct { font-size: 1.1rem; width: 60px; }
+.bm-score-cell { font-size: 1rem; }
+.bm-rank-num { font-size: 0.95rem; color: #64748b; }
+.bm-row { padding: 9px 0; border-bottom-color: var(--card-line); }
+.bm-period-btn { min-height: 36px; }
+@media (max-width: 1100px) {
+  .ts-grid3 { grid-template-columns: 1fr; gap: 0; }
+  .ts-grid3 > .ts-card { border-radius: 0; border-top: none; padding-top: 0; padding-bottom: 0; }
+  .ts-grid3 > .ts-card:first-child { border-radius: 12px 12px 0 0; border-top: 1px solid var(--card-line); padding-top: 16px; }
+  .ts-grid3 > .ts-card:last-child { border-radius: 0 0 12px 12px; padding-bottom: 8px; }
+  .ts-grid3 > .ts-card:not(:first-child) .ts-card-title { display: none; }
+  .ts-grid3 > .ts-card:not(:last-child) .ts-rank-row:last-child { border-bottom: 1px solid var(--card-line); }
+}
+@media (max-width: 640px) {
+  .ts-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ts-stat-card { padding: 12px 12px 10px; }
+  .ts-stat-label { font-size: 0.64rem; letter-spacing: 0.12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts-stat-val { font-size: 1.55rem; }
+  .ts-card { padding-left: 14px; padding-right: 14px; }
+  .stat-panel { padding: 16px 14px !important; }
+  /* BLADE META SCORE：スマホではバーを名前の下に回す */
+  .bm-row { grid-template-columns: 30px minmax(0, 1fr) 3.4em !important; row-gap: 6px; }
+  .bm-name-cell { overflow: hidden; text-overflow: ellipsis; }
+  .bm-bar-track { grid-column: 2 / -1; height: 5px; }
+  .gfr-row { grid-template-columns: 34px 52px 56px minmax(0, 1fr); gap: 8px; }
+}
+
+/* ── 選手カード ── */
+.player-card { border-color: var(--card-line); background: rgba(10,16,29,0.85); }
+.card-header { padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1.1rem, 2.5vw, 2rem); gap: 1.25rem; border-bottom-color: var(--line); }
+.card-body { padding: clamp(1.1rem, 2.5vw, 2rem); gap: 1.75rem; }
+.stats-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 12px; align-items: start; }
+.history-log, .awards-log { max-height: 236px; padding-bottom: 1.6rem; -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent); mask-image: linear-gradient(#000 calc(100% - 28px), transparent); scrollbar-width: thin; }
+.stat-item { padding: 1.15rem 1.3rem; }
+.stat-label { font-size: 0.76rem; letter-spacing: 0.22em; }
+.bp-value, .stat-value-large { font-family: var(--num); font-weight: 700; font-size: clamp(2.2rem, 3.6vw, 2.75rem); line-height: 1.05; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+.blader-bio-text { font-size: 0.98rem; line-height: 1.95; color: rgba(226,232,240,0.82); }
+.winrate-pct, .rival-record, .player-matches { font-variant-numeric: tabular-nums; }
+@media (max-width: 540px) {
+  .card-header { flex-direction: row; align-items: center; }
+  .player-rank-icon { width: 56px; height: 56px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .stat-item-bio { display: block; }
+  .stat-item-bio .blader-bio-icon { display: none; }
+  .stat-item { padding: 1rem; }
+}
+
+/* ═══ ROUND 2：選手カードの組み直し と 配色の整理 ═══
+   配色の意図：緑＝主役、青＝データ、赤＝S.I.Tリーグ専用。
+   ランク帯の色・メダル色・決まり手の色は「意味のある色」なので残す。光らせる効果は最小限。 */
+.page-header-title span { text-shadow: none; }
+.player-card { clip-path: none; border-radius: 16px; overflow: hidden; }
+.player-card::before { background: linear-gradient(90deg, var(--neon-green), transparent 70%); }
+.card-header { background: radial-gradient(120% 140% at 0% 0%, rgba(0,255,136,0.09), transparent 60%); border-bottom: none; padding-bottom: 0.5rem; }
+.player-kicker { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.3em; color: var(--neon-green); margin-bottom: 0.15rem; }
+.player-name { font-size: clamp(1.6rem, 3.4vw, 2.3rem) !important; font-weight: 900 !important; letter-spacing: 0.03em; line-height: 1.25; }
+.player-matches { font-size: 0.9rem; }
+
+.kpi-band {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1rem clamp(1.1rem, 2.5vw, 2rem) 0.5rem;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.kpi { padding: 1.1rem 1rem 1.15rem 0; min-width: 0; }
+.kpi + .kpi { padding-left: 1.25rem; border-left: 1px solid var(--line); }
+.kpi-label { font-size: 0.76rem; font-weight: 700; letter-spacing: 0.12em; color: #8291a8; margin-bottom: 0.25rem; }
+.kpi-val { font-family: var(--num); font-weight: 700; font-size: clamp(1.75rem, 3.2vw, 2.6rem); line-height: 1.05; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kpi-val small { font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem; font-weight: 500; color: #8291a8; margin-left: 0.3rem; }
+.kpi-bp .kpi-val { color: var(--neon-yellow); }
+.kpi-wr .kpi-val { color: var(--neon-green); }
+.kpi-note { display: flex; flex-wrap: wrap; gap: 0.15rem 0.7rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+.card-body { gap: 0 !important; padding-top: 0.5rem !important; }
+.pc-sec { padding: clamp(1.5rem, 3vw, 2.25rem) 0; border-bottom: 1px solid var(--line); }
+.pc-sec:last-of-type { border-bottom: none; }
+.pc-sec-title { display: flex; align-items: baseline; gap: 0.75rem; font-size: clamp(1.05rem, 1.6vw, 1.25rem); font-weight: 900; letter-spacing: 0.05em; color: #fff; margin-bottom: 1.1rem; }
+.pc-sec-title span { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.12em; color: var(--neon-green); }
+.pc-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.pc-duo-col > * { margin-top: 0 !important; }
+.pc-empty { padding: 1.1rem 1.2rem; border: 1px dashed var(--line); color: var(--text-dim); font-size: 0.9rem; line-height: 1.8; }
+.pc-bio { max-width: 42em; font-size: 1rem; line-height: 2; color: rgba(226,232,240,0.86); text-wrap: pretty; }
+
+/* 中のブロックの見出しを1つの型に揃える */
+.beys-header, .awards-header, .history-header, .winrate-label { font-size: 0.8rem !important; letter-spacing: 0.18em !important; color: #8291a8 !important; margin-bottom: 0.75rem !important; }
+.beys-header i, .awards-header i, .history-header i, .winrate-label i { color: var(--neon-green); margin-right: 0.3rem; }
+.beys-block { margin-top: 0 !important; }
+.pbs-block { margin-top: 1.5rem !important; }
+.pft-panel { margin-top: 1.5rem; background: transparent; border-color: var(--card-line); }
+
+/* BP推移：主役なので大きく */
+.bp-chart-section { margin-top: 0; padding-top: 0; border-top: none; }
+.bp-chart-container { height: clamp(220px, 30vw, 320px); }
+.bp-chart-wrapper { border-color: var(--card-line); border-radius: 12px; }
+.bp-toggle-btn { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.85rem; min-height: 36px; border-color: var(--card-line); }
+.bp-toggle-btn.active { background: #fff; border-color: #fff; color: #04070f; }
+
+/* ライバル：ピンクは「ライバル」を表す色として残し、光は消す */
+.rival-block { clip-path: none; border-radius: 12px; margin-top: 0; padding: 1.2rem 1.3rem; }
+.rival-title { font-size: 1.1rem; text-shadow: none; letter-spacing: 0.16em; }
+.rival-name { font-size: 1.4rem; }
+.rival-name:hover { text-shadow: none; }
+.rival-record { font-family: var(--num); font-size: 1.05rem; }
+
+/* 使用ベイ：光を消して落ち着いた札に */
+.bey-badge { box-shadow: none !important; text-shadow: none !important; }
+.beys-badges-row { gap: 0.5rem !important; }
+
+.awards-log, .history-log { clip-path: none; border-radius: 10px; }
+.share-row { padding-top: 1.75rem; }
+.btn-share-stats { min-height: 52px; border-radius: 10px; }
+
+@media (max-width: 760px) {
+  .kpi-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi:nth-child(3) { padding-left: 0; border-left: none; }
+  .kpi:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .pc-duo { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
 </style>
 </head>
 
 <body>
 <div class="grid-bg"></div>
 
-<nav>
+<nav id="site-nav">
   <a href="index.html" class="nav-logo" style="display:inline-flex;align-items:center;line-height:1;"><img src="title_white.png" alt="板橋ベイブレード会" style="height:44px;width:auto;display:block;"></a>
-  <ul class="nav-links">
-    <li><a href="index.html">HOME</a></li>
-    <li><a href="index.html#events">EVENTS</a></li>
-    <li><a href="player_stats.html" class="active">BLADERS</a></li>
-    <li><a href="sit_battleleague.html" style="color:#ff1f3d;">S.I.T LEAGUE</a></li>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" onclick="toggleNav()"><span class="nav-toggle-bars"><span></span></span>MENU</button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="index.html" data-ja="トップ">HOME</a></li>
+    <li><a href="index.html#events" data-ja="開催予定">EVENTS</a></li>
+    <li><a href="player_stats.html" class="active" aria-current="page" data-ja="戦績を検索">BLADERS</a></li>
+    <li><a href="sit_battleleague.html" style="color:#ff1f3d;" data-ja="合同リーグ戦">S.I.T LEAGUE</a></li>
   </ul>
 </nav>
 
@@ -1606,6 +1854,7 @@ select:focus-visible,
   <div class="page-header">
     <div class="page-header-label">// DATABASE //</div>
     <h1 class="page-header-title">BLADER <span>STATS</span></h1>
+    <p class="page-header-lead">板橋ベイブレード会と協力団体の大会で積み上げた、ブレーダーの戦績・BP・ライバルを検索できます。</p>
   </div>
 
   <a class="sit-banner" href="sit_battleleague.html">
@@ -1766,6 +2015,16 @@ select:focus-visible,
 </div>
 
 <script>
+// ─── NAV（スマホのメニュー）────
+function toggleNav(force) {
+  const nav = document.getElementById('site-nav');
+  const open = typeof force === 'boolean' ? force : !nav.classList.contains('menu-open');
+  nav.classList.toggle('menu-open', open);
+  document.body.classList.toggle('no-scroll', open);
+  nav.querySelector('.nav-toggle').setAttribute('aria-expanded', String(open));
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNav(false); });
+
 // ─── CONFIG ───────────────────────────────────────────────
 // データ取得は中間API（/api/get-stats）経由が本来の設計。
 // サーバー側でGoogle Sheetsへのアクセスを代行し、APIキーはクライアントに一切渡さない。
@@ -3202,7 +3461,7 @@ function renderTopStats(players) {
     ${globalFtHtml}
     <div id="bladeMetaSection" class="stat-panel-outer">
       <div class="stat-panel">
-        <div class="stat-panel-title stat-panel-title-standalone">⚔ BLADE META SCORE</div>
+        <div class="stat-panel-title stat-panel-title-standalone">⚔️ BLADE META SCORE</div>
         <div id="bladeMetaContent" class="stat-empty">読み込み中...</div>
       </div>
     </div>
@@ -3385,6 +3644,12 @@ function setState(state, msg = '') {
 function parseAwards(str) {
   // 入賞回数フォーマット例: "1位:3回/2位:2回/3位:1回/4位:0回"
   if (!str) return { p1:0, p2:0, p3:0, p4:0 };
+  // シートの実際の書式 "1 / 2 / 3 / 2"（優勝/準優勝/3位/4位）にも対応
+  const slash = str.split('/').map(t => t.trim());
+  if (slash.length === 4 && slash.every(t => /^\d+$/.test(t))) {
+    const [p1, p2, p3, p4] = slash.map(Number);
+    return { p1, p2, p3, p4 };
+  }
   const get = (n) => {
     const m = str.match(new RegExp(n + '位[：:](\\d+)'));
     return m ? parseInt(m[1]) : 0;
@@ -3656,34 +3921,82 @@ function renderResults(players) {
       `;
     }
 
+    const awardsTotal = awards.p1 + awards.p2 + awards.p3 + awards.p4;
+    const awardsBreak = [['🥇', awards.p1], ['🥈', awards.p2], ['🥉', awards.p3], ['4位', awards.p4]]
+      .filter(a => a[1] > 0).map(a => `<span>${a[0]} ${a[1]}</span>`).join('');
     card.innerHTML = `
       <div class="card-header">
         <div class="player-rank-icon ${rankClass}">${displayRankHtml}</div>
         <div class="player-info">
+          <div class="player-kicker">BLADER PROFILE</div>
           <div class="player-name">${name}</div>
           <div class="player-matches"><i class="fa fa-calendar-check player-matches-icon"></i>${tournaments} 大会参加</div>
         </div>
       </div>
+
+      <div class="kpi-band">
+        <div class="kpi kpi-bp">
+          <div class="kpi-label">BP</div>
+          <div class="kpi-val">${bp !== '--' ? bp : '--'}${bp !== '--' ? '<small>pts</small>' : ''}</div>
+        </div>
+        <div class="kpi kpi-wr">
+          <div class="kpi-label">勝率（総合）</div>
+          <div class="kpi-val">${pct(wr)}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">大会参加</div>
+          <div class="kpi-val">${parseInt(tournaments) || 0}<small>回</small></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">入賞</div>
+          <div class="kpi-val">${awardsTotal}<small>回</small></div>
+          ${awardsBreak ? `<div class="kpi-note">${awardsBreak}</div>` : ''}
+        </div>
+      </div>
+
       <div class="card-body">
 
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-label">BP</div>
-            <div class="bp-display">
-              <div class="bp-value">${bp !== '--' ? bp : '--'}</div>
-              ${bp !== '--' ? '<div class="bp-unit">pts</div>' : ''}
-            </div>
-            <div class="stat-sub-label">勝率 (総合)</div>
-            <div class="stat-value-large">${pct(wr)}</div>
+        <section class="pc-sec">
+          <h3 class="pc-sec-title"><span>01</span>BPの推移</h3>
+        <div class="bp-chart-section">
+          <div class="bp-view-toggle">
+            <button class="bp-toggle-btn active" data-view="all">ALL</button>
+            <button class="bp-toggle-btn" data-view="recent">直近10回</button>
           </div>
-          <div class="stat-item stat-item-bio">
-            ${bio ? `
-            <span class="blader-bio-icon"><i class="fa fa-robot"></i></span>
-            <span class="blader-bio-text">${bio}</span>` : `
-            <span class="blader-bio-text blader-bio-placeholder">—</span>`}
+          <div class="bp-chart-wrapper">
+            <div class="bp-chart-container">
+              <canvas class="bp-chart-canvas"></canvas>
+            </div>
           </div>
         </div>
 
+        </section>
+
+        <section class="pc-sec">
+          <h3 class="pc-sec-title"><span>02</span>ライバルと相棒</h3>
+          <div class="pc-duo">
+            <div class="pc-duo-col">${rivalHtml || '<div class="pc-empty">ライバルは、3戦以上戦った相手ができると表示されます。</div>'}</div>
+            <div class="pc-duo-col">${topBeysHtml || '<div class="pc-empty">使用ベイのデータはまだありません。</div>'}</div>
+          </div>
+        </section>
+
+        ${bio ? `
+        <section class="pc-sec">
+          <h3 class="pc-sec-title"><span>03</span>プロフィール</h3>
+          <p class="pc-bio">${bio}</p>
+        </section>` : ''}
+
+        ${(awardsLogHtml || historyLogHtml) ? `
+        <section class="pc-sec">
+          <h3 class="pc-sec-title"><span>${bio ? '04' : '03'}</span>戦いの記録</h3>
+          <div class="pc-duo">
+            ${awardsLogHtml ? `<div class="pc-duo-col">${awardsLogHtml}</div>` : ''}
+            ${historyLogHtml ? `<div class="pc-duo-col">${historyLogHtml}</div>` : ''}
+          </div>
+        </section>` : ''}
+
+        <section class="pc-sec">
+          <h3 class="pc-sec-title"><span>${bio ? ((awardsLogHtml || historyLogHtml) ? '05' : '04') : ((awardsLogHtml || historyLogHtml) ? '04' : '03')}</span>戦い方の分析</h3>
         <div class="winrate-section">
           <div class="winrate-label">
             <span><i class="fa fa-chart-bar"></i> スタジアム別勝率</span>
@@ -3706,31 +4019,13 @@ function renderResults(players) {
           </div>
         </div>
 
-        ${topBeysHtml}
-
         <div class="beys-block pbs-block">
           <div class="beys-header pbs-head" data-player="${escHtml(name)}" onclick="togglePlayerBladeStats(this)"><i class="fa fa-chart-bar"></i> BLADE STATS<span class="pbs-chev">▾</span></div>
           <div class="pbs-body hidden"></div>
         </div>
 
         ${finishTypeHtml}
-
-        ${rivalHtml}
-        ${awardsLogHtml}
-        ${historyLogHtml}
-
-        <div class="bp-chart-section">
-          <div class="bp-chart-title">📈 BP HISTORY</div>
-          <div class="bp-view-toggle">
-            <button class="bp-toggle-btn active" data-view="all">ALL</button>
-            <button class="bp-toggle-btn" data-view="recent">直近10回</button>
-          </div>
-          <div class="bp-chart-wrapper">
-            <div class="bp-chart-container">
-              <canvas class="bp-chart-canvas"></canvas>
-            </div>
-          </div>
-        </div>
+        </section>
 
         <div class="share-row">
           <button class="btn-share-stats" onclick="shareBladerStats(this.dataset)"
@@ -3752,7 +4047,6 @@ function renderResults(players) {
 
       </div>
     `;
-
     area.appendChild(card);
 
     // Animate bars after render
